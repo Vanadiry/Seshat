@@ -3,7 +3,9 @@ package bangumi
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -31,7 +33,8 @@ func (c *Client) get(url string, v any) error {
 		return fmt.Errorf("not found (404): %s", url)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("GET %s: HTTP %d", url, resp.StatusCode)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 	return json.NewDecoder(resp.Body).Decode(v)
 }
@@ -44,7 +47,8 @@ func (c *Client) getWithRetry(url string, v any, maxRetries int) error {
 		if err == nil {
 			return nil
 		}
-		if err.Error()[:13] == "not found (40" {
+		// Don't retry client errors (4xx except 429 rate limit).
+		if strings.Contains(err.Error(), "HTTP 4") && !strings.Contains(err.Error(), "429") {
 			return err
 		}
 		if i < maxRetries-1 {

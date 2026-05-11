@@ -33,6 +33,8 @@ func (s *Service) FetchSubject(t *task.Task) {
 	if err != nil {
 		t.Status = task.StatusFailed
 		t.Error = err.Error()
+		errJSON, _ := json.Marshal(map[string]string{"step": "error", "message": err.Error()})
+		t.Send(string(errJSON))
 		t.Close()
 		return
 	}

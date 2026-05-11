@@ -24,6 +24,7 @@ type Task struct {
 	SubjectID int       `json:"subject_id"`
 	Error     string    `json:"error,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
+	LastEvent string    `json:"-"` // final event for late SSE subscribers
 	events    chan string
 	closed    bool
 	mu        sync.Mutex
@@ -35,6 +36,7 @@ func (t *Task) Send(event string) {
 	if t.closed {
 		return
 	}
+	t.LastEvent = event
 	select {
 	case t.events <- event:
 	default:

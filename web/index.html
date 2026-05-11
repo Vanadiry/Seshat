@@ -151,6 +151,13 @@ function startSSE(taskId) {
   const evtSource = new EventSource(API + '/api/v1/tasks/' + taskId + '/events');
   evtSource.onmessage = function(e) {
     const d = JSON.parse(e.data);
+    if (d.step === 'error') {
+      text.textContent = '❌ ' + d.message;
+      fill.style.background = '#ef4444';
+      fill.style.width = '100%';
+      setTimeout(() => { bar.style.display = 'none'; fill.style.background = ''; evtSource.close(); }, 5000);
+      return;
+    }
     if (d.step === 'complete') {
       fill.style.width = '100%';
       text.textContent = '完成！';
