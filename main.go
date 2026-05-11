@@ -52,6 +52,7 @@ func main() {
 		Queries: query.New(database),
 		Config:  cfg,
 		Fetch:   fetchSvc,
+		DataDir: dataDir,
 	}
 	router := server.New(h, webFS)
 

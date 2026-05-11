@@ -15,6 +15,7 @@ type Handler struct {
 	Queries *query.Queries
 	Config  *config.Config
 	Fetch   *fetch.Service
+	DataDir string // 数据目录（用于图片服务）
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

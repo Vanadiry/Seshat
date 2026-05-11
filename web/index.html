@@ -1,5 +1,177 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><title>Seshat</title></head>
-<body><h1>Seshat</h1><p>离线优先的 Bangumi 数据管理工具</p></body>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seshat</title>
+  <link rel="stylesheet" href="https://ka-f.webawesome.com/webawesome@3.6.0/styles/webawesome.css" />
+  <script type="module" src="https://ka-f.webawesome.com/webawesome@3.6.0/webawesome.loader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2/dist/htmx.min.js"></script>
+  <style>
+    :root {
+      --wa-color-primary-600: #6366f1;
+      --wa-color-primary-500: #818cf8;
+      font-family: system-ui, sans-serif;
+    }
+    body { margin: 0; display: flex; min-height: 100vh; background: #0f0f13; color: #e4e4e7; }
+    .sidebar { width: 240px; background: #16161d; border-right: 1px solid #27272a; padding: 16px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+    .sidebar h2 { font-size: 18px; margin: 0 0 12px 0; color: #fff; }
+    .sidebar a { color: #a1a1aa; text-decoration: none; padding: 8px 12px; border-radius: 6px; font-size: 14px; }
+    .sidebar a:hover, .sidebar a.active { background: #27272a; color: #fff; }
+    .main { flex: 1; padding: 24px; overflow-y: auto; }
+    .toolbar { display: flex; gap: 12px; margin-bottom: 24px; align-items: center; flex-wrap: wrap; }
+    .search-input { flex: 1; min-width: 200px; max-width: 400px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+    .card { background: #1a1a23; border-radius: 12px; overflow: hidden; transition: transform .15s; cursor: pointer; }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(99,102,241,.15); }
+    .card img { width: 100%; aspect-ratio: 3/4; object-fit: cover; background: #27272a; }
+    .card .meta { padding: 10px 12px; }
+    .card .title { font-size: 14px; font-weight: 600; color: #fafafa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card .sub { font-size: 12px; color: #71717a; margin-top: 2px; }
+    .fab { position: fixed; bottom: 24px; right: 24px; z-index: 100; }
+    .progress-bar { height: 4px; background: #27272a; border-radius: 2px; overflow: hidden; margin: 8px 0; }
+    .progress-fill { height: 100%; background: var(--wa-color-primary-500); width: 0%; transition: width .2s; }
+    @media (max-width: 768px) { .sidebar { display: none; } .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <h2>Seshat</h2>
+  <a href="#" class="active" onclick="loadSubjects()">全部动画</a>
+  <a href="#" onclick="navigate('/subjects?platform=TV')">TV</a>
+  <a href="#" onclick="navigate('/subjects?platform=剧场版')">剧场版</a>
+  <a href="#" onclick="navigate('/subjects?platform=OVA')">OVA</a>
+  <a href="#" onclick="navigate('/tags')">标签</a>
+  <div style="margin-top:auto;padding-top:12px;border-top:1px solid #27272a;font-size:12px;color:#52525b;">
+    <a href="/doc/api">API 文档</a>
+    <a href="/doc/database.md">数据库设计</a>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<div class="main">
+  <div class="toolbar">
+    <input class="search-input" type="search" placeholder="搜索动画..." autocomplete="off"
+           hx-get="/api/v1/subjects" hx-trigger="keyup changed delay:300ms"
+           hx-target="#grid" hx-swap="innerHTML"
+           name="q" />
+    <wa-select id="tag-filter" placeholder="标签筛选" hx-get="/api/v1/subjects" hx-trigger="change"
+              hx-target="#grid" hx-swap="innerHTML" hx-include=".search-input">
+    </wa-select>
+  </div>
+
+  <!-- Progress bar (hidden by default) -->
+  <div id="progress" style="display:none;margin-bottom:16px;">
+    <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+    <span id="progress-text" style="font-size:12px;color:#71717a;"></span>
+  </div>
+
+  <!-- Poster wall -->
+  <div class="grid" id="grid">
+    <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:#52525b;">
+      <p style="font-size:48px;margin:0;"> </p>
+      <p>点击右下角 + 拉取你的第一部动画</p>
+    </div>
+  </div>
+</div>
+
+<!-- FAB: Fetch dialog -->
+<wa-button class="fab" variant="brand" size="large" circle onclick="document.getElementById('fetch-dialog').showModal()">+</wa-button>
+
+<dialog id="fetch-dialog" style="background:#1a1a23;color:#e4e4e7;border:1px solid #27272a;border-radius:12px;padding:24px;width:400px;max-width:90vw;">
+  <h3 style="margin:0 0 16px 0;">拉取动画</h3>
+  <form onsubmit="fetchSubject(event)" style="display:flex;flex-direction:column;gap:12px;">
+    <input id="fetch-id" placeholder="Bangumi 动画 ID，如 51" required
+           style="padding:10px 12px;border-radius:8px;border:1px solid #3f3f46;background:#0f0f13;color:#e4e4e7;font-size:14px;" />
+    <input id="batch-ids" placeholder="批量：51, 288, 9717"
+           style="padding:10px 12px;border-radius:8px;border:1px solid #3f3f46;background:#0f0f13;color:#e4e4e7;font-size:14px;" />
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
+      <wa-button variant="default" type="button" onclick="document.getElementById('fetch-dialog').close()">取消</wa-button>
+      <wa-button variant="brand" type="submit">拉取</wa-button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+// Load subjects list
+async function loadSubjects(url) {
+  const res = await fetch('/api/v1' + (url || '/subjects'));
+  const data = await res.json();
+  renderGrid(data.data || []);
+}
+
+function navigate(url) {
+  history.pushState({}, '', '#' + url);
+  loadSubjects(url);
+}
+
+// Render card grid
+function renderGrid(subjects) {
+  const grid = document.getElementById('grid');
+  if (!subjects.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:#52525b;">暂无数据</div>';
+    return;
+  }
+  grid.innerHTML = subjects.map(s => `
+    <div class="card" onclick="viewSubject(${s.id})">
+      <img src="${s.image_path ? '/api/v1/images/' + s.image_path.replace('images/','') : ''}" loading="lazy" onerror="this.style.display='none'" />
+      <div class="meta">
+        <div class="title">${s.name_cn || s.name}</div>
+        <div class="sub">${s.platform} ${s.date || ''} ${s.score ? '★'+s.score : ''}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function fetchSubject(e) {
+  e.preventDefault();
+  const id = document.getElementById('fetch-id').value.trim();
+  const batch = document.getElementById('batch-ids').value.trim();
+  const ids = batch ? batch.split(',').map(s => s.trim()).filter(Boolean) : (id ? [id] : []);
+
+  document.getElementById('fetch-dialog').close();
+
+  for (const sid of ids) {
+    const res = await fetch('/api/v1/subjects/fetch', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: parseInt(sid)}) });
+    const data = await res.json();
+    if (data.data?.task_id) startSSE(data.data.task_id);
+  }
+}
+
+// SSE progress
+function startSSE(taskId) {
+  const bar = document.getElementById('progress');
+  bar.style.display = 'block';
+  const fill = document.getElementById('progress-fill');
+  const text = document.getElementById('progress-text');
+
+  const evtSource = new EventSource('/api/v1/tasks/' + taskId + '/events');
+  evtSource.onmessage = function(e) {
+    const d = JSON.parse(e.data);
+    if (d.step === 'complete') {
+      fill.style.width = '100%';
+      text.textContent = '完成！';
+      setTimeout(() => { bar.style.display = 'none'; evtSource.close(); loadSubjects(); }, 1500);
+    } else if (d.done !== undefined && d.total) {
+      const pct = Math.round(d.done/d.total*100);
+      fill.style.width = pct + '%';
+      text.textContent = d.step + ': ' + d.done + '/' + d.total;
+    } else {
+      text.textContent = d.step + ': ' + (d.status || '...');
+    }
+  };
+  evtSource.onerror = () => setTimeout(() => evtSource.close(), 3000);
+}
+
+// View subject detail
+function viewSubject(id) {
+  alert('Subject #' + id + ' — 详情页待实现');
+}
+
+// Initial load
+loadSubjects();
+</script>
+</body>
 </html>

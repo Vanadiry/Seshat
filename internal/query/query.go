@@ -20,7 +20,7 @@ func (q *Queries) ListSubjects(search, tag, platform, year string, page, limit i
 		page = 1
 	}
 	offset := (page - 1) * limit
-	var conds []string
+	conds := []string{"stub = 0"}
 	var args []any
 	if search != "" {
 		conds = append(conds, "(name LIKE ? OR name_cn LIKE ? OR summary LIKE ?)")
@@ -39,10 +39,7 @@ func (q *Queries) ListSubjects(search, tag, platform, year string, page, limit i
 		conds = append(conds, "date LIKE ?")
 		args = append(args, year+"%")
 	}
-	where := ""
-	if len(conds) > 0 {
-		where = " WHERE " + strings.Join(conds, " AND ")
-	}
+	where := " WHERE " + strings.Join(conds, " AND ")
 	var total int
 	if err := q.DB.QueryRow("SELECT COUNT(*) FROM subject"+where, args...).Scan(&total); err != nil {
 		return nil, 0, err

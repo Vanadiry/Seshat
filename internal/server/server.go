@@ -56,6 +56,9 @@ func New(h *handler.Handler, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v1/tags/{name}/subjects", h.GetTagSubjects)
 	mux.HandleFunc("GET /api/v1/tasks/{id}/events", h.TaskEvents)
 
+	// 图片（从磁盘 images/ 目录）
+	mux.Handle("GET /api/v1/images/", handler.ImageFS(h.DataDir))
+
 	return withLogging(withCORS(mux))
 }
 

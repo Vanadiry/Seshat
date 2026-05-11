@@ -57,6 +57,7 @@ var migrations = []string{
 		collect_count INTEGER DEFAULT 0, doing_count INTEGER DEFAULT 0,
 		on_hold_count INTEGER DEFAULT 0, dropped_count INTEGER DEFAULT 0,
 		image_path TEXT NOT NULL DEFAULT '', image_grid_path TEXT NOT NULL DEFAULT '',
+		stub INTEGER NOT NULL DEFAULT 0,
 		infobox TEXT NOT NULL DEFAULT '[]',
 		created_at TEXT NOT NULL DEFAULT (datetime('now')),
 		updated_at TEXT NOT NULL DEFAULT (datetime('now')))`,
@@ -153,4 +154,5 @@ var additiveMigrations = []string{
 	"ALTER TABLE subject ADD COLUMN image_grid_path TEXT NOT NULL DEFAULT ''",
 	"ALTER TABLE character ADD COLUMN image_grid_path TEXT NOT NULL DEFAULT ''",
 	"ALTER TABLE person ADD COLUMN image_grid_path TEXT NOT NULL DEFAULT ''",
+	"ALTER TABLE subject ADD COLUMN stub INTEGER NOT NULL DEFAULT 0",
 }

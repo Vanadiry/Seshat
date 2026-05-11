@@ -23,8 +23,8 @@ func UpsertSubject(tx *sql.Tx, id int, name, nameCN, summary, date, platform str
 	_, err := tx.Exec(`INSERT OR REPLACE INTO subject
 		(id, type, name, name_cn, summary, date, platform, eps, total_episodes, volumes, series, locked, nsfw,
 		 score, rank, rating_total, wish_count, collect_count, doing_count, on_hold_count, dropped_count,
-		 image_path, image_grid_path, infobox, updated_at)
-		VALUES (?1,2,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,'',?22,datetime('now'))`,
+		 image_path, image_grid_path, stub, infobox, updated_at)
+		VALUES (?1,2,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,'',0,?22,datetime('now'))`,
 		id, name, nameCN, summary, date, platform, eps, totalEpisodes, volumes, boolInt(series), boolInt(locked), boolInt(nsfw),
 		score, rank, ratingTotal, wish, collect, doing, onHold, dropped, imagePath, infobox)
 	return err
@@ -99,7 +99,7 @@ func UpsertEpisode(tx *sql.Tx, id, subjectID, etype int, sort, ep float64,
 }
 
 func EnsureSubjectStub(tx *sql.Tx, id int, name, nameCN string) error {
-	_, err := tx.Exec("INSERT OR IGNORE INTO subject (id, type, name, name_cn) VALUES (?,2,?,?)", id, name, nameCN)
+	_, err := tx.Exec("INSERT OR IGNORE INTO subject (id, type, name, name_cn, stub) VALUES (?,2,?,?,1)", id, name, nameCN)
 	return err
 }
 
