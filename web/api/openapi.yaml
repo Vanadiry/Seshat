@@ -14,6 +14,7 @@ tags:
   - name: 搜索
   - name: 拉取
   - name: Tracker
+  - name: ELO
   - name: 用户
 
 paths:
@@ -166,6 +167,48 @@ paths:
                 items:
                   $ref: "#/components/schemas/SubjectListItem"
 
+  # ── ELO ──
+  /api/v1/elo/pair:
+    get:
+      tags: [ELO]
+      summary: 获取一对随机动画用于比较
+      responses:
+        "200":
+          description: 两部动画的基本信息
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ELOEntry"
+  /api/v1/elo/compare:
+    post:
+      tags: [ELO]
+      summary: 提交比较结果
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                winner: { type: integer, example: 51 }
+                loser: { type: integer, example: 288 }
+      responses:
+        "200": { description: OK }
+  /api/v1/elo/ranking:
+    get:
+      tags: [ELO]
+      summary: ELO 排名
+      responses:
+        "200":
+          description: 按 ELO 分数降序排列
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ELOEntry"
+
   # ── 搜索 ──
   /api/v1/search:
     get:
@@ -210,53 +253,79 @@ paths:
   /api/v1/fetch/subject:
     post:
       tags: [拉取]
-      summary: 拉取单个动画
-      description: 从 Bangumi API 拉取一部动画的全部数据（详情、角色、制作成员、剧集、关联条目、图片），缓存到本地。自动记录到 _seshat.json。返回 task_id 用于订阅进度。
+      summary: 单个或批量拉取动画
+      description: |
+        从 Bangumi API 拉取动画的全部数据并缓存到本地。
+        支持两种方式：
+        - `{"id": 51}` 拉取单个
+        - `{"ids": [51, 288, 9717]}` 批量拉取
+        自动记录到 `_seshat.json`，返回 `task_id` 用于订阅实时进度。
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [id]
               properties:
-                id: { type: integer, example: 51 }
+                id: { type: integer, example: 51, description: 单个动画 ID }
+                ids: { type: array, items: { type: integer }, example: [51, 288, 9717], description: 多个动画 ID }
+            examples:
+              single:
+                value: { id: 51 }
+              batch:
+                value: { ids: [51, 288, 9717] }
       responses:
         "200":
-          description: 拉取已开始，返回 task_id
+          description: 拉取已开始
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   status: { type: string, example: "fetching" }
-                  id: { type: integer, example: 51 }
-                  task_id: { type: string, example: "5df0d34e", description: "用于 GET /api/v1/progress/{task_id}" }
+                  count: { type: integer, example: 2 }
+                  task_id: { type: string, example: "ae8687f0", description: "用于 GET /api/v1/progress/{task_id}" }
   /api/v1/fetch:
     post:
       tags: [拉取]
       summary: 刷新全部 Tracker
-      description: 扫描 Tracker 目录下所有列表，拉取其中全部 subject 数据。
+      description: 扫描 Tracker 目录下所有列表，拉取全部 subject 数据。返回 task_id。
       responses:
-        "200": { description: 后台执行 }
+        "200":
+          description: 后台执行
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  task_id: { type: string, example: "ae8687f0" }
   /api/v1/fetch/deep:
     post:
       tags: [拉取]
       summary: 深度重建
-      description: 清空所有缓存（api、images、tags、index），然后重新拉取全部 Tracker 数据。
+      description: 清空所有缓存（api、images、tags、index），重新拉取全部 Tracker 数据。返回 task_id。
       responses:
-        "200": { description: 后台执行 }
+        "200":
+          description: 后台执行
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  task_id: { type: string, example: "ae8687f0" }
   /api/v1/progress/{task_id}:
     get:
       tags: [拉取]
-      summary: 获取拉取进度｜SSE
-      description: 实时推送拉取进度，包含阶段、完成数、速度等信息。
+      summary: 拉取进度｜SSE
+      description: 实时推送拉取进度（阶段、完成数/总数、下载速度）。前端可用 EventSource 订阅。
       parameters:
         - name: task_id
           in: path
           required: true
           schema: { type: string }
-          example: "5df0d34e"
+          example: "ae8687f0"
       responses:
         "200":
           description: text/event-stream 流式进度
@@ -265,8 +334,9 @@ paths:
               schema:
                 type: string
                 example: |
+                  data: {"step":"subject","done":0,"total":1,"speed":"0.0/s","status":"fetching"}
                   data: {"step":"characters","done":21,"total":39,"speed":"2.7/s","status":""}
-                  data: {"step":"complete","done":1,"total":1,"speed":"0.0/s","status":""}
+                  data: {"step":"complete","done":2,"total":2,"speed":"0.0/s","status":""}
 
   # ── Tracker ──
   /api/v1/tracker:
@@ -284,8 +354,9 @@ paths:
                   $ref: "#/components/schemas/TrackerItem"
   /api/v1/fetch/tracker:
     post:
-      tags: [Tracker]
-      summary: 按名称刷新 Tracker
+      tags: [拉取]
+      summary: 按名称刷新指定 Tracker
+      description: 传入 Tracker 名称数组，刷新其中的全部 subject。返回 task_id。
       requestBody:
         content:
           application/json:
@@ -294,7 +365,33 @@ paths:
               properties:
                 names: { type: array, items: { type: string }, example: ["seshat", "user"] }
       responses:
-        "200": { description: 后台执行 }
+        "200":
+          description: 后台执行
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  names: { type: array, items: { type: string } }
+                  task_id: { type: string, example: "ae8687f0" }
+  /api/v1/tracker/create:
+    post:
+      tags: [Tracker]
+      summary: 创建空 Tracker
+      description: 创建一个指定名称的空 `.toml` Tracker 文件，用户手动填入 ID。
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, example: "kyoani" }
+      responses:
+        "200":
+          description: 创建成功
+        "409":
+          description: Tracker 已存在
 
   # ── 用户 ──
   /api/v1/user/profile:
@@ -310,12 +407,20 @@ paths:
                 $ref: "#/components/schemas/User"
   /api/v1/fetch/user:
     post:
-      tags: [用户]
+      tags: [拉取]
       summary: 拉取用户收藏
-      description: 从 config 读取 username，逐页拉取该用户的动画收藏并缓存。
+      description: 从 config 读取 username，逐页拉取该用户的动画收藏。返回 task_id。
       responses:
-        "200": { description: 后台执行 }
-
+        "200":
+          description: 后台执行
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  username: { type: string }
+                  task_id: { type: string, example: "ae8687f0" }
 
 components:
   responses:
@@ -493,6 +598,15 @@ components:
         characters: { type: array, items: { type: object } }
         persons: { type: array, items: { type: object } }
         tags: { type: array, items: { type: object } }
+
+    ELOEntry:
+      type: object
+      properties:
+        id: { type: integer, example: 51 }
+        name: { type: string, example: "CLANNAD" }
+        name_cn: { type: string, example: "CLANNAD" }
+        score: { type: number, example: 8.4 }
+        rating: { type: number, example: 1516.0 }
 
     TrackerItem:
       type: object

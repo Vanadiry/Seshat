@@ -306,6 +306,34 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		writeJSON(w, subjects)
 	})
 
+	// ── ELO ──
+	mux.HandleFunc("GET /api/v1/elo/pair", func(w http.ResponseWriter, r *http.Request) {
+		pair := getELOPair(dd)
+		if pair == nil {
+			writeJSON(w, map[string]string{"error": "need at least 2 cached subjects"})
+			return
+		}
+		writeJSON(w, pair)
+	})
+
+	mux.HandleFunc("POST /api/v1/elo/compare", func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Winner int `json:"winner"`
+			Loser  int `json:"loser"`
+		}
+		json.NewDecoder(r.Body).Decode(&req)
+		if req.Winner == 0 || req.Loser == 0 {
+			http.Error(w, `{"error":"winner and loser required"}`, 400)
+			return
+		}
+		updateELO(dd, req.Winner, req.Loser)
+		writeJSON(w, map[string]string{"status": "ok"})
+	})
+
+	mux.HandleFunc("GET /api/v1/elo/ranking", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, getELORanking(dd))
+	})
+
 	// ── Search ──
 	mux.HandleFunc("GET /api/v1/search", func(w http.ResponseWriter, r *http.Request) {
 		q := strings.ToLower(r.URL.Query().Get("q"))
