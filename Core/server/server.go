@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/vanadiry/seshat/Core/bangumi"
@@ -18,7 +19,10 @@ import (
 	"github.com/vanadiry/seshat/Core/log"
 )
 
+var maxConcurrency = 32
+
 func New(cfg *config.Config, embedFS fs.FS) http.Handler {
+	maxConcurrency = maxConcurrency
 	mux := http.NewServeMux()
 	dd := cfg.DataDir()
 	id := filepath.Join(dd, "images")
@@ -393,55 +397,43 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	log.Info("Fetching subject #%d", sid)
 
-	// Estimate: 1 subject + chars list + persons list + each char detail + each person detail + eps + rels
-	stage := "subject"
-	p.Send(stage, 0, 1, "fetching")
-
 	// Subject
+	if p != nil { p.Send("subject", 0, 1, "fetching") }
 	if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d", sid)); err == nil {
 		cache.Put(dd, "subjects/"+fmt.Sprintf("%d", sid)+".json", cache.ReplaceImageURLs(data))
 		cache.ProcessImages(data, imgDir)
 	}
-	p.Send(stage, 1, 1, "done")
+	if p != nil { p.Send("subject", 1, 1, "done") }
 
-	// Subject
-	if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d", sid)); err == nil {
-		cache.Put(dd, "subjects/"+fmt.Sprintf("%d", sid)+".json", cache.ReplaceImageURLs(data))
-		cache.ProcessImages(data, imgDir)
-	}
-
-	// Characters list + individual details
+	// Characters list
 	if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/characters", sid)); err == nil {
 		cache.Put(dd, fmt.Sprintf("subjects/%d/characters.json", sid), cache.ReplaceImageURLs(data))
 		cache.ProcessImages(data, imgDir)
-		// Fetch each character's detail page
-		var chars []struct{ ID int `json:"id"` }
+		type charRef struct{ ID int `json:"id"` }
+		var chars []charRef
 		if json.Unmarshal(data, &chars) == nil {
-			if p != nil { p.Send("characters", 0, len(chars), "fetching") }
-			for i, c := range chars {
+			fetchConcurrent(chars, func(c charRef) {
 				if cdata, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID)); err == nil {
 					cache.Put(dd, fmt.Sprintf("characters/%d.json", c.ID), cache.ReplaceImageURLs(cdata))
 					cache.ProcessImages(cdata, imgDir)
 				}
-				if p != nil { p.Send("characters", i+1, len(chars), "") }
-			}
+			}, p, "characters", maxConcurrency)
 		}
 	}
 
-	// Persons list + individual details
+	// Persons list
 	if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/persons", sid)); err == nil {
 		cache.Put(dd, fmt.Sprintf("subjects/%d/persons.json", sid), cache.ReplaceImageURLs(data))
 		cache.ProcessImages(data, imgDir)
-		var persons []struct{ ID int `json:"id"` }
+		type personRef struct{ ID int `json:"id"` }
+		var persons []personRef
 		if json.Unmarshal(data, &persons) == nil {
-			if p != nil { p.Send("persons", 0, len(persons), "fetching") }
-			for i, pp := range persons {
+			fetchConcurrent(persons, func(pp personRef) {
 				if pdata, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID)); err == nil {
-					cache.Put(dd, fmt.Sprintf("persons/%d.json", p.ID), cache.ReplaceImageURLs(pdata))
+					cache.Put(dd, fmt.Sprintf("persons/%d.json", pp.ID), cache.ReplaceImageURLs(pdata))
 					cache.ProcessImages(pdata, imgDir)
 				}
-				if p != nil { p.Send("persons", i+1, len(persons), "") }
-			}
+			}, p, "persons", maxConcurrency)
 		}
 	}
 
@@ -900,6 +892,39 @@ func loadTrackerIDs(path string) []int {
 		}
 	}
 	return ids
+}
+
+// fetchConcurrent 并发拉取，使用 semaphore 控制并发数。
+func fetchConcurrent[T any](items []T, fn func(T), p *Progress, stage string, concurrency int) {
+	if len(items) == 0 {
+		return
+	}
+	if concurrency < 1 {
+		concurrency = 32
+	}
+	if p != nil {
+		p.Send(stage, 0, len(items), "fetching")
+	}
+	sem := make(chan struct{}, concurrency)
+	var wg sync.WaitGroup
+	var done int
+	var mu sync.Mutex
+	for _, item := range items {
+		wg.Add(1)
+		go func(item T) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			fn(item)
+			if p != nil {
+				mu.Lock()
+				done++
+				p.Send(stage, done, len(items), "")
+				mu.Unlock()
+			}
+		}(item)
+	}
+	wg.Wait()
 }
 
 // ── Helpers ──
