@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	stdlog "log"
 	"net/http"
 	"os"
 
@@ -11,6 +11,7 @@ import (
 	"github.com/vanadiry/seshat/internal/db"
 	"github.com/vanadiry/seshat/internal/fetch"
 	"github.com/vanadiry/seshat/internal/handler"
+	"github.com/vanadiry/seshat/internal/log"
 	"github.com/vanadiry/seshat/internal/query"
 	"github.com/vanadiry/seshat/internal/server"
 	"github.com/vanadiry/seshat/internal/task"
@@ -19,19 +20,23 @@ import (
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("config: %v", err)
+		stdlog.Fatalf("config: %v", err)
 	}
 
 	dataDir := cfg.DataDir()
 	if err := os.MkdirAll(dataDir, 0o755); err != nil {
-		log.Fatalf("create data dir %s: %v", dataDir, err)
+		stdlog.Fatalf("create data dir %s: %v", dataDir, err)
 	}
+
+	log.Init(dataDir)
+	log.Info("Starting Seshat...")
 
 	database, err := db.Open(fmt.Sprintf("%s/seshat.db", dataDir))
 	if err != nil {
-		log.Fatalf("main db: %v", err)
+		stdlog.Fatalf("main db: %v", err)
 	}
 	defer database.Close()
+	log.Info("Database connected")
 
 	bgClient := bangumi.NewClient("Seshat/Test")
 
@@ -48,11 +53,11 @@ func main() {
 		Config:  cfg,
 		Fetch:   fetchSvc,
 	}
-	router := server.New(h)
+	router := server.New(h, webFS)
 
 	addr := fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.Port)
-	log.Printf("seshatd 已启动，监听 http://%s (数据目录: %s)", addr, dataDir)
+	log.Info("Listening on http://%s (data: %s)", addr, dataDir)
 	if err := http.ListenAndServe(addr, router); err != nil {
-		log.Fatal(err)
+		stdlog.Fatal(err)
 	}
 }

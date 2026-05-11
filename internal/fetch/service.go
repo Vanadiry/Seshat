@@ -8,6 +8,7 @@ import (
 
 	"github.com/vanadiry/seshat/internal/bangumi"
 	"github.com/vanadiry/seshat/internal/db"
+	"github.com/vanadiry/seshat/internal/log"
 	"github.com/vanadiry/seshat/internal/task"
 )
 
@@ -26,6 +27,7 @@ func (s *Service) FetchSubject(t *task.Task) {
 		concurrency = 32
 	}
 
+	log.Info("Fetching subject #%d", t.SubjectID)
 	t.Send(`{"step":"subject","status":"fetching"}`)
 	subj, err := s.Client.GetSubject(t.SubjectID)
 	if err != nil {
@@ -50,10 +52,12 @@ func (s *Service) FetchSubject(t *task.Task) {
 	tx.Commit()
 
 	chars, _ := s.Client.GetSubjectCharacters(t.SubjectID)
+	log.Info("  characters: %d", len(chars))
 	t.Send(fmt.Sprintf(`{"step":"characters","done":0,"total":%d}`, len(chars)))
 	s.pipeChars(t.SubjectID, chars, concurrency, t)
 
 	persons, _ := s.Client.GetSubjectPersons(t.SubjectID)
+	log.Info("  persons: %d", len(persons))
 	t.Send(fmt.Sprintf(`{"step":"persons","done":0,"total":%d}`, len(persons)))
 	s.pipePersons(t.SubjectID, persons, concurrency, t)
 
@@ -74,6 +78,7 @@ func (s *Service) FetchSubject(t *task.Task) {
 	}
 	t.Send(`{"step":"image","status":"done"}`)
 
+	log.Info("Subject #%d fetch complete", t.SubjectID)
 	t.Status = task.StatusComplete
 	t.Send(`{"step":"complete"}`)
 	t.Close()
