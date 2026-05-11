@@ -15,12 +15,10 @@ import (
 func New(h *handler.Handler, embedFS fs.FS) http.Handler {
 	mux := http.NewServeMux()
 
-	// 静态页面（从 embed.FS 中读取，打包进二进制）
+	// 静态资源（从 embed.FS，打包进二进制）
+	mux.Handle("GET /web/", http.FileServer(http.FS(embedFS)))
 	mux.HandleFunc("GET /doc/api", serveFile(embedFS, "web/doc_api.html", "text/html"))
 	mux.HandleFunc("GET /api/v1/openapi.yaml", serveFile(embedFS, "web/openapi.yaml", "application/yaml"))
-
-	// 公开静态资源
-	mux.Handle("GET /public/", http.StripPrefix("/public/", http.FileServer(http.Dir("public"))))
 
 	// 文档文件（从磁盘 doc/ 目录）
 	mux.Handle("GET /doc/", http.StripPrefix("/doc/", http.FileServer(http.Dir("doc"))))
