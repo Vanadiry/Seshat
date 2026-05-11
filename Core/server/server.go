@@ -30,6 +30,10 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 			http.NotFound(w, r)
 			return
 		}
+		if embedFS == nil {
+			http.Error(w, "frontend not embedded", http.StatusInternalServerError)
+			return
+		}
 		http.ServeFileFS(w, r, embedFS, "web/index.html")
 	})
 
@@ -874,6 +878,10 @@ func loadTrackerIDs(path string) []int {
 
 func serveFile(fsys fs.FS, path, contentType string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if fsys == nil {
+			http.Error(w, "not available", http.StatusInternalServerError)
+			return
+		}
 		w.Header().Set("Content-Type", contentType)
 		data, err := fs.ReadFile(fsys, path)
 		if err != nil {
