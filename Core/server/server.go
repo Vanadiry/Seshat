@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"net/http"
 	"sort"
+	"strconv"
 	"os"
 	"path/filepath"
 	"strings"
@@ -67,42 +68,13 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 
 	// ── Cache API ──
 	mux.HandleFunc("GET /api/v1/subjects", func(w http.ResponseWriter, r *http.Request) {
-		keys, _ := cache.List(dd, "subjects")
-		type item struct {
-			ID       int     `json:"id"`
-			Name     string  `json:"name"`
-			NameCN   string  `json:"name_cn"`
-			Score    float64 `json:"score"`
-			Platform string  `json:"platform"`
-			Date     string  `json:"date"`
-			Image    string  `json:"image"`
+		data, err := os.ReadFile(cache.IndexFile(dd, "subjects_list.json"))
+		if err != nil {
+			writeJSON(w, []any{})
+			return
 		}
-		var list []item
-		for _, k := range keys {
-			data, err := cache.Get(dd, "subjects/"+k+".json")
-			if err != nil {
-				continue
-			}
-			var s struct {
-				ID       int    `json:"id"`
-				Name     string `json:"name"`
-				NameCN   string `json:"name_cn"`
-				Rating   struct {
-					Score float64 `json:"score"`
-				} `json:"rating"`
-				Platform string `json:"platform"`
-				Date     string `json:"date"`
-				Images   struct {
-					Grid string `json:"grid"`
-				} `json:"images"`
-			}
-			json.Unmarshal(data, &s)
-			list = append(list, item{
-				ID: s.ID, Name: s.Name, NameCN: s.NameCN,
-				Score: s.Rating.Score, Platform: s.Platform, Date: s.Date,
-				Image: s.Images.Grid,
-			})
-		}
+		var list []cache.SubjectSummary
+		json.Unmarshal(data, &list)
 		writeJSON(w, list)
 	})
 
@@ -193,8 +165,10 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 			for _, sid := range ids {
 				fetchAll(sid, bg, dd, id, p)
 			}
-			rebuildTags(dd)
-			rebuildIndexes(dd)
+			p.Send("phase", 2, 3, "building indexes")
+			buildIndexes(dd, p)
+			p.Send("phase", 3, 3, "downloading images")
+			downloadImages(dd, bg, p)
 			p.Send("complete", len(ids), len(ids), "")
 			p.Close()
 		}()
@@ -390,24 +364,39 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 
 	// ── Images ──
+	// ── Image API (official Bangumi-style endpoints) ──
+	mux.HandleFunc("GET /images/subject/{id}", func(w http.ResponseWriter, r *http.Request) {
+		serveImage(w, r, dd, "subject", r.URL.Query().Get("type"))
+	})
+	mux.HandleFunc("GET /images/character/{id}", func(w http.ResponseWriter, r *http.Request) {
+		serveImage(w, r, dd, "character", r.URL.Query().Get("type"))
+	})
+	mux.HandleFunc("GET /images/person/{id}", func(w http.ResponseWriter, r *http.Request) {
+		serveImage(w, r, dd, "person", r.URL.Query().Get("type"))
+	})
+	// Legacy image path
 	mux.Handle("GET /images/", http.StripPrefix("/images/", http.FileServer(http.Dir(id))))
 
 	return withLogging(withCORS(mux))
 }
 
 // fetchAll 拉取动画的所有数据及关联角色/人物/图片。
+// Phase 1: Fetch API JSON data (strip images).
 func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	log.Info("Fetching subject #%d", sid)
 
-	// Subject
+	// Subject (404 is reported for user-specified subjects)
 	if p != nil { p.Send("subject", 0, 1, "fetching") }
-	if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d", sid)); err == nil {
-		cache.Put(dd, "subjects/"+fmt.Sprintf("%d", sid)+".json", cache.ReplaceImageURLs(data))
-		cache.ProcessImages(data, imgDir)
+	data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d", sid))
+	if err != nil {
+		log.Warn("Subject #%d: %v", sid, err)
+		if p != nil { p.Send("subject", 1, 1, "error") }
+		return
 	}
+	cache.Put(dd, fmt.Sprintf("subjects/%d.json", sid), cache.StripImages(data))
 	if p != nil { p.Send("subject", 1, 1, "done") }
 
-	// Fetch chars + persons lists in parallel, then their details concurrently
+	// Characters list + details
 	type charRef struct{ ID int `json:"id"` }
 	type personRef struct{ ID int `json:"id"` }
 	var chars []charRef
@@ -418,8 +407,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	go func() {
 		defer wg.Done()
 		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/characters", sid)); err == nil {
-			cache.Put(dd, fmt.Sprintf("subjects/%d/characters.json", sid), cache.ReplaceImageURLs(data))
-			cache.ProcessImages(data, imgDir)
+			cache.Put(dd, fmt.Sprintf("subjects/%d/characters.json", sid), cache.StripImages(data))
 			json.Unmarshal(data, &chars)
 		}
 	}()
@@ -428,22 +416,19 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	go func() {
 		defer wg.Done()
 		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/persons", sid)); err == nil {
-			cache.Put(dd, fmt.Sprintf("subjects/%d/persons.json", sid), cache.ReplaceImageURLs(data))
-			cache.ProcessImages(data, imgDir)
+			cache.Put(dd, fmt.Sprintf("subjects/%d/persons.json", sid), cache.StripImages(data))
 			json.Unmarshal(data, &persons)
 		}
 	}()
 	wg.Wait()
 
-	// Fetch details concurrently (chars and persons interleaved)
 	var wg2 sync.WaitGroup
 	wg2.Add(1)
 	go func() {
 		defer wg2.Done()
 		fetchConcurrent(chars, func(c charRef) {
 			if cdata, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID)); err == nil {
-				cache.Put(dd, fmt.Sprintf("characters/%d.json", c.ID), cache.ReplaceImageURLs(cdata))
-				cache.ProcessImages(cdata, imgDir)
+				cache.Put(dd, fmt.Sprintf("characters/%d.json", c.ID), cache.StripImages(cdata))
 			}
 		}, p, "characters", maxConcurrency)
 	}()
@@ -452,8 +437,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		defer wg2.Done()
 		fetchConcurrent(persons, func(pp personRef) {
 			if pdata, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID)); err == nil {
-				cache.Put(dd, fmt.Sprintf("persons/%d.json", pp.ID), cache.ReplaceImageURLs(pdata))
-				cache.ProcessImages(pdata, imgDir)
+				cache.Put(dd, fmt.Sprintf("persons/%d.json", pp.ID), cache.StripImages(pdata))
 			}
 		}, p, "persons", maxConcurrency)
 	}()
@@ -461,16 +445,171 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 
 	// Episodes
 	if data, err := bg.GetRaw(fmt.Sprintf("v0/episodes?subject_id=%d&limit=200", sid)); err == nil {
-		cache.Put(dd, fmt.Sprintf("subjects/%d/episodes.json", sid), cache.ReplaceImageURLs(data))
+		cache.Put(dd, fmt.Sprintf("subjects/%d/episodes.json", sid), cache.StripImages(data))
 	}
 
 	// Relations
 	if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/subjects", sid)); err == nil {
-		cache.Put(dd, fmt.Sprintf("subjects/%d/relations.json", sid), cache.ReplaceImageURLs(data))
-		cache.ProcessImages(data, imgDir)
+		cache.Put(dd, fmt.Sprintf("subjects/%d/relations.json", sid), cache.StripImages(data))
 	}
 
-	log.Info("Subject #%d fetch done", sid)
+	log.Info("Subject #%d API fetch done", sid)
+}
+
+// Phase 2: Build index files from all cached API data.
+func buildIndexes(dd string, p *Progress) {
+	log.Info("Building indexes...")
+	os.MkdirAll(cache.IndexDir(dd), 0o755)
+
+	var subjects []cache.SubjectSummary
+	var chars []cache.NameEntry
+	var persons []cache.NameEntry
+	subjIndex := map[string][]any{}
+	charIndex := map[string][]any{}
+	persIndex := map[string][]any{}
+	tags := map[string]tagInfo{}
+
+	apiDir := cache.Dir(dd)
+
+	// Scan subjects
+	subjDir := filepath.Join(apiDir, "subjects")
+	if entries, _ := os.ReadDir(subjDir); len(entries) > 0 {
+		for _, e := range entries {
+			if !strings.HasSuffix(e.Name(), ".json") || strings.Contains(e.Name(), "/") {
+				continue
+			}
+			data, _ := os.ReadFile(filepath.Join(subjDir, e.Name()))
+			var s struct {
+				ID       int     `json:"id"`
+				Name     string  `json:"name"`
+				NameCN   string  `json:"name_cn"`
+				Rating   struct{ Score float64 `json:"score"` } `json:"rating"`
+				Platform string  `json:"platform"`
+				Date     string  `json:"date"`
+				Tags     []struct{
+					Name  string `json:"name"`
+					Count int    `json:"count"`
+				} `json:"tags"`
+			}
+			if json.Unmarshal(data, &s) == nil && s.ID > 0 {
+				subjects = append(subjects, cache.SubjectSummary{
+					ID: s.ID, Name: s.Name, NameCN: s.NameCN,
+					Score: s.Rating.Score, Platform: s.Platform, Date: s.Date,
+				})
+				subjIndex[s.Name] = []any{s.ID, s.NameCN}
+				if s.NameCN != "" && s.NameCN != s.Name {
+					subjIndex[s.NameCN] = []any{s.ID, s.Name}
+				}
+				for _, t := range s.Tags {
+					info := tags[t.Name]
+					info.Count++
+					info.Subjects = append(info.Subjects, s.ID)
+					tags[t.Name] = info
+				}
+			}
+		}
+	}
+
+	// Scan characters
+	charDir := filepath.Join(apiDir, "characters")
+	if entries, _ := os.ReadDir(charDir); len(entries) > 0 {
+		for _, e := range entries {
+			if !strings.HasSuffix(e.Name(), ".json") { continue }
+			data, _ := os.ReadFile(filepath.Join(charDir, e.Name()))
+			var c struct{ ID int `json:"id"`; Name string `json:"name"` }
+			if json.Unmarshal(data, &c) == nil && c.ID > 0 {
+				chars = append(chars, cache.NameEntry{ID: c.ID, Name: c.Name})
+				charIndex[c.Name] = []any{c.ID, c.Name}
+			}
+		}
+	}
+
+	// Scan persons
+	persDir := filepath.Join(apiDir, "persons")
+	if entries, _ := os.ReadDir(persDir); len(entries) > 0 {
+		for _, e := range entries {
+			if !strings.HasSuffix(e.Name(), ".json") { continue }
+			data, _ := os.ReadFile(filepath.Join(persDir, e.Name()))
+			var p struct{ ID int `json:"id"`; Name string `json:"name"` }
+			if json.Unmarshal(data, &p) == nil && p.ID > 0 {
+				persons = append(persons, cache.NameEntry{ID: p.ID, Name: p.Name})
+				persIndex[p.Name] = []any{p.ID, p.Name}
+			}
+		}
+	}
+
+	saveJSON(cache.IndexFile(dd, "subjects_list.json"), subjects)
+	saveJSON(cache.IndexFile(dd, "characters_list.json"), chars)
+	saveJSON(cache.IndexFile(dd, "persons_list.json"), persons)
+	saveJSON(cache.IndexFile(dd, "subjects_index.json"), subjIndex)
+	saveJSON(cache.IndexFile(dd, "characters_index.json"), charIndex)
+	saveJSON(cache.IndexFile(dd, "persons_index.json"), persIndex)
+	saveJSON(filepath.Join(dd, "tags.json"), tags)
+
+	log.Info("Indexes built: %d subjects, %d chars, %d persons, %d tags",
+		len(subjects), len(chars), len(persons), len(tags))
+}
+
+// Phase 3: Download images via official endpoints.
+func downloadImages(dd string, bg *bangumi.Client, p *Progress) {
+	log.Info("Downloading images...")
+	os.MkdirAll(cache.IndexDir(dd), 0o755)
+
+	subjImg := loadImageIndex(dd, "subjects_image.json")
+	charImg := loadImageIndex(dd, "characters_image.json")
+	persImg := loadImageIndex(dd, "persons_image.json")
+	imgBase := filepath.Join(dd, "images")
+
+	// Subjects
+	subjList := loadNameList(cache.IndexFile(dd, "subjects_list.json"))
+	if p != nil { p.Send("images_subjects", 0, len(subjList), "downloading") }
+	for i, s := range subjList {
+		dlImage(bg, dd, "subject", s.ID, subjImg, imgBase)
+		if p != nil && i%5 == 0 { p.Send("images_subjects", i+1, len(subjList), "") }
+	}
+	saveJSON(cache.IndexFile(dd, "subjects_image.json"), subjImg)
+
+	// Characters
+	charList := loadNameList(cache.IndexFile(dd, "characters_list.json"))
+	if p != nil { p.Send("images_characters", 0, len(charList), "downloading") }
+	for i, c := range charList {
+		dlImage(bg, dd, "character", c.ID, charImg, imgBase)
+		if p != nil && i%10 == 0 { p.Send("images_characters", i+1, len(charList), "") }
+	}
+	saveJSON(cache.IndexFile(dd, "characters_image.json"), charImg)
+
+	// Persons
+	persList := loadNameList(cache.IndexFile(dd, "persons_list.json"))
+	if p != nil { p.Send("images_persons", 0, len(persList), "downloading") }
+	for i, per := range persList {
+		dlImage(bg, dd, "person", per.ID, persImg, imgBase)
+		if p != nil && i%10 == 0 { p.Send("images_persons", i+1, len(persList), "") }
+	}
+	saveJSON(cache.IndexFile(dd, "persons_image.json"), persImg)
+
+	log.Info("Images download complete")
+}
+
+func dlImage(bg *bangumi.Client, dd, kind string, id int, imgMap map[int]cache.ImageEntry, imgBase string) {
+	entry := imgMap[id]
+	for _, size := range []string{"large", "grid"} {
+		data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
+		if err != nil {
+			continue
+		}
+		relPath := fmt.Sprintf("%s_%s/%d/%d.jpg", kind, size, id%10, id)
+		fullPath := filepath.Join(imgBase, relPath)
+		os.MkdirAll(filepath.Dir(fullPath), 0o755)
+		os.WriteFile(fullPath, data, 0o644)
+		if size == "large" {
+			entry.Large = relPath
+		} else {
+			entry.Grid = relPath
+		}
+	}
+	if entry.Large != "" || entry.Grid != "" {
+		imgMap[id] = entry
+	}
 }
 
 // ── Search ──
@@ -854,8 +993,10 @@ func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 		}
 	}
 	log.Info("All trackers refreshed: %d subjects", len(seen))
-	rebuildTags(dd)
-	rebuildIndexes(dd)
+	buildIndexes(dd, p)
+	downloadImages(dd, bg, p)
+	buildIndexes(dd, nil)
+	downloadImages(dd, bg, nil)
 }
 
 // refreshTrackers 刷新指定的 tracker 列表。
@@ -884,8 +1025,10 @@ func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, 
 		if p != nil { p.Send("subjects", i+1, len(allIDs), "") }
 	}
 	log.Info("Trackers %v refreshed: %d subjects", names, len(seen))
-	rebuildTags(dd)
-	rebuildIndexes(dd)
+	buildIndexes(dd, p)
+	downloadImages(dd, bg, p)
+	buildIndexes(dd, nil)
+	downloadImages(dd, bg, nil)
 }
 
 // addToSeshatTracker 将用户手动添加的 subject ID 记录到 _seshat.json。
@@ -1004,6 +1147,58 @@ func serveFile(fsys fs.FS, path, contentType string) http.HandlerFunc {
 		}
 		w.Write(data)
 	}
+}
+
+
+func loadImageIndex(dd, name string) map[int]cache.ImageEntry {
+	data, err := os.ReadFile(cache.IndexFile(dd, name))
+	if err != nil {
+		return map[int]cache.ImageEntry{}
+	}
+	var m map[int]cache.ImageEntry
+	json.Unmarshal(data, &m)
+	if m == nil { m = map[int]cache.ImageEntry{} }
+	return m
+}
+
+func loadNameList(path string) []cache.NameEntry {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var list []cache.NameEntry
+	json.Unmarshal(data, &list)
+	return list
+}
+
+// (saveJSON already declared above)
+
+func serveImage(w http.ResponseWriter, r *http.Request, dd, kind, size string) {
+	if size == "" { size = "grid" }
+	idStr := r.PathValue("id")
+	imgFile := cache.IndexFile(dd, kind+"s_image.json")
+	data, err := os.ReadFile(imgFile)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	var images map[int]cache.ImageEntry
+	json.Unmarshal(data, &images)
+	id, _ := strconv.Atoi(idStr)
+	entry, ok := images[id]
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	path := entry.Large
+	if size == "grid" {
+		path = entry.Grid
+	}
+	if path == "" {
+		http.NotFound(w, r)
+		return
+	}
+	http.ServeFile(w, r, filepath.Join(dd, "images", path))
 }
 
 func writeJSON(w http.ResponseWriter, v any) {

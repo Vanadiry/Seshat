@@ -17,7 +17,7 @@ var logger *stdlog.Logger
 
 // Init 初始化日志系统，同时输出到控制台和 SESHAT_HOME/Logs/seshat_YYYYMMDD_HHMMSS.log。
 func Init(dataDir string) {
-	logDir := filepath.Join(dataDir, "Logs")
+	logDir := filepath.Join(dataDir, "logs")
 	os.MkdirAll(logDir, 0o755)
 
 	ts := time.Now().Format("20060102_150405")

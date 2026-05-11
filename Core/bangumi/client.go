@@ -21,6 +21,24 @@ func NewClient(ua, baseURL string) *Client {
 	return &Client{http: &http.Client{Timeout: 30 * time.Second}, ua: ua, baseURL: baseURL}
 }
 
+
+// GetImage downloads the actual image binary from an official image endpoint.
+// The Bangumi API returns a 302 redirect; Go's http.Client follows it automatically.
+func (c *Client) GetImage(urlPath string) ([]byte, error) {
+	url := fmt.Sprintf("%s/%s", c.baseURL, urlPath)
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Set("User-Agent", c.ua)
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+	return io.ReadAll(resp.Body)
+}
+
 // GetRaw fetches a raw API path and returns the response body.
 func (c *Client) GetRaw(urlPath string) ([]byte, error) {
 	url := fmt.Sprintf("%s/%s", c.baseURL, urlPath)
