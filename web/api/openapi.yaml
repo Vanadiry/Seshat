@@ -14,6 +14,7 @@ tags:
   - name: 搜索
   - name: 拉取
   - name: Tracker
+  - name: 图片
   - name: ELO
   - name: 用户
 
@@ -166,6 +167,38 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/SubjectListItem"
+
+  # ── 图片 ──
+  /images/subject/{id}:
+    get:
+      tags: [图片]
+      summary: 列出动画图片
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: type, in: query, schema: { type: string, enum: [large, grid], default: grid } }
+      responses:
+        "200": { description: 图片文件 }
+        "404": { description: 未缓存 }
+  /images/character/{id}:
+    get:
+      tags: [图片]
+      summary: 列出角色图片
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: type, in: query, schema: { type: string, enum: [large, grid], default: grid } }
+      responses:
+        "200": { description: 图片文件 }
+        "404": { description: 未缓存 }
+  /images/person/{id}:
+    get:
+      tags: [图片]
+      summary: 列出人物图片
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: type, in: query, schema: { type: string, enum: [large, grid], default: grid } }
+      responses:
+        "200": { description: 图片文件 }
+        "404": { description: 未缓存 }
 
   # ── ELO ──
   /api/v1/elo/pair:
