@@ -1,0 +1,501 @@
+openapi: "3.0.0"
+info:
+  title: Seshat API
+  description: 离线优先的 Bangumi 数据管理与浏览工具。所有数据从 Bangumi API 拉取并缓存本地，接口结构与官方 API 一致。
+  version: "0.1.0"
+servers:
+  - url: http://127.0.0.1:4000
+    description: 本地服务器
+tags:
+  - name: 动画
+  - name: 角色
+  - name: 制作成员
+  - name: 标签
+  - name: 搜索
+  - name: 拉取
+  - name: Tracker
+  - name: 用户
+
+paths:
+  # ── 动画 ──
+  /api/v1/subjects:
+    get:
+      tags: [动画]
+      summary: 列出已缓存动画列表
+      operationId: listSubjects
+      responses:
+        "200":
+          description: 动画列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubjectListItem"
+  /api/v1/subjects/{id}:
+    get:
+      tags: [动画]
+      summary: 列出动画详情
+      operationId: getSubject
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+          example: 51
+      responses:
+        "200":
+          description: 完整动画数据
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subject"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/subjects/{id}/characters:
+    get:
+      tags: [动画]
+      summary: 列出动画关联的角色
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 角色数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RelatedCharacter"
+  /api/v1/subjects/{id}/persons:
+    get:
+      tags: [动画]
+      summary: 列出动画关联的制作成员
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 制作成员数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RelatedPerson"
+  /api/v1/subjects/{id}/episodes:
+    get:
+      tags: [动画]
+      summary: 列出动画关联的剧集列表
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 剧集数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Episode"
+  /api/v1/subjects/{id}/relations:
+    get:
+      tags: [动画]
+      summary: 列出动画关联的条目
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 关联条目数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubjectRelation"
+
+  # ── 角色 ──
+  /api/v1/characters/{id}:
+    get:
+      tags: [角色]
+      summary: 列出角色详情
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 角色完整数据
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Character"
+
+  # ── 制作成员 ──
+  /api/v1/persons/{id}:
+    get:
+      tags: [制作成员]
+      summary: 列出制作成员详情
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 制作成员完整数据
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+
+  # ── 标签 ──
+  /api/v1/tags:
+    get:
+      tags: [标签]
+      summary: 列出标签列表
+      responses:
+        "200":
+          description: 标签数组（以数量降序）
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TagItem"
+  /api/v1/tags/{name}/subjects:
+    get:
+      tags: [标签]
+      summary: 列出标签下的动画
+      parameters: [{ name: name, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200":
+          description: 动画列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubjectListItem"
+
+  # ── 搜索 ──
+  /api/v1/search:
+    get:
+      tags: [搜索]
+      summary: 搜索
+      description: 通过预建索引搜索。type 可选 subjects, characters, persons, tags（逗号分隔）。
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string }, example: "CLANNAD" }
+        - { name: type, in: query, schema: { type: string, default: "subjects,characters,persons,tags" } }
+      responses:
+        "200":
+          description: 分类搜索结果
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResult"
+  /api/v1/search/deep:
+    post:
+      tags: [搜索]
+      summary: 深度搜索｜SSE
+      description: 扫描全部 JSON 文件全文搜索，结果通过 SSE 实时推送。
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                q: { type: string, example: "CLANNAD" }
+                type: { type: string, default: "subjects,characters,persons", example: "subjects" }
+      responses:
+        "200":
+          description: text/event-stream 流式结果
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: |
+                  data: {"type":"subjects","id":51,"name":"CLANNAD"}
+                  data: {"step":"complete","total":1}
+
+  # ── 拉取 ──
+  /api/v1/fetch/subject:
+    post:
+      tags: [拉取]
+      summary: 拉取单个动画
+      description: 从 Bangumi API 拉取一部动画的全部数据（详情、角色、制作成员、剧集、关联条目、图片），缓存到本地。自动记录到 _seshat.json。返回 task_id 用于订阅进度。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: integer, example: 51 }
+      responses:
+        "200":
+          description: 拉取已开始，返回 task_id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "fetching" }
+                  id: { type: integer, example: 51 }
+                  task_id: { type: string, example: "5df0d34e", description: "用于 GET /api/v1/progress/{task_id}" }
+  /api/v1/fetch:
+    post:
+      tags: [拉取]
+      summary: 刷新全部 Tracker
+      description: 扫描 Tracker 目录下所有列表，拉取其中全部 subject 数据。
+      responses:
+        "200": { description: 后台执行 }
+  /api/v1/fetch/deep:
+    post:
+      tags: [拉取]
+      summary: 深度重建
+      description: 清空所有缓存（api、images、tags、index），然后重新拉取全部 Tracker 数据。
+      responses:
+        "200": { description: 后台执行 }
+  /api/v1/progress/{task_id}:
+    get:
+      tags: [拉取]
+      summary: 获取拉取进度｜SSE
+      description: 实时推送拉取进度，包含阶段、完成数、速度等信息。
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema: { type: string }
+          example: "5df0d34e"
+      responses:
+        "200":
+          description: text/event-stream 流式进度
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: |
+                  data: {"step":"characters","done":21,"total":39,"speed":"2.7/s","status":""}
+                  data: {"step":"complete","done":1,"total":1,"speed":"0.0/s","status":""}
+
+  # ── Tracker ──
+  /api/v1/tracker:
+    get:
+      tags: [Tracker]
+      summary: 列出所有 Tracker
+      responses:
+        "200":
+          description: Tracker 列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrackerItem"
+  /api/v1/fetch/tracker:
+    post:
+      tags: [Tracker]
+      summary: 按名称刷新 Tracker
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                names: { type: array, items: { type: string }, example: ["seshat", "user"] }
+      responses:
+        "200": { description: 后台执行 }
+
+  # ── 用户 ──
+  /api/v1/user/profile:
+    get:
+      tags: [用户]
+      summary: 列出用户信息
+      responses:
+        "200":
+          description: 用户数据
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /api/v1/fetch/user:
+    post:
+      tags: [用户]
+      summary: 拉取用户收藏
+      description: 从 config 读取 username，逐页拉取该用户的动画收藏并缓存。
+      responses:
+        "200": { description: 后台执行 }
+
+
+components:
+  responses:
+    NotFound:
+      description: 资源不存在（未缓存）
+
+  schemas:
+    SubjectListItem:
+      type: object
+      properties:
+        id: { type: integer, example: 51 }
+        name: { type: string, example: "CLANNAD -クラナド-" }
+        name_cn: { type: string, example: "CLANNAD" }
+        score: { type: number, example: 8.4 }
+        platform: { type: string, example: "TV" }
+        date: { type: string, example: "2007-10-04" }
+        image: { type: string, example: "/images/r/100/pic/cover/l/28/38/51_z0Ly8.jpg" }
+
+    Subject:
+      type: object
+      properties:
+        id: { type: integer, example: 51 }
+        type: { type: integer, example: 2 }
+        name: { type: string, example: "CLANNAD -クラナド-" }
+        name_cn: { type: string, example: "CLANNAD" }
+        summary: { type: string, example: "故事发生在一个小镇上…" }
+        date: { type: string, example: "2007-10-04" }
+        platform: { type: string, example: "TV" }
+        eps: { type: integer, example: 23 }
+        total_episodes: { type: integer, example: 23 }
+        rating:
+          type: object
+          properties:
+            rank: { type: integer, example: 74 }
+            total: { type: integer, example: 25648 }
+            score: { type: number, example: 8.4 }
+            count:
+              type: object
+              additionalProperties: { type: integer }
+              example: { "1": 102, "5": 398, "10": 5268 }
+        collection:
+          type: object
+          properties:
+            wish: { type: integer, example: 7189 }
+            collect: { type: integer, example: 39029 }
+            doing: { type: integer, example: 2306 }
+            on_hold: { type: integer, example: 1659 }
+            dropped: { type: integer, example: 420 }
+        tags:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string, example: "Clannad" }
+              count: { type: integer, example: 6682 }
+        infobox:
+          type: array
+          items:
+            type: object
+            properties:
+              key: { type: string, example: "中文名" }
+              value: { type: string, example: "CLANNAD" }
+
+    RelatedCharacter:
+      type: object
+      properties:
+        id: { type: integer, example: 4 }
+        name: { type: string, example: "古河渚" }
+        type: { type: integer, example: 1 }
+        relation: { type: string, example: "主角" }
+        images:
+          type: object
+          properties:
+            large: { type: string }
+            grid: { type: string }
+        actors:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer, example: 4145 }
+              name: { type: string, example: "中原麻衣" }
+              career: { type: array, items: { type: string } }
+
+    RelatedPerson:
+      type: object
+      properties:
+        id: { type: integer, example: 2229 }
+        name: { type: string, example: "八田陽子" }
+        type: { type: integer, example: 1 }
+        career: { type: array, items: { type: string }, example: ["producer"] }
+        relation: { type: string, example: "制片人" }
+        eps: { type: string, example: "" }
+
+    Episode:
+      type: object
+      properties:
+        id: { type: integer, example: 1044433 }
+        type: { type: integer, description: "0=本篇 1=SP 2=OP 3=ED 4=预告 5=MAD 6=其他", example: 0 }
+        sort: { type: number, example: 1 }
+        ep: { type: number, example: 1 }
+        name: { type: string, example: "みんなでなら魔法少女になれる気がしたの" }
+        name_cn: { type: string, example: "感觉和大家一起的话 就能够成为魔法少女" }
+        duration: { type: string, example: "00:23:40" }
+        airdate: { type: string, example: "2021-07-31" }
+        desc: { type: string }
+
+    SubjectRelation:
+      type: object
+      properties:
+        id: { type: integer, example: 302875 }
+        type: { type: integer, example: 2 }
+        name: { type: string }
+        name_cn: { type: string }
+        relation: { type: string, example: "前传" }
+
+    Character:
+      type: object
+      properties:
+        id: { type: integer, example: 4 }
+        name: { type: string, example: "古河渚" }
+        type: { type: integer, example: 1 }
+        summary: { type: string }
+        gender: { type: string, example: "female" }
+        blood_type: { type: integer, example: 1, description: "1=A 2=B 3=AB 4=O" }
+        birth_year: { type: integer }
+        birth_mon: { type: integer, example: 12 }
+        birth_day: { type: integer, example: 24 }
+        infobox: { type: array, items: { type: object } }
+        stat:
+          type: object
+          properties:
+            comments: { type: integer, example: 308 }
+            collects: { type: integer, example: 1471 }
+
+    Person:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        name: { type: string, example: "水樹奈々" }
+        type: { type: integer, example: 1 }
+        career: { type: array, items: { type: string }, example: ["artist", "seiyu"] }
+        summary: { type: string }
+        gender: { type: string, example: "female" }
+        blood_type: { type: integer }
+        birth_year: { type: integer, example: 1980 }
+        birth_mon: { type: integer, example: 1 }
+        birth_day: { type: integer, example: 21 }
+        infobox: { type: array, items: { type: object } }
+
+    User:
+      type: object
+      properties:
+        id: { type: integer, example: 485742 }
+        username: { type: string, example: "vanadiry" }
+        nickname: { type: string }
+        avatar:
+          type: object
+          properties:
+            large: { type: string }
+            medium: { type: string }
+            small: { type: string }
+        sign: { type: string }
+
+    TagItem:
+      type: object
+      properties:
+        name: { type: string, example: "京阿尼" }
+        count: { type: integer, example: 52 }
+
+    SearchResult:
+      type: object
+      properties:
+        subjects: { type: array, items: { type: object } }
+        characters: { type: array, items: { type: object } }
+        persons: { type: array, items: { type: object } }
+        tags: { type: array, items: { type: object } }
+
+    TrackerItem:
+      type: object
+      properties:
+        name: { type: string, example: "_seshat" }
+        count: { type: integer, example: 5 }

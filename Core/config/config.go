@@ -12,18 +12,22 @@ import (
 
 var Defaults = Config{
 	BindAddr:    "127.0.0.1",
-	Port:        8080,
+	Port:        4000,
 	DataHome:    "",
 	Username:    "",
+	SyncEnabled: false,
 	Concurrency: 32,
+	BaseURL:     "https://api.bgm.tv",
 }
 
 type Config struct {
-	BindAddr    string `toml:"bind_addr"`
-	Port        int    `toml:"port"`
-	DataHome    string `toml:"data_home"`
-	Username    string `toml:"username"`
-	Concurrency int    `toml:"concurrency"`
+	BindAddr     string `toml:"bind_addr"`
+	Port         int    `toml:"port"`
+	DataHome     string `toml:"data_home"`
+	Username     string `toml:"username"`
+	SyncEnabled  bool   `toml:"sync_enabled"`
+	Concurrency  int    `toml:"concurrency"`
+	BaseURL      string `toml:"base_url"`
 }
 
 func Dir() string {
@@ -49,6 +53,8 @@ func Load() (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
+			os.MkdirAll(Dir(), 0o755)
+			os.WriteFile(path, []byte(DefaultConfigTOML), 0o644)
 			return &cfg, nil
 		}
 		return nil, fmt.Errorf("读取配置失败: %w", err)
@@ -93,4 +99,9 @@ func (c *Config) DataDir() string {
 		return c.DataHome
 	}
 	return filepath.Join(Dir(), "data")
+}
+
+// TrackerDir 返回 tracker 文件目录。
+func (c *Config) TrackerDir() string {
+	return filepath.Join(Dir(), "tracker")
 }
