@@ -16,6 +16,4 @@ config.yaml
 # Dev
 .vscode/
 /Plan
-*.bak
-/doc
 TODO.md
