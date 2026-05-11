@@ -22,7 +22,7 @@ import (
 var maxConcurrency = 32
 
 func New(cfg *config.Config, embedFS fs.FS) http.Handler {
-	maxConcurrency = maxConcurrency
+	maxConcurrency = cfg.Concurrency
 	mux := http.NewServeMux()
 	dd := cfg.DataDir()
 	id := filepath.Join(dd, "images")
@@ -120,10 +120,10 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 
 	// ── Fetch: 刷新全部 tracker（覆盖更新）──
 	mux.HandleFunc("POST /api/v1/fetch", func(w http.ResponseWriter, r *http.Request) {
-		p := newProgress(0)
+		p := newProgress(countTrackerTotal(cfg))
 		go func() {
-			refreshAllTrackers(cfg, bg, dd, id)
-			p.Send("complete", 1, 1, "")
+			refreshAllTrackers(cfg, bg, dd, id, p)
+			p.Send("complete", p.Total, p.Total, "")
 			p.Close()
 		}()
 		writeJSON(w, map[string]any{"status": "fetching", "task_id": p.ID})
@@ -131,10 +131,10 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 
 	// ── Fetch: 深度重建（删除全部缓存后重新拉取）──
 	mux.HandleFunc("POST /api/v1/fetch/deep", func(w http.ResponseWriter, r *http.Request) {
-		p := newProgress(0)
+		p := newProgress(countTrackerTotal(cfg))
 		go func() {
-			forceRefresh(cfg, bg, dd, id)
-			p.Send("complete", 1, 1, "")
+			forceRefresh(cfg, bg, dd, id, p)
+			p.Send("complete", p.Total, p.Total, "")
 			p.Close()
 		}()
 		writeJSON(w, map[string]any{"status": "deep refresh", "task_id": p.ID})
@@ -144,10 +144,10 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("POST /api/v1/fetch/tracker", func(w http.ResponseWriter, r *http.Request) {
 		var req struct{ Names []string `json:"names"` }
 		json.NewDecoder(r.Body).Decode(&req)
-		p := newProgress(0)
+		p := newProgress(countTrackerNames(cfg, req.Names))
 		go func() {
-			refreshTrackers(cfg, bg, dd, id, req.Names)
-			p.Send("complete", 1, 1, "")
+			refreshTrackers(cfg, bg, dd, id, req.Names, p)
+			p.Send("complete", p.Total, p.Total, "")
 			p.Close()
 		}()
 		writeJSON(w, map[string]any{"status": "fetching", "names": req.Names, "task_id": p.ID})
@@ -163,7 +163,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		p := newProgress(0)
 		go func() {
 			fetchUserCollections(uname, bg, dd)
-			refreshTrackers(cfg, bg, dd, id, []string{"user"})
+			refreshTrackers(cfg, bg, dd, id, []string{"user"}, p)
 			p.Send("complete", 1, 1, "")
 			p.Close()
 		}()
@@ -186,10 +186,12 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 			return
 		}
 		p := newProgress(len(ids))
+		for _, sid := range ids {
+			addToSeshatTracker(cfg, sid)
+		}
 		go func() {
 			for _, sid := range ids {
 				fetchAll(sid, bg, dd, id, p)
-				addToSeshatTracker(cfg, sid)
 			}
 			rebuildTags(dd)
 			rebuildIndexes(dd)
@@ -405,37 +407,57 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	}
 	if p != nil { p.Send("subject", 1, 1, "done") }
 
-	// Characters list
-	if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/characters", sid)); err == nil {
-		cache.Put(dd, fmt.Sprintf("subjects/%d/characters.json", sid), cache.ReplaceImageURLs(data))
-		cache.ProcessImages(data, imgDir)
-		type charRef struct{ ID int `json:"id"` }
-		var chars []charRef
-		if json.Unmarshal(data, &chars) == nil {
-			fetchConcurrent(chars, func(c charRef) {
-				if cdata, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID)); err == nil {
-					cache.Put(dd, fmt.Sprintf("characters/%d.json", c.ID), cache.ReplaceImageURLs(cdata))
-					cache.ProcessImages(cdata, imgDir)
-				}
-			}, p, "characters", maxConcurrency)
-		}
-	}
+	// Fetch chars + persons lists in parallel, then their details concurrently
+	type charRef struct{ ID int `json:"id"` }
+	type personRef struct{ ID int `json:"id"` }
+	var chars []charRef
+	var persons []personRef
+	var wg sync.WaitGroup
 
-	// Persons list
-	if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/persons", sid)); err == nil {
-		cache.Put(dd, fmt.Sprintf("subjects/%d/persons.json", sid), cache.ReplaceImageURLs(data))
-		cache.ProcessImages(data, imgDir)
-		type personRef struct{ ID int `json:"id"` }
-		var persons []personRef
-		if json.Unmarshal(data, &persons) == nil {
-			fetchConcurrent(persons, func(pp personRef) {
-				if pdata, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID)); err == nil {
-					cache.Put(dd, fmt.Sprintf("persons/%d.json", pp.ID), cache.ReplaceImageURLs(pdata))
-					cache.ProcessImages(pdata, imgDir)
-				}
-			}, p, "persons", maxConcurrency)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/characters", sid)); err == nil {
+			cache.Put(dd, fmt.Sprintf("subjects/%d/characters.json", sid), cache.ReplaceImageURLs(data))
+			cache.ProcessImages(data, imgDir)
+			json.Unmarshal(data, &chars)
 		}
-	}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/persons", sid)); err == nil {
+			cache.Put(dd, fmt.Sprintf("subjects/%d/persons.json", sid), cache.ReplaceImageURLs(data))
+			cache.ProcessImages(data, imgDir)
+			json.Unmarshal(data, &persons)
+		}
+	}()
+	wg.Wait()
+
+	// Fetch details concurrently (chars and persons interleaved)
+	var wg2 sync.WaitGroup
+	wg2.Add(1)
+	go func() {
+		defer wg2.Done()
+		fetchConcurrent(chars, func(c charRef) {
+			if cdata, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID)); err == nil {
+				cache.Put(dd, fmt.Sprintf("characters/%d.json", c.ID), cache.ReplaceImageURLs(cdata))
+				cache.ProcessImages(cdata, imgDir)
+			}
+		}, p, "characters", maxConcurrency)
+	}()
+	wg2.Add(1)
+	go func() {
+		defer wg2.Done()
+		fetchConcurrent(persons, func(pp personRef) {
+			if pdata, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID)); err == nil {
+				cache.Put(dd, fmt.Sprintf("persons/%d.json", pp.ID), cache.ReplaceImageURLs(pdata))
+				cache.ProcessImages(pdata, imgDir)
+			}
+		}, p, "persons", maxConcurrency)
+	}()
+	wg2.Wait()
 
 	// Episodes
 	if data, err := bg.GetRaw(fmt.Sprintf("v0/episodes?subject_id=%d&limit=200", sid)); err == nil {
@@ -773,18 +795,52 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 	log.Info("User collections for %s saved (%d items)", username, len(all))
 }
 
+// countTrackerTotal 统计所有 tracker 中的 subject 总数。
+func countTrackerTotal(cfg *config.Config) int {
+	files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
+	files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
+	files = append(files, files2...)
+	seen := map[int]bool{}
+	for _, f := range files {
+		for _, sid := range loadTrackerIDs(f) {
+			seen[sid] = true
+		}
+	}
+	return len(seen)
+}
+
+// countTrackerNames 统计指定 tracker 列表中的 subject 总数。
+func countTrackerNames(cfg *config.Config, names []string) int {
+	td := cfg.TrackerDir()
+	seen := map[int]bool{}
+	for _, name := range names {
+		var path string
+		if _, err := os.Stat(filepath.Join(td, name+".json")); err == nil {
+			path = filepath.Join(td, name+".json")
+		} else if _, err := os.Stat(filepath.Join(td, name+".toml")); err == nil {
+			path = filepath.Join(td, name+".toml")
+		} else {
+			continue
+		}
+		for _, sid := range loadTrackerIDs(path) {
+			seen[sid] = true
+		}
+	}
+	return len(seen)
+}
+
 // forceRefresh 删除所有缓存数据后完整重建。
-func forceRefresh(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) {
+func forceRefresh(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	log.Info("Force refresh: clearing all cached data...")
 	os.RemoveAll(filepath.Join(dd, "api"))
 	os.RemoveAll(filepath.Join(dd, "images"))
 	os.Remove(filepath.Join(dd, "tags.json"))
 	log.Info("Force refresh: cache cleared, starting rebuild")
-	refreshAllTrackers(cfg, bg, dd, imgDir)
+	refreshAllTrackers(cfg, bg, dd, imgDir, p)
 }
 
 // refreshAllTrackers 刷新 tracker 文件夹中的所有列表。
-func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) {
+func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
 	files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
 	files = append(files, files2...)
@@ -803,9 +859,10 @@ func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 }
 
 // refreshTrackers 刷新指定的 tracker 列表。
-func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, names []string) {
+func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, names []string, p *Progress) {
 	td := cfg.TrackerDir()
 	seen := map[int]bool{}
+	var allIDs []int
 	for _, name := range names {
 		var path string
 		if _, err := os.Stat(filepath.Join(td, name+".json")); err == nil {
@@ -818,9 +875,13 @@ func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, 
 		for _, sid := range loadTrackerIDs(path) {
 			if !seen[sid] {
 				seen[sid] = true
-				fetchAll(sid, bg, dd, imgDir, nil)
+				allIDs = append(allIDs, sid)
 			}
 		}
+	}
+	for i, sid := range allIDs {
+		fetchAll(sid, bg, dd, imgDir, p)
+		if p != nil { p.Send("subjects", i+1, len(allIDs), "") }
 	}
 	log.Info("Trackers %v refreshed: %d subjects", names, len(seen))
 	rebuildTags(dd)
