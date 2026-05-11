@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>Seshat API</title>
+  <link rel="stylesheet" href="/public/swagger-ui.css" />
+  <style> html { box-sizing: border-box; overflow-y: scroll; } *, *:before, *:after { box-sizing: inherit; } body { margin: 0; background: #fafafa; } </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="/public/swagger-ui-bundle.js"></script>
+  <script>
+    window.onload = function () {
+      window.ui = SwaggerUIBundle({
+        url: "/api/v1/openapi.yaml",
+        dom_id: "#swagger-ui",
+        layout: "BaseLayout",
+        deepLinking: true,
+        presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+      });
+    };
+  </script>
+</body>
+</html>
