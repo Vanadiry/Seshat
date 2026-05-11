@@ -6,7 +6,6 @@
   <title>Seshat</title>
   <link rel="stylesheet" href="https://ka-f.webawesome.com/webawesome@3.6.0/styles/webawesome.css" />
   <script type="module" src="https://ka-f.webawesome.com/webawesome@3.6.0/webawesome.loader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2/dist/htmx.min.js"></script>
   <style>
     :root {
       --wa-color-primary-600: #6366f1;
@@ -95,9 +94,11 @@
 </dialog>
 
 <script>
-// Load subjects list
+// API base — dev: port 3000 → 8080, prod: same origin
+const API = location.port === '3000' ? 'http://127.0.0.1:8080' : '';
+
 async function loadSubjects(url) {
-  const res = await fetch('/api/v1' + (url || '/subjects'));
+  const res = await fetch(API + '/api/v1' + (url || '/subjects'));
   const data = await res.json();
   renderGrid(data.data || []);
 }
@@ -116,7 +117,7 @@ function renderGrid(subjects) {
   }
   grid.innerHTML = subjects.map(s => `
     <div class="card" onclick="viewSubject(${s.id})">
-      <img src="${s.image_path ? '/api/v1/images/' + s.image_path.replace('images/','') : ''}" loading="lazy" onerror="this.style.display='none'" />
+      <img src="${s.image_path ? API + '/api/v1/images/' + s.image_path.replace('images/','') : ''}" loading="lazy" onerror="this.style.display='none'" />
       <div class="meta">
         <div class="title">${s.name_cn || s.name}</div>
         <div class="sub">${s.platform} ${s.date || ''} ${s.score ? '★'+s.score : ''}</div>
@@ -134,7 +135,7 @@ async function fetchSubject(e) {
   document.getElementById('fetch-dialog').close();
 
   for (const sid of ids) {
-    const res = await fetch('/api/v1/subjects/fetch', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: parseInt(sid)}) });
+    const res = await fetch(API + '/api/v1/subjects/fetch', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: parseInt(sid)}) });
     const data = await res.json();
     if (data.data?.task_id) startSSE(data.data.task_id);
   }
@@ -147,7 +148,7 @@ function startSSE(taskId) {
   const fill = document.getElementById('progress-fill');
   const text = document.getElementById('progress-text');
 
-  const evtSource = new EventSource('/api/v1/tasks/' + taskId + '/events');
+  const evtSource = new EventSource(API + '/api/v1/tasks/' + taskId + '/events');
   evtSource.onmessage = function(e) {
     const d = JSON.parse(e.data);
     if (d.step === 'complete') {

@@ -12,25 +12,23 @@ import (
 
 // New 创建并配置完整的 HTTP 路由。
 // embedFS 是打包进二进制的 web/ 目录。
-func New(h *handler.Handler, embedFS fs.FS) http.Handler {
+func New(h *handler.Handler, embedFS fs.FS, dev bool) http.Handler {
 	mux := http.NewServeMux()
 
-	// 静态资源（从 embed.FS，打包进二进制）
-	mux.Handle("GET /web/", http.FileServer(http.FS(embedFS)))
-	mux.HandleFunc("GET /doc/api", serveFile(embedFS, "web/doc_api.html", "text/html"))
-	mux.HandleFunc("GET /api/v1/openapi.yaml", serveFile(embedFS, "web/openapi.yaml", "application/yaml"))
-
-	// 文档文件（从磁盘 doc/ 目录）
-	mux.Handle("GET /doc/", http.StripPrefix("/doc/", http.FileServer(http.Dir("doc"))))
-
-	// 用户界面占位（后续替换为 Pico.css SPA）
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
-		http.ServeFileFS(w, r, embedFS, "web/index.html")
-	})
+	if !dev {
+		// 生产模式：从 embed.FS 提供静态资源
+		mux.Handle("GET /web/", http.FileServer(http.FS(embedFS)))
+		mux.HandleFunc("GET /doc/api", serveFile(embedFS, "web/doc_api.html", "text/html"))
+		mux.HandleFunc("GET /api/v1/openapi.yaml", serveFile(embedFS, "web/openapi.yaml", "application/yaml"))
+		mux.Handle("GET /doc/", http.StripPrefix("/doc/", http.FileServer(http.Dir("doc"))))
+		mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/" {
+				http.NotFound(w, r)
+				return
+			}
+			http.ServeFileFS(w, r, embedFS, "web/index.html")
+		})
+	}
 
 	// API
 	mux.HandleFunc("GET /api/v1/health", h.Health)

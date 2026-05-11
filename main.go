@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	stdlog "log"
 	"net/http"
@@ -17,7 +18,10 @@ import (
 	"github.com/vanadiry/seshat/internal/task"
 )
 
+var devMode = flag.Bool("dev", false, "dev mode: API only, serve frontend separately")
+
 func main() {
+	flag.Parse()
 	cfg, err := config.Load()
 	if err != nil {
 		stdlog.Fatalf("config: %v", err)
@@ -54,7 +58,7 @@ func main() {
 		Fetch:   fetchSvc,
 		DataDir: dataDir,
 	}
-	router := server.New(h, webFS)
+	router := server.New(h, webFS, *devMode)
 
 	addr := fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.Port)
 	log.Info("Listening on http://%s (data: %s)", addr, dataDir)
