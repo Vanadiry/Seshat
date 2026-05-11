@@ -1,3 +1,4 @@
+// 剧集端点：单集详情。
 package handler
 
 import (

@@ -1,3 +1,4 @@
+// 人物端点：详情、参与动画、配音角色。
 package handler
 
 import (

@@ -1,3 +1,4 @@
+// 设置端点（GET/PUT /api/v1/settings），读写 TOML 配置文件。
 package handler
 
 import (

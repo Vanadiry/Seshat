@@ -1,3 +1,4 @@
+// 健康检查端点（GET /api/v1/health）。
 package handler
 
 import (

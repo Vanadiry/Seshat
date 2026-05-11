@@ -1,3 +1,4 @@
+// 动画相关端点：列表、详情、关联数据、数据拉取。
 package handler
 
 import (

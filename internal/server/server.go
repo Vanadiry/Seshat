@@ -1,3 +1,4 @@
+// Package server 配置 HTTP 路由和中间件（CORS、请求日志）。
 package server
 
 import (

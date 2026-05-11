@@ -1,3 +1,4 @@
+// Package handler 实现所有 HTTP API 端点的处理逻辑。
 package handler
 
 import (

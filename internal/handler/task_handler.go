@@ -1,3 +1,4 @@
+// 任务进度端点：SSE 流式推送。
 package handler
 
 import (

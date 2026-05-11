@@ -1,3 +1,4 @@
+// 角色端点：详情、出演动画、声优列表。
 package handler
 
 import (

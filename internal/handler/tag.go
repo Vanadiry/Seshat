@@ -1,3 +1,4 @@
+// 标签端点：标签列表、按标签筛选动画。
 package handler
 
 import (

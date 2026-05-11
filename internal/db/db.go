@@ -1,3 +1,4 @@
+// Package db 管理 SQLite 数据库连接、Schema 迁移和写入操作。
 package db
 
 import (

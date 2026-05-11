@@ -1,3 +1,4 @@
+// Package task 提供异步任务管理和 SSE（Server-Sent Events）进度推送。
 package task
 
 import (

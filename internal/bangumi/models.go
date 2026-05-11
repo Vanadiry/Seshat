@@ -1,3 +1,4 @@
+// Package bangumi 封装 Bangumi (bgm.tv) REST API 的请求和响应模型。
 package bangumi
 
 type SubjectResponse struct {

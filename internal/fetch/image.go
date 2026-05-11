@@ -1,3 +1,4 @@
+// Package fetch 从 Bangumi API 拉取数据并写入本地数据库，含并发图片下载。
 package fetch
 
 import (

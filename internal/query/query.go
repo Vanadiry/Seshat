@@ -1,3 +1,4 @@
+// Package query 提供对 SQLite 数据库的只读查询，包括双链、搜索和统计。
 package query
 
 import (
