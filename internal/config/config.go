@@ -1,3 +1,5 @@
+// Package config 管理 seshatd 的 TOML 配置文件读取、写入和默认值。
+// 配置文件默认位于 ~/.vSoft/Seshat/config.toml，可通过 SESHAT_HOME 环境变量覆盖。
 package config
 
 import (
