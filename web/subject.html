@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>动画详情</title>
+  <link rel="stylesheet" href="https://ka-f.webawesome.com/webawesome@3.6.0/styles/webawesome.css" />
+  <script type="module" src="https://ka-f.webawesome.com/webawesome@3.6.0/webawesome.loader.js"></script>
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+<div id="topbar" class="topbar"></div>
+<div class="subbar" id="subbar"></div>
+<div class="main" id="view"></div>
+
+
+<div id="progress-area" style="display:none;position:fixed;top:56px;left:0;right:0;z-index:60;padding:0 24px;">
+  <wa-progress-bar id="progress-bar" value="0"></wa-progress-bar>
+  <div id="progress-text" style="font-size:12px;color:#71717a;margin-top:2px;"></div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+const SUBJECT_ID = params.get('id');
+let tab = params.get('tab') || 'overview';
+
+document.getElementById('subbar').innerHTML = `
+  <span class="title" id="sub-title">加载中…</span>
+  <wa-button variant="${tab==='overview'?'brand':'neutral'}" appearance="plain" size="s" onclick="switchTab('overview')">概览</wa-button>
+  <wa-button variant="${tab==='ep'?'brand':'neutral'}" appearance="plain" size="s" onclick="switchTab('ep')">剧集</wa-button>
+  <wa-button variant="${tab==='chars'?'brand':'neutral'}" appearance="plain" size="s" onclick="switchTab('chars')">角色</wa-button>
+  <wa-button variant="${tab==='persons'?'brand':'neutral'}" appearance="plain" size="s" onclick="switchTab('persons')">制作组</wa-button>`;
+
+function switchTab(t) { tab = t; history.replaceState({},'','?id='+SUBJECT_ID+'&tab='+t); render(); }
+
+async function render() {
+  document.getElementById('sub-title').textContent = '加载中…';
+  const s = (await api('/api/v1/subjects/'+SUBJECT_ID)).data;
+  if (!s) { document.getElementById('view').innerHTML = '<p>未找到</p>'; return; }
+  document.getElementById('sub-title').textContent = s.name_cn || s.name;
+  const sb = document.getElementById('subbar');
+  sb.querySelectorAll('wa-button').forEach(b => b.variant = 'neutral');
+  sb.querySelector(`wa-button[onclick*="${tab}"]`).variant = 'brand';
+  if (tab === 'overview') renderOverview(s);
+  else if (tab === 'ep') renderEpisodes();
+  else if (tab === 'chars') renderCharacters();
+  else if (tab === 'persons') renderPersons();
+}
+
+async function renderOverview(s) {
+  const infobox = parseInfobox(s.infobox);
+  const chars = (await api('/api/v1/subjects/'+SUBJECT_ID+'/characters')).data || [];
+  const mainChars = chars.filter(c => c.relation==='主角'||c.relation==='配角').slice(0, 8);
+  const rels = (await api('/api/v1/subjects/'+SUBJECT_ID+'/relations')).data || [];
+  document.getElementById('view').innerHTML = `
+    <div style="margin-bottom:12px;font-size:12px;color:#52525b;">BgmID: ${s.id}</div>
+    <div class="detail">
+      <div class="detail-left">
+        <img src="${imgUrl(s.image_path)}" onerror="this.style.display='none'" />
+        ${Object.entries(infobox).map(([k,v])=>`<div class="kv"><span class="k">${k}</span><span>${v}</span></div>`).join('')}
+      </div>
+      <div class="detail-main">
+        <div class="detail-top">
+          <p style="margin:0;font-size:13px;line-height:1.8;color:#a1a1aa;">${s.summary||'暂无简介'}</p>
+          <div class="rating-side">
+            <div style="text-align:center;font-size:14px;color:#71717a;">评分</div>
+            <div style="text-align:center;font-size:28px;font-weight:700;">${s.score||'-'}<span style="font-size:12px;color:#71717a;font-weight:400;"> / 10</span></div>
+            <div style="text-align:center;font-size:12px;color:#52525b;">${s.rating_total||0} 人 · 排名 #${s.rank||'-'}</div>
+          </div>
+        </div>
+        <div>
+          <h4 style="margin:0 0 8px 0;">主要角色 <wa-button variant="neutral" size="s" appearance="plain" onclick="switchTab('chars')">查看全部 →</wa-button></h4>
+          <div class="chars">${mainChars.map(c=>`
+            <div class="char-card" onclick="location.href='/character.html?id=${c.character_id}'">
+              <img src="${imgUrl(c.character.image_path)}" onerror="this.style.display='none'" />
+              <div><div class="name">${c.character.name}</div><div class="role">${c.relation}${c.actors?.length?' · CV:'+c.actors.map(a=>a.name).slice(0,2).join(','):''}</div></div>
+            </div>`).join('')}</div>
+        </div>
+        ${rels.length ? `<div><h4 style="margin:0 0 8px 0;">关联条目</h4><div class="relations">${rels.map(r=>`<wa-badge variant="neutral" pill style="cursor:default;">${r.relation||'关联'} #${r.related_id}</wa-badge>`).join('')}</div></div>` : ''}
+      </div>
+    </div>`;
+}
+
+async function renderEpisodes() {
+  const eps = (await api('/api/v1/subjects/'+SUBJECT_ID+'/episodes')).data || [];
+  const mainEps = eps.filter(e=>e.type===0).sort((a,b)=>a.sort-b.sort);
+  const spEps = eps.filter(e=>e.type!==0).sort((a,b)=>a.sort-b.sort);
+  document.getElementById('view').innerHTML = `<h4>剧集 (${eps.length})</h4>
+    <div class="ep-grid">${[...mainEps,...spEps].map(e=>`<div class="${e.type===0?'ep':'ep sp'}" title="${e.name_cn||e.name}">${e.type===0?String(Math.floor(e.sort||e.ep||0)).padStart(2,'0'):EP_TYPES[e.type].slice(0,2)}</div>`).join('')}</div>
+    <div style="font-size:11px;color:#52525b;margin-top:8px;display:flex;gap:16px;"><span>■ 本篇 (${mainEps.length})</span><span style="color:#f59e0b;">■ SP/其他 (${spEps.length})</span></div>`;
+}
+
+async function renderCharacters() {
+  const chars = (await api('/api/v1/subjects/'+SUBJECT_ID+'/characters')).data || [];
+  document.getElementById('view').innerHTML = `<h4>角色 (${chars.length})</h4><div class="chars">${chars.map(c=>`
+    <div class="char-card" onclick="location.href='/character.html?id=${c.character_id}'">
+      <img src="${imgUrl(c.character.image_path)}" onerror="this.style.display='none'" />
+      <div><div class="name">${c.character.name}</div><div class="role">${c.relation}${c.actors?.length?' · CV:'+c.actors.map(a=>a.name).join(','):''}</div></div>
+    </div>`).join('')}</div>`;
+}
+
+async function renderPersons() {
+  const persons = (await api('/api/v1/subjects/'+SUBJECT_ID+'/persons')).data || [];
+  document.getElementById('view').innerHTML = `<h4>制作组 (${persons.length})</h4><div class="person-list">${persons.map(p=>`
+    <div class="person-card" onclick="location.href='/person.html?id=${p.person_id}'">
+      <img src="${imgUrl(p.person.image_path)}" onerror="this.style.display='none'" />
+      <div><div class="name">${p.person.name}</div><div class="role">${p.relation}</div></div>
+    </div>`).join('')}</div>`;
+}
+
+render();
+</script>
+</body>
+</html>

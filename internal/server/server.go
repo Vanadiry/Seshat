@@ -16,19 +16,17 @@ func New(h *handler.Handler, embedFS fs.FS, dev bool) http.Handler {
 	mux := http.NewServeMux()
 
 	if !dev {
-		// 生产模式：从 embed.FS 提供静态资源
 		mux.Handle("GET /web/", http.FileServer(http.FS(embedFS)))
 		mux.HandleFunc("GET /doc/api", serveFile(embedFS, "web/doc_api.html", "text/html"))
 		mux.HandleFunc("GET /api/v1/openapi.yaml", serveFile(embedFS, "web/openapi.yaml", "application/yaml"))
 		mux.Handle("GET /doc/", http.StripPrefix("/doc/", http.FileServer(http.Dir("doc"))))
-		mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path != "/" {
-				http.NotFound(w, r)
-				return
-			}
-			http.ServeFileFS(w, r, embedFS, "web/index.html")
-		})
+		mux.HandleFunc("GET /subject.html", serveFile(embedFS, "web/subject.html", "text/html"))
+		mux.HandleFunc("GET /character.html", serveFile(embedFS, "web/character.html", "text/html"))
+		mux.HandleFunc("GET /person.html", serveFile(embedFS, "web/person.html", "text/html"))
+		mux.HandleFunc("GET /tags.html", serveFile(embedFS, "web/tags.html", "text/html"))
+		mux.HandleFunc("GET /", serveFile(embedFS, "web/index.html", "text/html"))
 	}
+	// Dev mode: frontend served separately, API only.
 
 	// API
 	mux.HandleFunc("GET /api/v1/health", h.Health)

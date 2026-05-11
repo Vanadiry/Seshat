@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>人物详情</title>
+  <link rel="stylesheet" href="https://ka-f.webawesome.com/webawesome@3.6.0/styles/webawesome.css" />
+  <script type="module" src="https://ka-f.webawesome.com/webawesome@3.6.0/webawesome.loader.js"></script>
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+
+<div id="topbar" class="topbar"></div>
+<div class="main" id="view"></div>
+
+<script src="app.js"></script>
+<script>
+const id = new URLSearchParams(location.search).get('id');
+
+async function render() {
+  const p = (await api('/api/v1/persons/'+id)).data;
+  if (!p) { document.getElementById('view').innerHTML='<p>未找到</p>'; return; }
+  const infobox = parseInfobox(p.infobox);
+  const subs = (await api('/api/v1/persons/'+id+'/subjects')).data || [];
+  const chars = (await api('/api/v1/persons/'+id+'/characters')).data || [];
+
+  document.getElementById('view').innerHTML = `
+    <div style="margin-bottom:12px;font-size:12px;color:#52525b;">BgmID: ${p.id}</div>
+    <div class="entity-detail">
+      <div class="detail-left">
+        <img src="${imgUrl(p.image_path)}" onerror="this.style.display='none'" />
+        ${Object.entries(infobox).map(([k,v])=>`<div class="kv"><span class="k">${k}</span><span>${v}</span></div>`).join('')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <h2 style="margin:0;">${p.name}</h2>
+        <p style="margin:0;font-size:13px;line-height:1.8;color:#a1a1aa;">${p.summary||'暂无简介'}</p>
+        ${subs.length ? `
+        <div>
+          <h4 style="margin:0 0 8px 0;">参与动画</h4>
+          <div class="relations">${subs.map(s=>`<wa-badge variant="neutral" pill style="cursor:pointer;" onclick="location.href='/subject.html?id=${s.subject_id}'">${s.relation||''}</wa-badge>`).join('')}</div>
+        </div>` : ''}
+        ${chars.length ? `
+        <div>
+          <h4 style="margin:0 0 8px 0;">配音角色</h4>
+          <div class="relations">${chars.map(c=>`<wa-badge variant="neutral" pill style="cursor:pointer;" onclick="location.href='/character.html?id=${c.character_id}'">${c.character.name}</wa-badge>`).join('')}</div>
+        </div>` : ''}
+      </div>
+    </div>`;
+}
+render();
+</script>
+</body>
+</html>
