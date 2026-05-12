@@ -194,9 +194,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 			addToSeshatTracker(cfg, sid)
 		}
 		go func() {
-			for _, sid := range ids {
-				fetchAll(sid, bg, dd, id, p)
-			}
+			fetchSubjectList(ids, bg, dd, id, p)
 			p.Send("phase", 2, 3, "building indexes")
 			buildIndexes(dd, p)
 			p.Send("phase", 3, 3, "downloading images")
@@ -410,6 +408,33 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.Handle("GET /images/", http.StripPrefix("/images/", http.FileServer(http.Dir(id))))
 
 	return withLogging(withCORS(mux))
+}
+
+// fetchSubjectList 并发拉取多个动画的所有数据。
+func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
+	if len(ids) == 0 {
+		return
+	}
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, maxConcurrency)
+	var done int
+	var mu sync.Mutex
+	for _, sid := range ids {
+		wg.Add(1)
+		go func(sid int) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			fetchAll(sid, bg, dd, imgDir, p)
+			if p != nil {
+				mu.Lock()
+				done++
+				p.Send("subjects", done, len(ids), "")
+				mu.Unlock()
+			}
+		}(sid)
+	}
+	wg.Wait()
 }
 
 // fetchAll 拉取动画的所有数据及关联角色/人物/图片。
@@ -665,7 +690,7 @@ func quickSearch(dd, q string, types []string) map[string]any {
 }
 
 func searchIndex(dd, file, q string) []map[string]any {
-	data, err := os.ReadFile(filepath.Join(dd, file))
+	data, err := os.ReadFile(cache.IndexFile(dd, file))
 	if err != nil {
 		return []map[string]any{}
 	}
@@ -1016,14 +1041,16 @@ func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 	files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
 	files = append(files, files2...)
 	seen := map[int]bool{}
+	var allIDs []int
 	for _, f := range files {
 		for _, sid := range loadTrackerIDs(f) {
 			if !seen[sid] {
 				seen[sid] = true
-				fetchAll(sid, bg, dd, imgDir, nil)
+				allIDs = append(allIDs, sid)
 			}
 		}
 	}
+	fetchSubjectList(allIDs, bg, dd, imgDir, nil)
 	log.Info("All trackers refreshed: %d subjects", len(seen))
 	buildIndexes(dd, p)
 	downloadImages(dd, bg, p)
@@ -1052,10 +1079,7 @@ func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, 
 			}
 		}
 	}
-	for i, sid := range allIDs {
-		fetchAll(sid, bg, dd, imgDir, p)
-		if p != nil { p.Send("subjects", i+1, len(allIDs), "") }
-	}
+	fetchSubjectList(allIDs, bg, dd, imgDir, p)
 	log.Info("Trackers %v refreshed: %d subjects", names, len(seen))
 	buildIndexes(dd, p)
 	downloadImages(dd, bg, p)
