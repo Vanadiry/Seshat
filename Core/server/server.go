@@ -20,7 +20,7 @@ import (
 	"github.com/vanadiry/seshat/Core/log"
 )
 
-var maxConcurrency = 32
+var maxConcurrency = 64
 
 // listMutex 保护 list 文件的并发读写。
 var listMutex sync.Mutex
@@ -1090,8 +1090,6 @@ func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 	log.Info("All trackers refreshed: %d subjects", len(seen))
 	buildIndexes(dd, p)
 	downloadImages(dd, bg, p)
-	buildIndexes(dd, nil)
-	downloadImages(dd, bg, nil)
 }
 
 // refreshTrackers 刷新指定的 tracker 列表。
@@ -1119,8 +1117,6 @@ func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, 
 	log.Info("Trackers %v refreshed: %d subjects", names, len(seen))
 	buildIndexes(dd, p)
 	downloadImages(dd, bg, p)
-	buildIndexes(dd, nil)
-	downloadImages(dd, bg, nil)
 }
 
 // addToSeshatTracker 将用户手动添加的 subject ID 记录到 _seshat.json。
