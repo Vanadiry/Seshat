@@ -115,7 +115,7 @@ async function overview(s, infoItems) {
   // Infobox entries
   var infoHtml = '';
   for (var i=0; i<infoItems.length; i++) {
-    infoHtml += '<div class="py-1 border-b border-[rgba(255,255,255,.06)] text-[14px]"><span class="text-sub">'+infoItems[i][0]+': </span><span>'+infoItems[i][1]+'</span></div>';
+    infoHtml += '<div class="py-1 border-b border-[rgba(255,255,255,.06)] text-[14px]"+(infoItems[i][2]?" ml-4":"")+"><span class="text-sub">'+infoItems[i][0]+': </span><span>'+infoItems[i][1]+'</span></div>';
   }
 
   // Rating panel
