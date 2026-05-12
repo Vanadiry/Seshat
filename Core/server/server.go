@@ -620,52 +620,85 @@ func downloadImages(dd string, bg *bangumi.Client, p *Progress) {
 	// Subjects
 	subjList := loadNameList(cache.IndexFile(dd, "subjects_list.json"))
 	if p != nil { p.Send("images_subjects", 0, len(subjList), "downloading") }
-	for i, s := range subjList {
-		dlImage(bg, dd, "subject", s.ID, subjImg, imgBase)
-		if p != nil && i%5 == 0 { p.Send("images_subjects", i+1, len(subjList), "") }
-	}
+	dlImageList(subjList, "subject", subjImg, imgBase, bg, dd, p, "images_subjects")
 	saveJSON(cache.IndexFile(dd, "subjects_image.json"), subjImg)
 
 	// Characters
 	charList := loadNameList(cache.IndexFile(dd, "characters_list.json"))
 	if p != nil { p.Send("images_characters", 0, len(charList), "downloading") }
-	for i, c := range charList {
-		dlImage(bg, dd, "character", c.ID, charImg, imgBase)
-		if p != nil && i%10 == 0 { p.Send("images_characters", i+1, len(charList), "") }
-	}
+	dlImageList(charList, "character", charImg, imgBase, bg, dd, p, "images_characters")
 	saveJSON(cache.IndexFile(dd, "characters_image.json"), charImg)
 
 	// Persons
 	persList := loadNameList(cache.IndexFile(dd, "persons_list.json"))
 	if p != nil { p.Send("images_persons", 0, len(persList), "downloading") }
-	for i, per := range persList {
-		dlImage(bg, dd, "person", per.ID, persImg, imgBase)
-		if p != nil && i%10 == 0 { p.Send("images_persons", i+1, len(persList), "") }
-	}
+	dlImageList(persList, "person", persImg, imgBase, bg, dd, p, "images_persons")
 	saveJSON(cache.IndexFile(dd, "persons_image.json"), persImg)
 
 	log.Info("Images download complete")
 }
 
-func dlImage(bg *bangumi.Client, dd, kind string, id int, imgMap map[int]cache.ImageEntry, imgBase string) {
-	entry := imgMap[id]
-	for _, size := range []string{"large", "grid"} {
-		data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
+func dlImageList(list []cache.NameEntry, kind string, imgMap map[int]cache.ImageEntry, imgBase string, bg *bangumi.Client, dd string, p *Progress, stage string) {
+	if len(list) == 0 {
+		return
+	}
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, maxConcurrency)
+	var done int
+	var mu sync.Mutex
+	for _, entry := range list {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			dlImage(bg, kind, id, imgMap, imgBase, &mu)
+			if p != nil {
+				mu.Lock()
+				done++
+				if done%10 == 0 || done == len(list) {
+					p.Send(stage, done, len(list), "")
+				}
+				mu.Unlock()
+			}
+		}(entry.ID)
+	}
+	wg.Wait()
+}
+
+func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.ImageEntry, imgBase string, mu *sync.Mutex) {
+	var entry cache.ImageEntry
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=large", kind, id))
 		if err != nil {
-			continue
+			return
 		}
-		relPath := fmt.Sprintf("%s_%s/%d/%d.jpg", kind, size, id%10, id)
+		relPath := fmt.Sprintf("%s_large/%d/%d.jpg", kind, id%10, id)
 		fullPath := filepath.Join(imgBase, relPath)
 		os.MkdirAll(filepath.Dir(fullPath), 0o755)
 		os.WriteFile(fullPath, data, 0o644)
-		if size == "large" {
-			entry.Large = relPath
-		} else {
-			entry.Grid = relPath
+		entry.Large = relPath
+	}()
+	go func() {
+		defer wg.Done()
+		data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=grid", kind, id))
+		if err != nil {
+			return
 		}
-	}
+		relPath := fmt.Sprintf("%s_grid/%d/%d.jpg", kind, id%10, id)
+		fullPath := filepath.Join(imgBase, relPath)
+		os.MkdirAll(filepath.Dir(fullPath), 0o755)
+		os.WriteFile(fullPath, data, 0o644)
+		entry.Grid = relPath
+	}()
+	wg.Wait()
 	if entry.Large != "" || entry.Grid != "" {
+		mu.Lock()
 		imgMap[id] = entry
+		mu.Unlock()
 	}
 }
 

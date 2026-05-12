@@ -8,6 +8,13 @@ import (
 	"time"
 )
 
+var defaultTransport = &http.Transport{
+	MaxIdleConns:        100,
+	MaxIdleConnsPerHost: 32,
+	MaxConnsPerHost:     32,
+	IdleConnTimeout:     90 * time.Second,
+}
+
 type Client struct {
 	http    *http.Client
 	ua      string
@@ -18,7 +25,7 @@ func NewClient(ua, baseURL string) *Client {
 	if baseURL == "" {
 		baseURL = "https://api.bgm.tv"
 	}
-	return &Client{http: &http.Client{Timeout: 30 * time.Second}, ua: ua, baseURL: baseURL}
+	return &Client{http: &http.Client{Timeout: 30 * time.Second, Transport: defaultTransport}, ua: ua, baseURL: baseURL}
 }
 
 
