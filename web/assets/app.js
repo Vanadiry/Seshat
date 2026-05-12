@@ -48,6 +48,9 @@ var MSG = {
   infoboxBloodType: '血型',
   infoboxBirthday: '生日',
   bloodTypeMap: {1:'A',2:'B',3:'AB',4:'O'},
+
+  // Episode types
+  epTypes: {0:'本篇',1:'SP',2:'OP',3:'ED',4:'预告',5:'MAD',6:'其他'},
 };
 
 async function api(url) {

@@ -56,29 +56,62 @@ async function overview(s, infoItems) {
   var epsRaw = await api('/v0/subjects/'+SID+'/episodes');
   var charsRaw = await api('/v0/subjects/'+SID+'/characters');
   var relsRaw = await api('/v0/subjects/'+SID+'/relations');
-  var eps = Array.isArray(epsRaw) ? epsRaw : [];
-  var chars = Array.isArray(charsRaw) ? charsRaw : [];
-  var rels = Array.isArray(relsRaw) ? relsRaw : [];
+  var eps = Array.isArray(epsRaw) ? epsRaw : (epsRaw&&epsRaw.data ? epsRaw.data : []);
+  var chars = Array.isArray(charsRaw) ? charsRaw : (charsRaw&&charsRaw.data ? charsRaw.data : []);
+  var rels = Array.isArray(relsRaw) ? relsRaw : (relsRaw&&relsRaw.data ? relsRaw.data : []);
 
-  var mainEps = eps.filter(function(e){return e.type===0}).sort(function(a,b){return a.sort-b.sort});
-  var spEps = eps.filter(function(e){return e.type!==0}).sort(function(a,b){return a.sort-b.sort});
   var mainChars = chars.filter(function(c){return c.relation==='主角'||c.relation==='配角'}).slice(0,12);
 
-  // Episode grid
+  // Episode grid — sorted by sort, inline type separators
   var epGrid = '';
-  if (mainEps.length) {
-    epGrid += '<div class="flex flex-wrap gap-1.5 mb-1">';
-    for (var i=0; i<mainEps.length; i++) {
-      var e = mainEps[i];
-      epGrid += '<span class="w-8 h-8 flex items-center justify-center rounded text-xs font-semibold cursor-default bg-[#252530] text-sub" title="'+(e.name_cn||e.name)+'">'+String(Math.floor(e.sort||e.ep||0)).padStart(2,'0')+'</span>';
-    }
-    epGrid += '</div>';
-  }
-  if (spEps.length) {
+  var allEps = eps.slice().sort(function(a,b){return (a.sort||0)-(b.sort||0)});
+  if (allEps.length) {
+    var epCls = {
+      0: 'bg-[#252530] text-sub',
+      1: 'bg-[#33281a] text-[#d4a040]',
+      2: 'bg-[#1a2833] text-[#5c8eb0]',
+      3: 'bg-[#241a2e] text-[#8c74a8]',
+      4: 'bg-[#1a2e24] text-[#4c8c68]',
+      5: 'bg-[#2e1a22] text-[#b86474]',
+      6: 'bg-[#252530] text-sub'
+    };
+    var sepCls = {
+      1: 'text-[#d4a040]',
+      2: 'text-[#5c8eb0]',
+      3: 'text-[#8c74a8]',
+      4: 'text-[#4c8c68]',
+      5: 'text-[#b86474]',
+      6: 'text-sub'
+    };
+    var lastType = -1;
     epGrid += '<div class="flex flex-wrap gap-1.5">';
-    for (var i=0; i<spEps.length; i++) {
-      var e = spEps[i];
-      epGrid += '<span class="w-8 h-8 flex items-center justify-center rounded text-xs font-semibold cursor-default border-2 border-[#f59e0b] text-[#f59e0b]" title="'+(e.name_cn||e.name)+'">'+String(Math.floor(e.sort||e.ep||0)).padStart(2,'0')+'</span>';
+    for (var i=0; i<allEps.length; i++) {
+      var e = allEps[i];
+      var t = e.type||0;
+      if (t !== lastType && t !== 0) {
+        // Type marker cell with vertical line + label
+        var sepGap = 'gap-1', sepText = 'text-[9px]';
+        if (t>=1 && t<=3) { sepGap = 'gap-1.5'; sepText = 'text-[14px]'; }
+        else if (t===4 || t===6) { sepGap = 'gap-1'; sepText = 'text-[12px]'; }
+        else if (t===5) { sepGap = 'gap-0.5'; sepText = 'text-[10px]'; }
+        epGrid += '<span class="w-8 h-8 flex items-center pl-0 font-semibold cursor-default '+sepGap+' '+sepText+' '+(sepCls[t]||'text-sub')+'"><span class="border-l border-current h-7"></span>'+MSG.epTypes[t]+'</span>';
+      }
+      lastType = t;
+      var epNum = String(Math.floor(e.sort||e.ep||0));
+      var num = epNum.padStart(2,'0');
+      var cls = epCls[t];
+      var epName = primaryName(e.name, e.name_cn);
+      var epSub = subName(e.name, e.name_cn);
+      epGrid += '<div class="relative group">'+
+        '<span class="w-8 h-8 flex items-center justify-center rounded text-xs font-semibold cursor-default '+cls+'">'+num+'</span>'+
+        '<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50">'+
+        '<div class="bg-[#1a1a22] border border-[rgba(255,255,255,.15)] rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-lg">'+
+        '<div class="text-sub">第 '+epNum+' 话 · '+(MSG.epTypes[t]||'')+'</div>'+
+        '<div class="text-sm font-semibold mt-1">'+epName+'</div>'+
+        (epSub ? '<div class="text-sub mt-0.5">'+epSub+'</div>' : '')+
+        (e.airdate ? '<div class="text-sub mt-1">首播: '+e.airdate+'</div>' : '')+
+        (e.duration ? '<div class="text-sub">时长: '+e.duration+'</div>' : '')+
+        '</div></div></div>';
     }
     epGrid += '</div>';
   }
@@ -186,8 +219,8 @@ async function overview(s, infoItems) {
 
 async function episodes() {
   var epsRaw = await api('/v0/subjects/'+SID+'/episodes');
-  var eps = Array.isArray(epsRaw) ? epsRaw : [];
-  var types = {0:'本篇',1:'SP',2:'OP',3:'ED',4:'预告',5:'MAD',6:'其他'};
+  var eps = Array.isArray(epsRaw) ? epsRaw : (epsRaw&&epsRaw.data ? epsRaw.data : []);
+  var types = MSG.epTypes;
   var main = eps.filter(function(e){return e.type===0}).sort(function(a,b){return a.sort-b.sort});
   var sp = eps.filter(function(e){return e.type!==0}).sort(function(a,b){return a.sort-b.sort});
 
