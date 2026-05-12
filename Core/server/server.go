@@ -22,10 +22,96 @@ import (
 
 var maxConcurrency = 32
 
+// listMutex 保护 list 文件的并发读写。
+var listMutex sync.Mutex
+
+// mergeListEntry 将一个条目合并到 list 文件中（按 ID 去重，若已存在则更新 name）。
+func mergeListEntry(path string, id int, name, nameCN string) {
+	listMutex.Lock()
+	defer listMutex.Unlock()
+	os.MkdirAll(filepath.Dir(path), 0o755)
+	data, _ := os.ReadFile(path)
+	var list []cache.NameEntry
+	json.Unmarshal(data, &list)
+	for i, e := range list {
+		if e.ID == id {
+			list[i].Name = name
+			if nameCN != "" {
+				list[i].NameCN = nameCN
+			}
+			data, _ = json.Marshal(list)
+			os.WriteFile(path, data, 0o644)
+			return
+		}
+	}
+	list = append(list, cache.NameEntry{ID: id, Name: name, NameCN: nameCN})
+	data, _ = json.Marshal(list)
+	os.WriteFile(path, data, 0o644)
+}
+
+// mergeSubjectEntry 将一个 subject 条目合并到 subjects 列表（去重更新）。
+func mergeSubjectEntry(path string, s cache.SubjectSummary) {
+	listMutex.Lock()
+	defer listMutex.Unlock()
+	os.MkdirAll(filepath.Dir(path), 0o755)
+	data, _ := os.ReadFile(path)
+	var list []cache.SubjectSummary
+	json.Unmarshal(data, &list)
+	for i, e := range list {
+		if e.ID == s.ID {
+			list[i] = s
+			data, _ = json.Marshal(list)
+			os.WriteFile(path, data, 0o644)
+			return
+		}
+	}
+	list = append(list, s)
+	data, _ = json.Marshal(list)
+	os.WriteFile(path, data, 0o644)
+}
+
+// removeListEntry 从 list 文件中移除指定 ID。
+func removeListEntry(path string, id int) {
+	listMutex.Lock()
+	defer listMutex.Unlock()
+	os.MkdirAll(filepath.Dir(path), 0o755)
+	data, _ := os.ReadFile(path)
+	var list []cache.NameEntry
+	json.Unmarshal(data, &list)
+	for i, e := range list {
+		if e.ID == id {
+			list = append(list[:i], list[i+1:]...)
+			data, _ = json.Marshal(list)
+			os.WriteFile(path, data, 0o644)
+			return
+		}
+	}
+}
+
+// getRawWithRetry 拉取 API 数据，网络错误重试 maxRetries 次，404 不重试。
+func getRawWithRetry(bg *bangumi.Client, urlPath string, maxRetries int) ([]byte, error) {
+	var lastErr error
+	for i := 0; i < maxRetries; i++ {
+		data, err := bg.GetRaw(urlPath)
+		if err == nil {
+			return data, nil
+		}
+		if strings.Contains(err.Error(), "HTTP 404") {
+			return nil, err
+		}
+		lastErr = err
+		if i < maxRetries-1 {
+			time.Sleep(time.Duration(i+1) * time.Second)
+		}
+	}
+	return nil, lastErr
+}
+
 func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	maxConcurrency = cfg.Concurrency
 	mux := http.NewServeMux()
 	dd := cfg.DataDir()
+	os.MkdirAll(cache.IndexDir(dd), 0o755)
 	id := filepath.Join(dd, "images")
 	bg := bangumi.NewClient("HyperGraph/APIRRRRRR", cfg.BaseURL)
 
@@ -438,11 +524,13 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 }
 
 // fetchAll 拉取动画的所有数据及关联角色/人物/图片。
-// Phase 1: Fetch API JSON data (strip images).
 func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	log.Info("Fetching subject #%d", sid)
+	charListPath := cache.IndexFile(dd, "characters.json")
+	persListPath := cache.IndexFile(dd, "persons.json")
+	subjListPath := cache.IndexFile(dd, "subjects.json")
 
-	// Subject (404 is reported for user-specified subjects)
+	// Subject
 	if p != nil { p.Send("subject", 0, 1, "fetching") }
 	data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d", sid))
 	if err != nil {
@@ -451,13 +539,41 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		return
 	}
 	cache.Put(dd, fmt.Sprintf("subjects/%d.json", sid), cache.StripImages(data))
+
+	// 提取 subject 摘要写入全局 list
+	var ss struct {
+		ID       int     `json:"id"`
+		Name     string  `json:"name"`
+		NameCN   string  `json:"name_cn"`
+		Rating   struct{ Score float64 `json:"score"` } `json:"rating"`
+		Platform string  `json:"platform"`
+		Date     string  `json:"date"`
+	}
+	if json.Unmarshal(data, &ss) == nil && ss.ID > 0 {
+		mergeSubjectEntry(subjListPath, cache.SubjectSummary{
+			ID: ss.ID, Name: ss.Name, NameCN: ss.NameCN,
+			Score: ss.Rating.Score, Platform: ss.Platform, Date: ss.Date,
+		})
+	}
 	if p != nil { p.Send("subject", 1, 1, "done") }
 
-	// Characters list + details
-	type charRef struct{ ID int `json:"id"` }
-	type personRef struct{ ID int `json:"id"` }
-	var chars []charRef
-	var persons []personRef
+	// Characters & persons lists — 边拉取边写入全局 list
+	type fullChar struct {
+		ID      int    `json:"id"`
+		Name    string `json:"name"`
+		Relation string `json:"relation"`
+		Actors  []struct {
+			ID   int    `json:"id"`
+			Name string `json:"name"`
+		} `json:"actors"`
+	}
+	type fullPerson struct {
+		ID       int    `json:"id"`
+		Name     string `json:"name"`
+		Relation string `json:"relation"`
+	}
+	var chars []fullChar
+	var persons []fullPerson
 	var wg sync.WaitGroup
 
 	wg.Add(1)
@@ -466,6 +582,14 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/characters", sid)); err == nil {
 			cache.Put(dd, fmt.Sprintf("subjects/%d/characters.json", sid), cache.StripImages(data))
 			json.Unmarshal(data, &chars)
+			for _, c := range chars {
+				mergeListEntry(charListPath, c.ID, c.Name, "")
+				for _, a := range c.Actors {
+					if a.ID > 0 {
+						mergeListEntry(persListPath, a.ID, a.Name, "")
+					}
+				}
+			}
 		}
 	}()
 
@@ -475,30 +599,48 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/persons", sid)); err == nil {
 			cache.Put(dd, fmt.Sprintf("subjects/%d/persons.json", sid), cache.StripImages(data))
 			json.Unmarshal(data, &persons)
+			for _, p := range persons {
+				mergeListEntry(persListPath, p.ID, p.Name, "")
+			}
 		}
 	}()
 	wg.Wait()
 
-	var wg2 sync.WaitGroup
-	wg2.Add(1)
-	go func() {
-		defer wg2.Done()
-		fetchConcurrent(chars, func(c charRef) {
-			if cdata, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID)); err == nil {
-				cache.Put(dd, fmt.Sprintf("characters/%d.json", c.ID), cache.StripImages(cdata))
+	// Character details — retry 3 times, remove from list on 404
+	type charRef struct{ ID int `json:"id"` }
+	var charIDs []charRef
+	for _, c := range chars { charIDs = append(charIDs, charRef{ID: c.ID}) }
+	fetchConcurrent(charIDs, func(c charRef) {
+		data, err := getRawWithRetry(bg, fmt.Sprintf("v0/characters/%d", c.ID), 3)
+		if err != nil {
+			if strings.Contains(err.Error(), "HTTP 404") {
+				log.Warn("Character #%d: 404, removing from list", c.ID)
+				removeListEntry(charListPath, c.ID)
+			} else {
+				log.Warn("Character #%d: %v", c.ID, err)
 			}
-		}, p, "characters", maxConcurrency)
-	}()
-	wg2.Add(1)
-	go func() {
-		defer wg2.Done()
-		fetchConcurrent(persons, func(pp personRef) {
-			if pdata, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID)); err == nil {
-				cache.Put(dd, fmt.Sprintf("persons/%d.json", pp.ID), cache.StripImages(pdata))
+			return
+		}
+		cache.Put(dd, fmt.Sprintf("characters/%d.json", c.ID), cache.StripImages(data))
+	}, p, "characters", maxConcurrency)
+
+	// Person details — retry 3 times, remove from list on 404
+	type personRef struct{ ID int `json:"id"` }
+	var personIDs []personRef
+	for _, p := range persons { personIDs = append(personIDs, personRef{ID: p.ID}) }
+	fetchConcurrent(personIDs, func(pp personRef) {
+		data, err := getRawWithRetry(bg, fmt.Sprintf("v0/persons/%d", pp.ID), 3)
+		if err != nil {
+			if strings.Contains(err.Error(), "HTTP 404") {
+				log.Warn("Person #%d: 404, removing from list", pp.ID)
+				removeListEntry(persListPath, pp.ID)
+			} else {
+				log.Warn("Person #%d: %v", pp.ID, err)
 			}
-		}, p, "persons", maxConcurrency)
-	}()
-	wg2.Wait()
+			return
+		}
+		cache.Put(dd, fmt.Sprintf("persons/%d.json", pp.ID), cache.StripImages(data))
+	}, p, "persons", maxConcurrency)
 
 	// Episodes
 	if data, err := bg.GetRaw(fmt.Sprintf("v0/episodes?subject_id=%d&limit=200", sid)); err == nil {
@@ -518,14 +660,11 @@ func buildIndexes(dd string, p *Progress) {
 	log.Info("Building indexes...")
 	os.MkdirAll(cache.IndexDir(dd), 0o755)
 
-	var subjects []cache.SubjectSummary
-	var chars []cache.NameEntry
-	var persons []cache.NameEntry
 	tags := map[string]tagInfo{}
 
 	apiDir := cache.Dir(dd)
 
-	// Scan subjects
+	// Scan subjects for tags
 	subjDir := filepath.Join(apiDir, "subjects")
 	if entries, _ := os.ReadDir(subjDir); len(entries) > 0 {
 		for _, e := range entries {
@@ -534,22 +673,13 @@ func buildIndexes(dd string, p *Progress) {
 			}
 			data, _ := os.ReadFile(filepath.Join(subjDir, e.Name()))
 			var s struct {
-				ID       int     `json:"id"`
-				Name     string  `json:"name"`
-				NameCN   string  `json:"name_cn"`
-				Rating   struct{ Score float64 `json:"score"` } `json:"rating"`
-				Platform string  `json:"platform"`
-				Date     string  `json:"date"`
-				Tags     []struct{
+				ID   int `json:"id"`
+				Tags []struct{
 					Name  string `json:"name"`
 					Count int    `json:"count"`
 				} `json:"tags"`
 			}
 			if json.Unmarshal(data, &s) == nil && s.ID > 0 {
-				subjects = append(subjects, cache.SubjectSummary{
-					ID: s.ID, Name: s.Name, NameCN: s.NameCN,
-					Score: s.Rating.Score, Platform: s.Platform, Date: s.Date,
-				})
 				for _, t := range s.Tags {
 					info := tags[t.Name]
 					info.Count++
@@ -560,73 +690,9 @@ func buildIndexes(dd string, p *Progress) {
 		}
 	}
 
-	// Scan characters — extract name_cn from infobox
-	charDir := filepath.Join(apiDir, "characters")
-	if entries, _ := os.ReadDir(charDir); len(entries) > 0 {
-		for _, e := range entries {
-			if !strings.HasSuffix(e.Name(), ".json") { continue }
-			data, _ := os.ReadFile(filepath.Join(charDir, e.Name()))
-			var c struct {
-				ID      int    `json:"id"`
-				Name    string `json:"name"`
-				Infobox []struct {
-					Key   string          `json:"key"`
-					Value json.RawMessage `json:"value"`
-				} `json:"infobox"`
-			}
-			if json.Unmarshal(data, &c) == nil && c.ID > 0 {
-				nameCN := ""
-				for _, ib := range c.Infobox {
-					if ib.Key == "简体中文名" {
-						var v string
-						if json.Unmarshal(ib.Value, &v) == nil {
-							nameCN = v
-						}
-						break
-					}
-				}
-				chars = append(chars, cache.NameEntry{ID: c.ID, Name: c.Name, NameCN: nameCN})
-			}
-		}
-	}
-
-	// Scan persons — extract name_cn from infobox
-	persDir := filepath.Join(apiDir, "persons")
-	if entries, _ := os.ReadDir(persDir); len(entries) > 0 {
-		for _, e := range entries {
-			if !strings.HasSuffix(e.Name(), ".json") { continue }
-			data, _ := os.ReadFile(filepath.Join(persDir, e.Name()))
-			var p struct {
-				ID      int    `json:"id"`
-				Name    string `json:"name"`
-				Infobox []struct {
-					Key   string          `json:"key"`
-					Value json.RawMessage `json:"value"`
-				} `json:"infobox"`
-			}
-			if json.Unmarshal(data, &p) == nil && p.ID > 0 {
-				nameCN := ""
-				for _, ib := range p.Infobox {
-					if ib.Key == "简体中文名" {
-						var v string
-						if json.Unmarshal(ib.Value, &v) == nil {
-							nameCN = v
-						}
-						break
-					}
-				}
-				persons = append(persons, cache.NameEntry{ID: p.ID, Name: p.Name, NameCN: nameCN})
-			}
-		}
-	}
-
-	saveJSON(cache.IndexFile(dd, "subjects.json"), subjects)
-	saveJSON(cache.IndexFile(dd, "characters.json"), chars)
-	saveJSON(cache.IndexFile(dd, "persons.json"), persons)
 	saveJSON(cache.IndexFile(dd, "tags.json"), tags)
 
-	log.Info("Indexes built: %d subjects, %d chars, %d persons, %d tags",
-		len(subjects), len(chars), len(persons), len(tags))
+	log.Info("Indexes built: %d tags", len(tags))
 }
 
 // Phase 3: Download images via official endpoints.
