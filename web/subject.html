@@ -20,7 +20,7 @@ function switchTab(t) { tab = t; history.replaceState({},'', '?id='+SID+'&tab='+
 
 function tabsHtml() {
   var items = [
-    ['overview','概览'], ['ep','章节'], ['chars','角色'], ['persons','制作人员']
+    ['overview','概览'], ['ep','剧集'], ['chars','角色'], ['persons','制作人员']
   ];
   return items.map(function(i) {
     var cls = tab===i[0] ? 'text-white border-b-2 border-[#FE8A95]' : 'text-sub hover:text-white';
@@ -120,9 +120,9 @@ async function overview(s, infoItems) {
   var tagsHtml = '';
   if (s.tags && s.tags.length) {
     var shown = s.tags.slice(0, 20);
-    tagsHtml = '<div class="flex flex-wrap gap-x-3 gap-y-1">';
+    tagsHtml = '<div class="flex flex-wrap gap-x-2 gap-y-1">';
     for (var i=0; i<shown.length; i++) {
-      tagsHtml += '<a href="/tags-subject.html?tag='+encodeURIComponent(shown[i].name)+'" class="text-xs no-underline text-sub hover:text-[#FE8A95]">'+shown[i].name+'<small class="text-sub ml-0.5">'+shown[i].count+'</small></a>';
+      tagsHtml += '<a href="/tags-subject.html?tag='+encodeURIComponent(shown[i].name)+'" class="no-underline bg-[#252530] rounded-full px-2.5 py-0.5 text-[14px] text-sub hover:text-[#FE8A95] hover:bg-[#2a2a3a] transition-colors">'+shown[i].name+'<small class="text-xs text-sub ml-1">'+shown[i].count+'</small></a>';
     }
     tagsHtml += '</div>';
   }
@@ -170,9 +170,10 @@ async function overview(s, infoItems) {
   // TOP: left (episodes + summary + tags) | right (rating)
   html += '<div class="flex flex-col md:flex-row gap-5">';
   html += '<div class="flex-1 min-w-0">';
-  if (epGrid) html += '<div class="mb-4"><div class="text-xs text-sub mb-1">全部剧集 ('+eps.length+')</div>'+epGrid+'</div>';
+  if (epGrid) html += '<div class="mb-4"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">剧集</span><span class="text-xs text-sub">('+eps.length+')</span></div>'+epGrid+'</div>';
+  html += '<div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">简介</span></div>';
   html += '<p class="text-[14px] leading-relaxed text-sub mb-4">'+(s.summary||'暂无简介')+'</p>';
-  if (tagsHtml) html += '<div class="mb-2"><div class="text-xs text-sub mb-1">标签</div>'+tagsHtml+'</div>';
+  if (tagsHtml) html += '<div class="mb-2"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">标签</span></div>'+tagsHtml+'</div>';
   html += '</div>';
   // Rating
   html += '<div class="w-full md:w-[230px] shrink-0 bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-xl p-4">';
@@ -185,7 +186,7 @@ async function overview(s, infoItems) {
 
   // BOTTOM: characters + relations
   if (mainChars.length) {
-    html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">角色介绍</span><a href="javascript:switchTab(\'chars\')" class="text-[#FE8A95] text-xs ml-auto no-underline">更多角色 &raquo;</a></div>';
+    html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">主要角色</span><a href="javascript:switchTab(\'chars\')" class="text-[#FE8A95] text-xs ml-auto no-underline">更多角色 &raquo;</a></div>';
     html += '<div class="flex gap-3 overflow-x-auto pb-2" style="scrollbar-width:thin">';
     for (var i=0; i<mainChars.length; i++) {
       var c = mainChars[i];
