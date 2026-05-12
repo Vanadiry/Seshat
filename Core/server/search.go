@@ -1,6 +1,10 @@
 package server
 
 import (
+	"github.com/vanadiry/seshat/Core/log"
+	"fmt"
+	"github.com/vanadiry/seshat/Core/config"
+	"net/http"
 	"encoding/json"
 	"os"
 	"strings"
@@ -135,4 +139,41 @@ func deepSearch(dd, q string, types []string) []map[string]any {
 		}
 	}
 	return results
+}
+
+
+func handleSearch(cfg *config.Config, dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := strings.ToLower(r.URL.Query().Get("q"))
+		types := r.URL.Query().Get("type")
+		if types == "" { types = "subjects,characters,persons,tags" }
+		if q == "" {
+			writeJSON(w, map[string]any{"subjects": []any{}, "characters": []any{}, "persons": []any{}, "tags": []any{}})
+			return
+		}
+		writeJSON(w, quickSearch(dd, q, strings.Split(types, ",")))
+	}
+}
+func handleSearchDeep(cfg *config.Config, dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
+		var req struct{ Query string `json:"q"`; Type string `json:"type"` }
+		json.NewDecoder(r.Body).Decode(&req)
+		if req.Query == "" { writeJSON(w, map[string]any{"results": []any{}}); return }
+		if req.Type == "" { req.Type = "subjects,characters,persons" }
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		flusher, ok := w.(http.Flusher)
+		if !ok { writeJSON(w, map[string]string{"error": "streaming not supported"}); return }
+		log.Info("Deep search: %q (types: %s)", req.Query, req.Type)
+		count := deepSearchStream(dd, req.Query, strings.Split(req.Type, ","), func(result map[string]any) {
+			data, _ := json.Marshal(result)
+			fmt.Fprintf(w, "data: %s\n\n", data)
+			flusher.Flush()
+		})
+		fmt.Fprintf(w, "data: {\"step\":\"complete\",\"total\":%d}\n\n", count)
+		flusher.Flush()
+		log.Info("Deep search done: %d results", count)
+	}
 }

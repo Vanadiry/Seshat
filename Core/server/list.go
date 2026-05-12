@@ -1,11 +1,16 @@
 package server
 
 import (
+	"strings"
+	"fmt"
+	"net/http"
 	"encoding/json"
 	"os"
 	"path/filepath"
 
 	"github.com/vanadiry/seshat/Core/cache"
+	"github.com/vanadiry/seshat/Core/config"
+	"github.com/vanadiry/seshat/Core/bangumi"
 )
 
 func mergeListEntry(path string, id int, name, nameCN string) {
@@ -95,3 +100,61 @@ func loadNameList(path string) []cache.NameEntry {
 }
 
 // (saveJSON already declared above)
+
+func handleListSubjects(dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile(cache.IndexFile(dd, "subjects.json"))
+		if err != nil { writeJSON(w, []any{}); return }
+		var list []cache.SubjectSummary
+		json.Unmarshal(data, &list)
+		writeJSON(w, list)
+	}
+}
+
+func handleListCharacters(dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile(cache.IndexFile(dd, "characters.json"))
+		if err != nil { writeJSON(w, []any{}); return }
+		var list []cache.NameEntry
+		json.Unmarshal(data, &list)
+		writeJSON(w, list)
+	}
+}
+
+func handleListPersons(dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile(cache.IndexFile(dd, "persons.json"))
+		if err != nil { writeJSON(w, []any{}); return }
+		var list []cache.NameEntry
+		json.Unmarshal(data, &list)
+		writeJSON(w, list)
+	}
+}
+
+func handleCacheReader(dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		key := strings.TrimPrefix(r.URL.Path, "/api/v0/") + ".json"
+		data, err := cache.Get(dd, key)
+		if err != nil { http.NotFound(w, r); return }
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+	}
+}
+
+func handleUserProfile(cfg *config.Config, bg *bangumi.Client, dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		uname := cfg.User.Username
+		if uname == "" { http.Error(w, `{"error":"no username"}`, 404); return }
+		data, err := cache.Get(dd, fmt.Sprintf("users/%s.json", uname))
+		if err != nil {
+			raw, err := bg.GetRaw(fmt.Sprintf("v0/users/%s", uname))
+			if err != nil { http.Error(w, `{"error":"user not found"}`, 404); return }
+			cache.Put(dd, fmt.Sprintf("users/%s.json", uname), raw)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(raw)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+	}
+}

@@ -346,11 +346,11 @@ paths:
                   status: { type: string, example: "fetching" }
                   count: { type: integer, example: 2 }
                   task_id: { type: string, example: "ae8687f0", description: "用于 GET /api/v0/progress/{task_id}" }
-  /api/v0/fetch:
+  /api/v0/fetch/all:
     post:
       tags: [拉取]
-      summary: 拉取全部已储存的动画
-      description: 扫描 Tracker 目录下所有列表，拉取全部 subject 数据。返回 task_id。
+      summary: 拉取全部 tracker 中的动画
+      description: 扫描 Tracker 目录下所有列表，从上游全量拉取全部 subject 数据。覆盖已有，不删除本地多余数据。返回 task_id。
       responses:
         "200":
           description: 后台执行
@@ -360,6 +360,53 @@ paths:
                 type: object
                 properties:
                   status: { type: string }
+                  task_id: { type: string, example: "ae8687f0" }
+  /api/v0/fetch/update:
+    post:
+      tags: [拉取]
+      summary: 增量拉取新增的动画
+      description: 对比 Tracker 与本地 subjects.json，只拉取新增的 ID。若无新增返回 up-to-date。
+      responses:
+        "200":
+          description: 后台执行或无新增
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "fetching" }
+                  count: { type: integer, example: 3 }
+                  task_id: { type: string, example: "ae8687f0" }
+  /api/v0/fetch/images:
+    post:
+      tags: [拉取]
+      summary: 重建图片缓存
+      description: 删除本地 images 目录，根据现有 list 文件重新下载所有图片。
+      responses:
+        "200":
+          description: 后台执行
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "downloading" }
+                  count: { type: integer, example: 150 }
+                  task_id: { type: string, example: "ae8687f0" }
+  /api/v0/fetch/index:
+    post:
+      tags: [拉取]
+      summary: 从 API 缓存重建索引
+      description: 扫描 api/ 目录下所有已缓存的 JSON，重建 subjects.json、characters.json、persons.json、tags.json。不重建 images 索引。
+      responses:
+        "200":
+          description: 后台执行
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "rebuilding" }
                   task_id: { type: string, example: "ae8687f0" }
   /api/v0/fetch/deep:
     post:

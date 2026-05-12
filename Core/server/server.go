@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
-	"sort"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -90,347 +88,43 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/openapi.yaml", serveFile(embedFS, "web/api/openapi.yaml", "application/yaml"))
 
 	// ── SSE progress ──
-	mux.HandleFunc("GET /api/v0/progress/{id}", func(w http.ResponseWriter, r *http.Request) {
-		p := getProgress(r.PathValue("id"))
-		if p == nil {
-			writeJSON(w, map[string]string{"error": "task not found"})
-			return
-		}
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-		flusher, ok := w.(http.Flusher)
-		if !ok {
-			return
-		}
-		for event := range p.Channel {
-			fmt.Fprintf(w, "data: %s\n\n", event)
-			flusher.Flush()
-		}
-	})
+	mux.HandleFunc("GET /api/v0/progress/{id}", handleProgress)
 
 	// ── Cache API ──
-	mux.HandleFunc("GET /api/v0/subjects", func(w http.ResponseWriter, r *http.Request) {
-		data, err := os.ReadFile(cache.IndexFile(dd, "subjects.json"))
-		if err != nil {
-			writeJSON(w, []any{})
-			return
-		}
-		var list []cache.SubjectSummary
-		json.Unmarshal(data, &list)
-		writeJSON(w, list)
-	})
+	mux.HandleFunc("GET /api/v0/subjects", handleListSubjects(dd))
+	mux.HandleFunc("GET /api/v0/characters", handleListCharacters(dd))
+	mux.HandleFunc("GET /api/v0/persons", handleListPersons(dd))
+	mux.HandleFunc("GET /api/v0/", handleCacheReader(dd))
 
-	mux.HandleFunc("GET /api/v0/characters", func(w http.ResponseWriter, r *http.Request) {
-		data, err := os.ReadFile(cache.IndexFile(dd, "characters.json"))
-		if err != nil {
-			writeJSON(w, []any{})
-			return
-		}
-		var list []cache.NameEntry
-		json.Unmarshal(data, &list)
-		writeJSON(w, list)
-	})
+	// ── Fetch ──
+	mux.HandleFunc("POST /api/v0/fetch/all", handleFetchAll(cfg, bg, dd, id))
+	mux.HandleFunc("POST /api/v0/fetch/deep", handleFetchDeep(cfg, bg, dd, id))
+	mux.HandleFunc("POST /api/v0/fetch/tracker", handleFetchTracker(cfg, bg, dd, id))
+	mux.HandleFunc("POST /api/v0/fetch/user", handleFetchUser(cfg, bg, dd, id))
+	mux.HandleFunc("POST /api/v0/fetch/subject", handleFetchSubject(cfg, bg, dd, id))
+	mux.HandleFunc("POST /api/v0/fetch/update", handleFetchUpdate(cfg, bg, dd, id))
+	mux.HandleFunc("POST /api/v0/fetch/images", handleFetchImages(cfg, bg, dd))
+	mux.HandleFunc("POST /api/v0/fetch/index", handleFetchIndex(dd))
 
-	mux.HandleFunc("GET /api/v0/persons", func(w http.ResponseWriter, r *http.Request) {
-		data, err := os.ReadFile(cache.IndexFile(dd, "persons.json"))
-		if err != nil {
-			writeJSON(w, []any{})
-			return
-		}
-		var list []cache.NameEntry
-		json.Unmarshal(data, &list)
-		writeJSON(w, list)
-	})
+	// ── Tracker ──
+	mux.HandleFunc("POST /api/v0/tracker/create", handleTrackerCreate(cfg))
+	mux.HandleFunc("GET /api/v0/tracker", handleTrackerList(cfg))
 
-	// Generic cache reader for /v0/SUBJECTS|CHARACTERS|PERSONS|EPISODES
-	mux.HandleFunc("GET /api/v0/", func(w http.ResponseWriter, r *http.Request) {
-		key := strings.TrimPrefix(r.URL.Path, "/api/v0/") + ".json"
-		data, err := cache.Get(dd, key)
-		if err != nil {
-			http.NotFound(w, r)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
-	})
-
-	// ── Fetch: 刷新全部 tracker（覆盖更新）──
-	mux.HandleFunc("POST /api/v0/fetch", func(w http.ResponseWriter, r *http.Request) {
-		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
-		p := newProgress(countTrackerTotal(cfg))
-		go func() {
-			refreshAllTrackers(cfg, bg, dd, id, p)
-			p.Send("complete", p.Total, p.Total, "")
-			p.Close()
-		}()
-		writeJSON(w, map[string]any{"status": "fetching", "task_id": p.ID})
-	})
-
-	// ── Fetch: 深度重建（删除全部缓存后重新拉取）──
-	mux.HandleFunc("POST /api/v0/fetch/deep", func(w http.ResponseWriter, r *http.Request) {
-		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
-		p := newProgress(countTrackerTotal(cfg))
-		go func() {
-			forceRefresh(cfg, bg, dd, id, p)
-			p.Send("complete", p.Total, p.Total, "")
-			p.Close()
-		}()
-		writeJSON(w, map[string]any{"status": "deep refresh", "task_id": p.ID})
-	})
-
-	// ── Fetch: 按名称刷新指定 tracker ──
-	mux.HandleFunc("POST /api/v0/fetch/tracker", func(w http.ResponseWriter, r *http.Request) {
-		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
-		var req struct{ Names []string `json:"names"` }
-		json.NewDecoder(r.Body).Decode(&req)
-		p := newProgress(countTrackerNames(cfg, req.Names))
-		go func() {
-			refreshTrackers(cfg, bg, dd, id, req.Names, p)
-			p.Send("complete", p.Total, p.Total, "")
-			p.Close()
-		}()
-		writeJSON(w, map[string]any{"status": "fetching", "names": req.Names, "task_id": p.ID})
-	})
-
-	// ── Fetch: 刷新用户收藏 ──
-	mux.HandleFunc("POST /api/v0/fetch/user", func(w http.ResponseWriter, r *http.Request) {
-		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
-		uname := cfg.User.Username
-		if uname == "" {
-			http.Error(w, `{"error":"username not configured"}`, 400)
-			return
-		}
-		p := newProgress(0)
-		go func() {
-			fetchUserCollections(uname, bg, dd)
-			refreshTrackers(cfg, bg, dd, id, []string{"user"}, p)
-			p.Send("complete", 1, 1, "")
-			p.Close()
-		}()
-		writeJSON(w, map[string]any{"status": "fetching", "username": uname, "task_id": p.ID})
-	})
-
-	// ── Fetch: 接受单个或数组 ──
-	mux.HandleFunc("POST /api/v0/fetch/subject", func(w http.ResponseWriter, r *http.Request) {
-		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
-		var req struct {
-			ID  int   `json:"id"`
-			IDs []int `json:"ids"`
-		}
-		json.NewDecoder(r.Body).Decode(&req)
-		ids := req.IDs
-		if req.ID != 0 {
-			ids = []int{req.ID}
-		}
-		if len(ids) == 0 {
-			http.Error(w, `{"error":"id or ids required"}`, 400)
-			return
-		}
-		p := newProgress(len(ids))
-		for _, sid := range ids {
-			addToSeshatTracker(cfg, sid)
-		}
-		go func() {
-			fetchSubjectList(ids, bg, dd, id, p)
-			p.Send("phase", 2, 3, "building indexes")
-			buildIndexes(dd, p)
-			p.Send("phase", 3, 3, "downloading images")
-			downloadImages(dd, bg, p)
-			p.Send("complete", len(ids), len(ids), "")
-			p.Close()
-		}()
-		writeJSON(w, map[string]any{"status": "fetching", "count": len(ids), "task_id": p.ID})
-	})
-
-	// ── Tracker 创建 ──
-	mux.HandleFunc("POST /api/v0/tracker/create", func(w http.ResponseWriter, r *http.Request) {
-		var req struct{ Name string `json:"name"` }
-		json.NewDecoder(r.Body).Decode(&req)
-		if req.Name == "" {
-			http.Error(w, `{"error":"name required"}`, 400)
-			return
-		}
-		path := filepath.Join(cfg.TrackerDir(), req.Name+".toml")
-		if _, err := os.Stat(path); err == nil {
-			http.Error(w, `{"error":"tracker already exists"}`, 409)
-			return
-		}
-		tmpl := fmt.Sprintf(config.TrackerTemplate, req.Name, req.Name)
-		os.MkdirAll(cfg.TrackerDir(), 0o755)
-		os.WriteFile(path, []byte(tmpl), 0o644)
-		writeJSON(w, map[string]string{"status": "created", "name": req.Name})
-	})
-
-	// ── Tracker 列表 ──
-	mux.HandleFunc("GET /api/v0/tracker", func(w http.ResponseWriter, r *http.Request) {
-		files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
-		files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
-		files = append(files, files2...)
-		type tinfo struct {
-			Name  string `json:"name"`
-			Count int    `json:"count"`
-		}
-		var list []tinfo
-		for _, f := range files {
-			name := strings.TrimSuffix(filepath.Base(f), ".json")
-			name = strings.TrimSuffix(name, ".toml")
-			ids := loadTrackerIDs(f)
-			list = append(list, tinfo{Name: name, Count: len(ids)})
-		}
-		writeJSON(w, list)
-	})
-
-	// ── User profile ──
-	mux.HandleFunc("GET /api/v0/user/profile", func(w http.ResponseWriter, r *http.Request) {
-		uname := cfg.User.Username
-		if uname == "" {
-			http.Error(w, `{"error":"no username"}`, 404)
-			return
-		}
-		data, err := cache.Get(dd, fmt.Sprintf("users/%s.json", uname))
-		if err != nil {
-			raw, err := bg.GetRaw(fmt.Sprintf("v0/users/%s", uname))
-			if err != nil {
-				http.Error(w, `{"error":"user not found"}`, 404)
-				return
-			}
-			cache.Put(dd, fmt.Sprintf("users/%s.json", uname), raw)
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(raw)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
-	})
+	// ── User ──
+	mux.HandleFunc("GET /api/v0/user/profile", handleUserProfile(cfg, bg, dd))
 
 	// ── Tags ──
-	mux.HandleFunc("GET /api/v0/tags", func(w http.ResponseWriter, r *http.Request) {
-		tags := loadTags(dd)
-		type tagItem struct {
-			Name  string `json:"name"`
-			Count int    `json:"count"`
-		}
-		var list []tagItem
-		for name, info := range tags {
-			list = append(list, tagItem{Name: name, Count: info.Count})
-		}
-		// Sort by count desc
-		sort.Slice(list, func(i, j int) bool { return list[i].Count > list[j].Count })
-		writeJSON(w, list)
-	})
-
-	mux.HandleFunc("GET /api/v0/tags/{name}/subjects", func(w http.ResponseWriter, r *http.Request) {
-		name := r.PathValue("name")
-		tags := loadTags(dd)
-		info, ok := tags[name]
-		if !ok {
-			writeJSON(w, []int{})
-			return
-		}
-		// Return subject list with basic info
-		var subjects []any
-		for _, sid := range info.Subjects {
-			data, err := cache.Get(dd, fmt.Sprintf("subjects/%d.json", sid))
-			if err != nil {
-				continue
-			}
-			var s struct {
-				ID       int    `json:"id"`
-				Name     string `json:"name"`
-				NameCN   string `json:"name_cn"`
-				Rating   struct {
-					Score float64 `json:"score"`
-				} `json:"rating"`
-				Platform string `json:"platform"`
-				Date     string `json:"date"`
-				Images   struct {
-					Grid string `json:"grid"`
-				} `json:"images"`
-			}
-			json.Unmarshal(data, &s)
-			subjects = append(subjects, s)
-		}
-		writeJSON(w, subjects)
-	})
+	mux.HandleFunc("GET /api/v0/tags", handleTags(dd))
+	mux.HandleFunc("GET /api/v0/tags/{name}/subjects", handleTagSubjects(dd))
 
 	// ── ELO ──
-	mux.HandleFunc("GET /api/v0/elo/pair", func(w http.ResponseWriter, r *http.Request) {
-		pair := getELOPair(dd)
-		if pair == nil {
-			writeJSON(w, map[string]string{"error": "need at least 2 cached subjects"})
-			return
-		}
-		writeJSON(w, pair)
-	})
-
-	mux.HandleFunc("POST /api/v0/elo/compare", func(w http.ResponseWriter, r *http.Request) {
-		var req struct {
-			Winner int `json:"winner"`
-			Loser  int `json:"loser"`
-		}
-		json.NewDecoder(r.Body).Decode(&req)
-		if req.Winner == 0 || req.Loser == 0 {
-			http.Error(w, `{"error":"winner and loser required"}`, 400)
-			return
-		}
-		updateELO(dd, req.Winner, req.Loser)
-		writeJSON(w, map[string]string{"status": "ok"})
-	})
-
-	mux.HandleFunc("GET /api/v0/elo/ranking", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, getELORanking(dd))
-	})
+	mux.HandleFunc("GET /api/v0/elo/pair", handleELOPair(dd))
+	mux.HandleFunc("POST /api/v0/elo/compare", handleELOCompare(dd))
+	mux.HandleFunc("GET /api/v0/elo/ranking", handleELORanking(dd))
 
 	// ── Search ──
-	mux.HandleFunc("GET /api/v0/search", func(w http.ResponseWriter, r *http.Request) {
-		q := strings.ToLower(r.URL.Query().Get("q"))
-		types := r.URL.Query().Get("type") // subjects,characters,persons,tags (comma-separated)
-		if types == "" {
-			types = "subjects,characters,persons,tags"
-		}
-		if q == "" {
-			writeJSON(w, map[string]any{"subjects": []any{}, "characters": []any{}, "persons": []any{}, "tags": []any{}})
-			return
-		}
-		result := quickSearch(dd, q, strings.Split(types, ","))
-		writeJSON(w, result)
-	})
-
-	mux.HandleFunc("POST /api/v0/search/deep", func(w http.ResponseWriter, r *http.Request) {
-		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
-		var req struct {
-			Query string `json:"q"`
-			Type  string `json:"type"`
-		}
-		json.NewDecoder(r.Body).Decode(&req)
-		if req.Query == "" {
-			writeJSON(w, map[string]any{"results": []any{}})
-			return
-		}
-		if req.Type == "" {
-			req.Type = "subjects,characters,persons"
-		}
-
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-		flusher, ok := w.(http.Flusher)
-		if !ok {
-			writeJSON(w, map[string]string{"error": "streaming not supported"})
-			return
-		}
-
-		log.Info("Deep search: %q (types: %s)", req.Query, req.Type)
-		count := deepSearchStream(dd, req.Query, strings.Split(req.Type, ","), func(result map[string]any) {
-			data, _ := json.Marshal(result)
-			fmt.Fprintf(w, "data: %s\n\n", data)
-			flusher.Flush()
-		})
-		fmt.Fprintf(w, "data: {\"step\":\"complete\",\"total\":%d}\n\n", count)
-		flusher.Flush()
-		log.Info("Deep search done: %d results", count)
-	})
+	mux.HandleFunc("GET /api/v0/search", handleSearch(cfg, dd))
+	mux.HandleFunc("POST /api/v0/search/deep", handleSearchDeep(cfg, dd))
 
 	// ── Image API (official-style: /v0/subjects/{id}/image?type=large|grid) ──
 	imgHandler := func(kind string) http.HandlerFunc {

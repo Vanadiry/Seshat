@@ -1,6 +1,7 @@
 package server
 
 import (
+	"net/http"
 	"encoding/json"
 	"math"
 	"math/rand"
@@ -119,4 +120,26 @@ func subjectSummary(dd, key string) eloEntry {
 	}
 	json.Unmarshal(data, &s)
 	return eloEntry{ID: s.ID, Name: s.Name, NameCN: s.NameCN, Score: s.Rating.Score}
+}
+
+func handleELOPair(dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		pair := getELOPair(dd)
+		if pair == nil { writeJSON(w, map[string]string{"error": "need at least 2 cached subjects"}); return }
+		writeJSON(w, pair)
+	}
+}
+
+func handleELOCompare(dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req struct{ Winner int `json:"winner"`; Loser int `json:"loser"` }
+		json.NewDecoder(r.Body).Decode(&req)
+		if req.Winner == 0 || req.Loser == 0 { http.Error(w, `{"error":"winner and loser required"}`, 400); return }
+		updateELO(dd, req.Winner, req.Loser)
+		writeJSON(w, map[string]string{"status": "ok"})
+	}
+}
+
+func handleELORanking(dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) { writeJSON(w, getELORanking(dd)) }
 }

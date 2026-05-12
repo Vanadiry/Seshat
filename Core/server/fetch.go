@@ -1,6 +1,7 @@
 package server
 
 import (
+	"net/http"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -311,3 +312,140 @@ func fetchConcurrent[T any](items []T, fn func(T), p *Progress, stage string, co
 }
 
 // ── Helpers ──
+
+func handleFetchAll(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
+		p := newProgress(countTrackerTotal(cfg))
+		go func() {
+			refreshAllTrackers(cfg, bg, dd, imgDir, p)
+			p.Send("complete", p.Total, p.Total, "")
+			p.Close()
+		}()
+		writeJSON(w, map[string]any{"status": "fetching", "task_id": p.ID})
+	}
+}
+
+func handleFetchDeep(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
+		p := newProgress(countTrackerTotal(cfg))
+		go func() {
+			forceRefresh(cfg, bg, dd, imgDir, p)
+			p.Send("complete", p.Total, p.Total, "")
+			p.Close()
+		}()
+		writeJSON(w, map[string]any{"status": "deep refresh", "task_id": p.ID})
+	}
+}
+
+func handleFetchTracker(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
+		var req struct{ Names []string `json:"names"` }
+		json.NewDecoder(r.Body).Decode(&req)
+		p := newProgress(countTrackerNames(cfg, req.Names))
+		go func() {
+			refreshTrackers(cfg, bg, dd, imgDir, req.Names, p)
+			p.Send("complete", p.Total, p.Total, "")
+			p.Close()
+		}()
+		writeJSON(w, map[string]any{"status": "fetching", "names": req.Names, "task_id": p.ID})
+	}
+}
+
+func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
+		uname := cfg.User.Username
+		if uname == "" { http.Error(w, `{"error":"username not configured"}`, 400); return }
+		p := newProgress(0)
+		go func() {
+			fetchUserCollections(uname, bg, dd)
+			refreshTrackers(cfg, bg, dd, imgDir, []string{"user"}, p)
+			p.Send("complete", 1, 1, "")
+			p.Close()
+		}()
+		writeJSON(w, map[string]any{"status": "fetching", "username": uname, "task_id": p.ID})
+	}
+}
+
+func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
+		var req struct {
+			ID  int   `json:"id"`
+			IDs []int `json:"ids"`
+		}
+		json.NewDecoder(r.Body).Decode(&req)
+		ids := req.IDs
+		if req.ID != 0 { ids = []int{req.ID} }
+		if len(ids) == 0 { http.Error(w, `{"error":"id or ids required"}`, 400); return }
+		p := newProgress(len(ids))
+		for _, sid := range ids { addToSeshatTracker(cfg, sid) }
+		go func() {
+			fetchSubjectList(ids, bg, dd, imgDir, p)
+			p.Send("phase", 2, 3, "building indexes")
+			buildIndexes(dd, p)
+			p.Send("phase", 3, 3, "downloading images")
+			downloadImages(dd, bg, p)
+			p.Send("complete", len(ids), len(ids), "")
+			p.Close()
+		}()
+		writeJSON(w, map[string]any{"status": "fetching", "count": len(ids), "task_id": p.ID})
+	}
+}
+
+func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
+		newIDs := diffTrackerIDs(cfg, dd)
+		if len(newIDs) == 0 { writeJSON(w, map[string]any{"status": "up-to-date", "count": 0}); return }
+		p := newProgress(len(newIDs))
+		for _, sid := range newIDs { addToSeshatTracker(cfg, sid) }
+		go func() {
+			fetchSubjectList(newIDs, bg, dd, imgDir, p)
+			p.Send("phase", 2, 3, "building indexes")
+			buildIndexes(dd, p)
+			p.Send("phase", 3, 3, "downloading images")
+			downloadImages(dd, bg, p)
+			p.Send("complete", len(newIDs), len(newIDs), "")
+			p.Close()
+		}()
+		writeJSON(w, map[string]any{"status": "fetching", "count": len(newIDs), "task_id": p.ID})
+	}
+}
+
+func handleFetchImages(cfg *config.Config, bg *bangumi.Client, dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		imgDir := filepath.Join(dd, "images")
+		os.RemoveAll(imgDir)
+		os.MkdirAll(imgDir, 0o755)
+		if len(noImageData) > 0 && noImagePath != "" { os.WriteFile(noImagePath, noImageData, 0o644) }
+		for _, name := range []string{"subjects_image.json", "characters_image.json", "persons_image.json"} {
+			os.WriteFile(cache.IndexFile(dd, name), []byte("{}"), 0o644)
+		}
+		total := len(loadNameList(cache.IndexFile(dd, "subjects.json"))) +
+			len(loadNameList(cache.IndexFile(dd, "characters.json"))) +
+			len(loadNameList(cache.IndexFile(dd, "persons.json")))
+		p := newProgress(total)
+		go func() {
+			downloadImages(dd, bg, p)
+			p.Send("complete", total, total, "")
+			p.Close()
+		}()
+		writeJSON(w, map[string]any{"status": "downloading", "count": total, "task_id": p.ID})
+	}
+}
+
+func handleFetchIndex(dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		p := newProgress(4)
+		go func() {
+			rebuildFromScan(dd, p)
+			p.Send("complete", 4, 4, "")
+			p.Close()
+		}()
+		writeJSON(w, map[string]any{"status": "rebuilding", "task_id": p.ID})
+	}
+}

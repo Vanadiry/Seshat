@@ -1,6 +1,7 @@
 package server
 
 import (
+	"net/http"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -82,4 +83,18 @@ func getProgress(id string) *Progress {
 	progressMu.Lock()
 	defer progressMu.Unlock()
 	return progressMap[id]
+}
+
+func handleProgress(w http.ResponseWriter, r *http.Request) {
+	p := getProgress(r.PathValue("id"))
+	if p == nil { writeJSON(w, map[string]string{"error": "task not found"}); return }
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	flusher, ok := w.(http.Flusher)
+	if !ok { return }
+	for event := range p.Channel {
+		fmt.Fprintf(w, "data: %s\n\n", event)
+		flusher.Flush()
+	}
 }

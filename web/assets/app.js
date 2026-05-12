@@ -141,7 +141,7 @@ async function doRefreshAll() {
     return;
   }
   closeFetch();
-  const res = await fetch(API + '/v0/fetch', {method:'POST'});
+  const res = await fetch(API + '/v0/fetch/all', {method:'POST'});
   const d = await res.json();
   if (d.task_id) startProgress(d.task_id);
 }

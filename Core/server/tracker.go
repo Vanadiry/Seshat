@@ -1,15 +1,17 @@
 package server
 
 import (
+	"net/http"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/vanadiry/seshat/Core/bangumi"
+	"github.com/vanadiry/seshat/Core/cache"
 	"github.com/vanadiry/seshat/Core/config"
 	"github.com/vanadiry/seshat/Core/log"
-	"strings"
 )
 
 func countTrackerTotal(cfg *config.Config) int {
@@ -168,4 +170,60 @@ func loadTrackerIDs(path string) []int {
 	return ids
 }
 
+
+// diffTrackerIDs returns IDs in trackers but not yet in subjects.json.
+func diffTrackerIDs(cfg *config.Config, dd string) []int {
+	seen := map[int]bool{}
+	var allIDs []int
+	files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
+	files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
+	for _, f := range append(files, files2...) {
+		for _, sid := range loadTrackerIDs(f) {
+			if !seen[sid] { seen[sid] = true; allIDs = append(allIDs, sid) }
+		}
+	}
+	// Load existing subject IDs
+	existing := map[int]bool{}
+	if data, err := os.ReadFile(cache.IndexFile(dd, "subjects.json")); err == nil {
+		var list []struct{ ID int `json:"id"` }
+		if json.Unmarshal(data, &list) == nil {
+			for _, s := range list { existing[s.ID] = true }
+		}
+	}
+	var newIDs []int
+	for _, sid := range allIDs {
+		if !existing[sid] { newIDs = append(newIDs, sid) }
+	}
+	return newIDs
+}
 // fetchConcurrent 并发拉取，使用 semaphore 控制并发数。
+
+func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req struct{ Name string `json:"name"` }
+		json.NewDecoder(r.Body).Decode(&req)
+		if req.Name == "" { http.Error(w, `{"error":"name required"}`, 400); return }
+		path := filepath.Join(cfg.TrackerDir(), req.Name+".toml")
+		if _, err := os.Stat(path); err == nil { http.Error(w, `{"error":"tracker already exists"}`, 409); return }
+		tmpl := fmt.Sprintf(config.TrackerTemplate, req.Name, req.Name)
+		os.MkdirAll(cfg.TrackerDir(), 0o755)
+		os.WriteFile(path, []byte(tmpl), 0o644)
+		writeJSON(w, map[string]string{"status": "created", "name": req.Name})
+	}
+}
+
+func handleTrackerList(cfg *config.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
+		files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
+		files = append(files, files2...)
+		type tinfo struct{ Name string `json:"name"`; Count int `json:"count"` }
+		var list []tinfo
+		for _, f := range files {
+			name := strings.TrimSuffix(filepath.Base(f), ".json")
+			name = strings.TrimSuffix(name, ".toml")
+			list = append(list, tinfo{Name: name, Count: len(loadTrackerIDs(f))})
+		}
+		writeJSON(w, list)
+	}
+}
