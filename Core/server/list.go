@@ -17,7 +17,7 @@ func mergeListEntry(path string, id int, name, nameCN string) {
 	json.Unmarshal(data, &list)
 	for i, e := range list {
 		if e.ID == id {
-			list[i].Name = name
+			if name != "" { list[i].Name = name }
 			if nameCN != "" {
 				list[i].NameCN = nameCN
 			}
