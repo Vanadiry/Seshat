@@ -44,33 +44,40 @@ func compress(data []byte) []byte {
 
 // ── Index generation ──
 
-// StripImages returns JSON data with the "images" field removed.
+// StripImages returns JSON data with all "images" fields removed recursively.
 func StripImages(data []byte) []byte {
-	var v map[string]any
-	if json.Unmarshal(data, &v) != nil {
-		return data
+	// Try as object first
+	var obj map[string]any
+	if json.Unmarshal(data, &obj) == nil {
+		stripImagesRecursive(obj)
+		r, _ := json.Marshal(obj)
+		return r
 	}
-	delete(v, "images")
-	// Also strip nested images in array items
-	if actors, ok := v["actors"].([]any); ok {
-		for _, a := range actors {
-			if am, ok := a.(map[string]any); ok {
-				delete(am, "images")
+	// Try as array
+	var arr []any
+	if json.Unmarshal(data, &arr) == nil {
+		for _, item := range arr {
+			if m, ok := item.(map[string]any); ok {
+				stripImagesRecursive(m)
 			}
 		}
+		r, _ := json.Marshal(arr)
+		return r
 	}
-	// Strip images from array items
-	for _, key := range []string{"data", "items"} {
+	return data
+}
+
+func stripImagesRecursive(v map[string]any) {
+	delete(v, "images")
+	for _, key := range []string{"actors", "characters", "subjects", "persons", "responses", "data", "items"} {
 		if arr, ok := v[key].([]any); ok {
 			for _, item := range arr {
-				if im, ok := item.(map[string]any); ok {
-					delete(im, "images")
+				if m, ok := item.(map[string]any); ok {
+					stripImagesRecursive(m)
 				}
 			}
 		}
 	}
-	r, _ := json.Marshal(v)
-	return r
 }
 
 // SubjectSummary is a lightweight subject entry for list files.

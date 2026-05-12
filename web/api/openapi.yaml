@@ -54,34 +54,6 @@ paths:
                 $ref: "#/components/schemas/Subject"
         "404":
           $ref: "#/components/responses/NotFound"
-  /api/v1/subjects/{id}/characters:
-    get:
-      tags: [动画]
-      summary: 列出动画关联的角色
-      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
-      responses:
-        "200":
-          description: 角色数组
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/RelatedCharacter"
-  /api/v1/subjects/{id}/persons:
-    get:
-      tags: [动画]
-      summary: 列出动画关联的制作成员
-      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
-      responses:
-        "200":
-          description: 制作成员数组
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/RelatedPerson"
   /api/v1/subjects/{id}/episodes:
     get:
       tags: [动画]
@@ -112,6 +84,20 @@ paths:
                   $ref: "#/components/schemas/SubjectRelation"
 
   # ── 角色 ──
+  /api/v1/characters:
+    get:
+      tags: [角色]
+      summary: 列出已缓存角色列表
+      operationId: listCharacters
+      responses:
+        "200":
+          description: 角色列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NameEntry"
   /api/v1/characters/{id}:
     get:
       tags: [角色]
@@ -124,8 +110,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Character"
+  /api/v1/subjects/{id}/characters:
+    get:
+      tags: [动画]
+      summary: 列出动画关联的角色
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 角色数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RelatedCharacter"
 
   # ── 制作成员 ──
+  /api/v1/persons:
+    get:
+      tags: [制作成员]
+      summary: 列出已缓存人物列表
+      operationId: listPersons
+      responses:
+        "200":
+          description: 人物列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NameEntry"
   /api/v1/persons/{id}:
     get:
       tags: [制作成员]
@@ -138,6 +152,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Person"
+  /api/v1/subjects/{id}/persons:
+    get:
+      tags: [动画]
+      summary: 列出动画关联的制作成员
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 制作成员数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RelatedPerson"
 
   # ── 标签 ──
   /api/v1/tags:
@@ -471,6 +499,13 @@ components:
         platform: { type: string, example: "TV" }
         date: { type: string, example: "2007-10-04" }
         image: { type: string, example: "/images/r/100/pic/cover/l/28/38/51_z0Ly8.jpg" }
+
+    NameEntry:
+      type: object
+      properties:
+        id: { type: integer, example: 4 }
+        name: { type: string, example: "古河渚" }
+        name_cn: { type: string, example: "古河渚" }
 
     Subject:
       type: object

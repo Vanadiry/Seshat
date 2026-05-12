@@ -10,8 +10,8 @@ import (
 
 var defaultTransport = &http.Transport{
 	MaxIdleConns:        100,
-	MaxIdleConnsPerHost: 32,
-	MaxConnsPerHost:     32,
+	MaxIdleConnsPerHost: 64,
+	MaxConnsPerHost:     64,
 	IdleConnTimeout:     90 * time.Second,
 }
 
@@ -28,14 +28,26 @@ func NewClient(ua, baseURL string) *Client {
 	return &Client{http: &http.Client{Timeout: 30 * time.Second, Transport: defaultTransport}, ua: ua, baseURL: baseURL}
 }
 
-
 // GetImage downloads the actual image binary from an official image endpoint.
-// The Bangumi API returns a 302 redirect; Go's http.Client follows it automatically.
+// Detects and rejects Bangumi placeholder images (no_icon_*.png).
 func (c *Client) GetImage(urlPath string) ([]byte, error) {
 	url := fmt.Sprintf("%s/%s", c.baseURL, urlPath)
+	client := &http.Client{
+		Timeout:   30 * time.Second,
+		Transport: defaultTransport,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if strings.Contains(req.URL.String(), "no_icon") {
+				return fmt.Errorf("placeholder")
+			}
+			if len(via) >= 5 {
+				return fmt.Errorf("too many redirects")
+			}
+			return nil
+		},
+	}
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", c.ua)
-	resp, err := c.http.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

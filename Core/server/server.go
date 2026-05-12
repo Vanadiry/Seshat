@@ -25,6 +25,10 @@ var maxConcurrency = 64
 // listMutex 保护 list 文件的并发读写。
 var listMutex sync.Mutex
 
+// noImageData 存放 no-image.png 的内容，用于在下载时识别占位图。
+var noImageData []byte
+var noImagePath string
+
 // mergeListEntry 将一个条目合并到 list 文件中（按 ID 去重，若已存在则更新 name）。
 func mergeListEntry(path string, id int, name, nameCN string) {
 	listMutex.Lock()
@@ -112,7 +116,19 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux := http.NewServeMux()
 	dd := cfg.DataDir()
 	os.MkdirAll(cache.IndexDir(dd), 0o755)
-	id := filepath.Join(dd, "images")
+	imgDir := filepath.Join(dd, "images")
+	os.MkdirAll(imgDir, 0o755)
+	noImagePath = filepath.Join(imgDir, "no-image.png")
+
+	// 从 embed 加载 no-image.png，写入 images 目录，并缓存内容用于后续比对
+	if embedFS != nil {
+		if b, err := fs.ReadFile(embedFS, "web/assets/no-image.png"); err == nil {
+			noImageData = b
+			os.WriteFile(noImagePath, b, 0o644)
+		}
+	}
+
+	id := imgDir
 	bg := bangumi.NewClient("HyperGraph/APIRRRRRR", cfg.BaseURL)
 
 	// ── Frontend ──
@@ -479,19 +495,16 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		log.Info("Deep search done: %d results", count)
 	})
 
-	// ── Images ──
-	// ── Image API (official Bangumi-style endpoints) ──
-	mux.HandleFunc("GET /images/subject/{id}", func(w http.ResponseWriter, r *http.Request) {
-		serveImage(w, r, dd, "subject", r.URL.Query().Get("type"))
+	// ── Image API ──
+	mux.HandleFunc("GET /images/{kind}/{id}", func(w http.ResponseWriter, r *http.Request) {
+		serveImage(w, r, dd, r.PathValue("kind"), r.URL.Query().Get("type"))
 	})
-	mux.HandleFunc("GET /images/character/{id}", func(w http.ResponseWriter, r *http.Request) {
-		serveImage(w, r, dd, "character", r.URL.Query().Get("type"))
+	// no-image placeholder
+	mux.HandleFunc("GET /images/no-image.png", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Write(noImageData)
 	})
-	mux.HandleFunc("GET /images/person/{id}", func(w http.ResponseWriter, r *http.Request) {
-		serveImage(w, r, dd, "person", r.URL.Query().Get("type"))
-	})
-	// Legacy image path
-	mux.Handle("GET /images/", http.StripPrefix("/images/", http.FileServer(http.Dir(id))))
 
 	return withLogging(withCORS(mux))
 }
@@ -624,10 +637,17 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		cache.Put(dd, fmt.Sprintf("characters/%d.json", c.ID), cache.StripImages(data))
 	}, p, "characters", maxConcurrency)
 
-	// Person details — retry 3 times, remove from list on 404
+	// Person details — crew + actors, retry 3 times, remove from list on 404
 	type personRef struct{ ID int `json:"id"` }
+	personSet := map[int]bool{}
+	for _, p := range persons { personSet[p.ID] = true }
+	for _, c := range chars {
+		for _, a := range c.Actors {
+			if a.ID > 0 { personSet[a.ID] = true }
+		}
+	}
 	var personIDs []personRef
-	for _, p := range persons { personIDs = append(personIDs, personRef{ID: p.ID}) }
+	for id := range personSet { personIDs = append(personIDs, personRef{ID: id}) }
 	fetchConcurrent(personIDs, func(pp personRef) {
 		data, err := getRawWithRetry(bg, fmt.Sprintf("v0/persons/%d", pp.ID), 3)
 		if err != nil {
@@ -659,6 +679,10 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 func buildIndexes(dd string, p *Progress) {
 	log.Info("Building indexes...")
 	os.MkdirAll(cache.IndexDir(dd), 0o755)
+	os.MkdirAll(filepath.Join(dd, "images"), 0o755)
+	if len(noImageData) > 0 && noImagePath != "" {
+		os.WriteFile(noImagePath, noImageData, 0o644)
+	}
 
 	tags := map[string]tagInfo{}
 
@@ -1266,27 +1290,33 @@ func serveImage(w http.ResponseWriter, r *http.Request, dd, kind, size string) {
 	idStr := r.PathValue("id")
 	imgFile := cache.IndexFile(dd, kind+"s_image.json")
 	data, err := os.ReadFile(imgFile)
-	if err != nil {
-		http.NotFound(w, r)
+	if err == nil {
+		var images map[int]cache.ImageEntry
+		json.Unmarshal(data, &images)
+		id, _ := strconv.Atoi(idStr)
+		entry, ok := images[id]
+		if ok {
+			path := entry.Large
+			if size == "grid" {
+				path = entry.Grid
+			}
+			if path != "" {
+				fullPath := filepath.Join(dd, "images", path)
+				if _, err := os.Stat(fullPath); err == nil {
+					http.ServeFile(w, r, fullPath)
+					return
+				}
+			}
+		}
+	}
+	// 回退
+	if len(noImageData) > 0 {
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Write(noImageData)
 		return
 	}
-	var images map[int]cache.ImageEntry
-	json.Unmarshal(data, &images)
-	id, _ := strconv.Atoi(idStr)
-	entry, ok := images[id]
-	if !ok {
-		http.NotFound(w, r)
-		return
-	}
-	path := entry.Large
-	if size == "grid" {
-		path = entry.Grid
-	}
-	if path == "" {
-		http.NotFound(w, r)
-		return
-	}
-	http.ServeFile(w, r, filepath.Join(dd, "images", path))
+	http.NotFound(w, r)
 }
 
 func writeJSON(w http.ResponseWriter, v any) {
