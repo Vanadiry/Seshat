@@ -635,6 +635,25 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 			return
 		}
 		cache.Put(dd, fmt.Sprintf("characters/%d.json", c.ID), cache.StripImages(data))
+		// Update Chinese name from detail infobox
+		var cd struct {
+			Name    string `json:"name"`
+			Infobox []struct {
+				Key   string          `json:"key"`
+				Value json.RawMessage `json:"value"`
+			} `json:"infobox"`
+		}
+		if json.Unmarshal(data, &cd) == nil {
+			for _, ib := range cd.Infobox {
+				if ib.Key == "简体中文名" {
+					var v string
+					if json.Unmarshal(ib.Value, &v) == nil && v != "" {
+						mergeListEntry(charListPath, c.ID, cd.Name, v)
+					}
+					break
+				}
+			}
+		}
 	}, p, "characters", maxConcurrency)
 
 	// Person details — crew + actors, retry 3 times, remove from list on 404
@@ -660,6 +679,25 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 			return
 		}
 		cache.Put(dd, fmt.Sprintf("persons/%d.json", pp.ID), cache.StripImages(data))
+		// Update Chinese name from detail infobox
+		var pd struct {
+			Name    string `json:"name"`
+			Infobox []struct {
+				Key   string          `json:"key"`
+				Value json.RawMessage `json:"value"`
+			} `json:"infobox"`
+		}
+		if json.Unmarshal(data, &pd) == nil {
+			for _, ib := range pd.Infobox {
+				if ib.Key == "简体中文名" {
+					var v string
+					if json.Unmarshal(ib.Value, &v) == nil && v != "" {
+						mergeListEntry(persListPath, pp.ID, pd.Name, v)
+					}
+					break
+				}
+			}
+		}
 	}, p, "persons", maxConcurrency)
 
 	// Episodes
