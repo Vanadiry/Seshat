@@ -1,6 +1,55 @@
 // Seshat shared JS — top bar, fetch dialog, SSE progress, API helpers
 const API = window.BACKEND_URL || '/api';
 
+// ── UI text (edit here to customize dialog messages) ──
+var MSG = {
+  // Top bar
+  customBackendWarn: '⚠ 当前为自定义后端，非预期行为。',
+
+  // Fetch dialog
+  dialogTitle: '拉取数据',
+  idLabel: '拉取指定动画的完整数据到本地',
+  idPlaceholder: '动画 ID，如 51 或 51,288',
+  trackerLabel: '拉取或创建 Tracker',
+  trackerPlaceholder: 'Tracker 名称',
+  btnUserFetch: '拉取用户收藏',
+  btnUpdate: '增量更新',
+  btnRefreshAll: '刷新全部',
+  btnDangerZone: '危险区',
+  btnRebuildIndex: '重建索引',
+  btnRebuildImages: '重建图像',
+  btnRebuildAll: '重建全部',
+  btnExecute: '执行',
+  btnCancel: '取消',
+  btnClose: '关闭',
+
+  // Confirm messages
+  confirmFetchId: function(ids) { return '将从上游拉取动画 '+ids.split(',').map(function(s){return '#'+s.trim()}).join(', ')+' 的完整数据（角色、人员、剧集、图片）'; },
+  confirmTrackerFetch: function(name) { return '确认拉取 Tracker ['+name+'] 中的全部动画数据？'; },
+  confirmTrackerCreate: function(name) { return '未找到 Tracker ['+name+']。是否创建它？\n创建后请在 Tracker 文件中填写动画 ID，返回此处重新拉取。'; },
+  trackerCreated: function(name) { return 'Tracker ['+name+'] 已创建。请在 ~/.vSoft/Seshat/tracker/'+name+'.toml 中填写动画 ID，然后返回此处重新拉取。'; },
+  confirmUserFetch: '将从上游拉取用户收藏列表，存入 Tracker [user] 中（不会覆盖已有 Tracker）',
+  confirmUpdate: '对比 Tracker 与本地缓存，仅拉取新增的动画（不会删除已有数据）',
+  confirmRefreshAll: '将从上游重新拉取全部 Tracker 数据，覆盖已有内容（本地多余数据不会删除）',
+  confirmRebuildIndex: '扫描本地已缓存的 JSON 文件，重建所有索引（不会请求上游）',
+  confirmRebuildImages: '将删除并重新下载全部图像（根据现有 list 文件）',
+  confirmRebuildAll: '⚠ 这将删除本地全部缓存文件，从上游完整重建。此操作不可逆。',
+
+  // Validation
+  errInvalidTrackerName: 'Tracker 名称仅允许大小写字母、数字、短横线和下划线',
+  errUserFetchFailed: '拉取用户收藏失败: ',
+
+  // Progress
+  progressConnecting: '连接中…',
+  progressDone: '完成',
+
+  // Infobox
+  infoboxGender: '性别',
+  infoboxBloodType: '血型',
+  infoboxBirthday: '生日',
+  bloodTypeMap: {1:'A',2:'B',3:'AB',4:'O'},
+};
+
 async function api(url) {
   const r = await fetch(API + url);
   if (!r.ok) return null;
@@ -42,11 +91,11 @@ function linkifyPerson(text) {
 function infoboxData(d) {
   var items = [];
   // Top-level fields
-  if (d.gender) items.push(['性别', linkifyPerson(d.gender)]);
-  if (d.blood_type) { var bt = {1:'A',2:'B',3:'AB',4:'O'}; items.push(['血型', bt[d.blood_type]||d.blood_type]); }
+  if (d.gender) items.push([MSG.infoboxGender, linkifyPerson(d.gender)]);
+  if (d.blood_type) { var bt = MSG.bloodTypeMap; items.push([MSG.infoboxBloodType, bt[d.blood_type]||d.blood_type]); }
   if (d.birth_mon || d.birth_day) {
     var bd = [d.birth_year||'????', String(d.birth_mon||'?').padStart(2,'0'), String(d.birth_day||'?').padStart(2,'0')].join('-');
-    items.push(['生日', bd]);
+    items.push([MSG.infoboxBirthday, bd]);
   }
   // infobox array
   var ib = d.infobox;
@@ -213,7 +262,7 @@ function initDialog() {
   document.getElementById('btn-tracker-fetch').addEventListener('click', function() {
     var name = document.getElementById('tracker-input').value.trim();
     if (!name) return;
-    if (!/^[a-zA-Z0-9_-]+$/.test(name)) { showError('Tracker 名称仅允许大小写字母、数字、短横线和下划线'); return; }
+    if (!/^[a-zA-Z0-9_-]+$/.test(name)) { showError(MSG.errInvalidTrackerName); return; }
     // Check if tracker exists
     api('/v0/tracker').then(function(list) {
       var found = false;
@@ -232,22 +281,22 @@ function initDialog() {
     });
   });
   document.getElementById('btn-user').addEventListener('click', function() {
-    confirmAction('将从上游拉取用户收藏列表，存入 Tracker [user] 中（不会覆盖已有 Tracker）', doUserFetch);
+    confirmAction(MSG.confirmUserFetch, doUserFetch);
   });
   document.getElementById('btn-update').addEventListener('click', function() {
-    confirmAction('对比 Tracker 与本地缓存，仅拉取新增的动画（不会删除已有数据）', doFetchUpdate);
+    confirmAction(MSG.confirmUpdate, doFetchUpdate);
   });
   document.getElementById('btn-all').addEventListener('click', function() {
-    confirmAction('将从上游重新拉取全部 Tracker 数据，覆盖已有内容（本地多余数据不会删除）', doRefreshAll);
+    confirmAction(MSG.confirmRefreshAll, doRefreshAll);
   });
   document.getElementById('btn-index').addEventListener('click', function() {
-    confirmAction('扫描本地已缓存的 JSON 文件，重建所有索引（不会请求上游）', doFetchIndex);
+    confirmAction(MSG.confirmRebuildIndex, doFetchIndex);
   });
   document.getElementById('btn-images').addEventListener('click', function() {
-    confirmAction('将删除并重新下载全部图像（根据现有 list 文件）', doFetchImages);
+    confirmAction(MSG.confirmRebuildImages, doFetchImages);
   });
   document.getElementById('btn-deep').addEventListener('click', function() {
-    confirmAction('⚠ 这将删除本地全部缓存文件，从上游完整重建。此操作不可逆。', doDeepRebuild);
+    confirmAction(MSG.confirmRebuildAll, doDeepRebuild);
   });
 }
 
@@ -266,7 +315,7 @@ function showError(msg) {
   document.getElementById('confirm-msg').textContent = msg;
   document.getElementById('confirm-overlay').style.display = 'flex';
   document.getElementById('btn-confirm-exec').style.display = 'none';
-  document.getElementById('btn-confirm-cancel').textContent = '关闭';
+  document.getElementById('btn-confirm-cancel').textContent = MSG.btnClose;
   confirmCb = null;
 }
 function closeConfirm() {
@@ -308,7 +357,7 @@ async function doTrackerFetch() {
 async function doUserFetch() {
   var res = await fetch(API + '/v0/fetch/user', {method:'POST'});
   var d = await res.json().catch(function(){return {error:'请求失败 ('+res.status+')'}});
-  if (d.error) { showError('拉取用户收藏失败: ' + d.error); return; }
+  if (d.error) { showError(MSG.errUserFetchFailed + d.error); return; }
   closeFetch();
   if (d.task_id) startProgress(d.task_id);
 }
@@ -356,12 +405,12 @@ function startProgress(taskId) {
   w.style.display = 'block';
   t.style.display = 'block';
   const fill = document.getElementById('pfill');
-  fill.style.width = '0%'; t.textContent = '连接中…';
+  fill.style.width = '0%'; t.textContent = MSG.progressConnecting;
   const evt = new EventSource(API + '/v0/progress/' + taskId);
   evt.onmessage = function(e) {
     const d = JSON.parse(e.data);
     if (d.step === 'complete') {
-      fill.style.width = '100%'; t.textContent = '完成'; evt.close();
+      fill.style.width = '100%'; t.textContent = MSG.progressDone; evt.close();
       setTimeout(() => { w.style.display = 'none'; t.style.display = 'none'; if (typeof onFetchDone==='function') onFetchDone(); }, 1500);
     } else if (d.done !== undefined && d.total) {
       fill.style.width = Math.round(d.done/d.total*100) + '%';
