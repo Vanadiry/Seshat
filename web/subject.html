@@ -125,31 +125,34 @@ async function overview(s, infoItems) {
 
   var html = '<div class="flex flex-col md:flex-row gap-6">';
 
-  // Left column
+  // ── LEFT: poster + infobox ──
   html += '<div class="w-full md:w-[260px] shrink-0">';
   html += '<img src="'+img('subject',SID,'large')+'" onerror="this.remove()" class="w-full rounded-xl">';
   if (infoHtml) html += '<div class="mt-3 flex flex-col gap-0.5">'+infoHtml+'</div>';
   html += '</div>';
 
-  // Right column
+  // ── RIGHT ──
+  html += '<div class="flex-1 min-w-0 flex flex-col gap-5">';
+
+  // TOP: left (episodes + summary + tags) | right (rating)
+  html += '<div class="flex flex-col md:flex-row gap-5">';
   html += '<div class="flex-1 min-w-0">';
   if (epGrid) html += '<div class="mb-4"><div class="text-xs text-sub mb-1">全部剧集 ('+eps.length+')</div>'+epGrid+'</div>';
   html += '<p class="text-[14px] leading-relaxed text-sub mb-4">'+(s.summary||'暂无简介')+'</p>';
-  if (tagsHtml) html += '<div class="mb-4"><div class="text-xs text-sub mb-1">标签</div>'+tagsHtml+'</div>';
-
-  // Rating panel
-  html += '<div class="md:float-right w-full md:w-[240px] shrink-0 bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-xl p-4 md:ml-5 mb-4">';
+  if (tagsHtml) html += '<div class="mb-2"><div class="text-xs text-sub mb-1">标签</div>'+tagsHtml+'</div>';
+  html += '</div>';
+  // Rating
+  html += '<div class="w-full md:w-[230px] shrink-0 bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-xl p-4">';
   html += '<div class="text-center text-sub text-sm">评分</div>';
   html += '<div class="text-center text-3xl font-bold mt-1">'+scoreHtml+'<span class="text-xs text-sub font-normal"> / 10</span></div>';
   html += '<div class="text-center text-xs text-sub mt-1">'+totalHtml+' 人评分 · 排名 '+rankHtml+'</div>';
   if (histHtml) html += '<div class="mt-3">'+histHtml+'</div>';
   html += '</div>';
-  html += '<div class="clear-right"></div>';
-  html += '</div></div>';
+  html += '</div>';
 
-  // Characters section
+  // BOTTOM: characters + relations
   if (mainChars.length) {
-    html += '<div class="mt-6"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">角色介绍</span><a href="javascript:switchTab(\'chars\')" class="text-[#FE8A95] text-xs ml-auto no-underline">更多角色 &raquo;</a></div>';
+    html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">角色介绍</span><a href="javascript:switchTab(\'chars\')" class="text-[#FE8A95] text-xs ml-auto no-underline">更多角色 &raquo;</a></div>';
     html += '<div class="flex gap-3 overflow-x-auto pb-2" style="scrollbar-width:thin">';
     for (var i=0; i<mainChars.length; i++) {
       var c = mainChars[i];
@@ -165,9 +168,8 @@ async function overview(s, infoItems) {
     html += '</div></div>';
   }
 
-  // Relations section
   if (rels.length) {
-    html += '<div class="mt-6"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">关联条目</span></div><div class="flex flex-wrap gap-3">';
+    html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">关联条目</span></div><div class="flex flex-wrap gap-3">';
     for (var i=0; i<rels.length; i++) {
       var r = rels[i];
       html += '<div onclick="location.href=\'/subject.html?id='+r.id+'\'" class="flex gap-3 items-center bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95]">';
@@ -176,6 +178,8 @@ async function overview(s, infoItems) {
     }
     html += '</div></div>';
   }
+
+  html += '</div></div>';
 
   document.getElementById('view').innerHTML = html;
 }
