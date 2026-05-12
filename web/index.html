@@ -24,7 +24,7 @@ async function load() {
   grid.innerHTML = '<div class="col-span-full text-center py-20 text-sub">加载中…</div>';
   try {
     const list = await api('/api/v1/subjects');
-    if (!list.length) {
+    if (!list || !list.length) {
       grid.innerHTML = '<div class="col-span-full text-center py-20 text-sub">暂无数据。点击「+ 拉取」添加</div>';
       return;
     }
@@ -47,6 +47,7 @@ async function searchLoad(q, grid) {
   grid.innerHTML = '<div class="col-span-full text-center py-20 text-sub">搜索中…</div>';
   try {
     const d = await api('/api/v1/search?q='+encodeURIComponent(q)+'&type=subjects');
+    if (!d) { grid.innerHTML = '<div class="col-span-full text-center py-20 text-sub">搜索出错</div>'; return; }
     const list = d.subjects||[];
     if (!list.length) {
       grid.innerHTML = '<div class="col-span-full text-center py-20 text-sub">未找到结果</div>';

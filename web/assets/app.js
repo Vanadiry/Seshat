@@ -1,31 +1,49 @@
 // Seshat shared JS — top bar, fetch dialog, SSE progress, API helpers
 const API = location.port === '3000' ? 'http://127.0.0.1:4000' : '';
 
-function api(url) { return fetch(API + url).then(r => r.json()); }
+async function api(url) {
+  const r = await fetch(API + url);
+  if (!r.ok) return null;
+  return r.json();
+}
 function img(kind, id, size) { return API + '/images/' + kind + '/' + id + '?type=' + (size||'grid'); }
 
 // ── Top bar injection ──
 document.addEventListener('DOMContentLoaded', () => {
   const tb = document.getElementById('topbar');
   if (!tb) return;
-  tb.innerHTML = `
-    <header class="sticky top-0 z-50 flex items-center gap-3 h-14 px-5 bg-[#16161d] border-b border-[rgba(255,255,255,.12)]">
-      <h1 class="text-lg font-bold cursor-pointer" onclick="location.href='/'">Seshat</h1>
-      <nav class="flex gap-1 ml-2">
-        <a href="/" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm hover:bg-[#2a2a35] hover:text-white">动画</a>
-        <a href="/doc/api" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm hover:bg-[#2a2a35] hover:text-white">API</a>
-      </nav>
-      <div class="flex-1"></div>
-      <input id="search" placeholder="搜索…" class="px-3 py-1.5 rounded-lg border border-[rgba(255,255,255,.12)] bg-[#0f0f13] text-sm w-44" onkeydown="if(event.key==='Enter')search()">
-      <button onclick="openFetch()" class="px-4 py-1.5 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0">+ 拉取</button>
-    </header>`;
 
-  // Progress bar (injected right after topbar)
-  const pw = document.createElement('div');
-  pw.id = 'pwrap';
-  pw.className = 'hidden fixed top-14 left-0 right-0 z-[60] px-5';
-  pw.innerHTML = '<div class="h-1 bg-[#2a2a35] rounded overflow-hidden"><div id="pfill" class="h-full bg-[#FE8A95] w-0 transition-[width] duration-300"></div></div><div id="ptext" class="text-[11px] text-sub mt-1"></div>';
-  tb.after(pw);
+  const path = location.pathname;
+  function navCls(href) {
+    if (href === '/' && (path === '/' || path === '/index.html')) return 'bg-[#2a2a35] text-white';
+    if (href !== '/' && path.startsWith(href)) return 'bg-[#2a2a35] text-white';
+    return 'hover:bg-[#2a2a35] hover:text-white';
+  }
+
+  tb.style.cssText = 'position:sticky;top:0;z-index:50';
+  tb.innerHTML = `
+    <div class="bg-[#16161d] border-b border-[rgba(255,255,255,.12)]">
+      <div class="max-w-[1200px] mx-auto px-5 flex items-center gap-3 h-14">
+        <h1 class="text-lg font-bold cursor-pointer shrink-0" onclick="location.href='/'">Seshat</h1>
+        <nav class="flex gap-1 ml-2">
+          <a href="/" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${navCls('/')}">动画</a>
+          <a href="/character-list.html" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${navCls('/character-list.html')}">角色</a>
+          <a href="/person-list.html" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${navCls('/person-list.html')}">人物</a>
+          <a href="/tags.html" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${navCls('/tags.html')}">标签</a>
+          <a href="/doc/api" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${navCls('/doc/api')}">API</a>
+        </nav>
+        <div class="flex-1"></div>
+        <button onclick="location.href='/search.html'" class="px-3 py-1.5 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#2a2a35] hover:text-white" title="搜索">🔍</button>
+        <button id="btn-fetch" class="px-4 py-1.5 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">+ 拉取</button>
+      </div>
+      <!-- Progress bar inside topbar -->
+      <div id="pwrap" class="hidden" style="height:2px">
+        <div id="pfill" class="h-full bg-[#FE8A95] w-0 transition-[width] duration-300"></div>
+      </div>
+      <div id="ptext" class="hidden text-[11px] text-sub px-5 pb-1 max-w-[1200px] mx-auto"></div>
+    </div>`;
+
+  document.getElementById('btn-fetch').addEventListener('click', openFetch);
 });
 
 // ── Fetch dialog ──
@@ -35,29 +53,36 @@ function initDialog() {
   dlgInited = true;
   const dlg = document.createElement('div');
   dlg.id = 'dlg-overlay';
-  dlg.className = 'hidden fixed inset-0 z-[100] bg-black/60 items-center justify-center';
+  dlg.className = 'hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center';
   dlg.innerHTML = `
     <div class="bg-[#1e1e28] border border-[rgba(255,255,255,.12)] rounded-xl p-6 w-[440px] max-w-[90vw] max-h-[90vh] overflow-y-auto">
       <h3 class="text-base font-bold mb-4">拉取数据</h3>
       <label class="text-xs text-sub block mb-1">动画 ID（逗号分隔）</label>
       <input id="fetch-input" placeholder="如 51 或 51,288" class="w-full px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-[#0f0f13] text-sm mb-3">
-      <button onclick="doFetch()" class="w-full px-4 py-2 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0 mb-4 hover:opacity-90">拉取指定动画</button>
+      <button id="btn-do-fetch" class="w-full px-4 py-2 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0 mb-4 hover:opacity-90">拉取指定动画</button>
       <div class="border-t border-[rgba(255,255,255,.06)] mb-4"></div>
       <label class="text-xs text-sub block mb-1">按 Tracker 名称拉取</label>
       <div class="flex gap-2 mb-3">
         <input id="tracker-input" placeholder="Tracker 名称" class="flex-1 px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-[#0f0f13] text-sm">
-        <button onclick="doTrackerFetch()" class="px-4 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#2a2a35] hover:text-white whitespace-nowrap">拉取</button>
+        <button id="btn-tracker-fetch" class="px-4 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#2a2a35] hover:text-white whitespace-nowrap">拉取</button>
       </div>
-      <button onclick="doUserFetch()" class="w-full px-4 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#2a2a35] hover:text-white mb-4">拉取用户收藏</button>
+      <button id="btn-user-fetch" class="w-full px-4 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#2a2a35] hover:text-white mb-4">拉取用户收藏</button>
       <div class="border-t border-[rgba(255,255,255,.06)] mb-4"></div>
       <div class="flex gap-2 mb-3">
-        <button id="btn-refresh" onclick="doRefreshAll()" class="flex-1 px-4 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#2a2a35] hover:text-white">刷新全部</button>
-        <button id="btn-deep" onclick="doDeepRebuild()" class="flex-1 px-4 py-2 rounded-lg bg-[#dc2626] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">深度重建</button>
+        <button id="btn-refresh" class="flex-1 px-4 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#2a2a35] hover:text-white">刷新全部</button>
+        <button id="btn-deep" class="flex-1 px-4 py-2 rounded-lg bg-[#dc2626] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">深度重建</button>
       </div>
-      <button onclick="closeFetch()" class="w-full px-4 py-1.5 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#2a2a35]">取消</button>
+      <button id="btn-close-dlg" class="w-full px-4 py-1.5 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#2a2a35]">取消</button>
     </div>`;
   dlg.addEventListener('click', e => { if (e.target === dlg) closeFetch(); });
   document.body.appendChild(dlg);
+
+  document.getElementById('btn-do-fetch').addEventListener('click', doFetch);
+  document.getElementById('btn-tracker-fetch').addEventListener('click', doTrackerFetch);
+  document.getElementById('btn-user-fetch').addEventListener('click', doUserFetch);
+  document.getElementById('btn-refresh').addEventListener('click', doRefreshAll);
+  document.getElementById('btn-deep').addEventListener('click', doDeepRebuild);
+  document.getElementById('btn-close-dlg').addEventListener('click', closeFetch);
 }
 
 function openFetch() {
@@ -67,11 +92,10 @@ function openFetch() {
 }
 function closeFetch() {
   document.getElementById('dlg-overlay').style.display = 'none';
-  // Reset deep rebuild confirm state
   const btn = document.getElementById('btn-deep');
   if (btn) { btn.textContent = '深度重建'; btn._confirm = false; }
   const btnR = document.getElementById('btn-refresh');
-  if (btnR) { btnR.textContent = '刷新全部'; btnR._confirm = false; }
+  if (btnR) { btnR.textContent = '刷新全部'; btnR._confirm = false; btnR.classList.remove('bg-[#f59e0b]', 'text-white', 'border-0'); }
 }
 
 async function doFetch() {
@@ -96,8 +120,13 @@ async function doTrackerFetch() {
 
 async function doUserFetch() {
   closeFetch();
-  const res = await fetch(API + '/api/v1/fetch/user', {method:'POST'});
-  const d = await res.json();
+  var res = await fetch(API + '/api/v1/fetch/user', {method:'POST'});
+  if (!res.ok) {
+    var d = await res.json().catch(function(){return {error:'请求失败 ('+res.status+')'}});
+    alert('拉取用户收藏失败: '+(d.error||'状态 '+res.status));
+    return;
+  }
+  var d = await res.json();
   if (d.task_id) startProgress(d.task_id);
 }
 
@@ -128,32 +157,27 @@ async function doDeepRebuild() {
   if (d.task_id) startProgress(d.task_id);
 }
 
-// ── SSE progress ──
+// ── SSE progress (inline in topbar) ──
 function startProgress(taskId) {
   const w = document.getElementById('pwrap');
-  if (!w) return;
+  const t = document.getElementById('ptext');
+  if (!w || !t) return;
   w.style.display = 'block';
-  const fill = document.getElementById('pfill'), text = document.getElementById('ptext');
-  fill.style.width = '0%'; text.textContent = '连接中…';
+  t.style.display = 'block';
+  const fill = document.getElementById('pfill');
+  fill.style.width = '0%'; t.textContent = '连接中…';
   const evt = new EventSource(API + '/api/v1/progress/' + taskId);
   evt.onmessage = function(e) {
     const d = JSON.parse(e.data);
     if (d.step === 'complete') {
-      fill.style.width = '100%'; text.textContent = '完成'; evt.close();
-      setTimeout(() => { w.style.display = 'none'; if (typeof onFetchDone==='function') onFetchDone(); }, 1500);
+      fill.style.width = '100%'; t.textContent = '完成'; evt.close();
+      setTimeout(() => { w.style.display = 'none'; t.style.display = 'none'; if (typeof onFetchDone==='function') onFetchDone(); }, 1500);
     } else if (d.done !== undefined && d.total) {
       fill.style.width = Math.round(d.done/d.total*100) + '%';
-      text.textContent = (d.step||'') + ' ' + d.done + '/' + d.total + (d.speed?' · '+d.speed:'');
+      t.textContent = (d.step||'') + ' ' + d.done + '/' + d.total + (d.speed?' · '+d.speed:'');
     } else if (d.status) {
-      text.textContent = (d.step||'') + ': ' + d.status;
+      t.textContent = (d.step||'') + ': ' + d.status;
     }
   };
   evt.onerror = () => evt.close();
-}
-
-// ── Search ──
-function search() {
-  const q = document.getElementById('search').value.trim();
-  if (!q) { location.href = '/'; return; }
-  location.href = '/?q=' + encodeURIComponent(q);
 }
