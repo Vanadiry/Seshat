@@ -27,15 +27,17 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux := http.NewServeMux()
 	dd := cfg.DataDir()
 	id := filepath.Join(dd, "images")
-	bg := bangumi.NewClient("Seshat/Test", cfg.BaseURL)
+	bg := bangumi.NewClient("HyperGraph/APIRRRRRR", cfg.BaseURL)
 
 	// ── Frontend ──
 	mux.HandleFunc("GET /subject.html", serveFile(embedFS, "web/subject.html", "text/html"))
-	mux.HandleFunc("GET /subject-ep.html", serveFile(embedFS, "web/subject-ep.html", "text/html"))
-	mux.HandleFunc("GET /subject-characters.html", serveFile(embedFS, "web/subject-characters.html", "text/html"))
-	mux.HandleFunc("GET /subject-persons.html", serveFile(embedFS, "web/subject-persons.html", "text/html"))
 	mux.HandleFunc("GET /character.html", serveFile(embedFS, "web/character.html", "text/html"))
 	mux.HandleFunc("GET /person.html", serveFile(embedFS, "web/person.html", "text/html"))
+	mux.HandleFunc("GET /character-list.html", serveFile(embedFS, "web/character-list.html", "text/html"))
+	mux.HandleFunc("GET /person-list.html", serveFile(embedFS, "web/person-list.html", "text/html"))
+	mux.HandleFunc("GET /tags.html", serveFile(embedFS, "web/tags.html", "text/html"))
+	mux.HandleFunc("GET /tags-subject.html", serveFile(embedFS, "web/tags-subject.html", "text/html"))
+	mux.HandleFunc("GET /search.html", serveFile(embedFS, "web/search.html", "text/html"))
 	mux.HandleFunc("GET /assets/app.js", serveFile(embedFS, "web/assets/app.js", "application/javascript"))
 	mux.HandleFunc("GET /assets/app.css", serveFile(embedFS, "web/assets/app.css", "text/css"))
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +84,28 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 			return
 		}
 		var list []cache.SubjectSummary
+		json.Unmarshal(data, &list)
+		writeJSON(w, list)
+	})
+
+	mux.HandleFunc("GET /api/v1/characters", func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile(cache.IndexFile(dd, "characters_list.json"))
+		if err != nil {
+			writeJSON(w, []any{})
+			return
+		}
+		var list []cache.NameEntry
+		json.Unmarshal(data, &list)
+		writeJSON(w, list)
+	})
+
+	mux.HandleFunc("GET /api/v1/persons", func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile(cache.IndexFile(dd, "persons_list.json"))
+		if err != nil {
+			writeJSON(w, []any{})
+			return
+		}
+		var list []cache.NameEntry
 		json.Unmarshal(data, &list)
 		writeJSON(w, list)
 	})

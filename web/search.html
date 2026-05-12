@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="bg-[#181818]">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>搜索</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{bg:'#181818',card:'#242424',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95','pink-bg':'#3B3033'}}}}</script>
+</head>
+<body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+
+<div id="topbar"></div>
+
+<main class="max-w-[700px] mx-auto p-6">
+  <div class="mt-12 flex gap-2">
+    <input id="q" placeholder="搜索…" class="flex-1 px-4 py-3 rounded-lg border border-[rgba(255,255,255,.12)] bg-[#0f0f13] text-base" onkeydown="if(event.key==='Enter')doSearch(false)" autofocus>
+    <button onclick="doSearch(false)" class="px-6 py-3 rounded-lg bg-[#FE8A95] text-white font-semibold cursor-pointer border-0 hover:opacity-90">搜索</button>
+    <button onclick="doSearch(true)" class="px-6 py-3 rounded-lg border border-[#FE8A95] text-[#FE8A95] font-semibold cursor-pointer bg-transparent hover:bg-[#3B3033]">深度搜索</button>
+  </div>
+  <div class="flex flex-wrap gap-3 mt-4 justify-center">
+    <label class="flex items-center gap-1.5 text-sm text-sub cursor-pointer"><input type="checkbox" class="accent-[#FE8A95]" data-type="subjects" checked><span>动画</span></label>
+    <label class="flex items-center gap-1.5 text-sm text-sub cursor-pointer"><input type="checkbox" class="accent-[#FE8A95]" data-type="characters"><span>角色</span></label>
+    <label class="flex items-center gap-1.5 text-sm text-sub cursor-pointer"><input type="checkbox" class="accent-[#FE8A95]" data-type="persons"><span>人物</span></label>
+    <label class="flex items-center gap-1.5 text-sm text-sub cursor-pointer"><input type="checkbox" class="accent-[#FE8A95]" data-type="tags"><span>标签</span></label>
+    <label class="flex items-center gap-1.5 text-sm text-sub cursor-pointer"><input type="checkbox" id="check-all" class="accent-[#FE8A95]" onchange="toggleAll(this)"><span>全部</span></label>
+  </div>
+  <div id="status" class="text-center text-sub text-sm mt-2 hidden"></div>
+  <div id="results" class="mt-6"></div>
+</main>
+
+<script src="assets/app.js"></script>
+<script>
+var qp = new URLSearchParams(location.search);
+var initQ = qp.get('q');
+if (initQ) { document.getElementById('q').value = initQ; doSearch(false); }
+
+function toggleAll(el) {
+  var cbs = document.querySelectorAll('[data-type]');
+  for (var i=0; i<cbs.length; i++) { cbs[i].checked = el.checked; }
+}
+// When any individual checkbox is unchecked, uncheck "全部"
+document.addEventListener('DOMContentLoaded', function() {
+  var cbs = document.querySelectorAll('[data-type]');
+  for (var i=0; i<cbs.length; i++) {
+    cbs[i].addEventListener('change', function() {
+      if (!this.checked) document.getElementById('check-all').checked = false;
+      else {
+        var all = true;
+        var cbs2 = document.querySelectorAll('[data-type]');
+        for (var j=0; j<cbs2.length; j++) { if (!cbs2[j].checked) all = false; }
+        if (all) document.getElementById('check-all').checked = true;
+      }
+    });
+  }
+});
+
+async function doSearch(deep) {
+  const q = document.getElementById('q').value.trim();
+  if (!q) return;
+  const types = [...document.querySelectorAll('[data-type]:checked')].map(cb => cb.dataset.type).join(',');
+  const st = document.getElementById('status');
+  const res = document.getElementById('results');
+
+  if (deep) {
+    st.classList.remove('hidden');
+    st.textContent = '深度搜索可能需要较长时间，正在搜索中…';
+    res.innerHTML = '';
+    try {
+      const resp = await fetch(API + '/api/v1/search/deep', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({q, type: types})
+      });
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      let results = [];
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, {stream: true});
+        const lines = buf.split('\n');
+        buf = lines.pop() || '';
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const d = JSON.parse(line.slice(6));
+              if (d.step === 'complete') {
+                st.textContent = '搜索完成，共 ' + (d.total||results.length) + ' 条结果';
+              } else {
+                results.push(d);
+              }
+            } catch(e) {}
+          }
+        }
+      }
+      st.classList.add('hidden');
+      renderResultsList(results);
+    } catch(e) {
+      st.textContent = '搜索出错: ' + e.message;
+      st.classList.remove('hidden');
+    }
+  } else {
+    st.classList.add('hidden');
+    res.innerHTML = '<div class="text-center py-10 text-sub">搜索中…</div>';
+    try {
+      const d = await api('/api/v1/search?q='+encodeURIComponent(q)+'&type='+types);
+      if (!d) { res.innerHTML = '<div class="text-center py-16 text-sub">搜索出错</div>'; return; }
+      renderResults(d);
+    } catch(e) {
+      res.innerHTML = '<div class="text-center py-16 text-sub">搜索出错</div>';
+    }
+  }
+}
+
+function renderResults(d) {
+  const res = document.getElementById('results');
+  let html = '';
+  if (d.subjects?.length) {
+    html += '<div class="mb-6"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">动画</span><span class="text-xs text-sub">('+d.subjects.length+')</span></div>';
+    html += '<div class="flex flex-col gap-1">'+d.subjects.map(s => `<div onclick="location.href='/subject.html?id=${s.id}'" class="flex gap-3 items-center bg-[#242424] border border-[rgba(255,255,255,.08)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95]"><div class="text-sm font-semibold">${s.name||''}</div><div class="text-xs text-sub">#${s.id}</div></div>`).join('')+'</div></div>';
+  }
+  if (d.characters?.length) {
+    html += '<div class="mb-6"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">角色</span><span class="text-xs text-sub">('+d.characters.length+')</span></div>';
+    html += '<div class="flex flex-col gap-1">'+d.characters.map(c => `<div onclick="location.href='/character.html?id=${c.id}'" class="flex gap-3 items-center bg-[#242424] border border-[rgba(255,255,255,.08)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95]"><div class="text-sm font-semibold">${c.name}</div><div class="text-xs text-sub">#${c.id}</div></div>`).join('')+'</div></div>';
+  }
+  if (d.persons?.length) {
+    html += '<div class="mb-6"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">人物</span><span class="text-xs text-sub">('+d.persons.length+')</span></div>';
+    html += '<div class="flex flex-col gap-1">'+d.persons.map(p => `<div onclick="location.href='/person.html?id=${p.id}'" class="flex gap-3 items-center bg-[#242424] border border-[rgba(255,255,255,.08)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95]"><div class="text-sm font-semibold">${p.name}</div><div class="text-xs text-sub">#${p.id}</div></div>`).join('')+'</div></div>';
+  }
+  if (!html) html = '<div class="text-center py-16 text-sub">未找到结果</div>';
+  res.innerHTML = html;
+}
+
+function renderResultsList(results) {
+  const res = document.getElementById('results');
+  if (!results.length) { res.innerHTML = '<div class="text-center py-16 text-sub">未找到结果</div>'; return; }
+  let html = '';
+  for (const r of results) {
+    if (r.id && r.name) {
+      html += `<div class="flex gap-3 items-center bg-[#242424] border border-[rgba(255,255,255,.08)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95]"><div class="text-sm font-semibold">${r.name}</div><div class="text-xs text-sub">#${r.id}</div></div>`;
+    }
+  }
+  if (!html) html = '<div class="text-center py-16 text-sub">未找到结果</div>';
+  res.innerHTML = '<div class="flex flex-col gap-1">'+html+'</div>';
+}
+</script>
+</body>
+</html>

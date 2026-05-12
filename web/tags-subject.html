@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="bg-[#181818]">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>标签详情</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{bg:'#181818',card:'#242424',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95','pink-bg':'#3B3033'}}}}</script>
+</head>
+<body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+
+<div id="topbar"></div>
+
+<main class="max-w-[1200px] mx-auto p-6">
+  <a href="/tags.html" class="text-sub text-sm no-underline hover:text-white mb-4 inline-block">← 返回标签</a>
+  <h2 id="title" class="text-xl font-bold mb-1">加载中…</h2>
+  <p id="count" class="text-sm text-sub mb-6"></p>
+  <div id="grid" class="grid grid-cols-[repeat(auto-fill,minmax(175px,1fr))] gap-4"></div>
+</main>
+
+<script src="assets/app.js"></script>
+<script>
+(async () => {
+  const tag = new URLSearchParams(location.search).get('tag');
+  if (!tag) { document.getElementById('title').textContent = '缺少标签参数'; return; }
+  document.getElementById('title').textContent = '标签: ' + tag;
+  document.title = tag + ' - 标签';
+
+  const list = (await api('/api/v1/tags/'+encodeURIComponent(tag)+'/subjects'))||[];
+  document.getElementById('count').textContent = list.length + ' 个动画';
+  const grid = document.getElementById('grid');
+  if (!list.length) { grid.innerHTML = '<div class="col-span-full text-center py-20 text-sub">暂无数据</div>'; return; }
+
+  grid.innerHTML = list.map(s => `
+    <div onclick="location.href='/subject.html?id=${s.id}'" class="bg-[#242424] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">
+      <img src="${img('subject',s.id,'grid')}" loading="lazy" onerror="this.remove()" class="w-full aspect-[3/4] object-cover bg-[#1a1a23]">
+      <div class="p-2.5">
+        <div class="text-sm font-semibold truncate">${s.name_cn||s.name}</div>
+        <div class="text-xs text-sub mt-1 flex gap-1.5 items-center">
+          ${s.rating?.score?`<span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[11px] font-bold">★ ${s.rating.score.toFixed(1)}</span>`:''}
+          ${s.platform?`<span class="bg-[#3B3033] text-[#FE8A95] px-1.5 py-px rounded-md text-[11px]">${s.platform}</span>`:''}
+        </div>
+      </div>
+    </div>`).join('');
+})();
+</script>
+</body>
+</html>

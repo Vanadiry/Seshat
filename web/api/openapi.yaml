@@ -321,7 +321,7 @@ paths:
   /api/v1/fetch:
     post:
       tags: [拉取]
-      summary: 刷新全部 Tracker
+      summary: 拉取全部已储存的动画
       description: 扫描 Tracker 目录下所有列表，拉取全部 subject 数据。返回 task_id。
       responses:
         "200":
@@ -336,7 +336,7 @@ paths:
   /api/v1/fetch/deep:
     post:
       tags: [拉取]
-      summary: 深度重建
+      summary: 重建数据库
       description: 清空所有缓存（api、images、tags、index），重新拉取全部 Tracker 数据。返回 task_id。
       responses:
         "200":
@@ -351,7 +351,7 @@ paths:
   /api/v1/progress/{task_id}:
     get:
       tags: [拉取]
-      summary: 拉取进度｜SSE
+      summary: 获取拉取进度｜SSE
       description: 实时推送拉取进度（阶段、完成数/总数、下载速度）。前端可用 EventSource 订阅。
       parameters:
         - name: task_id

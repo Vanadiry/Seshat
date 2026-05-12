@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="bg-[#181818]">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>人物列表</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{bg:'#181818',card:'#242424',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95','pink-bg':'#3B3033'}}}}</script>
+</head>
+<body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+
+<div id="topbar"></div>
+
+<main class="max-w-[1200px] mx-auto p-6">
+  <h2 class="text-xl font-bold mb-1">人物</h2>
+  <p id="count" class="text-sm text-sub mb-6">加载中…</p>
+  <div id="grid" class="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3"></div>
+</main>
+
+<script src="assets/app.js"></script>
+<script>
+(async () => {
+  const list = (await api('/api/v1/persons'))||[];
+  document.getElementById('count').textContent = list.length + ' 人';
+  const grid = document.getElementById('grid');
+  if (!list.length) { grid.innerHTML = '<div class="col-span-full text-center py-20 text-sub">暂无数据</div>'; return; }
+  grid.innerHTML = list.map(p => `
+    <div onclick="location.href='/person.html?id=${p.id}'" class="bg-[#242424] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">
+      <img src="${img('person',p.id,'grid')}" loading="lazy" onerror="this.remove()" class="w-full aspect-[3/4] object-cover bg-[#1a1a23]">
+      <div class="p-2">
+        <div class="text-[13px] font-semibold truncate">${p.name}</div>
+        ${p.name_cn ? `<div class="text-[11px] text-sub truncate mt-0.5">${p.name_cn}</div>` : ''}
+      </div>
+    </div>`).join('');
+})();
+</script>
+</body>
+</html>

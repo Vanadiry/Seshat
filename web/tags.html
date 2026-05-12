@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="bg-[#181818]">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>标签</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{bg:'#181818',card:'#242424',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95','pink-bg':'#3B3033'}}}}</script>
+</head>
+<body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+
+<div id="topbar"></div>
+
+<main class="max-w-[900px] mx-auto p-6">
+  <h2 class="text-xl font-bold mb-1">标签</h2>
+  <p id="count" class="text-sm text-sub mb-6">加载中…</p>
+  <div id="tags" class="flex flex-wrap gap-2"></div>
+</main>
+
+<script src="assets/app.js"></script>
+<script>
+(async () => {
+  const list = (await api('/api/v1/tags'))||[];
+  if (!list.length) { document.getElementById('count').textContent = '暂无标签'; return; }
+  document.getElementById('count').textContent = list.length + ' 个标签';
+  document.getElementById('tags').innerHTML = list.map(t =>
+    `<a href="/tags-subject.html?tag=${encodeURIComponent(t.name)}" class="no-underline bg-[#242424] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1.5 text-sm hover:border-[#FE8A95] transition-colors"><span class="text-[rgba(255,255,255,.88)] hover:text-[#FE8A95]">${t.name}</span><small class="text-sub ml-1.5">${t.count}</small></a>`
+  ).join('');
+})();
+</script>
+</body>
+</html>
