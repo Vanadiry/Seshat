@@ -133,14 +133,32 @@ function renderResults(d) {
 function renderResultsList(results) {
   const res = document.getElementById('results');
   if (!results.length) { res.innerHTML = '<div class="text-center py-16 text-sub">未找到结果</div>'; return; }
-  let html = '';
-  for (const r of results) {
-    if (r.id && r.name) {
-      html += `<div class="flex gap-3 items-center bg-[#242424] border border-[rgba(255,255,255,.08)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95]"><div class="text-sm font-semibold">${r.name}</div><div class="text-xs text-sub">#${r.id}</div></div>`;
+  // Group by type
+  var groups = {};
+  for (var i=0; i<results.length; i++) {
+    var r = results[i];
+    if (!r.id || !r.name) continue;
+    var t = r.type || 'subjects';
+    if (!groups[t]) groups[t] = [];
+    groups[t].push(r);
+  }
+  var typeLabels = {subjects:'动画', characters:'角色', persons:'人物', tags:'标签'};
+  var typeLinks = {subjects:'/subject.html?id=', characters:'/character.html?id=', persons:'/person.html?id='};
+  var html = '';
+  for (var t in groups) {
+    var list = groups[t];
+    var label = typeLabels[t] || t;
+    var link = typeLinks[t];
+    html += '<div class="mb-6"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">'+label+'</span><span class="text-xs text-sub">('+list.length+')</span></div>';
+    html += '<div class="flex flex-col gap-1">';
+    for (var j=0; j<list.length; j++) {
+      var it = list[j];
+      html += '<div onclick="location.href=\''+(link||'/subject.html?id=')+it.id+'\'" class="flex gap-3 items-center bg-[#242424] border border-[rgba(255,255,255,.08)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95]"><div class="text-sm font-semibold">'+it.name+'</div><div class="text-xs text-sub">#'+it.id+'</div></div>';
     }
+    html += '</div></div>';
   }
   if (!html) html = '<div class="text-center py-16 text-sub">未找到结果</div>';
-  res.innerHTML = '<div class="flex flex-col gap-1">'+html+'</div>';
+  res.innerHTML = html;
 }
 </script>
 </body>
