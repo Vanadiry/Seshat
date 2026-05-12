@@ -30,7 +30,7 @@ var noImagePath string
 
 // mergeListEntry 将一个条目合并到 list 文件中（按 ID 去重，若已存在则更新 name）。
 func New(cfg *config.Config, embedFS fs.FS) http.Handler {
-	maxConcurrency = cfg.Concurrency
+	maxConcurrency = cfg.Server.Concurrency
 	mux := http.NewServeMux()
 	dd := cfg.DataDir()
 	os.MkdirAll(cache.IndexDir(dd), 0o755)
@@ -47,7 +47,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	}
 
 	id := imgDir
-	bg := bangumi.NewClient(cfg.UserAgent, cfg.BaseURL)
+	bg := bangumi.NewClient(cfg.Upstream.UserAgent, cfg.Upstream.BaseURL)
 
 	// ── Frontend ──
 	mux.HandleFunc("GET /subject.html", serveFile(embedFS, "web/subject.html", "text/html"))
@@ -60,7 +60,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /search.html", serveFile(embedFS, "web/search.html", "text/html"))
 	mux.HandleFunc("GET /assets/app.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
-		fmt.Fprintf(w, "window.BACKEND_URL=%q;\n", cfg.BackendURL)
+		fmt.Fprintf(w, "window.BACKEND_URL=%q;\n", cfg.Frontend.BackendURL)
 		data, _ := fs.ReadFile(embedFS, "web/assets/app.js")
 		w.Write(data)
 	})
@@ -157,7 +157,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 
 	// ── Fetch: 刷新全部 tracker（覆盖更新）──
 	mux.HandleFunc("POST /api/v0/fetch", func(w http.ResponseWriter, r *http.Request) {
-		if cfg.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
+		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		p := newProgress(countTrackerTotal(cfg))
 		go func() {
 			refreshAllTrackers(cfg, bg, dd, id, p)
@@ -169,7 +169,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 
 	// ── Fetch: 深度重建（删除全部缓存后重新拉取）──
 	mux.HandleFunc("POST /api/v0/fetch/deep", func(w http.ResponseWriter, r *http.Request) {
-		if cfg.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
+		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		p := newProgress(countTrackerTotal(cfg))
 		go func() {
 			forceRefresh(cfg, bg, dd, id, p)
@@ -181,7 +181,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 
 	// ── Fetch: 按名称刷新指定 tracker ──
 	mux.HandleFunc("POST /api/v0/fetch/tracker", func(w http.ResponseWriter, r *http.Request) {
-		if cfg.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
+		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		var req struct{ Names []string `json:"names"` }
 		json.NewDecoder(r.Body).Decode(&req)
 		p := newProgress(countTrackerNames(cfg, req.Names))
@@ -195,8 +195,8 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 
 	// ── Fetch: 刷新用户收藏 ──
 	mux.HandleFunc("POST /api/v0/fetch/user", func(w http.ResponseWriter, r *http.Request) {
-		if cfg.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
-		uname := cfg.Username
+		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
+		uname := cfg.User.Username
 		if uname == "" {
 			http.Error(w, `{"error":"username not configured"}`, 400)
 			return
@@ -213,7 +213,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 
 	// ── Fetch: 接受单个或数组 ──
 	mux.HandleFunc("POST /api/v0/fetch/subject", func(w http.ResponseWriter, r *http.Request) {
-		if cfg.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
+		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		var req struct {
 			ID  int   `json:"id"`
 			IDs []int `json:"ids"`
@@ -283,7 +283,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 
 	// ── User profile ──
 	mux.HandleFunc("GET /api/v0/user/profile", func(w http.ResponseWriter, r *http.Request) {
-		uname := cfg.Username
+		uname := cfg.User.Username
 		if uname == "" {
 			http.Error(w, `{"error":"no username"}`, 404)
 			return
@@ -398,7 +398,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 
 	mux.HandleFunc("POST /api/v0/search/deep", func(w http.ResponseWriter, r *http.Request) {
-		if cfg.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
+		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		var req struct {
 			Query string `json:"q"`
 			Type  string `json:"type"`

@@ -25,7 +25,7 @@ func main() {
 
 	router := server.New(cfg, webFS)
 
-	addr := fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.Port)
+	addr := fmt.Sprintf("%s:%d", cfg.Server.BindAddr, cfg.Server.Port)
 	log.Info("Listening on http://%s", addr)
 	if err := http.ListenAndServe(addr, router); err != nil {
 		stdlog.Fatal(err)

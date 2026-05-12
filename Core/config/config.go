@@ -10,28 +10,47 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-var Defaults = Config{
-	BindAddr:    "127.0.0.1",
-	Port:        4000,
-	DataHome:    "",
-	Username:    "",
-	SyncEnabled: false,
-	Concurrency: 32,
-	BaseURL:     "https://api.bgm.tv",
-	UserAgent:   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
-	BackendURL:  "",
+type ServerConfig struct {
+	BindAddr    string `toml:"bind_addr"`
+	Port        int    `toml:"port"`
+	Concurrency int    `toml:"concurrency"`
+}
+
+type UpstreamConfig struct {
+	BaseURL   string `toml:"base_url"`
+	UserAgent string `toml:"user_agent"`
+}
+
+type FrontendConfig struct {
+	BackendURL string `toml:"backend_url"`
+}
+
+type UserConfig struct {
+	Username    string `toml:"username"`
+	SyncEnabled bool   `toml:"sync_enabled"`
 }
 
 type Config struct {
-	BindAddr     string `toml:"bind_addr"`
-	Port         int    `toml:"port"`
-	DataHome     string `toml:"data_home"`
-	Username     string `toml:"username"`
-	SyncEnabled  bool   `toml:"sync_enabled"`
-	Concurrency  int    `toml:"concurrency"`
-	BaseURL      string `toml:"base_url"`
-	UserAgent    string `toml:"user_agent"`
-	BackendURL   string `toml:"backend_url"`
+	Server   ServerConfig   `toml:"server"`
+	Upstream UpstreamConfig `toml:"upstream"`
+	Frontend FrontendConfig `toml:"frontend"`
+	User     UserConfig     `toml:"user"`
+	DataHome string         `toml:"data_home"`
+}
+
+var Defaults = Config{
+	Server: ServerConfig{
+		BindAddr:    "127.0.0.1",
+		Port:        4000,
+		Concurrency: 32,
+	},
+	Upstream: UpstreamConfig{
+		BaseURL:   "https://api.bgm.tv",
+		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+	},
+	Frontend: FrontendConfig{BackendURL: ""},
+	User:     UserConfig{Username: "", SyncEnabled: false},
+	DataHome: "",
 }
 
 func Dir() string {
@@ -42,14 +61,7 @@ func Dir() string {
 	return filepath.Join(home, ".vSoft", "Seshat")
 }
 
-func Path() string {
-	dir := Dir()
-	tomlPath := filepath.Join(dir, "config.toml")
-	if _, err := os.Stat(tomlPath); err == nil {
-		return tomlPath
-	}
-	return tomlPath
-}
+func Path() string { return filepath.Join(Dir(), "config.toml") }
 
 func Load() (*Config, error) {
 	cfg := Defaults
@@ -66,14 +78,14 @@ func Load() (*Config, error) {
 	if err := toml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("解析配置失败: %w", err)
 	}
-	if cfg.Port < 1 || cfg.Port > 65535 {
-		cfg.Port = Defaults.Port
+	if cfg.Server.Port < 1 || cfg.Server.Port > 65535 {
+		cfg.Server.Port = Defaults.Server.Port
 	}
-	if cfg.Concurrency < 1 {
-		cfg.Concurrency = Defaults.Concurrency
+	if cfg.Server.Concurrency < 1 {
+		cfg.Server.Concurrency = Defaults.Server.Concurrency
 	}
-	if cfg.UserAgent == "" {
-		cfg.UserAgent = Defaults.UserAgent
+	if cfg.Upstream.UserAgent == "" {
+		cfg.Upstream.UserAgent = Defaults.Upstream.UserAgent
 	}
 	return &cfg, nil
 }
@@ -92,10 +104,10 @@ func Save(cfg *Config) error {
 }
 
 func Validate(cfg *Config) error {
-	if cfg.Port < 1 || cfg.Port > 65535 {
+	if cfg.Server.Port < 1 || cfg.Server.Port > 65535 {
 		return fmt.Errorf("port 必须在 1-65535 之间")
 	}
-	if cfg.Concurrency < 1 {
+	if cfg.Server.Concurrency < 1 {
 		return fmt.Errorf("concurrency 必须 >= 1")
 	}
 	return nil
@@ -108,7 +120,4 @@ func (c *Config) DataDir() string {
 	return filepath.Join(Dir(), "data")
 }
 
-// TrackerDir 返回 tracker 文件目录。
-func (c *Config) TrackerDir() string {
-	return filepath.Join(Dir(), "tracker")
-}
+func (c *Config) TrackerDir() string { return filepath.Join(Dir(), "tracker") }
