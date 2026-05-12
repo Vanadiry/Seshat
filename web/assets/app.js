@@ -90,11 +90,17 @@ function linkifyPerson(text) {
   });
 }
 
+// ── linkifyURL：检测 URL 并转为可点击链接 ──
+function linkifyURL(text) {
+  if (!text) return text;
+  return text.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" class="text-[#FE8A95] hover:underline">$1</a>');
+}
+
 // ── infoboxData：提取侧栏信息（infobox + 顶层字段）──
 function infoboxData(d) {
   var items = [];
   // Top-level fields
-  if (d.gender) items.push([MSG.infoboxGender, linkifyPerson(d.gender)]);
+  if (d.gender) items.push([MSG.infoboxGender, linkifyURL(linkifyPerson(d.gender))]);
   if (d.blood_type) { var bt = MSG.bloodTypeMap; items.push([MSG.infoboxBloodType, bt[d.blood_type]||d.blood_type]); }
   if (d.birth_mon || d.birth_day) {
     var bd = [];
@@ -111,31 +117,31 @@ function infoboxData(d) {
       if (!ib[i].key) continue;
       var v = ib[i].value;
       if (typeof v === 'string') {
-        items.push([ib[i].key, linkifyPerson(v), 0]);
+        items.push([ib[i].key, linkifyURL(linkifyPerson(v)), 0]);
       } else if (Array.isArray(v)) {
         if (v.length > 0 && typeof v[0] === 'object') {
           if (v[0].k) {
             // Key-value pairs: [{k: "纯假名", v: "..."}]
             items.push([ib[i].key, '', 0]);
             for (var j = 0; j < v.length; j++) {
-              if (v[j].k) items.push([v[j].k, linkifyPerson(v[j].v||''), 1]);
+              if (v[j].k) items.push([v[j].k, linkifyURL(linkifyPerson(v[j].v||'')), 1]);
             }
           } else if (v[0].v) {
             // Value-only objects: [{v: "クラナド"}]
             items.push([ib[i].key, '', 0]);
             for (var j = 0; j < v.length; j++) {
-              if (v[j].v) items.push(['', linkifyPerson(v[j].v), 1]);
+              if (v[j].v) items.push(['', linkifyURL(linkifyPerson(v[j].v)), 1]);
             }
           } else {
             // Fallback: show first string from array
             for (var j = 0; j < v.length; j++) {
-              if (typeof v[j] === 'string') { items.push([ib[i].key, linkifyPerson(v[j]), 0]); break; }
+              if (typeof v[j] === 'string') { items.push([ib[i].key, linkifyURL(linkifyPerson(v[j])), 0]); break; }
             }
           }
         } else {
           // Plain string array
           for (var j = 0; j < v.length; j++) {
-            if (typeof v[j] === 'string') { items.push([ib[i].key, linkifyPerson(v[j]), 0]); break; }
+            if (typeof v[j] === 'string') { items.push([ib[i].key, linkifyURL(linkifyPerson(v[j])), 0]); break; }
           }
         }
       }
