@@ -9,7 +9,7 @@ import (
 
 func TestELOPairNeedsTwoSubjects(t *testing.T) {
 	srv, _ := testServer(t)
-	resp, _ := http.Get(srv.URL + "/api/v1/elo/pair")
+	resp, _ := http.Get(srv.URL + "/v0/elo/pair")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
 	}
@@ -23,7 +23,7 @@ func TestELOPairNeedsTwoSubjects(t *testing.T) {
 
 func TestELOCompare(t *testing.T) {
 	srv, _ := testServer(t)
-	resp, err := http.Post(srv.URL+"/api/v1/elo/compare", "application/json",
+	resp, err := http.Post(srv.URL+"/v0/elo/compare", "application/json",
 		strings.NewReader(`{"winner":51,"loser":288}`))
 	if err != nil {
 		t.Fatalf("POST: %v", err)
@@ -36,7 +36,7 @@ func TestELOCompare(t *testing.T) {
 
 func TestELORankingEmpty(t *testing.T) {
 	srv, _ := testServer(t)
-	resp, _ := http.Get(srv.URL + "/api/v1/elo/ranking")
+	resp, _ := http.Get(srv.URL + "/v0/elo/ranking")
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200, got %d", resp.StatusCode)
 	}
@@ -45,7 +45,7 @@ func TestELORankingEmpty(t *testing.T) {
 
 func TestELOCompareMissingParams(t *testing.T) {
 	srv, _ := testServer(t)
-	resp, _ := http.Post(srv.URL+"/api/v1/elo/compare", "application/json",
+	resp, _ := http.Post(srv.URL+"/v0/elo/compare", "application/json",
 		strings.NewReader(`{"winner":51}`))
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("expected 400 for missing loser, got %d", resp.StatusCode)

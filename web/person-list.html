@@ -54,7 +54,7 @@ function updatePager() {
 }
 
 (async () => {
-  allItems = (await api('/api/v1/persons'))||[];
+  allItems = (await api('/v0/persons'))||[];
   if (!allItems.length) { document.getElementById('grid').innerHTML='<div class="col-span-full text-center py-20 text-sub">暂无数据</div>'; return; }
   showing = 0;
   showMore(pageSize);

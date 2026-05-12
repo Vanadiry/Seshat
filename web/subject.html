@@ -35,7 +35,7 @@ function parseInfobox(raw) {
 
 async function render() {
   try {
-    var s = await api('/api/v1/subjects/'+SID);
+    var s = await api('/v0/subjects/'+SID);
     if (!s) { document.getElementById('view').innerHTML='<p class="text-sub text-center py-20">未找到</p>'; return; }
     var info = parseInfobox(s.infobox);
     var hdr = document.getElementById('subject-header');
@@ -57,9 +57,9 @@ async function render() {
 }
 
 async function overview(s, info) {
-  var epsRaw = await api('/api/v1/subjects/'+SID+'/episodes');
-  var charsRaw = await api('/api/v1/subjects/'+SID+'/characters');
-  var relsRaw = await api('/api/v1/subjects/'+SID+'/relations');
+  var epsRaw = await api('/v0/subjects/'+SID+'/episodes');
+  var charsRaw = await api('/v0/subjects/'+SID+'/characters');
+  var relsRaw = await api('/v0/subjects/'+SID+'/relations');
   var eps = Array.isArray(epsRaw) ? epsRaw : [];
   var chars = Array.isArray(charsRaw) ? charsRaw : [];
   var rels = Array.isArray(relsRaw) ? relsRaw : [];
@@ -186,7 +186,7 @@ async function overview(s, info) {
 }
 
 async function episodes() {
-  var epsRaw = await api('/api/v1/subjects/'+SID+'/episodes');
+  var epsRaw = await api('/v0/subjects/'+SID+'/episodes');
   var eps = Array.isArray(epsRaw) ? epsRaw : [];
   var types = {0:'本篇',1:'SP',2:'OP',3:'ED',4:'预告',5:'MAD',6:'其他'};
   var main = eps.filter(function(e){return e.type===0}).sort(function(a,b){return a.sort-b.sort});
@@ -210,7 +210,7 @@ async function episodes() {
 }
 
 async function characters() {
-  var charsRaw = await api('/api/v1/subjects/'+SID+'/characters');
+  var charsRaw = await api('/v0/subjects/'+SID+'/characters');
   var chars = Array.isArray(charsRaw) ? charsRaw : [];
   window._chars = chars;
 
@@ -263,7 +263,7 @@ async function characters() {
 }
 
 async function personsList() {
-  var personsRaw = await api('/api/v1/subjects/'+SID+'/persons');
+  var personsRaw = await api('/v0/subjects/'+SID+'/persons');
   var persons = Array.isArray(personsRaw) ? personsRaw : [];
   var groups = {};
   for (var i=0; i<persons.length; i++) {

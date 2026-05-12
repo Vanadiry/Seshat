@@ -16,9 +16,10 @@ var Defaults = Config{
 	DataHome:    "",
 	Username:    "",
 	SyncEnabled: false,
-	Concurrency: 64,
+	Concurrency: 32,
 	BaseURL:     "https://api.bgm.tv",
 	UserAgent:   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+	BackendURL:  "",
 }
 
 type Config struct {
@@ -30,6 +31,7 @@ type Config struct {
 	Concurrency  int    `toml:"concurrency"`
 	BaseURL      string `toml:"base_url"`
 	UserAgent    string `toml:"user_agent"`
+	BackendURL   string `toml:"backend_url"`
 }
 
 func Dir() string {

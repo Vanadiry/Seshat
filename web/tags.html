@@ -51,7 +51,7 @@ function updatePager() {
 }
 
 (async () => {
-  allItems = (await api('/api/v1/tags'))||[];
+  allItems = (await api('/v0/tags'))||[];
   if (!allItems.length) { document.getElementById('tags').innerHTML = '<span class="text-sub text-sm">暂无标签</span>'; return; }
   showing = 0;
   showMore(pageSize);

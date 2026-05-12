@@ -19,7 +19,7 @@ import (
 	"github.com/vanadiry/seshat/Core/log"
 )
 
-var maxConcurrency = 64
+var maxConcurrency = 32
 
 // listMutex 保护 list 文件的并发读写。
 var listMutex sync.Mutex
@@ -58,7 +58,12 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /tags.html", serveFile(embedFS, "web/tags.html", "text/html"))
 	mux.HandleFunc("GET /tags-subject.html", serveFile(embedFS, "web/tags-subject.html", "text/html"))
 	mux.HandleFunc("GET /search.html", serveFile(embedFS, "web/search.html", "text/html"))
-	mux.HandleFunc("GET /assets/app.js", serveFile(embedFS, "web/assets/app.js", "application/javascript"))
+	mux.HandleFunc("GET /assets/app.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript")
+		fmt.Fprintf(w, "window.BACKEND_URL=%q;\n", cfg.BackendURL)
+		data, _ := fs.ReadFile(embedFS, "web/assets/app.js")
+		w.Write(data)
+	})
 	mux.HandleFunc("GET /assets/app.css", serveFile(embedFS, "web/assets/app.css", "text/css"))
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -74,10 +79,10 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 
 	// ── API 文档 ──
 	mux.HandleFunc("GET /doc/api", serveFile(embedFS, "web/api/index.html", "text/html"))
-	mux.HandleFunc("GET /api/v1/openapi.yaml", serveFile(embedFS, "web/api/openapi.yaml", "application/yaml"))
+	mux.HandleFunc("GET /api/v0/openapi.yaml", serveFile(embedFS, "web/api/openapi.yaml", "application/yaml"))
 
 	// ── SSE progress ──
-	mux.HandleFunc("GET /api/v1/progress/{id}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v0/progress/{id}", func(w http.ResponseWriter, r *http.Request) {
 		p := getProgress(r.PathValue("id"))
 		if p == nil {
 			writeJSON(w, map[string]string{"error": "task not found"})
@@ -97,7 +102,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 
 	// ── Cache API ──
-	mux.HandleFunc("GET /api/v1/subjects", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v0/subjects", func(w http.ResponseWriter, r *http.Request) {
 		data, err := os.ReadFile(cache.IndexFile(dd, "subjects.json"))
 		if err != nil {
 			writeJSON(w, []any{})
@@ -108,7 +113,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		writeJSON(w, list)
 	})
 
-	mux.HandleFunc("GET /api/v1/characters", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v0/characters", func(w http.ResponseWriter, r *http.Request) {
 		data, err := os.ReadFile(cache.IndexFile(dd, "characters.json"))
 		if err != nil {
 			writeJSON(w, []any{})
@@ -119,7 +124,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		writeJSON(w, list)
 	})
 
-	mux.HandleFunc("GET /api/v1/persons", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v0/persons", func(w http.ResponseWriter, r *http.Request) {
 		data, err := os.ReadFile(cache.IndexFile(dd, "persons.json"))
 		if err != nil {
 			writeJSON(w, []any{})
@@ -130,9 +135,9 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		writeJSON(w, list)
 	})
 
-	// Generic cache reader for /api/v1/SUBJECTS|CHARACTERS|PERSONS|EPISODES
-	mux.HandleFunc("GET /api/v1/", func(w http.ResponseWriter, r *http.Request) {
-		key := strings.TrimPrefix(r.URL.Path, "/api/v1/") + ".json"
+	// Generic cache reader for /v0/SUBJECTS|CHARACTERS|PERSONS|EPISODES
+	mux.HandleFunc("GET /api/v0/", func(w http.ResponseWriter, r *http.Request) {
+		key := strings.TrimPrefix(r.URL.Path, "/api/v0/") + ".json"
 		data, err := cache.Get(dd, key)
 		if err != nil {
 			http.NotFound(w, r)
@@ -143,7 +148,8 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 
 	// ── Fetch: 刷新全部 tracker（覆盖更新）──
-	mux.HandleFunc("POST /api/v1/fetch", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v0/fetch", func(w http.ResponseWriter, r *http.Request) {
+		if cfg.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		p := newProgress(countTrackerTotal(cfg))
 		go func() {
 			refreshAllTrackers(cfg, bg, dd, id, p)
@@ -154,7 +160,8 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 
 	// ── Fetch: 深度重建（删除全部缓存后重新拉取）──
-	mux.HandleFunc("POST /api/v1/fetch/deep", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v0/fetch/deep", func(w http.ResponseWriter, r *http.Request) {
+		if cfg.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		p := newProgress(countTrackerTotal(cfg))
 		go func() {
 			forceRefresh(cfg, bg, dd, id, p)
@@ -165,7 +172,8 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 
 	// ── Fetch: 按名称刷新指定 tracker ──
-	mux.HandleFunc("POST /api/v1/fetch/tracker", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v0/fetch/tracker", func(w http.ResponseWriter, r *http.Request) {
+		if cfg.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		var req struct{ Names []string `json:"names"` }
 		json.NewDecoder(r.Body).Decode(&req)
 		p := newProgress(countTrackerNames(cfg, req.Names))
@@ -178,7 +186,8 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 
 	// ── Fetch: 刷新用户收藏 ──
-	mux.HandleFunc("POST /api/v1/fetch/user", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v0/fetch/user", func(w http.ResponseWriter, r *http.Request) {
+		if cfg.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		uname := cfg.Username
 		if uname == "" {
 			http.Error(w, `{"error":"username not configured"}`, 400)
@@ -195,7 +204,8 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 
 	// ── Fetch: 接受单个或数组 ──
-	mux.HandleFunc("POST /api/v1/fetch/subject", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v0/fetch/subject", func(w http.ResponseWriter, r *http.Request) {
+		if cfg.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		var req struct {
 			ID  int   `json:"id"`
 			IDs []int `json:"ids"`
@@ -226,7 +236,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 
 	// ── Tracker 创建 ──
-	mux.HandleFunc("POST /api/v1/tracker/create", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v0/tracker/create", func(w http.ResponseWriter, r *http.Request) {
 		var req struct{ Name string `json:"name"` }
 		json.NewDecoder(r.Body).Decode(&req)
 		if req.Name == "" {
@@ -245,7 +255,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 
 	// ── Tracker 列表 ──
-	mux.HandleFunc("GET /api/v1/tracker", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v0/tracker", func(w http.ResponseWriter, r *http.Request) {
 		files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
 		files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
 		files = append(files, files2...)
@@ -264,7 +274,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 
 	// ── User profile ──
-	mux.HandleFunc("GET /api/v1/user/profile", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v0/user/profile", func(w http.ResponseWriter, r *http.Request) {
 		uname := cfg.Username
 		if uname == "" {
 			http.Error(w, `{"error":"no username"}`, 404)
@@ -287,7 +297,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 
 	// ── Tags ──
-	mux.HandleFunc("GET /api/v1/tags", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v0/tags", func(w http.ResponseWriter, r *http.Request) {
 		tags := loadTags(dd)
 		type tagItem struct {
 			Name  string `json:"name"`
@@ -302,7 +312,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		writeJSON(w, list)
 	})
 
-	mux.HandleFunc("GET /api/v1/tags/{name}/subjects", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v0/tags/{name}/subjects", func(w http.ResponseWriter, r *http.Request) {
 		name := r.PathValue("name")
 		tags := loadTags(dd)
 		info, ok := tags[name]
@@ -337,7 +347,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 
 	// ── ELO ──
-	mux.HandleFunc("GET /api/v1/elo/pair", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v0/elo/pair", func(w http.ResponseWriter, r *http.Request) {
 		pair := getELOPair(dd)
 		if pair == nil {
 			writeJSON(w, map[string]string{"error": "need at least 2 cached subjects"})
@@ -346,7 +356,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		writeJSON(w, pair)
 	})
 
-	mux.HandleFunc("POST /api/v1/elo/compare", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v0/elo/compare", func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			Winner int `json:"winner"`
 			Loser  int `json:"loser"`
@@ -360,12 +370,12 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		writeJSON(w, map[string]string{"status": "ok"})
 	})
 
-	mux.HandleFunc("GET /api/v1/elo/ranking", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v0/elo/ranking", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, getELORanking(dd))
 	})
 
 	// ── Search ──
-	mux.HandleFunc("GET /api/v1/search", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v0/search", func(w http.ResponseWriter, r *http.Request) {
 		q := strings.ToLower(r.URL.Query().Get("q"))
 		types := r.URL.Query().Get("type") // subjects,characters,persons,tags (comma-separated)
 		if types == "" {
@@ -379,7 +389,8 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		writeJSON(w, result)
 	})
 
-	mux.HandleFunc("POST /api/v1/search/deep", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v0/search/deep", func(w http.ResponseWriter, r *http.Request) {
+		if cfg.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		var req struct {
 			Query string `json:"q"`
 			Type  string `json:"type"`
@@ -413,10 +424,15 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		log.Info("Deep search done: %d results", count)
 	})
 
-	// ── Image API ──
-	mux.HandleFunc("GET /images/{kind}/{id}", func(w http.ResponseWriter, r *http.Request) {
-		serveImage(w, r, dd, r.PathValue("kind"), r.URL.Query().Get("type"))
-	})
+	// ── Image API (official-style: /v0/subjects/{id}/image?type=large|grid) ──
+	imgHandler := func(kind string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			serveImage(w, r, dd, kind, r.URL.Query().Get("type"))
+		}
+	}
+	mux.HandleFunc("GET /api/v0/subjects/{id}/image", imgHandler("subject"))
+	mux.HandleFunc("GET /api/v0/characters/{id}/image", imgHandler("character"))
+	mux.HandleFunc("GET /api/v0/persons/{id}/image", imgHandler("person"))
 	// no-image placeholder
 	mux.HandleFunc("GET /images/no-image.png", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/png")

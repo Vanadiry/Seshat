@@ -64,7 +64,7 @@ async function doSearch(deep) {
     st.textContent = '深度搜索可能需要较长时间，正在搜索中…';
     res.innerHTML = '';
     try {
-      const resp = await fetch(API + '/api/v1/search/deep', {
+      const resp = await fetch(API + '/v0/search/deep', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({q, type: types})
@@ -102,7 +102,7 @@ async function doSearch(deep) {
     st.classList.add('hidden');
     res.innerHTML = '<div class="text-center py-10 text-sub">搜索中…</div>';
     try {
-      const d = await api('/api/v1/search?q='+encodeURIComponent(q)+'&type='+types);
+      const d = await api('/v0/search?q='+encodeURIComponent(q)+'&type='+types);
       if (!d) { res.innerHTML = '<div class="text-center py-16 text-sub">搜索出错</div>'; return; }
       renderResults(d);
     } catch(e) {

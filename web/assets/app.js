@@ -1,12 +1,12 @@
 // Seshat shared JS — top bar, fetch dialog, SSE progress, API helpers
-const API = location.port === '3000' ? 'http://127.0.0.1:4000' : '';
+const API = window.BACKEND_URL || '/api';
 
 async function api(url) {
   const r = await fetch(API + url);
   if (!r.ok) return null;
   return r.json();
 }
-function img(kind, id, size) { return API + '/images/' + kind + '/' + id + '?type=' + (size||'grid'); }
+function img(kind, id, size) { return API + '/v0/' + kind + 's/' + id + '/image?type=' + (size||'grid'); }
 
 // ── Top bar injection ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -21,19 +21,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   tb.style.cssText = 'position:sticky;top:0;z-index:50';
+  var custom = !!window.BACKEND_URL;
   tb.innerHTML = `
-    <div class="bg-[#16161d] border-b border-[rgba(255,255,255,.12)]">
+    <div class="${custom ? 'bg-[#dc2626]' : 'bg-[#16161d]'} border-b ${custom ? 'border-[rgba(255,255,255,.2)]' : 'border-[rgba(255,255,255,.12)]'}">
       <div class="max-w-[1200px] mx-auto px-5 flex items-center gap-3 h-12">
         <h1 class="text-lg font-bold cursor-pointer shrink-0" onclick="location.href='/'">Seshat</h1>
-        <nav class="flex gap-1 ml-2">
-          <a href="/" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${navCls('/')}">动画</a>
-          <a href="/character-list.html" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${navCls('/character-list.html')}">角色</a>
-          <a href="/person-list.html" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${navCls('/person-list.html')}">人物</a>
-          <a href="/tags.html" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${navCls('/tags.html')}">标签</a>
-          <a href="/doc/api" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${navCls('/doc/api')}">API</a>
+        <nav class="flex gap-1 ml-2 items-center">
+          <a href="/" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${custom ? 'text-white hover:bg-[#ffffff22]' : navCls('/')}">动画</a>
+          <a href="/character-list.html" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${custom ? 'text-white hover:bg-[#ffffff22]' : navCls('/character-list.html')}">角色</a>
+          <a href="/person-list.html" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${custom ? 'text-white hover:bg-[#ffffff22]' : navCls('/person-list.html')}">人物</a>
+          <a href="/tags.html" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${custom ? 'text-white hover:bg-[#ffffff22]' : navCls('/tags.html')}">标签</a>
+          <a href="/doc/api" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${custom ? 'text-white hover:bg-[#ffffff22]' : navCls('/doc/api')}">API</a>
+          ${custom ? '<span class="text-[#FFCA28] text-sm font-bold ml-2 shrink-0">⚠ 当前为自定义后端，非预期行为。</span>' : ''}
         </nav>
         <div class="flex-1"></div>
-        <button onclick="location.href='/search.html'" class="px-3 py-1.5 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#2a2a35] hover:text-white" title="搜索">🔍</button>
+        <button onclick="location.href='/search.html'" class="px-3 py-1.5 rounded-lg border ${custom ? 'border-[rgba(255,255,255,.3)] text-white' : 'border-[rgba(255,255,255,.12)] text-sub'} bg-transparent text-sm cursor-pointer hover:bg-[#2a2a35] hover:text-white" title="搜索">🔍</button>
         <button id="btn-fetch" class="px-4 py-1.5 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">+ 拉取</button>
       </div>
       <!-- Progress bar inside topbar -->
@@ -104,7 +106,7 @@ async function doFetch() {
   closeFetch();
   const ids = v.split(',').map(s => parseInt(s.trim())).filter(Boolean);
   if (!ids.length) return;
-  const res = await fetch(API + '/api/v1/fetch/subject', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})});
+  const res = await fetch(API + '/v0/fetch/subject', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})});
   const d = await res.json();
   if (d.task_id) startProgress(d.task_id);
 }
@@ -113,14 +115,14 @@ async function doTrackerFetch() {
   const v = document.getElementById('tracker-input').value.trim();
   if (!v) return;
   closeFetch();
-  const res = await fetch(API + '/api/v1/fetch/tracker', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:v})});
+  const res = await fetch(API + '/v0/fetch/tracker', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:v})});
   const d = await res.json();
   if (d.task_id) startProgress(d.task_id);
 }
 
 async function doUserFetch() {
   closeFetch();
-  var res = await fetch(API + '/api/v1/fetch/user', {method:'POST'});
+  var res = await fetch(API + '/v0/fetch/user', {method:'POST'});
   if (!res.ok) {
     var d = await res.json().catch(function(){return {error:'请求失败 ('+res.status+')'}});
     alert('拉取用户收藏失败: '+(d.error||'状态 '+res.status));
@@ -139,7 +141,7 @@ async function doRefreshAll() {
     return;
   }
   closeFetch();
-  const res = await fetch(API + '/api/v1/fetch', {method:'POST'});
+  const res = await fetch(API + '/v0/fetch', {method:'POST'});
   const d = await res.json();
   if (d.task_id) startProgress(d.task_id);
 }
@@ -152,7 +154,7 @@ async function doDeepRebuild() {
     return;
   }
   closeFetch();
-  const res = await fetch(API + '/api/v1/fetch/deep', {method:'POST'});
+  const res = await fetch(API + '/v0/fetch/deep', {method:'POST'});
   const d = await res.json();
   if (d.task_id) startProgress(d.task_id);
 }
@@ -166,7 +168,7 @@ function startProgress(taskId) {
   t.style.display = 'block';
   const fill = document.getElementById('pfill');
   fill.style.width = '0%'; t.textContent = '连接中…';
-  const evt = new EventSource(API + '/api/v1/progress/' + taskId);
+  const evt = new EventSource(API + '/v0/progress/' + taskId);
   evt.onmessage = function(e) {
     const d = JSON.parse(e.data);
     if (d.step === 'complete') {

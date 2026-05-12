@@ -1,7 +1,7 @@
 openapi: "3.0.0"
 info:
   title: Seshat API
-  description: 离线优先的 Bangumi 数据管理与浏览工具。所有数据从 Bangumi API 拉取并缓存本地，接口结构与官方 API 一致。
+  description: 离线优先的 Bangumi 数据管理与浏览工具。所有数据从 Bangumi API 拉取并缓存本地。本地接口前缀 /api/v0，结构与官方 /v0 一致。backend_url 置空则前端请求本地 /api/v0，设为官方地址则直连官方 /v0。
   version: "0.1.0"
 servers:
   - url: http://127.0.0.1:4000
@@ -20,7 +20,7 @@ tags:
 
 paths:
   # ── 动画 ──
-  /api/v1/subjects:
+  /api/v0/subjects:
     get:
       tags: [动画]
       summary: 列出已缓存动画列表
@@ -34,7 +34,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/SubjectListItem"
-  /api/v1/subjects/{id}:
+  /api/v0/subjects/{id}:
     get:
       tags: [动画]
       summary: 列出动画详情
@@ -54,7 +54,7 @@ paths:
                 $ref: "#/components/schemas/Subject"
         "404":
           $ref: "#/components/responses/NotFound"
-  /api/v1/subjects/{id}/episodes:
+  /api/v0/subjects/{id}/episodes:
     get:
       tags: [动画]
       summary: 列出动画关联的剧集列表
@@ -68,7 +68,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Episode"
-  /api/v1/subjects/{id}/relations:
+  /api/v0/subjects/{id}/relations:
     get:
       tags: [动画]
       summary: 列出动画关联的条目
@@ -84,7 +84,7 @@ paths:
                   $ref: "#/components/schemas/SubjectRelation"
 
   # ── 角色 ──
-  /api/v1/characters:
+  /api/v0/characters:
     get:
       tags: [角色]
       summary: 列出已缓存角色列表
@@ -98,7 +98,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/NameEntry"
-  /api/v1/characters/{id}:
+  /api/v0/characters/{id}:
     get:
       tags: [角色]
       summary: 列出角色详情
@@ -110,7 +110,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Character"
-  /api/v1/subjects/{id}/characters:
+  /api/v0/subjects/{id}/characters:
     get:
       tags: [动画]
       summary: 列出动画关联的角色
@@ -126,7 +126,7 @@ paths:
                   $ref: "#/components/schemas/RelatedCharacter"
 
   # ── 制作成员 ──
-  /api/v1/persons:
+  /api/v0/persons:
     get:
       tags: [制作成员]
       summary: 列出已缓存人物列表
@@ -140,7 +140,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/NameEntry"
-  /api/v1/persons/{id}:
+  /api/v0/persons/{id}:
     get:
       tags: [制作成员]
       summary: 列出制作成员详情
@@ -152,7 +152,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Person"
-  /api/v1/subjects/{id}/persons:
+  /api/v0/subjects/{id}/persons:
     get:
       tags: [动画]
       summary: 列出动画关联的制作成员
@@ -168,7 +168,7 @@ paths:
                   $ref: "#/components/schemas/RelatedPerson"
 
   # ── 标签 ──
-  /api/v1/tags:
+  /api/v0/tags:
     get:
       tags: [标签]
       summary: 列出标签列表
@@ -181,7 +181,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TagItem"
-  /api/v1/tags/{name}/subjects:
+  /api/v0/tags/{name}/subjects:
     get:
       tags: [标签]
       summary: 列出标签下的动画
@@ -197,39 +197,39 @@ paths:
                   $ref: "#/components/schemas/SubjectListItem"
 
   # ── 图片 ──
-  /images/subject/{id}:
+  /api/v0/subjects/{id}/image:
     get:
       tags: [图片]
-      summary: 列出动画图片
+      summary: 动画图片
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
-        - { name: type, in: query, schema: { type: string, enum: [large, grid], default: grid } }
+        - { name: type, in: query, schema: { type: string, enum: [large, medium, small, grid, common], default: grid } }
       responses:
         "200": { description: 图片文件 }
-        "404": { description: 未缓存 }
-  /images/character/{id}:
+        "404": { description: 未缓存，返回占位图 }
+  /api/v0/characters/{id}/image:
     get:
       tags: [图片]
-      summary: 列出角色图片
+      summary: 角色图片
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
-        - { name: type, in: query, schema: { type: string, enum: [large, grid], default: grid } }
+        - { name: type, in: query, schema: { type: string, enum: [large, medium, small, grid], default: grid } }
       responses:
         "200": { description: 图片文件 }
-        "404": { description: 未缓存 }
-  /images/person/{id}:
+        "404": { description: 未缓存，返回占位图 }
+  /api/v0/persons/{id}/image:
     get:
       tags: [图片]
-      summary: 列出人物图片
+      summary: 人物图片
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
-        - { name: type, in: query, schema: { type: string, enum: [large, grid], default: grid } }
+        - { name: type, in: query, schema: { type: string, enum: [large, medium, small, grid], default: grid } }
       responses:
         "200": { description: 图片文件 }
-        "404": { description: 未缓存 }
+        "404": { description: 未缓存，返回占位图 }
 
   # ── ELO ──
-  /api/v1/elo/pair:
+  /api/v0/elo/pair:
     get:
       tags: [ELO]
       summary: 获取一对随机动画用于比较
@@ -242,7 +242,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ELOEntry"
-  /api/v1/elo/compare:
+  /api/v0/elo/compare:
     post:
       tags: [ELO]
       summary: 提交比较结果
@@ -256,7 +256,7 @@ paths:
                 loser: { type: integer, example: 288 }
       responses:
         "200": { description: OK }
-  /api/v1/elo/ranking:
+  /api/v0/elo/ranking:
     get:
       tags: [ELO]
       summary: ELO 排名
@@ -271,7 +271,7 @@ paths:
                   $ref: "#/components/schemas/ELOEntry"
 
   # ── 搜索 ──
-  /api/v1/search:
+  /api/v0/search:
     get:
       tags: [搜索]
       summary: 搜索
@@ -286,7 +286,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SearchResult"
-  /api/v1/search/deep:
+  /api/v0/search/deep:
     post:
       tags: [搜索]
       summary: 深度搜索｜SSE
@@ -311,7 +311,7 @@ paths:
                   data: {"step":"complete","total":1}
 
   # ── 拉取 ──
-  /api/v1/fetch/subject:
+  /api/v0/fetch/subject:
     post:
       tags: [拉取]
       summary: 单个或批量拉取动画
@@ -345,8 +345,8 @@ paths:
                 properties:
                   status: { type: string, example: "fetching" }
                   count: { type: integer, example: 2 }
-                  task_id: { type: string, example: "ae8687f0", description: "用于 GET /api/v1/progress/{task_id}" }
-  /api/v1/fetch:
+                  task_id: { type: string, example: "ae8687f0", description: "用于 GET /api/v0/progress/{task_id}" }
+  /api/v0/fetch:
     post:
       tags: [拉取]
       summary: 拉取全部已储存的动画
@@ -361,7 +361,7 @@ paths:
                 properties:
                   status: { type: string }
                   task_id: { type: string, example: "ae8687f0" }
-  /api/v1/fetch/deep:
+  /api/v0/fetch/deep:
     post:
       tags: [拉取]
       summary: 重建数据库
@@ -376,7 +376,7 @@ paths:
                 properties:
                   status: { type: string }
                   task_id: { type: string, example: "ae8687f0" }
-  /api/v1/progress/{task_id}:
+  /api/v0/progress/{task_id}:
     get:
       tags: [拉取]
       summary: 获取拉取进度｜SSE
@@ -400,7 +400,7 @@ paths:
                   data: {"step":"complete","done":2,"total":2,"speed":"0.0/s","status":""}
 
   # ── Tracker ──
-  /api/v1/tracker:
+  /api/v0/tracker:
     get:
       tags: [Tracker]
       summary: 列出所有 Tracker
@@ -413,7 +413,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TrackerItem"
-  /api/v1/fetch/tracker:
+  /api/v0/fetch/tracker:
     post:
       tags: [拉取]
       summary: 按名称刷新指定 Tracker
@@ -436,7 +436,7 @@ paths:
                   status: { type: string }
                   names: { type: array, items: { type: string } }
                   task_id: { type: string, example: "ae8687f0" }
-  /api/v1/tracker/create:
+  /api/v0/tracker/create:
     post:
       tags: [Tracker]
       summary: 创建空 Tracker
@@ -455,7 +455,7 @@ paths:
           description: Tracker 已存在
 
   # ── 用户 ──
-  /api/v1/user/profile:
+  /api/v0/user/profile:
     get:
       tags: [用户]
       summary: 列出用户信息
@@ -466,7 +466,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
-  /api/v1/fetch/user:
+  /api/v0/fetch/user:
     post:
       tags: [拉取]
       summary: 拉取用户收藏
@@ -498,7 +498,7 @@ components:
         score: { type: number, example: 8.4 }
         platform: { type: string, example: "TV" }
         date: { type: string, example: "2007-10-04" }
-        image: { type: string, example: "/images/r/100/pic/cover/l/28/38/51_z0Ly8.jpg" }
+        image: { type: string, example: "/api/v0/subjects/51/image?type=grid" }
 
     NameEntry:
       type: object

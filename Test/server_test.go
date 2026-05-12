@@ -44,7 +44,7 @@ func TestHealth(t *testing.T) {
 
 func TestAPIv1NotFound(t *testing.T) {
 	srv, _ := testServer(t)
-	resp, err := http.Get(srv.URL + "/api/v1/subjects/99999")
+	resp, err := http.Get(srv.URL + "/v0/subjects/99999")
 	if err != nil {
 		t.Fatalf("GET: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestAPIv1NotFound(t *testing.T) {
 
 func TestTagsEmpty(t *testing.T) {
 	srv, _ := testServer(t)
-	resp, err := http.Get(srv.URL + "/api/v1/tags")
+	resp, err := http.Get(srv.URL + "/v0/tags")
 	if err != nil {
 		t.Fatalf("GET: %v", err)
 	}
@@ -69,7 +69,7 @@ func TestTagsEmpty(t *testing.T) {
 
 func TestTrackerListEmpty(t *testing.T) {
 	srv, _ := testServer(t)
-	resp, err := http.Get(srv.URL + "/api/v1/tracker")
+	resp, err := http.Get(srv.URL + "/v0/tracker")
 	if err != nil {
 		t.Fatalf("GET: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestTrackerListEmpty(t *testing.T) {
 
 func TestSearchEmpty(t *testing.T) {
 	srv, _ := testServer(t)
-	resp, err := http.Get(srv.URL + "/api/v1/search?q=test")
+	resp, err := http.Get(srv.URL + "/v0/search?q=test")
 	if err != nil {
 		t.Fatalf("GET: %v", err)
 	}
@@ -92,7 +92,7 @@ func TestSearchEmpty(t *testing.T) {
 func TestOpenAPIYaml(t *testing.T) {
 	srv, _ := testServer(t)
 	// This requires embedded web files which may not be available in test
-	resp, err := http.Get(srv.URL + "/api/v1/openapi.yaml")
+	resp, err := http.Get(srv.URL + "/v0/openapi.yaml")
 	if err != nil {
 		t.Fatalf("GET: %v", err)
 	}
@@ -103,7 +103,7 @@ func TestOpenAPIYaml(t *testing.T) {
 
 func TestCORS(t *testing.T) {
 	srv, _ := testServer(t)
-	req, _ := http.NewRequest("OPTIONS", srv.URL+"/api/v1/subjects", nil)
+	req, _ := http.NewRequest("OPTIONS", srv.URL+"/v0/subjects", nil)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("OPTIONS: %v", err)
@@ -118,7 +118,7 @@ func TestCORS(t *testing.T) {
 
 func TestUserProfileNoUsername(t *testing.T) {
 	srv, _ := testServer(t)
-	resp, _ := http.Get(srv.URL + "/api/v1/user/profile")
+	resp, _ := http.Get(srv.URL + "/v0/user/profile")
 	if resp.StatusCode != http.StatusNotFound {
 		t.Errorf("expected 404 (no username configured), got %d", resp.StatusCode)
 	}
@@ -127,7 +127,7 @@ func TestUserProfileNoUsername(t *testing.T) {
 
 func TestTrackerCreate(t *testing.T) {
 	srv, tmp := testServer(t)
-	resp, err := http.Post(srv.URL+"/api/v1/tracker/create", "application/json",
+	resp, err := http.Post(srv.URL+"/v0/tracker/create", "application/json",
 		strings.NewReader(`{"name":"test_tracker"}`))
 	if err != nil {
 		t.Fatalf("POST: %v", err)
