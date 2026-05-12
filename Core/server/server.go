@@ -78,7 +78,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 
 	// ── Cache API ──
 	mux.HandleFunc("GET /api/v1/subjects", func(w http.ResponseWriter, r *http.Request) {
-		data, err := os.ReadFile(cache.IndexFile(dd, "subjects_list.json"))
+		data, err := os.ReadFile(cache.IndexFile(dd, "subjects.json"))
 		if err != nil {
 			writeJSON(w, []any{})
 			return
@@ -89,7 +89,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 
 	mux.HandleFunc("GET /api/v1/characters", func(w http.ResponseWriter, r *http.Request) {
-		data, err := os.ReadFile(cache.IndexFile(dd, "characters_list.json"))
+		data, err := os.ReadFile(cache.IndexFile(dd, "characters.json"))
 		if err != nil {
 			writeJSON(w, []any{})
 			return
@@ -100,7 +100,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 
 	mux.HandleFunc("GET /api/v1/persons", func(w http.ResponseWriter, r *http.Request) {
-		data, err := os.ReadFile(cache.IndexFile(dd, "persons_list.json"))
+		data, err := os.ReadFile(cache.IndexFile(dd, "persons.json"))
 		if err != nil {
 			writeJSON(w, []any{})
 			return
@@ -521,9 +521,6 @@ func buildIndexes(dd string, p *Progress) {
 	var subjects []cache.SubjectSummary
 	var chars []cache.NameEntry
 	var persons []cache.NameEntry
-	subjIndex := map[string][]any{}
-	charIndex := map[string][]any{}
-	persIndex := map[string][]any{}
 	tags := map[string]tagInfo{}
 
 	apiDir := cache.Dir(dd)
@@ -553,10 +550,6 @@ func buildIndexes(dd string, p *Progress) {
 					ID: s.ID, Name: s.Name, NameCN: s.NameCN,
 					Score: s.Rating.Score, Platform: s.Platform, Date: s.Date,
 				})
-				subjIndex[s.Name] = []any{s.ID, s.NameCN}
-				if s.NameCN != "" && s.NameCN != s.Name {
-					subjIndex[s.NameCN] = []any{s.ID, s.Name}
-				}
 				for _, t := range s.Tags {
 					info := tags[t.Name]
 					info.Count++
@@ -567,41 +560,70 @@ func buildIndexes(dd string, p *Progress) {
 		}
 	}
 
-	// Scan characters
+	// Scan characters — extract name_cn from infobox
 	charDir := filepath.Join(apiDir, "characters")
 	if entries, _ := os.ReadDir(charDir); len(entries) > 0 {
 		for _, e := range entries {
 			if !strings.HasSuffix(e.Name(), ".json") { continue }
 			data, _ := os.ReadFile(filepath.Join(charDir, e.Name()))
-			var c struct{ ID int `json:"id"`; Name string `json:"name"` }
+			var c struct {
+				ID      int    `json:"id"`
+				Name    string `json:"name"`
+				Infobox []struct {
+					Key   string          `json:"key"`
+					Value json.RawMessage `json:"value"`
+				} `json:"infobox"`
+			}
 			if json.Unmarshal(data, &c) == nil && c.ID > 0 {
-				chars = append(chars, cache.NameEntry{ID: c.ID, Name: c.Name})
-				charIndex[c.Name] = []any{c.ID, c.Name}
+				nameCN := ""
+				for _, ib := range c.Infobox {
+					if ib.Key == "简体中文名" {
+						var v string
+						if json.Unmarshal(ib.Value, &v) == nil {
+							nameCN = v
+						}
+						break
+					}
+				}
+				chars = append(chars, cache.NameEntry{ID: c.ID, Name: c.Name, NameCN: nameCN})
 			}
 		}
 	}
 
-	// Scan persons
+	// Scan persons — extract name_cn from infobox
 	persDir := filepath.Join(apiDir, "persons")
 	if entries, _ := os.ReadDir(persDir); len(entries) > 0 {
 		for _, e := range entries {
 			if !strings.HasSuffix(e.Name(), ".json") { continue }
 			data, _ := os.ReadFile(filepath.Join(persDir, e.Name()))
-			var p struct{ ID int `json:"id"`; Name string `json:"name"` }
+			var p struct {
+				ID      int    `json:"id"`
+				Name    string `json:"name"`
+				Infobox []struct {
+					Key   string          `json:"key"`
+					Value json.RawMessage `json:"value"`
+				} `json:"infobox"`
+			}
 			if json.Unmarshal(data, &p) == nil && p.ID > 0 {
-				persons = append(persons, cache.NameEntry{ID: p.ID, Name: p.Name})
-				persIndex[p.Name] = []any{p.ID, p.Name}
+				nameCN := ""
+				for _, ib := range p.Infobox {
+					if ib.Key == "简体中文名" {
+						var v string
+						if json.Unmarshal(ib.Value, &v) == nil {
+							nameCN = v
+						}
+						break
+					}
+				}
+				persons = append(persons, cache.NameEntry{ID: p.ID, Name: p.Name, NameCN: nameCN})
 			}
 		}
 	}
 
-	saveJSON(cache.IndexFile(dd, "subjects_list.json"), subjects)
-	saveJSON(cache.IndexFile(dd, "characters_list.json"), chars)
-	saveJSON(cache.IndexFile(dd, "persons_list.json"), persons)
-	saveJSON(cache.IndexFile(dd, "subjects_index.json"), subjIndex)
-	saveJSON(cache.IndexFile(dd, "characters_index.json"), charIndex)
-	saveJSON(cache.IndexFile(dd, "persons_index.json"), persIndex)
-	saveJSON(filepath.Join(dd, "tags.json"), tags)
+	saveJSON(cache.IndexFile(dd, "subjects.json"), subjects)
+	saveJSON(cache.IndexFile(dd, "characters.json"), chars)
+	saveJSON(cache.IndexFile(dd, "persons.json"), persons)
+	saveJSON(cache.IndexFile(dd, "tags.json"), tags)
 
 	log.Info("Indexes built: %d subjects, %d chars, %d persons, %d tags",
 		len(subjects), len(chars), len(persons), len(tags))
@@ -618,19 +640,19 @@ func downloadImages(dd string, bg *bangumi.Client, p *Progress) {
 	imgBase := filepath.Join(dd, "images")
 
 	// Subjects
-	subjList := loadNameList(cache.IndexFile(dd, "subjects_list.json"))
+	subjList := loadNameList(cache.IndexFile(dd, "subjects.json"))
 	if p != nil { p.Send("images_subjects", 0, len(subjList), "downloading") }
 	dlImageList(subjList, "subject", subjImg, imgBase, bg, dd, p, "images_subjects")
 	saveJSON(cache.IndexFile(dd, "subjects_image.json"), subjImg)
 
 	// Characters
-	charList := loadNameList(cache.IndexFile(dd, "characters_list.json"))
+	charList := loadNameList(cache.IndexFile(dd, "characters.json"))
 	if p != nil { p.Send("images_characters", 0, len(charList), "downloading") }
 	dlImageList(charList, "character", charImg, imgBase, bg, dd, p, "images_characters")
 	saveJSON(cache.IndexFile(dd, "characters_image.json"), charImg)
 
 	// Persons
-	persList := loadNameList(cache.IndexFile(dd, "persons_list.json"))
+	persList := loadNameList(cache.IndexFile(dd, "persons.json"))
 	if p != nil { p.Send("images_persons", 0, len(persList), "downloading") }
 	dlImageList(persList, "person", persImg, imgBase, bg, dd, p, "images_persons")
 	saveJSON(cache.IndexFile(dd, "persons_image.json"), persImg)
@@ -668,33 +690,21 @@ func dlImageList(list []cache.NameEntry, kind string, imgMap map[int]cache.Image
 
 func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.ImageEntry, imgBase string, mu *sync.Mutex) {
 	var entry cache.ImageEntry
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=large", kind, id))
+	for _, size := range []string{"large", "grid"} {
+		data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
 		if err != nil {
-			return
+			continue
 		}
-		relPath := fmt.Sprintf("%s_large/%d/%d.jpg", kind, id%10, id)
+		relPath := fmt.Sprintf("%s_%s/%d/%d.jpg", kind, size, id%10, id)
 		fullPath := filepath.Join(imgBase, relPath)
 		os.MkdirAll(filepath.Dir(fullPath), 0o755)
 		os.WriteFile(fullPath, data, 0o644)
-		entry.Large = relPath
-	}()
-	go func() {
-		defer wg.Done()
-		data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=grid", kind, id))
-		if err != nil {
-			return
+		if size == "large" {
+			entry.Large = relPath
+		} else {
+			entry.Grid = relPath
 		}
-		relPath := fmt.Sprintf("%s_grid/%d/%d.jpg", kind, id%10, id)
-		fullPath := filepath.Join(imgBase, relPath)
-		os.MkdirAll(filepath.Dir(fullPath), 0o755)
-		os.WriteFile(fullPath, data, 0o644)
-		entry.Grid = relPath
-	}()
-	wg.Wait()
+	}
 	if entry.Large != "" || entry.Grid != "" {
 		mu.Lock()
 		imgMap[id] = entry
@@ -704,17 +714,18 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 
 // ── Search ──
 
-// quickSearch 使用索引文件快速搜索。
+// quickSearch 使用 list 文件快速搜索。
 func quickSearch(dd, q string, types []string) map[string]any {
 	result := map[string]any{}
+	q = strings.ToLower(q)
 	for _, t := range types {
 		switch t {
 		case "subjects":
-			result["subjects"] = searchIndex(dd, "subjects_index.json", q)
+			result["subjects"] = searchList(dd, "subjects.json", q)
 		case "characters":
-			result["characters"] = searchIndex(dd, "characters_index.json", q)
+			result["characters"] = searchList(dd, "characters.json", q)
 		case "persons":
-			result["persons"] = searchIndex(dd, "persons_index.json", q)
+			result["persons"] = searchList(dd, "persons.json", q)
 		case "tags":
 			result["tags"] = searchTags(dd, q)
 		}
@@ -722,20 +733,24 @@ func quickSearch(dd, q string, types []string) map[string]any {
 	return result
 }
 
-func searchIndex(dd, file, q string) []map[string]any {
+func searchList(dd, file, q string) []map[string]any {
 	data, err := os.ReadFile(cache.IndexFile(dd, file))
 	if err != nil {
 		return []map[string]any{}
 	}
-	var index map[string][]any // name → [id, displayName]
-	json.Unmarshal(data, &index)
-
+	var list []struct {
+		ID     int    `json:"id"`
+		Name   string `json:"name"`
+		NameCN string `json:"name_cn"`
+	}
+	json.Unmarshal(data, &list)
 	var results []map[string]any
-	for name, entry := range index {
-		if strings.Contains(strings.ToLower(name), q) {
+	for _, entry := range list {
+		if strings.Contains(strings.ToLower(entry.Name), q) || (entry.NameCN != "" && strings.Contains(strings.ToLower(entry.NameCN), q)) {
 			results = append(results, map[string]any{
-				"name": name,
-				"id":   entry[0],
+				"id":      entry.ID,
+				"name":    entry.Name,
+				"name_cn": entry.NameCN,
 			})
 		}
 	}
@@ -828,82 +843,6 @@ func deepSearch(dd, q string, types []string) []map[string]any {
 	return results
 }
 
-// rebuildIndexes 重建所有搜索索引。
-func rebuildIndexes(dd string) {
-	apiDir := cache.Dir(dd)
-	subjects := map[string][]any{}
-	characters := map[string][]any{}
-	persons := map[string][]any{}
-
-	// Scan subjects
-	dir := filepath.Join(apiDir, "subjects")
-	if entries, err := os.ReadDir(dir); err == nil {
-		for _, e := range entries {
-			if !strings.HasSuffix(e.Name(), ".json") || strings.Contains(e.Name(), "/") {
-				continue
-			}
-			data, _ := os.ReadFile(filepath.Join(dir, e.Name()))
-			var s struct {
-				ID     int    `json:"id"`
-				Name   string `json:"name"`
-				NameCN string `json:"name_cn"`
-			}
-			if json.Unmarshal(data, &s) == nil && s.ID > 0 {
-				display := s.NameCN
-				if display == "" {
-					display = s.Name
-				}
-				subjects[s.Name] = []any{s.ID, display}
-				if s.NameCN != "" && s.NameCN != s.Name {
-					subjects[s.NameCN] = []any{s.ID, display}
-				}
-			}
-		}
-	}
-
-	// Scan characters
-	dir = filepath.Join(apiDir, "characters")
-	if entries, err := os.ReadDir(dir); err == nil {
-		for _, e := range entries {
-			if !strings.HasSuffix(e.Name(), ".json") {
-				continue
-			}
-			data, _ := os.ReadFile(filepath.Join(dir, e.Name()))
-			var c struct {
-				ID   int    `json:"id"`
-				Name string `json:"name"`
-			}
-			if json.Unmarshal(data, &c) == nil && c.ID > 0 {
-				characters[c.Name] = []any{c.ID, c.Name}
-			}
-		}
-	}
-
-	// Scan persons
-	dir = filepath.Join(apiDir, "persons")
-	if entries, err := os.ReadDir(dir); err == nil {
-		for _, e := range entries {
-			if !strings.HasSuffix(e.Name(), ".json") {
-				continue
-			}
-			data, _ := os.ReadFile(filepath.Join(dir, e.Name()))
-			var p struct {
-				ID   int    `json:"id"`
-				Name string `json:"name"`
-			}
-			if json.Unmarshal(data, &p) == nil && p.ID > 0 {
-				persons[p.Name] = []any{p.ID, p.Name}
-			}
-		}
-	}
-
-	saveJSON(filepath.Join(dd, "subjects_index.json"), subjects)
-	saveJSON(filepath.Join(dd, "characters_index.json"), characters)
-	saveJSON(filepath.Join(dd, "persons_index.json"), persons)
-	log.Info("Search indexes rebuilt: %d subjects, %d chars, %d persons",
-		len(subjects), len(characters), len(persons))
-}
-
 func saveJSON(path string, v any) {
 	data, _ := json.Marshal(v)
 	os.WriteFile(path, data, 0o644)
@@ -917,7 +856,7 @@ type tagInfo struct {
 }
 
 func tagsPath(dd string) string {
-	return filepath.Join(dd, "tags.json")
+	return cache.IndexFile(dd, "tags.json")
 }
 
 func loadTags(dd string) map[string]tagInfo {
@@ -1061,9 +1000,7 @@ func countTrackerNames(cfg *config.Config, names []string) int {
 // forceRefresh 删除所有缓存数据后完整重建。
 func forceRefresh(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	log.Info("Force refresh: clearing all cached data...")
-	os.RemoveAll(filepath.Join(dd, "api"))
-	os.RemoveAll(filepath.Join(dd, "images"))
-	os.Remove(filepath.Join(dd, "tags.json"))
+	os.RemoveAll(dd)
 	log.Info("Force refresh: cache cleared, starting rebuild")
 	refreshAllTrackers(cfg, bg, dd, imgDir, p)
 }
