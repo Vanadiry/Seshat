@@ -28,16 +28,11 @@ function tabsHtml() {
   }).join('');
 }
 
-function parseInfobox(raw) {
-  if (!raw) return {};
-  try { var d = JSON.parse(raw); var o = {}; for (var i=0; i<d.length; i++) { if (d[i].key && typeof d[i].value==='string') o[d[i].key]=d[i].value; } return o; } catch(e) { return {}; }
-}
-
 async function render() {
   try {
     var s = await api('/v0/subjects/'+SID);
     if (!s) { document.getElementById('view').innerHTML='<p class="text-sub text-center py-20">未找到</p>'; return; }
-    var info = parseInfobox(s.infobox);
+    var infoItems = infoboxData(s);
     var hdr = document.getElementById('subject-header');
     hdr.innerHTML = '<div class="max-w-[1200px] mx-auto px-6 h-12 py-0 flex items-center gap-3">' +
       '<a href="/" class="text-sub text-sm no-underline hover:text-white shrink-0">← 返回</a>' +
@@ -47,7 +42,7 @@ async function render() {
       '<span class="text-sub text-xs shrink-0">｜</span><span class="text-xs text-sub shrink-0">ID: '+SID+'</span>' +
       '<span class="flex-1"></span>' +
       '<span class="flex gap-0 shrink-0">'+tabsHtml()+'</span></div>';
-    if (tab === 'overview') await overview(s, info);
+    if (tab === 'overview') await overview(s, infoItems);
     else if (tab === 'ep') await episodes();
     else if (tab === 'chars') await characters();
     else if (tab === 'persons') await personsList();
@@ -56,7 +51,7 @@ async function render() {
   }
 }
 
-async function overview(s, info) {
+async function overview(s, infoItems) {
   var epsRaw = await api('/v0/subjects/'+SID+'/episodes');
   var charsRaw = await api('/v0/subjects/'+SID+'/characters');
   var relsRaw = await api('/v0/subjects/'+SID+'/relations');
@@ -117,10 +112,9 @@ async function overview(s, info) {
   }
 
   // Infobox entries
-  var infoEntries = Object.entries(info);
   var infoHtml = '';
-  for (var i=0; i<infoEntries.length; i++) {
-    infoHtml += '<div class="flex justify-between py-1 border-b border-[rgba(255,255,255,.06)] text-[13px]"><span class="text-sub">'+infoEntries[i][0]+'</span><span class="text-right ml-2">'+infoEntries[i][1]+'</span></div>';
+  for (var i=0; i<infoItems.length; i++) {
+    infoHtml += '<div class="py-1 border-b border-[rgba(255,255,255,.06)] text-[13px]"><span class="text-sub">'+infoItems[i][0]+': </span><span>'+infoItems[i][1]+'</span></div>';
   }
 
   // Rating panel

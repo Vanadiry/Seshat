@@ -8,6 +8,36 @@ async function api(url) {
 }
 function img(kind, id, size) { return API + '/v0/' + kind + 's/' + id + '/image?type=' + (size||'grid'); }
 
+// infoboxData extracts sidebar info from a subject/character/person detail.
+// Handles infobox array + top-level fields (birthday, gender, blood_type).
+function infoboxData(d) {
+  var items = [];
+  // Top-level fields
+  if (d.gender) items.push(['性别', d.gender]);
+  if (d.blood_type) { var bt = {1:'A',2:'B',3:'AB',4:'O'}; items.push(['血型', bt[d.blood_type]||d.blood_type]); }
+  if (d.birth_mon || d.birth_day) {
+    var bd = [d.birth_year||'????', String(d.birth_mon||'?').padStart(2,'0'), String(d.birth_day||'?').padStart(2,'0')].join('-');
+    items.push(['生日', bd]);
+  }
+  // infobox array
+  var ib = d.infobox;
+  if (typeof ib === 'string') { try { ib = JSON.parse(ib); } catch(e) { ib = []; } }
+  if (Array.isArray(ib)) {
+    for (var i = 0; i < ib.length; i++) {
+      if (!ib[i].key) continue;
+      var v = ib[i].value;
+      if (typeof v === 'string') { items.push([ib[i].key, v]); }
+      else if (Array.isArray(v)) {
+        // Show first string value from array
+        for (var j = 0; j < v.length; j++) {
+          if (typeof v[j] === 'string') { items.push([ib[i].key, v[j]]); break; }
+        }
+      }
+    }
+  }
+  return items;
+}
+
 // displayName returns the primary display name based on language preference.
 // display_lang=chinese: shows name_cn first, falls back to name
 // display_lang=original (default): shows name first, falls back to name_cn
