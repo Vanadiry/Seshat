@@ -97,6 +97,10 @@ func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, 
 			}
 		}
 	}
+	if len(allIDs) == 0 {
+		log.Warn("refreshTrackers: no IDs found for %v", names)
+		return
+	}
 	fetchSubjectList(allIDs, bg, dd, imgDir, p)
 	log.Info("Trackers %v refreshed: %d subjects", names, len(seen))
 	buildIndexes(dd, p)
@@ -198,11 +202,24 @@ func diffTrackerIDs(cfg *config.Config, dd string) []int {
 }
 // fetchConcurrent 并发拉取，使用 semaphore 控制并发数。
 
+
+// validTrackerName checks if a tracker name is valid (alphanumeric, dash, underscore).
+func validTrackerName(name string) bool {
+	if name == "" { return false }
+	for _, c := range name {
+		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '-' && c != '_' { return false }
+	}
+	return true
+}
+
 func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req struct{ Name string `json:"name"` }
 		json.NewDecoder(r.Body).Decode(&req)
-		if req.Name == "" { http.Error(w, `{"error":"name required"}`, 400); return }
+		if req.Name == "" || !validTrackerName(req.Name) {
+			http.Error(w, `{"error":"tracker name must be alphanumeric, dash, or underscore"}`, 400)
+			return
+		}
 		path := filepath.Join(cfg.TrackerDir(), req.Name+".toml")
 		if _, err := os.Stat(path); err == nil { http.Error(w, `{"error":"tracker already exists"}`, 409); return }
 		tmpl := fmt.Sprintf(config.TrackerTemplate, req.Name, req.Name)

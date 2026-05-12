@@ -344,6 +344,16 @@ func handleFetchTracker(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		var req struct{ Names []string `json:"names"` }
 		json.NewDecoder(r.Body).Decode(&req)
+		for _, n := range req.Names {
+			if !validTrackerName(n) {
+				writeJSON(w, map[string]any{"error": "invalid tracker name: " + n})
+				return
+			}
+		}
+		if countTrackerNames(cfg, req.Names) == 0 {
+			writeJSON(w, map[string]any{"error": "tracker not found or empty: " + strings.Join(req.Names, ", ")})
+			return
+		}
 		p := newProgress(countTrackerNames(cfg, req.Names))
 		go func() {
 			refreshTrackers(cfg, bg, dd, imgDir, req.Names, p)
