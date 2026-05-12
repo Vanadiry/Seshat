@@ -22,6 +22,7 @@ var showing = 0;
 
 function onFetchDone() { load(); }
 
+// ── 卡片渲染：海报 + 标题 + 评分/平台/年份 ──
 function renderItem(s) {
   return '<div onclick="location.href=\'/subject.html?id='+s.id+'\'" class="bg-[#2a2a2a] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">'+
     '<img src="'+img('subject',s.id,'grid')+'" loading="lazy" onerror="this.remove()" class="w-full aspect-[3/4] object-cover bg-[#202028]">'+

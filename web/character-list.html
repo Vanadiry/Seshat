@@ -20,6 +20,7 @@ var pageSize = 100;
 var allItems = [];
 var showing = 0;
 
+// ── 卡片渲染：左侧正方形头像 + 右侧两行（原名/中文名）──
 function renderItem(c) {
   return '<div onclick="location.href=\'/character.html?id='+c.id+'\'" class="flex items-center gap-3 bg-[#2a2a2a] rounded-lg overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:border-[#FE8A95] transition-colors h-[72px]">'+
     '<img src="'+img('character',c.id,'grid')+'" loading="lazy" onerror="this.remove()" class="w-[72px] h-[72px] object-cover bg-[#202028] shrink-0">'+

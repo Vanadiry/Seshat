@@ -70,6 +70,7 @@ function loadPersonMap() {
     return _personMap;
   });
 }
+// ── Person 名→ID 查找（供 infobox 链接使用）──
 var _personRegex = null;
 function buildPersonRegex() {
   if (_personRegex) return _personRegex;
@@ -89,8 +90,7 @@ function linkifyPerson(text) {
   });
 }
 
-// infoboxData extracts sidebar info from a subject/character/person detail.
-// Handles infobox array + top-level fields (birthday, gender, blood_type).
+// ── infoboxData：提取侧栏信息（infobox + 顶层字段）──
 function infoboxData(d) {
   var items = [];
   // Top-level fields
@@ -144,9 +144,7 @@ function infoboxData(d) {
   return items;
 }
 
-// displayName returns the primary display name based on language preference.
-// display_lang=chinese: shows name_cn first, falls back to name
-// display_lang=original (default): shows name first, falls back to name_cn
+// ── primaryName / subName：根据 display_lang 配置决定主副标题顺序 ──
 function primaryName(name, nameCN) {
   if (window.DISPLAY_LANG === 'chinese') return nameCN || name;
   return name || nameCN;
@@ -156,7 +154,7 @@ function subName(name, nameCN) {
   return (nameCN && name !== nameCN) ? nameCN : '';
 }
 
-// extractCNFromInfobox extracts 简体中文名 from character/person detail.
+// ── extractCN：从 infobox 提取简体中文名 ──
 function extractCN(d) {
   var ib = d.infobox;
   if (typeof ib === 'string') { try { ib = JSON.parse(ib); } catch(e) { return ''; } }
@@ -207,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-fetch').addEventListener('click', openFetch);
 });
 
-// ── Fetch dialog ──
+// ── 拉取弹窗：输入行 + 操作按钮 + 危险区 + 二次确认 ──
 var dlgInited = false, confirmCb = null;
 
 function initDialog() {
@@ -416,7 +414,7 @@ async function doFetchIndex() {
   if (d.task_id) startProgress(d.task_id);
 }
 
-// ── SSE progress (inline in topbar) ──
+// ── SSE 进度条（嵌入顶栏底部）──
 function startProgress(taskId) {
   const w = document.getElementById('pwrap');
   const t = document.getElementById('ptext');
