@@ -8,7 +8,7 @@
 <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
 
 <div id="topbar"></div>
-<div id="subject-header" class="sticky top-14 z-40 bg-[#16161d] border-b border-[rgba(255,255,255,.12)]"></div>
+<div id="subject-header" class="sticky top-12 z-40 bg-[#16161d] border-b border-[rgba(255,255,255,.12)]"></div>
 <main id="view" class="max-w-[1200px] mx-auto p-6"></main>
 
 <script src="assets/app.js"></script>
@@ -22,11 +22,10 @@ function tabsHtml() {
   var items = [
     ['overview','概览'], ['ep','章节'], ['chars','角色'], ['persons','制作人员']
   ];
-  return '<div class="max-w-[1200px] mx-auto px-6"><div class="flex gap-0">' +
-    items.map(function(i) {
-      var cls = tab===i[0] ? 'text-white border-b-2 border-[#FE8A95]' : 'text-sub hover:text-white';
-      return '<a href="javascript:switchTab(\''+i[0]+'\')" class="'+cls+' no-underline px-4 py-2 text-sm inline-block">'+i[1]+'</a>';
-    }).join('') + '</div></div>';
+  return items.map(function(i) {
+    var cls = tab===i[0] ? 'text-white border-b-2 border-[#FE8A95]' : 'text-sub hover:text-white';
+    return '<a href="javascript:switchTab(\''+i[0]+'\')" class="'+cls+' no-underline px-3 py-1 text-sm inline-block">'+i[1]+'</a>';
+  }).join('');
 }
 
 function parseInfobox(raw) {
@@ -40,9 +39,14 @@ async function render() {
     if (!s) { document.getElementById('view').innerHTML='<p class="text-sub text-center py-20">未找到</p>'; return; }
     var info = parseInfobox(s.infobox);
     var hdr = document.getElementById('subject-header');
-    hdr.innerHTML = '<div class="max-w-[1200px] mx-auto px-6 pt-3"><a href="/" class="text-sub text-sm no-underline hover:text-white">← 返回</a><span class="text-sub text-xs ml-4">BgmID: '+SID+'</span></div>' +
-      '<div class="max-w-[1200px] mx-auto px-6 pb-1"><h2 class="text-xl font-bold">'+(s.name_cn||s.name)+'<span class="text-sm text-sub font-normal ml-2">'+(s.name||'')+'</span>' +
-      (s.platform ? '<small class="text-sub text-xs font-normal ml-2">'+s.platform+'</small>' : '') + '</h2></div>' + tabsHtml();
+    hdr.innerHTML = '<div class="max-w-[1200px] mx-auto px-6 h-12 py-0 flex items-center gap-3">' +
+      '<a href="/" class="text-sub text-sm no-underline hover:text-white shrink-0">← 返回</a>' +
+      '<span class="text-xl font-bold truncate">'+(s.name_cn||s.name)+'</span>' +
+      (s.name && s.name !== s.name_cn ? '<span class="text-sm text-sub truncate hidden sm:inline">'+s.name+'</span>' : '') +
+      (s.platform ? '<span class="text-sub text-xs shrink-0">｜</span><span class="text-xs text-sub shrink-0">'+s.platform+'</span>' : '') +
+      '<span class="text-sub text-xs shrink-0">｜</span><span class="text-xs text-sub shrink-0">ID: '+SID+'</span>' +
+      '<span class="flex-1"></span>' +
+      '<span class="flex gap-0 shrink-0">'+tabsHtml()+'</span></div>';
     if (tab === 'overview') await overview(s, info);
     else if (tab === 'ep') await episodes();
     else if (tab === 'chars') await characters();
@@ -193,7 +197,7 @@ async function episodes() {
     var html = '<div class="mb-6"><div class="text-sm text-sub font-semibold mb-3">'+label+'</div>';
     for (var i=0; i<list.length; i++) {
       var e = list[i];
-      html += '<div class="ml-2 pl-4 border-l-2 border-[rgba(255,255,255,.08)] py-3">';
+      html += '<div class="ml-2 pl-4 border-l-2 border-[rgba(255,255,255,.08)] h-12 py-0">';
       html += '<div class="flex items-center gap-3"><span class="text-[#FE8A95] text-sm font-bold w-10">'+(e.type===0?String(Math.floor(e.sort||e.ep||0)).padStart(2,'0'):types[e.type])+'</span><span class="font-semibold">'+(e.name_cn||e.name)+'</span></div>';
       html += '<div class="text-[11px] text-sub mt-1 ml-13">'+(e.name||'')+' · '+(e.duration||'')+' · '+(e.airdate||'')+(e.desc ? '<p class="mt-1 leading-relaxed">'+e.desc+'</p>' : '')+'</div></div>';
     }
