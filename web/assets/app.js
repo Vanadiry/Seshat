@@ -157,14 +157,14 @@ function initDialog() {
     // ID input row
     '<label class="text-xs text-sub block mb-1">拉取指定动画的完整数据到本地</label>'+
     '<div class="flex gap-2 mb-4">'+
-    '<input id="fetch-input" placeholder="动画 ID，如 51 或 51,288" class="flex-1 px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-[#151518] text-sm">'+
+    '<input id="fetch-input" placeholder="动画 ID，如 51 或 51,288" pattern="[0-9, ]*" class="flex-1 px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-[#151518] text-sm">'+
     '<button id="btn-do-fetch" class="w-9 h-9 rounded-lg bg-[#FE8A95] text-white font-bold cursor-pointer border-0 hover:opacity-90 flex items-center justify-center" title="拉取">&check;</button></div>'+
 
     // Tracker input row
-    '<label class="text-xs text-sub block mb-1">拉取指定 Tracker 列表中的全部动画</label>'+
+    '<label class="text-xs text-sub block mb-1">拉取或创建 Tracker</label>'+
     '<div class="flex gap-2 mb-4">'+
-    '<input id="tracker-input" placeholder="Tracker 名称" class="flex-1 px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-[#151518] text-sm">'+
-    '<button id="btn-tracker-fetch" class="w-9 h-9 rounded-lg bg-[#FE8A95] text-white font-bold cursor-pointer border-0 hover:opacity-90 flex items-center justify-center" title="拉取">&check;</button></div>'+
+    '<input id="tracker-input" placeholder="Tracker 名称" pattern="[a-zA-Z0-9_\\-]*" class="flex-1 px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-[#151518] text-sm">'+
+    '<button id="btn-tracker-fetch" class="w-9 h-9 rounded-lg bg-[#FE8A95] text-white font-bold cursor-pointer border-0 hover:opacity-90 flex items-center justify-center" title="拉取或创建">&check;</button></div>'+
 
     '<div class="border-t border-[rgba(255,255,255,.06)] mb-4"></div>'+
 
@@ -213,7 +213,23 @@ function initDialog() {
   document.getElementById('btn-tracker-fetch').addEventListener('click', function() {
     var name = document.getElementById('tracker-input').value.trim();
     if (!name) return;
-    confirmAction('将从上游拉取 Tracker ['+name+'] 中的全部动画数据', doTrackerFetch);
+    if (!/^[a-zA-Z0-9_-]+$/.test(name)) { showError('Tracker 名称仅允许大小写字母、数字、短横线和下划线'); return; }
+    // Check if tracker exists
+    api('/v0/tracker').then(function(list) {
+      var found = false;
+      if (list) for (var i=0; i<list.length; i++) { if (list[i].name === name) { found = true; break; } }
+      if (found) {
+        confirmAction('确认拉取 Tracker ['+name+'] 中的全部动画数据？', doTrackerFetch);
+      } else {
+        confirmAction('未找到 Tracker ['+name+']。是否创建它？\n创建后请在 Tracker 文件中填写动画 ID，返回此处重新拉取。', function() {
+          fetch(API + '/v0/tracker/create', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name})})
+            .then(function(r){return r.json()}).then(function(d){
+              if (d.error) { showError(d.error); }
+              else { showError('Tracker ['+name+'] 已创建。请在 ~/.vSoft/Seshat/tracker/'+name+'.toml 中填写动画 ID，然后返回此处重新拉取。'); }
+            });
+        });
+      }
+    });
   });
   document.getElementById('btn-user').addEventListener('click', function() {
     confirmAction('将从上游拉取用户收藏列表，存入 Tracker [user] 中（不会覆盖已有 Tracker）', doUserFetch);
@@ -239,10 +255,19 @@ function confirmAction(msg, cb) {
   document.getElementById('confirm-msg').textContent = msg;
   document.getElementById('confirm-overlay').style.display = 'flex';
   confirmCb = cb;
+  document.getElementById('btn-confirm-exec').style.display = 'block';
+  document.getElementById('btn-confirm-cancel').textContent = '取消';
   document.getElementById('btn-confirm-exec').onclick = function() {
     closeConfirm();
     cb();
   };
+}
+function showError(msg) {
+  document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-overlay').style.display = 'flex';
+  document.getElementById('btn-confirm-exec').style.display = 'none';
+  document.getElementById('btn-confirm-cancel').textContent = '关闭';
+  confirmCb = null;
 }
 function closeConfirm() {
   document.getElementById('confirm-overlay').style.display = 'none';
@@ -273,21 +298,18 @@ async function doFetch() {
 async function doTrackerFetch() {
   var v = document.getElementById('tracker-input').value.trim();
   if (!v) return;
-  closeFetch();
-  var res = await fetch(API + '/v0/fetch/tracker', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:v})});
+  var res = await fetch(API + '/v0/fetch/tracker', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({names:[v]})});
   var d = await res.json();
+  if (d.error) { showError(d.error); return; }
+  closeFetch();
   if (d.task_id) startProgress(d.task_id);
 }
 
 async function doUserFetch() {
-  closeFetch();
   var res = await fetch(API + '/v0/fetch/user', {method:'POST'});
-  if (!res.ok) {
-    var d = await res.json().catch(function(){return {error:'请求失败 ('+res.status+')'}});
-    alert('拉取用户收藏失败: '+(d.error||'状态 '+res.status));
-    return;
-  }
-  var d = await res.json();
+  var d = await res.json().catch(function(){return {error:'请求失败 ('+res.status+')'}});
+  if (d.error) { showError('拉取用户收藏失败: ' + d.error); return; }
+  closeFetch();
   if (d.task_id) startProgress(d.task_id);
 }
 
