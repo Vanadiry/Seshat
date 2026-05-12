@@ -9,9 +9,9 @@ import (
 )
 
 var defaultTransport = &http.Transport{
-	MaxIdleConns:        100,
-	MaxIdleConnsPerHost: 64,
-	MaxConnsPerHost:     64,
+	MaxIdleConns:        200,
+	MaxIdleConnsPerHost: 100,
+	MaxConnsPerHost:     100,
 	IdleConnTimeout:     90 * time.Second,
 }
 
@@ -25,33 +25,28 @@ func NewClient(ua, baseURL string) *Client {
 	if baseURL == "" {
 		baseURL = "https://api.bgm.tv"
 	}
-	return &Client{http: &http.Client{Timeout: 30 * time.Second, Transport: defaultTransport}, ua: ua, baseURL: baseURL}
+	return &Client{
+		http:    &http.Client{Timeout: 30 * time.Second, Transport: defaultTransport},
+		ua:      ua,
+		baseURL: baseURL,
+	}
 }
 
 // GetImage downloads the actual image binary from an official image endpoint.
-// Detects and rejects Bangumi placeholder images (no_icon_*.png).
+// Rejects Bangumi placeholder images by checking the final URL after redirects.
 func (c *Client) GetImage(urlPath string) ([]byte, error) {
 	url := fmt.Sprintf("%s/%s", c.baseURL, urlPath)
-	client := &http.Client{
-		Timeout:   30 * time.Second,
-		Transport: defaultTransport,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if strings.Contains(req.URL.String(), "no_icon") {
-				return fmt.Errorf("placeholder")
-			}
-			if len(via) >= 5 {
-				return fmt.Errorf("too many redirects")
-			}
-			return nil
-		},
-	}
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", c.ua)
-	resp, err := client.Do(req)
+	resp, err := c.http.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	// Check if we landed on a placeholder image
+	if resp.Request != nil && strings.Contains(resp.Request.URL.String(), "no_icon") {
+		return nil, fmt.Errorf("placeholder")
+	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
 	}

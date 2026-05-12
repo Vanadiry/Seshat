@@ -16,8 +16,9 @@ var Defaults = Config{
 	DataHome:    "",
 	Username:    "",
 	SyncEnabled: false,
-	Concurrency: 32,
+	Concurrency: 64,
 	BaseURL:     "https://api.bgm.tv",
+	UserAgent:   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
 }
 
 type Config struct {
@@ -28,6 +29,7 @@ type Config struct {
 	SyncEnabled  bool   `toml:"sync_enabled"`
 	Concurrency  int    `toml:"concurrency"`
 	BaseURL      string `toml:"base_url"`
+	UserAgent    string `toml:"user_agent"`
 }
 
 func Dir() string {
@@ -65,8 +67,11 @@ func Load() (*Config, error) {
 	if cfg.Port < 1 || cfg.Port > 65535 {
 		cfg.Port = Defaults.Port
 	}
-	if cfg.Concurrency < 1 || cfg.Concurrency > 128 {
+	if cfg.Concurrency < 1 {
 		cfg.Concurrency = Defaults.Concurrency
+	}
+	if cfg.UserAgent == "" {
+		cfg.UserAgent = Defaults.UserAgent
 	}
 	return &cfg, nil
 }
@@ -88,8 +93,8 @@ func Validate(cfg *Config) error {
 	if cfg.Port < 1 || cfg.Port > 65535 {
 		return fmt.Errorf("port 必须在 1-65535 之间")
 	}
-	if cfg.Concurrency < 1 || cfg.Concurrency > 128 {
-		return fmt.Errorf("concurrency 必须在 1-128 之间")
+	if cfg.Concurrency < 1 {
+		return fmt.Errorf("concurrency 必须 >= 1")
 	}
 	return nil
 }
