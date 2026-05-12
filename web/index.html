@@ -1,1 +1,73 @@
-<!DOCTYPE html><html><head><title>Seshat</title></head><body><h1>Seshat</h1></body></html>
+<!DOCTYPE html>
+<html lang="zh-CN" class="bg-[#181818]">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Seshat</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{bg:'#181818',card:'#242424',border:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95','pink-bg':'#3B3033'}}}}</script>
+</head>
+<body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+
+<div id="topbar"></div>
+
+<main class="max-w-[1200px] mx-auto p-6">
+  <div id="grid" class="grid grid-cols-[repeat(auto-fill,minmax(175px,1fr))] gap-4"></div>
+</main>
+
+<script src="assets/app.js"></script>
+<script>
+function onFetchDone() { load(); }
+
+async function load() {
+  const grid = document.getElementById('grid');
+  const q = new URLSearchParams(location.search).get('q');
+  if (q) { searchLoad(q, grid); return; }
+  grid.innerHTML = '<div class="col-span-full text-center py-20 text-sub">加载中…</div>';
+  try {
+    const list = await api('/api/v1/subjects');
+    if (!list.length) {
+      grid.innerHTML = '<div class="col-span-full text-center py-20 text-sub">暂无数据。点击「+ 拉取」添加</div>';
+      return;
+    }
+    grid.innerHTML = list.map(s => `
+      <div onclick="location.href='/subject.html?id=${s.id}'" class="bg-[#242424] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">
+        <img src="${img('subject',s.id,'grid')}" loading="lazy" onerror="this.remove()" class="w-full aspect-[3/4] object-cover bg-[#1a1a23]">
+        <div class="p-2.5">
+          <div class="text-sm font-semibold truncate">${s.name_cn||s.name}</div>
+          <div class="text-xs text-sub mt-1 flex gap-1.5 items-center">
+            ${s.score?`<span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[11px] font-bold">★ ${s.score.toFixed(1)}</span>`:''}
+            ${s.platform?`<span class="bg-[#3B3033] text-[#FE8A95] px-1.5 py-px rounded-md text-[11px]">${s.platform}</span>`:''}
+            ${s.date?s.date.slice(0,4):''}
+          </div>
+        </div>
+      </div>`).join('');
+  } catch(e) { grid.innerHTML = '<div class="col-span-full text-center py-20 text-sub">无法连接</div>'; }
+}
+
+async function searchLoad(q, grid) {
+  grid.innerHTML = '<div class="col-span-full text-center py-20 text-sub">搜索中…</div>';
+  try {
+    const d = await api('/api/v1/search?q='+encodeURIComponent(q)+'&type=subjects');
+    const list = d.subjects||[];
+    if (!list.length) {
+      grid.innerHTML = '<div class="col-span-full text-center py-20 text-sub">未找到结果</div>';
+      return;
+    }
+    grid.innerHTML = list.map(s => `
+      <div onclick="location.href='/subject.html?id=${s.id}'" class="bg-[#242424] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">
+        <img src="${img('subject',s.id,'grid')}" loading="lazy" onerror="this.remove()" class="w-full aspect-[3/4] object-cover bg-[#1a1a23]">
+        <div class="p-2.5">
+          <div class="text-sm font-semibold truncate">${s.name_cn||s.name}</div>
+          <div class="text-xs text-sub mt-1 flex gap-1.5 items-center">
+            ${s.score?`<span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[11px] font-bold">★ ${s.score.toFixed(1)}</span>`:''}
+            ${s.platform?`<span class="bg-[#3B3033] text-[#FE8A95] px-1.5 py-px rounded-md text-[11px]">${s.platform}</span>`:''}
+            ${s.date?s.date.slice(0,4):''}
+          </div>
+        </div>
+      </div>`).join('');
+  } catch(e) { grid.innerHTML = '<div class="col-span-full text-center py-20 text-sub">无法连接</div>'; }
+}
+
+load();
+</script>
+</body>
+</html>

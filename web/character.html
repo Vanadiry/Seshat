@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="bg-[#181818]">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>角色详情</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{bg:'#181818',card:'#242424',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95'}}}}</script>
+</head>
+<body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+
+<div id="topbar"></div>
+
+<main id="view" class="max-w-[1000px] mx-auto p-6"></main>
+
+<script src="assets/app.js"></script>
+<script>
+(async () => {
+  const ID = new URLSearchParams(location.search).get('id');
+  const c = (await api('/api/v1/characters/'+ID));
+  if (!c) { document.getElementById('view').innerHTML='<p class="text-sub">未找到</p>'; return; }
+
+  const info = (() => { try { const d=JSON.parse(c.infobox||'[]'); const o={}; for(const i of d) if(i.key && typeof i.value==='string') o[i.key]=i.value; return o; } catch(e){return {}} })();
+
+  document.getElementById('view').innerHTML = `
+    <a href="javascript:history.back()" class="text-sub text-sm no-underline hover:text-white mb-4 inline-block">← 返回</a>
+    <div class="text-xs text-sub mb-4">BgmID: ${c.id}</div>
+    <div class="flex flex-col md:flex-row gap-6">
+      <div class="w-full md:w-[220px] shrink-0">
+        <img src="${img('character',c.id,'large')}" onerror="this.remove()" class="w-full rounded-xl">
+        <div class="mt-3 flex flex-col gap-0.5">${Object.entries(info).map(([k,v]) => `<div class="flex justify-between py-1 border-b border-[rgba(255,255,255,.06)] text-[13px]"><span class="text-sub">${k}</span><span>${v}</span></div>`).join('')}</div>
+      </div>
+      <div class="flex-1">
+        <h2 class="text-xl font-bold mb-4">${c.name}</h2>
+        ${c.summary ? `<p class="text-[13px] leading-relaxed text-sub mb-6">${c.summary}</p>` : ''}
+        ${c.actors?.length ? `<div class="mb-4"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">声优</span></div><div class="flex flex-wrap gap-2">${c.actors.map(a => `<span onclick="location.href='/person.html?id=${a.id}'" class="bg-[#242424] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-[#FE8A95]">${a.name}</span>`).join('')}</div></div>`:''}
+      </div>
+    </div>`;
+})();
+</script>
+</body>
+</html>

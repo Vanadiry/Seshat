@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="bg-[#181818]">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>制作人员</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{bg:'#181818',card:'#242424',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95'}}}}</script>
+</head>
+<body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+
+<div id="topbar"></div>
+
+<main id="view" class="max-w-[1000px] mx-auto p-6"></main>
+
+<script src="assets/app.js"></script>
+<script>
+(async () => {
+  const SID = new URLSearchParams(location.search).get('id');
+  const s = (await api('/api/v1/subjects/'+SID));
+  const persons = (await api('/api/v1/subjects/'+SID+'/persons'))||[];
+
+  const groups = {};
+  for (const p of persons) {
+    const key = p.relation || '其他';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(p);
+  }
+
+  const sideLinks = Object.entries(groups).map(([k,v]) => `<a href="#g-${k}" class="text-sub text-xs no-underline block py-0.5 hover:text-white">${k} (${v.length})</a>`).join('');
+
+  document.getElementById('view').innerHTML = `
+    <a href="/subject.html?id=${SID}" class="text-sub text-sm no-underline hover:text-white mb-4 inline-block">← 返回动画</a>
+    <h2 class="text-xl font-bold mb-1">${s.name_cn||s.name} · 制作人员</h2>
+    <p class="text-sm text-sub mb-6">${persons.length} 人</p>
+    <div class="flex gap-6">
+      <div class="w-[140px] shrink-0 hidden md:block sticky top-20 self-start">${sideLinks}</div>
+      <div class="flex-1">${Object.entries(groups).map(([k,v]) => `
+        <div class="mb-5" id="g-${k}">
+          <div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">${k}</span><span class="text-xs text-sub">(${v.length})</span></div>
+          ${v.map(p => `<div onclick="location.href='/person.html?id=${p.id}'" class="flex items-center gap-2 py-1.5 border-b border-[rgba(255,255,255,.04)] cursor-pointer hover:text-[#FE8A95] text-sm">${p.name}${p.eps?`<span class="text-xs text-sub">(${p.eps})</span>`:''}</div>`).join('')}
+        </div>`).join('')}</div>
+    </div>`;
+})();
+</script>
+</body>
+</html>

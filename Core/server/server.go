@@ -30,6 +30,14 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	bg := bangumi.NewClient("Seshat/Test", cfg.BaseURL)
 
 	// ── Frontend ──
+	mux.HandleFunc("GET /subject.html", serveFile(embedFS, "web/subject.html", "text/html"))
+	mux.HandleFunc("GET /subject-ep.html", serveFile(embedFS, "web/subject-ep.html", "text/html"))
+	mux.HandleFunc("GET /subject-characters.html", serveFile(embedFS, "web/subject-characters.html", "text/html"))
+	mux.HandleFunc("GET /subject-persons.html", serveFile(embedFS, "web/subject-persons.html", "text/html"))
+	mux.HandleFunc("GET /character.html", serveFile(embedFS, "web/character.html", "text/html"))
+	mux.HandleFunc("GET /person.html", serveFile(embedFS, "web/person.html", "text/html"))
+	mux.HandleFunc("GET /assets/app.js", serveFile(embedFS, "web/assets/app.js", "application/javascript"))
+	mux.HandleFunc("GET /assets/app.css", serveFile(embedFS, "web/assets/app.css", "text/css"))
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)

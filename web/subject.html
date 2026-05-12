@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="bg-[#181818]">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>动画详情</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{bg:'#181818',card:'#242424',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95','pink-bg':'#3B3033'}}}}</script>
+</head>
+<body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+
+<div id="topbar"></div>
+
+<div id="subject-header" class="bg-[#16161d] border-b border-[rgba(255,255,255,.12)]"></div>
+
+<main id="view" class="max-w-[1200px] mx-auto p-6"></main>
+
+<script src="assets/app.js"></script>
+<script>
+const p = new URLSearchParams(location.search);
+const SID = p.get('id');
+let tab = p.get('tab') || 'overview';
+
+function switchTab(t) { tab = t; history.replaceState({},'',`?id=${SID}&tab=${t}`); render(); }
+
+function tabsHtml() {
+  const t = (n,l) => `<a href="javascript:switchTab('${n}')" class="${tab===n?'text-white border-b-2 border-[#FE8A95]':'text-sub hover:text-white'} no-underline px-4 py-2 text-sm inline-block">${l}</a>`;
+  return `<div class="flex gap-0 border-b border-[rgba(255,255,255,.12)]">${t('overview','概览')}${t('ep','章节')}${t('chars','角色')}${t('persons','制作人员')}${t('relations','关联')}</div>`;
+}
+
+async function render() {
+  const hdr = document.getElementById('subject-header');
+  hdr.innerHTML = '<div class="max-w-[1200px] mx-auto px-6 py-3"><a href="/" class="text-sub text-sm no-underline hover:text-white">← 返回</a><span class="text-sub text-xs ml-4">BgmID: '+SID+'</span></div>';
+  const s = (await api('/api/v1/subjects/'+SID));
+  if (!s) { document.getElementById('view').innerHTML='<p class="text-sub">未找到</p>'; return; }
+  hdr.innerHTML += `<div class="max-w-[1200px] mx-auto px-6 pb-1"><h2 class="text-xl font-bold">${s.name_cn||s.name}<span class="text-sm text-sub font-normal ml-2">${s.name||''}</span></h2></div>${tabsHtml()}`;
+  if (tab === 'overview') overview(s);
+  else if (tab === 'ep') episodes();
+  else if (tab === 'chars') characters();
+  else if (tab === 'persons') personsList();
+  else if (tab === 'relations') relations();
+}
+
+function parseInfobox(raw) {
+  if (!raw) return {};
+  try { const d = JSON.parse(raw); const o = {}; for (const i of d) if (i.key && typeof i.value==='string') o[i.key]=i.value; return o; } catch(e) { return {}; }
+}
+
+async function overview(s) {
+  const info = parseInfobox(s.infobox);
+  const [chars, rels] = await Promise.all([api('/api/v1/subjects/'+SID+'/characters'), api('/api/v1/subjects/'+SID+'/relations')]);
+  const mainChars = (chars||[]).filter(c => c.relation==='主角'||c.relation==='配角').slice(0,8);
+
+  document.getElementById('view').innerHTML = `
+    <div class="flex flex-col md:flex-row gap-6">
+      <div class="w-full md:w-[220px] shrink-0">
+        <img src="${img('subject',SID,'large')}" onerror="this.remove()" class="w-full rounded-xl">
+        <div class="mt-3 flex flex-col gap-0.5">${Object.entries(info).map(([k,v]) => `<div class="flex justify-between py-1 border-b border-[rgba(255,255,255,.06)] text-[13px]"><span class="text-sub">${k}</span><span>${v}</span></div>`).join('')}</div>
+      </div>
+      <div class="flex-1 flex flex-col gap-5">
+        <div class="flex flex-col md:flex-row gap-5">
+          <div class="flex-1">
+            <p class="text-[13px] leading-relaxed text-sub">${s.summary||'暂无简介'}</p>
+          </div>
+          <div class="w-full md:w-[240px] shrink-0 bg-[#242424] border border-[rgba(255,255,255,.12)] rounded-xl p-4 flex flex-col gap-3">
+            <div class="text-center text-sub text-sm">评分</div>
+            <div class="text-center text-3xl font-bold">${s.rating?.score||'-'}<span class="text-xs text-sub font-normal"> / 10</span></div>
+            <div class="text-center text-xs text-sub">${s.rating?.total||0} 人 · 排名 #${s.rating?.rank||'-'}</div>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">主要角色</span><a href="javascript:switchTab('chars')" class="text-[#FE8A95] text-xs ml-auto no-underline">查看全部 →</a></div>
+          <div class="flex flex-wrap gap-3">${mainChars.map(c => `
+            <div onclick="location.href='/character.html?id=${c.id}'" class="flex gap-2 items-center bg-[#242424] border border-[rgba(255,255,255,.12)] rounded-lg p-2 cursor-pointer hover:border-[#FE8A95] min-w-[180px]">
+              <img src="${img('character',c.id,'grid')}" onerror="this.remove()" class="w-11 h-11 rounded-lg object-cover bg-[#1a1a23] shrink-0">
+              <div><div class="text-[13px] font-semibold">${c.name}</div><div class="text-[11px] text-sub">${c.relation}${c.actors?.length?' · CV:'+c.actors.map(a=>a.name).slice(0,2).join(','):''}</div></div>
+            </div>`).join('')}</div>
+        </div>
+        ${(rels||[]).length ? `
+        <div>
+          <div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">关联条目</span></div>
+          <div class="flex flex-wrap gap-2">${rels.map(r => `<span class="bg-[#242424] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1 text-xs text-sub">${r.relation||'关联'} #${r.id}</span>`).join('')}</div>
+        </div>`:''}
+      </div>
+    </div>`;
+}
+
+async function episodes() {
+  const eps = (await api('/api/v1/subjects/'+SID+'/episodes'))||[];
+  const main = eps.filter(e=>e.type===0).sort((a,b)=>a.sort-b.sort);
+  const sp = eps.filter(e=>e.type!==0).sort((a,b)=>a.sort-b.sort);
+  const types = {0:'本篇',1:'SP',2:'OP',3:'ED',4:'预告',5:'MAD',6:'其他'};
+  document.getElementById('view').innerHTML = `
+    <div class="flex items-center gap-2 mb-4"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">剧集 (${eps.length})</span></div>
+    <div class="flex flex-wrap gap-2 mb-3">${[...main,...sp].map(e => `<div class="w-11 h-11 flex items-center justify-center rounded-lg text-xs font-semibold cursor-default ${e.type===0?'bg-[#1f1f2b] text-sub':'border-2 border-[#f59e0b] text-[#f59e0b]'}" title="${e.name_cn||e.name}">${e.type===0?String(Math.floor(e.sort||e.ep||0)).padStart(2,'0'):types[e.type].slice(0,2)}</div>`).join('')}</div>
+    <div class="text-[11px] text-sub flex gap-4"><span>■ 本篇 (${main.length})</span><span class="text-[#f59e0b]">■ SP/其他 (${sp.length})</span></div>`;
+}
+
+async function characters() {
+  const chars = (await api('/api/v1/subjects/'+SID+'/characters'))||[];
+  document.getElementById('view').innerHTML = `
+    <div class="flex items-center gap-2 mb-4"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">角色 (${chars.length})</span></div>
+    <div class="flex flex-wrap gap-3">${chars.map(c => `
+      <div onclick="location.href='/character.html?id=${c.id}'" class="flex gap-3 items-center bg-[#242424] border border-[rgba(255,255,255,.12)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95] min-w-[200px]">
+        <img src="${img('character',c.id,'grid')}" onerror="this.remove()" class="w-12 h-12 rounded-lg object-cover bg-[#1a1a23] shrink-0">
+        <div><div class="text-[13px] font-semibold">${c.name}</div><div class="text-[11px] text-sub">${c.relation}${c.actors?.length?' · CV:'+c.actors.map(a=>a.name).join(','):''}</div></div>
+      </div>`).join('')}</div>`;
+}
+
+async function personsList() {
+  const persons = (await api('/api/v1/subjects/'+SID+'/persons'))||[];
+  document.getElementById('view').innerHTML = `
+    <div class="flex items-center gap-2 mb-4"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">制作人员 (${persons.length})</span></div>
+    <div class="flex flex-wrap gap-2">${persons.map(p => `
+      <div onclick="location.href='/person.html?id=${p.id}'" class="flex gap-2 items-center bg-[#242424] border border-[rgba(255,255,255,.12)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95] min-w-[170px]">
+        <img src="${img('person',p.id,'grid')}" onerror="this.remove()" class="w-10 h-10 rounded-lg object-cover bg-[#1a1a23] shrink-0">
+        <div><div class="text-[13px] font-semibold">${p.name}</div><div class="text-[11px] text-sub">${p.relation}</div></div>
+      </div>`).join('')}</div>`;
+}
+
+async function relations() {
+  const rels = (await api('/api/v1/subjects/'+SID+'/relations'))||[];
+  document.getElementById('view').innerHTML = `
+    <div class="flex items-center gap-2 mb-4"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">关联条目 (${rels.length})</span></div>
+    <div class="flex flex-wrap gap-2">${rels.map(r => `<span class="bg-[#242424] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1.5 text-sm text-sub">${r.relation||'关联'} #${r.id} ${r.name||''}</span>`).join('')}</div>`;
+}
+
+render();
+</script>
+</body>
+</html>
