@@ -11,7 +11,7 @@ function img(kind, id, size) { return API + '/v0/' + kind + 's/' + id + '/image?
 // ── Person name → ID lookup for infobox links ──
 var _personMap = null;
 function loadPersonMap() {
-  if (_personMap) return Promise.resolve(_personMap);
+  if (_personMap && Object.keys(_personMap).length) return Promise.resolve(_personMap);
   return api('/v0/person-names').then(function(data) {
     _personMap = data || {};
     _personRegex = null;
