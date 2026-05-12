@@ -8,12 +8,41 @@ async function api(url) {
 }
 function img(kind, id, size) { return API + '/v0/' + kind + 's/' + id + '/image?type=' + (size||'grid'); }
 
+// ── Person name → ID lookup for infobox links ──
+var _personMap = null;
+function loadPersonMap() {
+  if (_personMap) return Promise.resolve(_personMap);
+  _personMap = {};
+  return api('/v0/persons').then(function(list) {
+    if (list) for (var i=0; i<list.length; i++) { _personMap[list[i].name] = list[i].id; }
+    return _personMap;
+  });
+}
+var _personRegex = null;
+function buildPersonRegex() {
+  if (_personRegex) return _personRegex;
+  var names = Object.keys(_personMap);
+  if (!names.length) return null;
+  names.sort(function(a,b){return b.length-a.length});
+  var escaped = names.map(function(n){return n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')});
+  _personRegex = new RegExp(escaped.join('|'), 'g');
+  return _personRegex;
+}
+function linkifyPerson(text) {
+  if (!text || !_personMap || !Object.keys(_personMap).length) return text;
+  var re = buildPersonRegex();
+  if (!re) return text;
+  return text.replace(re, function(match) {
+    return '<a href="/person.html?id='+_personMap[match]+'" class="text-[#FE8A95] hover:underline">'+match+'</a>';
+  });
+}
+
 // infoboxData extracts sidebar info from a subject/character/person detail.
 // Handles infobox array + top-level fields (birthday, gender, blood_type).
 function infoboxData(d) {
   var items = [];
   // Top-level fields
-  if (d.gender) items.push(['性别', d.gender]);
+  if (d.gender) items.push(['性别', linkifyPerson(d.gender)]);
   if (d.blood_type) { var bt = {1:'A',2:'B',3:'AB',4:'O'}; items.push(['血型', bt[d.blood_type]||d.blood_type]); }
   if (d.birth_mon || d.birth_day) {
     var bd = [d.birth_year||'????', String(d.birth_mon||'?').padStart(2,'0'), String(d.birth_day||'?').padStart(2,'0')].join('-');
@@ -26,11 +55,11 @@ function infoboxData(d) {
     for (var i = 0; i < ib.length; i++) {
       if (!ib[i].key) continue;
       var v = ib[i].value;
-      if (typeof v === 'string') { items.push([ib[i].key, v]); }
+      if (typeof v === 'string') { items.push([ib[i].key, linkifyPerson(v)]); }
       else if (Array.isArray(v)) {
         // Show first string value from array
         for (var j = 0; j < v.length; j++) {
-          if (typeof v[j] === 'string') { items.push([ib[i].key, v[j]]); break; }
+          if (typeof v[j] === 'string') { items.push([ib[i].key, linkifyPerson(v[j])]); break; }
         }
       }
     }

@@ -32,6 +32,7 @@ async function render() {
   try {
     var s = await api('/v0/subjects/'+SID);
     if (!s) { document.getElementById('view').innerHTML='<p class="text-sub text-center py-20">未找到</p>'; return; }
+    await loadPersonMap();
     var infoItems = infoboxData(s);
     var hdr = document.getElementById('subject-header');
     hdr.innerHTML = '<div class="max-w-[1200px] mx-auto px-6 h-12 py-0 flex items-center gap-3">' +
