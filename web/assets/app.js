@@ -107,14 +107,27 @@ function infoboxData(d) {
       if (typeof v === 'string') {
         items.push([ib[i].key, linkifyPerson(v), 0]);
       } else if (Array.isArray(v)) {
-        if (v.length > 0 && typeof v[0] === 'object' && v[0].k) {
-          // Nested key-value objects like aliases: [{k: "纯假名", v: "..."}]
-          items.push([ib[i].key, '', 0]);
-          for (var j = 0; j < v.length; j++) {
-            if (v[j].k) items.push([v[j].k, linkifyPerson(v[j].v||''), 1]);
+        if (v.length > 0 && typeof v[0] === 'object') {
+          if (v[0].k) {
+            // Key-value pairs: [{k: "纯假名", v: "..."}]
+            items.push([ib[i].key, '', 0]);
+            for (var j = 0; j < v.length; j++) {
+              if (v[j].k) items.push([v[j].k, linkifyPerson(v[j].v||''), 1]);
+            }
+          } else if (v[0].v) {
+            // Value-only objects: [{v: "クラナド"}]
+            items.push([ib[i].key, '', 0]);
+            for (var j = 0; j < v.length; j++) {
+              if (v[j].v) items.push(['', linkifyPerson(v[j].v), 1]);
+            }
+          } else {
+            // Fallback: show first string from array
+            for (var j = 0; j < v.length; j++) {
+              if (typeof v[j] === 'string') { items.push([ib[i].key, linkifyPerson(v[j]), 0]); break; }
+            }
           }
         } else {
-          // Simple string array
+          // Plain string array
           for (var j = 0; j < v.length; j++) {
             if (typeof v[j] === 'string') { items.push([ib[i].key, linkifyPerson(v[j]), 0]); break; }
           }

@@ -31,7 +31,7 @@
   var items = infoboxData(c);
   var infoHtml = '';
   for (var i=0; i<items.length; i++) {
-    infoHtml += '<div class="py-1 border-b border-[rgba(255,255,255,.06)] text-[14px]'+(items[i][2]?' ml-4':'')+'"><span class="text-sub">'+items[i][0]+': </span><span>'+items[i][1]+'</span></div>';
+    infoHtml += '<div class="py-1 border-b border-[rgba(255,255,255,.06)] text-[14px]'+(items[i][2]?' ml-4':'')+'"><span class="text-sub">'+(items[i][0]?items[i][0]+': ':'')+'</span><span>'+items[i][1]+'</span></div>';
   }
 
   document.getElementById('view').innerHTML =
