@@ -127,22 +127,40 @@ async function overview(s, infoItems) {
     tagsHtml += '</div>';
   }
 
-  // Rating histogram
+  // Rating histogram — vertical bars with hover tooltip
   var histHtml = '';
   var cnt = s.rating && s.rating.count;
   if (cnt) {
-    var keys = Object.keys(cnt);
-    if (keys.length) {
-      var max = 1;
-      for (var k in cnt) { if (cnt[k] > max) max = cnt[k]; }
-      histHtml = '<ul class="space-y-0.5">';
-      for (var i=10; i>=1; i--) {
-        var v = cnt[String(i)] || 0;
-        var pct = Math.max(v / max * 100, 1);
-        histHtml += '<li class="flex items-center gap-2 text-xs"><span class="w-3 text-right text-sub">'+i+'</span><span class="flex-1 h-3 bg-[#30303b] rounded-sm overflow-hidden"><span class="block h-full bg-[#FE8A95] rounded-sm" style="width:'+pct+'%"></span></span><span class="text-sub w-8 text-right">'+v+'</span></li>';
-      }
-      histHtml += '</ul>';
+    var totalVotes = 0;
+    for (var k in cnt) { totalVotes += cnt[k]; }
+    var max = 1;
+    for (var k2 in cnt) { if (cnt[k2] > max) max = cnt[k2]; }
+    histHtml = '<div class="flex items-end gap-px mt-2" style="height:80px">';
+    for (var i=10; i>=1; i--) {
+      var v = cnt[String(i)] || 0;
+      var h = Math.max(v / max * 100, 4);
+      var pct = totalVotes > 0 ? (v / totalVotes * 100).toFixed(1) : '0.0';
+      histHtml += '<div class="flex-1 flex flex-col items-center justify-end group relative" style="height:100%">'+
+        '<span class="block w-full bg-[#FE8A95] rounded-t-sm group-hover:bg-[#ff9aa5] transition-colors" style="height:'+h+'%"></span>'+
+        '<div class="absolute bottom-full mb-1 hidden group-hover:block z-50">'+
+        '<div class="bg-[#1a1a22] border border-[rgba(255,255,255,.15)] rounded-lg px-2 py-1 text-xs whitespace-nowrap shadow-lg">'+pct+'% · '+v+' 人</div></div>'+
+        '</div>';
     }
+    histHtml += '</div>';
+    histHtml += '<div class="flex gap-px mt-0.5">';
+    for (var j=10; j>=1; j--) {
+      histHtml += '<span class="flex-1 text-center text-[10px] text-sub">'+j+'</span>';
+    }
+    histHtml += '</div>';
+    // Standard deviation
+    var mean = s.rating && s.rating.score || 0;
+    var sumSq = 0;
+    for (var k3=1; k3<=10; k3++) {
+      var c = cnt[String(k3)] || 0;
+      sumSq += c * (k3 - mean) * (k3 - mean);
+    }
+    var stddev = totalVotes > 0 ? Math.sqrt(sumSq / totalVotes).toFixed(4) : '-';
+    histHtml += '<div class="text-xs text-sub text-center mt-2">标准差: '+stddev+'</div>';
   }
 
   // Infobox entries
@@ -175,12 +193,18 @@ async function overview(s, infoItems) {
   html += '<p class="text-[14px] leading-relaxed text-sub mb-4">'+(s.summary||'暂无简介')+'</p>';
   if (tagsHtml) html += '<div class="mb-2"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">标签</span></div>'+tagsHtml+'</div>';
   html += '</div>';
-  // Rating
-  html += '<div class="w-full md:w-[230px] shrink-0 bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-xl p-4">';
-  html += '<div class="text-center text-sub text-sm">评分</div>';
-  html += '<div class="text-center text-3xl font-bold mt-1">'+scoreHtml+'<span class="text-xs text-sub font-normal"> / 10</span></div>';
-  html += '<div class="text-center text-xs text-sub mt-1">'+totalHtml+' 人评分 · 排名 '+rankHtml+'</div>';
-  if (histHtml) html += '<div class="mt-3">'+histHtml+'</div>';
+  // Rating panel — pinned to top
+  html += '<div class="w-full md:w-[230px] shrink-0 self-start bg-[#252528] border border-[rgba(255,255,255,.12)] rounded-xl overflow-hidden">';
+  // Header strip
+  html += '<div class="bg-[#2a2a30] px-4 py-2"><span class="font-bold">评分</span></div>';
+  html += '<div class="border-t border-[rgba(255,255,255,.1)]"></div>';
+  // Content
+  html += '<div class="px-4 pt-2 pb-2">';
+  html += '<div class="flex items-baseline justify-center"><span class="text-3xl font-bold">'+scoreHtml+'</span><span class="text-xs text-sub ml-1">/ 10</span></div>';
+  html += '<div class="text-xs text-sub text-center mt-1">'+totalHtml+' 人评分 · 排名 '+rankHtml+'</div>';
+  if (histHtml) html += '<div class="border-t border-[rgba(255,255,255,.12)] mt-3 mb-1"></div>';
+  if (histHtml) html += '<div>'+histHtml+'</div>';
+  html += '</div>';
   html += '</div>';
   html += '</div>';
 
