@@ -26,10 +26,11 @@ function renderItem(s) {
   return '<div onclick="location.href=\'/subject.html?id='+s.id+'\'" class="bg-[#242424] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">'+
     '<img src="'+img('subject',s.id,'grid')+'" loading="lazy" onerror="this.remove()" class="w-full aspect-[3/4] object-cover bg-[#1a1a23]">'+
     '<div class="p-2.5"><div class="text-sm font-semibold truncate">'+(s.name_cn||s.name)+'</div>'+
-    '<div class="text-xs text-sub mt-1 flex gap-1.5 items-center">'+
-    (s.score?'<span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[11px] font-bold">★ '+s.score.toFixed(1)+'</span>':'')+
-    (s.platform?'<span class="bg-[#3B3033] text-[#FE8A95] px-1.5 py-px rounded-md text-[11px]">'+s.platform+'</span>':'')+
-    (s.date?s.date.slice(0,4):'')+
+    (s.name_cn && s.name && s.name_cn !== s.name ? '<div class="text-xs text-sub truncate mt-0.5">'+s.name+'</div>' : '')+
+    '<div class="text-xs text-sub mt-1 flex gap-1.5 items-center truncate">'+
+    (s.score?'<span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[11px] font-bold shrink-0">★ '+s.score.toFixed(1)+'</span>':'')+
+    (s.platform?'<span class="bg-[#3B3033] text-[#FE8A95] px-1.5 py-px rounded-md text-[11px] shrink-0">'+s.platform+'</span>':'')+
+    (s.date?'<span class="text-sub text-[11px] shrink-0">'+s.date.slice(0,4)+'</span>':'')+
     '</div></div></div>';
 }
 

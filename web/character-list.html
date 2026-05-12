@@ -10,7 +10,7 @@
 <div id="topbar"></div>
 
 <main class="max-w-[1200px] mx-auto p-6">
-  <div id="grid" class="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3"></div>
+  <div id="grid" class="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2"></div>
   <div id="pager" class="mt-6 text-center"></div>
 </main>
 
@@ -21,12 +21,12 @@ var allItems = [];
 var showing = 0;
 
 function renderItem(c) {
-  var html = '<div onclick="location.href=\'/character.html?id='+c.id+'\'" class="bg-[#242424] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">';
-  html += '<img src="'+img('character',c.id,'grid')+'" loading="lazy" onerror="this.remove()" class="w-full aspect-[3/4] object-cover bg-[#1a1a23]">';
-  html += '<div class="p-2"><div class="text-[13px] font-semibold truncate">'+c.name+'</div>';
-  if (c.name_cn) html += '<div class="text-[11px] text-sub truncate mt-0.5">'+c.name_cn+'</div>';
-  html += '</div></div>';
-  return html;
+  return '<div onclick="location.href=\'/character.html?id='+c.id+'\'" class="flex items-center gap-3 bg-[#242424] rounded-lg overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:border-[#FE8A95] transition-colors h-[72px]">'+
+    '<img src="'+img('character',c.id,'grid')+'" loading="lazy" onerror="this.remove()" class="w-[72px] h-[72px] object-cover bg-[#1a1a23] shrink-0">'+
+    '<div class="flex-1 min-w-0 pr-3 py-1">'+
+    '<div class="text-sm font-semibold truncate">'+c.name+'</div>'+
+    (c.name_cn ? '<div class="text-xs text-sub truncate mt-0.5">'+c.name_cn+'</div>' : '')+
+    '</div></div>';
 }
 
 function showMore(n) {
@@ -38,9 +38,7 @@ function showMore(n) {
   showing = end;
   updatePager();
 }
-
 function showAll() { showMore(allItems.length - showing); }
-
 function updatePager() {
   var pager = document.getElementById('pager');
   if (allItems.length <= pageSize) {
@@ -57,10 +55,7 @@ function updatePager() {
 
 (async () => {
   allItems = (await api('/api/v1/characters'))||[];
-  if (!allItems.length) {
-    document.getElementById('grid').innerHTML = '<div class="col-span-full text-center py-20 text-sub">暂无数据</div>';
-    return;
-  }
+  if (!allItems.length) { document.getElementById('grid').innerHTML='<div class="col-span-full text-center py-20 text-sub">暂无数据</div>'; return; }
   showing = 0;
   showMore(pageSize);
 })();
