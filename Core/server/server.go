@@ -65,6 +65,14 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		w.Write(data)
 	})
 	mux.HandleFunc("GET /assets/app.css", serveFile(embedFS, "web/assets/app.css", "text/css"))
+	mux.HandleFunc("GET /assets/tailwindcss-3.4.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript")
+		http.ServeFileFS(w, r, embedFS, "web/assets/tailwindcss-3.4.js")
+	})
+	mux.HandleFunc("GET /assets/scalar-api-reference.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript")
+		http.ServeFileFS(w, r, embedFS, "web/assets/scalar-api-reference.js")
+	})
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
