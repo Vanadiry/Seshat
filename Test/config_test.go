@@ -10,17 +10,17 @@ import (
 
 func TestDefaults(t *testing.T) {
 	cfg := config.Defaults
-	if cfg.Port != 4000 {
-		t.Errorf("expected port 4000, got %d", cfg.Port)
+	if cfg.Server.Port != 4000 {
+		t.Errorf("expected port 4000, got %d", cfg.Server.Port)
 	}
-	if cfg.BindAddr != "127.0.0.1" {
-		t.Errorf("expected 127.0.0.1, got %s", cfg.BindAddr)
+	if cfg.Server.BindAddr != "127.0.0.1" {
+		t.Errorf("expected 127.0.0.1, got %s", cfg.Server.BindAddr)
 	}
-	if cfg.Concurrency != 32 {
-		t.Errorf("expected concurrency 32, got %d", cfg.Concurrency)
+	if cfg.Server.Concurrency != 32 {
+		t.Errorf("expected concurrency 32, got %d", cfg.Server.Concurrency)
 	}
-	if cfg.BaseURL != "https://api.bgm.tv" {
-		t.Errorf("expected api.bgm.tv, got %s", cfg.BaseURL)
+	if cfg.Upstream.BaseURL != "https://api.bgm.tv" {
+		t.Errorf("expected api.bgm.tv, got %s", cfg.Upstream.BaseURL)
 	}
 }
 
@@ -30,15 +30,15 @@ func TestValidate(t *testing.T) {
 		t.Errorf("valid config should not error: %v", err)
 	}
 
-	cfg.Port = 0
+	cfg.Server.Port = 0
 	if err := config.Validate(&cfg); err == nil {
 		t.Error("port 0 should error")
 	}
 
 	cfg = config.Defaults
-	cfg.Concurrency = 999
+	cfg.Server.Concurrency = 0
 	if err := config.Validate(&cfg); err == nil {
-		t.Error("concurrency 999 should error")
+		t.Error("concurrency 0 should error")
 	}
 }
 
@@ -92,13 +92,13 @@ func TestLoadSave(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if cfg.Port != 4000 {
-		t.Errorf("expected 4000, got %d", cfg.Port)
+	if cfg.Server.Port != 4000 {
+		t.Errorf("expected 4000, got %d", cfg.Server.Port)
 	}
 
 	// Modify and save
-	cfg.Port = 9000
-	cfg.Username = "testuser"
+	cfg.Server.Port = 9000
+	cfg.User.Username = "testuser"
 	if err := config.Save(cfg); err != nil {
 		t.Fatalf("Save: %v", err)
 	}
@@ -108,11 +108,11 @@ func TestLoadSave(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Reload: %v", err)
 	}
-	if cfg2.Port != 9000 {
-		t.Errorf("expected 9000, got %d", cfg2.Port)
+	if cfg2.Server.Port != 9000 {
+		t.Errorf("expected 9000, got %d", cfg2.Server.Port)
 	}
-	if cfg2.Username != "testuser" {
-		t.Errorf("expected testuser, got %s", cfg2.Username)
+	if cfg2.User.Username != "testuser" {
+		t.Errorf("expected testuser, got %s", cfg2.User.Username)
 	}
 }
 
