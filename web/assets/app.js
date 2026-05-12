@@ -94,8 +94,11 @@ function infoboxData(d) {
   if (d.gender) items.push([MSG.infoboxGender, linkifyPerson(d.gender)]);
   if (d.blood_type) { var bt = MSG.bloodTypeMap; items.push([MSG.infoboxBloodType, bt[d.blood_type]||d.blood_type]); }
   if (d.birth_mon || d.birth_day) {
-    var bd = [d.birth_year||'????', String(d.birth_mon||'?').padStart(2,'0'), String(d.birth_day||'?').padStart(2,'0')].join('-');
-    items.push([MSG.infoboxBirthday, bd]);
+    var bd = [];
+    if (d.birth_year) bd.push(d.birth_year+'年');
+    if (d.birth_mon) bd.push(d.birth_mon+'月');
+    if (d.birth_day) bd.push(d.birth_day+'日');
+    items.push([MSG.infoboxBirthday, bd.join('')]);
   }
   // infobox array
   var ib = d.infobox;
