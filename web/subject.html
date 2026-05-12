@@ -36,7 +36,7 @@ async function render() {
     var infoItems = infoboxData(s);
     var hdr = document.getElementById('subject-header');
     hdr.innerHTML = '<div class="max-w-[1200px] mx-auto px-6 h-12 py-0 flex items-center gap-3">' +
-      '<a href="/" class="text-sub text-sm no-underline hover:text-white shrink-0">← 返回</a>' +
+      '<a href="/" class="w-7 h-7 rounded-full border border-[rgba(255,255,255,.2)] flex items-center justify-center text-sub hover:text-white hover:border-[rgba(255,255,255,.4)] shrink-0 no-underline text-xs" title="返回">←</a>' +
       '<span class="text-xl font-bold truncate">'+primaryName(s.name, s.name_cn)+'</span>' +
       (function(){var sub=subName(s.name, s.name_cn); return sub ? '<span class="text-sm text-sub truncate hidden sm:inline">'+sub+'</span>' : ''})() +
       (s.platform ? '<span class="text-sub text-xs shrink-0">｜</span><span class="text-xs text-sub shrink-0">'+s.platform+'</span>' : '') +
