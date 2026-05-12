@@ -8,6 +8,18 @@ async function api(url) {
 }
 function img(kind, id, size) { return API + '/v0/' + kind + 's/' + id + '/image?type=' + (size||'grid'); }
 
+// displayName returns the primary display name based on language preference.
+// display_lang=chinese: shows name_cn first, falls back to name
+// display_lang=original (default): shows name first, falls back to name_cn
+function primaryName(name, nameCN) {
+  if (window.DISPLAY_LANG === 'chinese') return nameCN || name;
+  return name || nameCN;
+}
+function subName(name, nameCN) {
+  if (window.DISPLAY_LANG === 'chinese') { return (nameCN && name && name !== nameCN) ? name : ''; }
+  return (nameCN && name !== nameCN) ? nameCN : '';
+}
+
 // ── Top bar injection ──
 document.addEventListener('DOMContentLoaded', () => {
   const tb = document.getElementById('topbar');

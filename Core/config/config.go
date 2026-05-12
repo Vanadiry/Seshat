@@ -22,7 +22,8 @@ type UpstreamConfig struct {
 }
 
 type FrontendConfig struct {
-	BackendURL string `toml:"backend_url"`
+	BackendURL  string `toml:"backend_url"`
+	DisplayLang string `toml:"display_lang"`
 }
 
 type UserConfig struct {
@@ -48,7 +49,7 @@ var Defaults = Config{
 		BaseURL:   "https://api.bgm.tv",
 		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
 	},
-	Frontend: FrontendConfig{BackendURL: ""},
+	Frontend: FrontendConfig{BackendURL: "", DisplayLang: "original"},
 	User:     UserConfig{Username: "", SyncEnabled: false},
 	DataHome: "",
 }

@@ -24,8 +24,8 @@ function renderItem(c) {
   return '<div onclick="location.href=\'/character.html?id='+c.id+'\'" class="flex items-center gap-3 bg-[#242424] rounded-lg overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:border-[#FE8A95] transition-colors h-[72px]">'+
     '<img src="'+img('character',c.id,'grid')+'" loading="lazy" onerror="this.remove()" class="w-[72px] h-[72px] object-cover bg-[#1a1a23] shrink-0">'+
     '<div class="flex-1 min-w-0 pr-3 py-1">'+
-    '<div class="text-sm font-semibold truncate">'+c.name+'</div>'+
-    (c.name_cn ? '<div class="text-xs text-sub truncate mt-0.5">'+c.name_cn+'</div>' : '')+
+    '<div class="text-sm font-semibold truncate">'+primaryName(c.name, c.name_cn)+'</div>'+
+    (function(){var sub=subName(c.name, c.name_cn); return sub ? '<div class="text-xs text-sub truncate mt-0.5">'+sub+'</div>' : ''})()+
     '</div></div>';
 }
 

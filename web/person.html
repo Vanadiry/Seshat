@@ -22,7 +22,7 @@
 
   document.getElementById('detail-header').innerHTML = '<div class="max-w-[1200px] mx-auto px-6 h-12 py-0 flex items-center gap-3">' +
     '<a href="javascript:history.back()" class="text-sub text-sm no-underline hover:text-white shrink-0">← 返回</a>' +
-    '<span class="text-xl font-bold truncate">'+p.name+'</span>' +
+    '<span class="text-xl font-bold truncate">'+primaryName(p.name,'')+'</span>' +
     '<span class="text-xs text-sub ml-auto shrink-0">ID: '+p.id+'</span></div>';
 
   const info = (() => { try { const d=JSON.parse(p.infobox||'[]'); const o={}; for(const i of d) if(i.key && typeof i.value==='string') o[i.key]=i.value; return o; } catch(e){return {}} })();
