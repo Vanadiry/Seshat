@@ -94,6 +94,12 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/subjects", handleListSubjects(dd))
 	mux.HandleFunc("GET /api/v0/characters", handleListCharacters(dd))
 	mux.HandleFunc("GET /api/v0/persons", handleListPersons(dd))
+	mux.HandleFunc("GET /api/v0/person-names", func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile(cache.IndexFile(dd, "person_names.json"))
+		if err != nil { writeJSON(w, map[string]int{}); return }
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+	})
 	mux.HandleFunc("GET /api/v0/", handleCacheReader(dd))
 
 	// ── Fetch ──

@@ -111,7 +111,20 @@ func rebuildTags(dd string) {
 
 	result, _ := json.Marshal(tags)
 	os.WriteFile(tagsPath(dd), result, 0o644)
+	buildPersonNames(dd)
 	log.Info("Tags index rebuilt: %d tags", len(tags))
+}
+
+// buildPersonNames generates a name→id lookup from persons.json.
+func buildPersonNames(dd string) {
+	data, err := os.ReadFile(cache.IndexFile(dd, "persons.json"))
+	if err != nil { return }
+	var list []cache.NameEntry
+	json.Unmarshal(data, &list)
+	m := map[string]int{}
+	for _, p := range list { m[p.Name] = p.ID }
+	result, _ := json.Marshal(m)
+	os.WriteFile(cache.IndexFile(dd, "person_names.json"), result, 0o644)
 }
 
 // rebuildFromScan scans all cached API JSON files and rebuilds list files + tags.
@@ -214,6 +227,7 @@ func rebuildFromScan(dd string, p *Progress) {
 	// Save tags
 	if p != nil { p.Send("phase", 3, 4, "saving tags") }
 	saveJSON(cache.IndexFile(dd, "tags.json"), tags)
+	buildPersonNames(dd)
 
 	log.Info("Rebuild complete: %d subjects, %d chars, %d persons, %d tags",
 		len(subjects), len(chars), len(persons), len(tags))

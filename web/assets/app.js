@@ -12,9 +12,9 @@ function img(kind, id, size) { return API + '/v0/' + kind + 's/' + id + '/image?
 var _personMap = null;
 function loadPersonMap() {
   if (_personMap) return Promise.resolve(_personMap);
-  _personMap = {};
-  return api('/v0/persons').then(function(list) {
-    if (list) for (var i=0; i<list.length; i++) { _personMap[list[i].name] = list[i].id; }
+  return api('/v0/person-names').then(function(data) {
+    _personMap = data || {};
+    _personRegex = null;
     return _personMap;
   });
 }
