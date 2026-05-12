@@ -28,9 +28,9 @@ function renderItem(s) {
     '<div class="p-2.5"><div class="text-sm font-semibold truncate">'+primaryName(s.name, s.name_cn)+'</div>'+
     (function(){var sub=subName(s.name, s.name_cn); return sub ? '<div class="text-xs text-sub truncate mt-0.5">'+sub+'</div>' : ''})()+
     '<div class="text-xs text-sub mt-1 flex gap-1.5 items-center truncate">'+
-    (s.score?'<span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[11px] font-bold shrink-0">★ '+s.score.toFixed(1)+'</span>':'')+
-    (s.platform?'<span class="bg-[#403638] text-[#FE8A95] px-1.5 py-px rounded-md text-[11px] shrink-0">'+s.platform+'</span>':'')+
-    (s.date?'<span class="text-sub text-[11px] shrink-0">'+s.date.slice(0,4)+'</span>':'')+
+    (s.score?'<span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[12px] font-bold shrink-0">★ '+s.score.toFixed(1)+'</span>':'')+
+    (s.platform?'<span class="bg-[#403638] text-[#FE8A95] px-1.5 py-px rounded-md text-[12px] shrink-0">'+s.platform+'</span>':'')+
+    (s.date?'<span class="text-sub text-[12px] shrink-0">'+s.date.slice(0,4)+'</span>':'')+
     '</div></div></div>';
 }
 

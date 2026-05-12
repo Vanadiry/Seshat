@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div id="pwrap" class="hidden" style="height:2px">
         <div id="pfill" class="h-full bg-[#FE8A95] w-0 transition-[width] duration-300"></div>
       </div>
-      <div id="ptext" class="hidden text-[11px] text-sub px-5 pb-1 max-w-[1200px] mx-auto"></div>
+      <div id="ptext" class="hidden text-[12px] text-sub px-5 pb-1 max-w-[1200px] mx-auto"></div>
     </div>`;
 
   document.getElementById('btn-fetch').addEventListener('click', openFetch);

@@ -37,7 +37,7 @@ async function render() {
     var hdr = document.getElementById('subject-header');
     hdr.innerHTML = '<div class="max-w-[1200px] mx-auto px-6 h-12 py-0 flex items-center gap-3">' +
       '<a href="/" class="text-sub text-sm no-underline hover:text-white shrink-0">← 返回</a>' +
-      '<span class="text-xl font-bold truncate">'+primaryName(s.name, s.name_cn)+'</span>' +
+      '<span class="text-2xl font-bold truncate">'+primaryName(s.name, s.name_cn)+'</span>' +
       (function(){var sub=subName(s.name, s.name_cn); return sub ? '<span class="text-sm text-sub truncate hidden sm:inline">'+sub+'</span>' : ''})() +
       (s.platform ? '<span class="text-sub text-xs shrink-0">｜</span><span class="text-xs text-sub shrink-0">'+s.platform+'</span>' : '') +
       '<span class="text-sub text-xs shrink-0">｜</span><span class="text-xs text-sub shrink-0">ID: '+SID+'</span>' +
@@ -115,7 +115,7 @@ async function overview(s, infoItems) {
   // Infobox entries
   var infoHtml = '';
   for (var i=0; i<infoItems.length; i++) {
-    infoHtml += '<div class="py-1 border-b border-[rgba(255,255,255,.06)] text-[13px]"><span class="text-sub">'+infoItems[i][0]+': </span><span>'+infoItems[i][1]+'</span></div>';
+    infoHtml += '<div class="py-1 border-b border-[rgba(255,255,255,.06)] text-[14px]"><span class="text-sub">'+infoItems[i][0]+': </span><span>'+infoItems[i][1]+'</span></div>';
   }
 
   // Rating panel
@@ -134,7 +134,7 @@ async function overview(s, infoItems) {
   // Right column
   html += '<div class="flex-1 min-w-0">';
   if (epGrid) html += '<div class="mb-4"><div class="text-xs text-sub mb-1">全部剧集 ('+eps.length+')</div>'+epGrid+'</div>';
-  html += '<p class="text-[13px] leading-relaxed text-sub mb-4">'+(s.summary||'暂无简介')+'</p>';
+  html += '<p class="text-[14px] leading-relaxed text-sub mb-4">'+(s.summary||'暂无简介')+'</p>';
   if (tagsHtml) html += '<div class="mb-4"><div class="text-xs text-sub mb-1">标签</div>'+tagsHtml+'</div>';
 
   // Rating panel
@@ -157,9 +157,9 @@ async function overview(s, infoItems) {
       html += '<div onclick="location.href=\'/character.html?id='+c.id+'\'" class="shrink-0 bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95]" style="min-width:190px">';
       html += '<div class="flex gap-2 items-center">';
       html += '<img src="'+img('character',c.id,'grid')+'" onerror="this.remove()" class="w-11 h-11 rounded-lg object-cover bg-[#202028] shrink-0">';
-      html += '<div class="min-w-0"><div class="text-[13px] font-semibold truncate">'+c.name+'</div>';
-      html += '<div class="flex items-center gap-1.5 mt-0.5"><span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[10px] font-semibold shrink-0">'+c.relation+'</span>';
-      if (actorStr) html += '<span class="text-[11px] text-sub truncate">'+actorStr+'</span>';
+      html += '<div class="min-w-0"><div class="text-[14px] font-semibold truncate">'+c.name+'</div>';
+      html += '<div class="flex items-center gap-1.5 mt-0.5"><span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[11px] font-semibold shrink-0">'+c.relation+'</span>';
+      if (actorStr) html += '<span class="text-[12px] text-sub truncate">'+actorStr+'</span>';
       html += '</div></div></div></div>';
     }
     html += '</div></div>';
@@ -172,7 +172,7 @@ async function overview(s, infoItems) {
       var r = rels[i];
       html += '<div onclick="location.href=\'/subject.html?id='+r.id+'\'" class="flex gap-3 items-center bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95]">';
       html += '<img src="'+img('subject',r.id,'grid')+'" onerror="this.remove()" class="w-[75px] h-[100px] rounded object-cover bg-[#202028] shrink-0">';
-      html += '<div>'+(r.relation ? '<div class="text-[11px] text-[#FE8A95] mb-0.5">'+r.relation+'</div>' : '')+'<div class="text-[13px] font-semibold">'+(r.name||'#'+r.id)+'</div></div></div>';
+      html += '<div>'+(r.relation ? '<div class="text-[12px] text-[#FE8A95] mb-0.5">'+r.relation+'</div>' : '')+'<div class="text-[14px] font-semibold">'+(r.name||'#'+r.id)+'</div></div></div>';
     }
     html += '</div></div>';
   }
@@ -194,7 +194,7 @@ async function episodes() {
       var e = list[i];
       html += '<div class="ml-2 pl-4 border-l-2 border-[rgba(255,255,255,.08)] h-12 py-0">';
       html += '<div class="flex items-center gap-3"><span class="text-[#FE8A95] text-sm font-bold w-10">'+(e.type===0?String(Math.floor(e.sort||e.ep||0)).padStart(2,'0'):types[e.type])+'</span><span class="font-semibold">'+(e.name_cn||e.name)+'</span></div>';
-      html += '<div class="text-[11px] text-sub mt-1 ml-13">'+(e.name||'')+' · '+(e.duration||'')+' · '+(e.airdate||'')+(e.desc ? '<p class="mt-1 leading-relaxed">'+e.desc+'</p>' : '')+'</div></div>';
+      html += '<div class="text-[12px] text-sub mt-1 ml-13">'+(e.name||'')+' · '+(e.duration||'')+' · '+(e.airdate||'')+(e.desc ? '<p class="mt-1 leading-relaxed">'+e.desc+'</p>' : '')+'</div></div>';
     }
     html += '</div>';
     return html;
@@ -218,13 +218,13 @@ async function characters() {
       html += '<div class="flex-1 min-w-0">';
       html += '<div class="font-semibold cursor-pointer hover:text-[#FE8A95] inline-block" onclick="location.href=\'/character.html?id='+c.id+'\'">'+c.name+'</div>';
       html += '<div class="flex flex-wrap gap-1.5 mt-1 items-center">';
-      html += '<span class="bg-[#FE8A95] text-white px-2 py-0.5 rounded-md text-[11px] font-semibold">'+c.relation+'</span>';
-      if (c.gender) html += '<span class="text-[11px] text-sub">性别:'+c.gender+'</span>';
+      html += '<span class="bg-[#FE8A95] text-white px-2 py-0.5 rounded-md text-[12px] font-semibold">'+c.relation+'</span>';
+      if (c.gender) html += '<span class="text-[12px] text-sub">性别:'+c.gender+'</span>';
       if (c.infobox) {
         try {
           var d = JSON.parse(c.infobox);
           for (var j=0; j<d.length; j++) {
-            if (d[j].key==='生日'||d[j].key==='身高') html += '<span class="text-[11px] text-sub">'+d[j].value+'</span>';
+            if (d[j].key==='生日'||d[j].key==='身高') html += '<span class="text-[12px] text-sub">'+d[j].value+'</span>';
           }
         } catch(e) {}
       }
@@ -235,7 +235,7 @@ async function characters() {
           var a = c.actors[j];
           html += '<div class="flex items-center gap-1.5 cursor-pointer hover:opacity-80" onclick="event.stopPropagation();location.href=\'/person.html?id='+a.id+'\'">';
           html += '<img src="'+img('person',a.id,'grid')+'" onerror="this.remove()" class="w-6 h-6 rounded-full object-cover bg-[#202028] shrink-0">';
-          html += '<span class="text-[11px] text-sub">CV:</span><span class="text-[13px] font-semibold hover:text-[#FE8A95]">'+a.name+'</span></div>';
+          html += '<span class="text-[12px] text-sub">CV:</span><span class="text-[14px] font-semibold hover:text-[#FE8A95]">'+a.name+'</span></div>';
         }
         html += '</div>';
       }
