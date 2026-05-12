@@ -79,6 +79,17 @@ function subName(name, nameCN) {
   return (nameCN && name !== nameCN) ? nameCN : '';
 }
 
+// extractCNFromInfobox extracts 简体中文名 from character/person detail.
+function extractCN(d) {
+  var ib = d.infobox;
+  if (typeof ib === 'string') { try { ib = JSON.parse(ib); } catch(e) { return ''; } }
+  if (!Array.isArray(ib)) return '';
+  for (var i=0; i<ib.length; i++) {
+    if (ib[i].key === '简体中文名' && typeof ib[i].value === 'string') return ib[i].value;
+  }
+  return '';
+}
+
 // ── Top bar injection ──
 document.addEventListener('DOMContentLoaded', () => {
   const tb = document.getElementById('topbar');
