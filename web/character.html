@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="zh-CN" class="bg-[#181818]">
+<html lang="zh-CN" class="bg-[#1d1d1d]">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>角色详情</title>
 <script src="/assets/tailwindcss-3.4.js"></script>
-<script>tailwind.config={theme:{extend:{colors:{bg:'#181818',card:'#242424',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95'}}}}</script>
+<script>tailwind.config={theme:{extend:{colors:{bg:'#1d1d1d',card:'#2a2a2a',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95'}}}}</script>
 </head>
 <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
 
 <div id="topbar"></div>
-<div id="detail-header" class="sticky top-12 z-40 bg-[#16161d] border-b border-[rgba(255,255,255,.12)]"></div>
+<div id="detail-header" class="sticky top-12 z-40 bg-[#1c1c22] border-b border-[rgba(255,255,255,.12)]"></div>
 <main id="view" class="max-w-[1200px] mx-auto p-6"></main>
 
 <script src="assets/app.js"></script>
@@ -41,12 +41,12 @@
         ${c.actors?.length ? `
         <div class="mb-6">
           <div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">声优</span></div>
-          <div class="flex flex-wrap gap-2">${c.actors.map(a => `<span onclick="location.href='/person.html?id=${a.id}'" class="bg-[#242424] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-[#FE8A95]">${a.name}</span>`).join('')}</div>
+          <div class="flex flex-wrap gap-2">${c.actors.map(a => `<span onclick="location.href='/person.html?id=${a.id}'" class="bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-[#FE8A95]">${a.name}</span>`).join('')}</div>
         </div>` : ''}
         ${c.subjects?.length ? `
         <div class="mb-6">
           <div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">出演</span></div>
-          <div class="flex flex-wrap gap-2">${c.subjects.map(s => `<span onclick="location.href='/subject.html?id=${s.id}'" class="bg-[#242424] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-[#FE8A95]">${s.name}</span>`).join('')}</div>
+          <div class="flex flex-wrap gap-2">${c.subjects.map(s => `<span onclick="location.href='/subject.html?id=${s.id}'" class="bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-[#FE8A95]">${s.name}</span>`).join('')}</div>
         </div>` : ''}
       </div>
     </div>`;

@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="zh-CN" class="bg-[#181818]">
+<html lang="zh-CN" class="bg-[#1d1d1d]">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>人物详情</title>
 <script src="/assets/tailwindcss-3.4.js"></script>
-<script>tailwind.config={theme:{extend:{colors:{bg:'#181818',card:'#242424',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95'}}}}</script>
+<script>tailwind.config={theme:{extend:{colors:{bg:'#1d1d1d',card:'#2a2a2a',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95'}}}}</script>
 </head>
 <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
 
 <div id="topbar"></div>
-<div id="detail-header" class="sticky top-12 z-40 bg-[#16161d] border-b border-[rgba(255,255,255,.12)]"></div>
+<div id="detail-header" class="sticky top-12 z-40 bg-[#1c1c22] border-b border-[rgba(255,255,255,.12)]"></div>
 <main id="view" class="max-w-[1200px] mx-auto p-6"></main>
 
 <script src="assets/app.js"></script>
@@ -36,12 +36,12 @@
         <div class="mt-3 flex flex-col gap-0.5">${infoEntries.map(([k,v]) => `<div class="flex justify-between py-1 border-b border-[rgba(255,255,255,.06)] text-[13px]"><span class="text-sub">${k}</span><span class="text-right ml-2">${v}</span></div>`).join('')}</div>` : ''}
       </div>
       <div class="flex-1 min-w-0">
-        ${p.career ? `<div class="flex flex-wrap gap-1.5 mb-4">${(typeof p.career==='string'?JSON.parse(p.career):p.career||[]).map(c => `<span class="bg-[#3B3033] text-[#FE8A95] px-2 py-0.5 rounded-md text-[11px]">${c}</span>`).join('')}</div>` : ''}
+        ${p.career ? `<div class="flex flex-wrap gap-1.5 mb-4">${(typeof p.career==='string'?JSON.parse(p.career):p.career||[]).map(c => `<span class="bg-[#403638] text-[#FE8A95] px-2 py-0.5 rounded-md text-[11px]">${c}</span>`).join('')}</div>` : ''}
         ${p.summary ? `<p class="text-[13px] leading-relaxed text-sub mb-6">${p.summary}</p>` : ''}
         ${p.subjects?.length ? `
         <div class="mb-6">
           <div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">参与作品</span></div>
-          <div class="flex flex-wrap gap-2">${p.subjects.map(s => `<span onclick="location.href='/subject.html?id=${s.id}'" class="bg-[#242424] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-[#FE8A95]">${s.name}</span>`).join('')}</div>
+          <div class="flex flex-wrap gap-2">${p.subjects.map(s => `<span onclick="location.href='/subject.html?id=${s.id}'" class="bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-[#FE8A95]">${s.name}</span>`).join('')}</div>
         </div>` : ''}
       </div>
     </div>`;

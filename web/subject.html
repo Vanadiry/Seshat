@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="zh-CN" class="bg-[#181818]">
+<html lang="zh-CN" class="bg-[#1d1d1d]">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>动画详情</title>
 <script src="/assets/tailwindcss-3.4.js"></script>
-<script>tailwind.config={theme:{extend:{colors:{bg:'#181818',card:'#242424',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95','pink-bg':'#3B3033'}}}}</script>
+<script>tailwind.config={theme:{extend:{colors:{bg:'#1d1d1d',card:'#2a2a2a',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95','pink-bg':'#403638'}}}}</script>
 </head>
 <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
 
 <div id="topbar"></div>
-<div id="subject-header" class="sticky top-12 z-40 bg-[#16161d] border-b border-[rgba(255,255,255,.12)]"></div>
+<div id="subject-header" class="sticky top-12 z-40 bg-[#1c1c22] border-b border-[rgba(255,255,255,.12)]"></div>
 <main id="view" class="max-w-[1200px] mx-auto p-6"></main>
 
 <script src="assets/app.js"></script>
@@ -74,7 +74,7 @@ async function overview(s, info) {
     epGrid += '<div class="flex flex-wrap gap-1.5 mb-1">';
     for (var i=0; i<mainEps.length; i++) {
       var e = mainEps[i];
-      epGrid += '<span class="w-8 h-8 flex items-center justify-center rounded text-xs font-semibold cursor-default bg-[#1f1f2b] text-sub" title="'+(e.name_cn||e.name)+'">'+String(Math.floor(e.sort||e.ep||0)).padStart(2,'0')+'</span>';
+      epGrid += '<span class="w-8 h-8 flex items-center justify-center rounded text-xs font-semibold cursor-default bg-[#252530] text-sub" title="'+(e.name_cn||e.name)+'">'+String(Math.floor(e.sort||e.ep||0)).padStart(2,'0')+'</span>';
     }
     epGrid += '</div>';
   }
@@ -110,7 +110,7 @@ async function overview(s, info) {
       for (var i=10; i>=1; i--) {
         var v = cnt[String(i)] || 0;
         var pct = Math.max(v / max * 100, 1);
-        histHtml += '<li class="flex items-center gap-2 text-xs"><span class="w-3 text-right text-sub">'+i+'</span><span class="flex-1 h-3 bg-[#2a2a35] rounded-sm overflow-hidden"><span class="block h-full bg-[#FE8A95] rounded-sm" style="width:'+pct+'%"></span></span><span class="text-sub w-8 text-right">'+v+'</span></li>';
+        histHtml += '<li class="flex items-center gap-2 text-xs"><span class="w-3 text-right text-sub">'+i+'</span><span class="flex-1 h-3 bg-[#30303b] rounded-sm overflow-hidden"><span class="block h-full bg-[#FE8A95] rounded-sm" style="width:'+pct+'%"></span></span><span class="text-sub w-8 text-right">'+v+'</span></li>';
       }
       histHtml += '</ul>';
     }
@@ -143,7 +143,7 @@ async function overview(s, info) {
   if (tagsHtml) html += '<div class="mb-4"><div class="text-xs text-sub mb-1">标签</div>'+tagsHtml+'</div>';
 
   // Rating panel
-  html += '<div class="md:float-right w-full md:w-[240px] shrink-0 bg-[#242424] border border-[rgba(255,255,255,.12)] rounded-xl p-4 md:ml-5 mb-4">';
+  html += '<div class="md:float-right w-full md:w-[240px] shrink-0 bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-xl p-4 md:ml-5 mb-4">';
   html += '<div class="text-center text-sub text-sm">评分</div>';
   html += '<div class="text-center text-3xl font-bold mt-1">'+scoreHtml+'<span class="text-xs text-sub font-normal"> / 10</span></div>';
   html += '<div class="text-center text-xs text-sub mt-1">'+totalHtml+' 人评分 · 排名 '+rankHtml+'</div>';
@@ -159,9 +159,9 @@ async function overview(s, info) {
     for (var i=0; i<mainChars.length; i++) {
       var c = mainChars[i];
       var actorStr = c.actors && c.actors.length ? 'CV:'+c.actors.map(function(a){return a.name}).slice(0,2).join(',') : '';
-      html += '<div onclick="location.href=\'/character.html?id='+c.id+'\'" class="shrink-0 bg-[#242424] border border-[rgba(255,255,255,.12)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95]" style="min-width:190px">';
+      html += '<div onclick="location.href=\'/character.html?id='+c.id+'\'" class="shrink-0 bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95]" style="min-width:190px">';
       html += '<div class="flex gap-2 items-center">';
-      html += '<img src="'+img('character',c.id,'grid')+'" onerror="this.remove()" class="w-11 h-11 rounded-lg object-cover bg-[#1a1a23] shrink-0">';
+      html += '<img src="'+img('character',c.id,'grid')+'" onerror="this.remove()" class="w-11 h-11 rounded-lg object-cover bg-[#202028] shrink-0">';
       html += '<div class="min-w-0"><div class="text-[13px] font-semibold truncate">'+c.name+'</div>';
       html += '<div class="flex items-center gap-1.5 mt-0.5"><span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[10px] font-semibold shrink-0">'+c.relation+'</span>';
       if (actorStr) html += '<span class="text-[11px] text-sub truncate">'+actorStr+'</span>';
@@ -175,8 +175,8 @@ async function overview(s, info) {
     html += '<div class="mt-6"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">关联条目</span></div><div class="flex flex-wrap gap-3">';
     for (var i=0; i<rels.length; i++) {
       var r = rels[i];
-      html += '<div onclick="location.href=\'/subject.html?id='+r.id+'\'" class="flex gap-3 items-center bg-[#242424] border border-[rgba(255,255,255,.12)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95]">';
-      html += '<img src="'+img('subject',r.id,'grid')+'" onerror="this.remove()" class="w-[75px] h-[100px] rounded object-cover bg-[#1a1a23] shrink-0">';
+      html += '<div onclick="location.href=\'/subject.html?id='+r.id+'\'" class="flex gap-3 items-center bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95]">';
+      html += '<img src="'+img('subject',r.id,'grid')+'" onerror="this.remove()" class="w-[75px] h-[100px] rounded object-cover bg-[#202028] shrink-0">';
       html += '<div>'+(r.relation ? '<div class="text-[11px] text-[#FE8A95] mb-0.5">'+r.relation+'</div>' : '')+'<div class="text-[13px] font-semibold">'+(r.name||'#'+r.id)+'</div></div></div>';
     }
     html += '</div></div>';
@@ -218,8 +218,8 @@ async function characters() {
     var html = '';
     for (var i=0; i<list.length; i++) {
       var c = list[i];
-      html += '<div class="flex gap-4 items-start bg-[#242424] border border-[rgba(255,255,255,.08)] rounded-lg p-3">';
-      html += '<img src="'+img('character',c.id,'grid')+'" onerror="this.remove()" class="w-[75px] h-[100px] rounded-lg object-cover bg-[#1a1a23] shrink-0 cursor-pointer" onclick="location.href=\'/character.html?id='+c.id+'\'">';
+      html += '<div class="flex gap-4 items-start bg-[#2a2a2a] border border-[rgba(255,255,255,.08)] rounded-lg p-3">';
+      html += '<img src="'+img('character',c.id,'grid')+'" onerror="this.remove()" class="w-[75px] h-[100px] rounded-lg object-cover bg-[#202028] shrink-0 cursor-pointer" onclick="location.href=\'/character.html?id='+c.id+'\'">';
       html += '<div class="flex-1 min-w-0">';
       html += '<div class="font-semibold cursor-pointer hover:text-[#FE8A95] inline-block" onclick="location.href=\'/character.html?id='+c.id+'\'">'+c.name+'</div>';
       html += '<div class="flex flex-wrap gap-1.5 mt-1 items-center">';
@@ -239,7 +239,7 @@ async function characters() {
         for (var j=0; j<c.actors.length; j++) {
           var a = c.actors[j];
           html += '<div class="flex items-center gap-1.5 cursor-pointer hover:opacity-80" onclick="event.stopPropagation();location.href=\'/person.html?id='+a.id+'\'">';
-          html += '<img src="'+img('person',a.id,'grid')+'" onerror="this.remove()" class="w-6 h-6 rounded-full object-cover bg-[#1a1a23] shrink-0">';
+          html += '<img src="'+img('person',a.id,'grid')+'" onerror="this.remove()" class="w-6 h-6 rounded-full object-cover bg-[#202028] shrink-0">';
           html += '<span class="text-[11px] text-sub">CV:</span><span class="text-[13px] font-semibold hover:text-[#FE8A95]">'+a.name+'</span></div>';
         }
         html += '</div>';

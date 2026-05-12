@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN" class="bg-[#181818]">
+<html lang="zh-CN" class="bg-[#1d1d1d]">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Seshat</title>
 <script src="/assets/tailwindcss-3.4.js"></script>
-<script>tailwind.config={theme:{extend:{colors:{bg:'#181818',card:'#242424',border:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95','pink-bg':'#3B3033'}}}}</script>
+<script>tailwind.config={theme:{extend:{colors:{bg:'#1d1d1d',card:'#2a2a2a',border:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95','pink-bg':'#403638'}}}}</script>
 </head>
 <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
 
@@ -23,13 +23,13 @@ var showing = 0;
 function onFetchDone() { load(); }
 
 function renderItem(s) {
-  return '<div onclick="location.href=\'/subject.html?id='+s.id+'\'" class="bg-[#242424] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">'+
-    '<img src="'+img('subject',s.id,'grid')+'" loading="lazy" onerror="this.remove()" class="w-full aspect-[3/4] object-cover bg-[#1a1a23]">'+
+  return '<div onclick="location.href=\'/subject.html?id='+s.id+'\'" class="bg-[#2a2a2a] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">'+
+    '<img src="'+img('subject',s.id,'grid')+'" loading="lazy" onerror="this.remove()" class="w-full aspect-[3/4] object-cover bg-[#202028]">'+
     '<div class="p-2.5"><div class="text-sm font-semibold truncate">'+primaryName(s.name, s.name_cn)+'</div>'+
     (function(){var sub=subName(s.name, s.name_cn); return sub ? '<div class="text-xs text-sub truncate mt-0.5">'+sub+'</div>' : ''})()+
     '<div class="text-xs text-sub mt-1 flex gap-1.5 items-center truncate">'+
     (s.score?'<span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[11px] font-bold shrink-0">★ '+s.score.toFixed(1)+'</span>':'')+
-    (s.platform?'<span class="bg-[#3B3033] text-[#FE8A95] px-1.5 py-px rounded-md text-[11px] shrink-0">'+s.platform+'</span>':'')+
+    (s.platform?'<span class="bg-[#403638] text-[#FE8A95] px-1.5 py-px rounded-md text-[11px] shrink-0">'+s.platform+'</span>':'')+
     (s.date?'<span class="text-sub text-[11px] shrink-0">'+s.date.slice(0,4)+'</span>':'')+
     '</div></div></div>';
 }
@@ -56,8 +56,8 @@ function updatePager() {
   }
   var html = '<span class="text-xs text-sub">当前展示 '+showing+'，共 '+allItems.length+' 个项目</span>';
   if (showing < allItems.length) {
-    html += ' <button onclick="showMore('+pageSize+')" class="ml-3 px-3 py-1 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-xs cursor-pointer hover:bg-[#2a2a35] hover:text-white">展开更多</button>';
-    html += ' <button onclick="showAll()" class="ml-2 px-3 py-1 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-xs cursor-pointer hover:bg-[#2a2a35] hover:text-white">展开全部</button>';
+    html += ' <button onclick="showMore('+pageSize+')" class="ml-3 px-3 py-1 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-xs cursor-pointer hover:bg-[#30303b] hover:text-white">展开更多</button>';
+    html += ' <button onclick="showAll()" class="ml-2 px-3 py-1 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-xs cursor-pointer hover:bg-[#30303b] hover:text-white">展开全部</button>';
   }
   pager.innerHTML = html;
 }
