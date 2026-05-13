@@ -700,7 +700,7 @@ paths:
       summary: 用户头像
       parameters:
         - { name: username, in: path, required: true, schema: { type: string }, example: "vanadiry" }
-        - { name: type, in: query, schema: { type: string, enum: [large, medium, small], default: large } }
+        - { name: type, in: query, schema: { type: string, enum: [large], default: large } }
       responses:
         "200":
           description: 头像图片

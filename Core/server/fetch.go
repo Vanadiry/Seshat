@@ -346,25 +346,16 @@ func fetchUserProfile(username string, bg *bangumi.Client, dd string) {
 	}
 	os.WriteFile(filepath.Join(userDir, "info.json"), data, 0o644)
 
-	// Fetch avatar images
-	imgMap := map[string]string{}
-	for _, size := range []string{"large", "medium", "small"} {
-		imgData, err := bg.GetImage(fmt.Sprintf("v0/users/%s/avatar?type=%s", username, size))
-		if err != nil {
-			log.Warn("User avatar %s %s: %v", username, size, err)
-			continue
-		}
+	// Fetch avatar
+	imgData, err := bg.GetImage(fmt.Sprintf("v0/users/%s/avatar?type=large", username))
+	if err != nil {
+		log.Warn("User avatar %s: %v", username, err)
+	} else {
 		ext := ".jpg"
 		if len(imgData) > 0 && imgData[0] == 0x89 {
 			ext = ".png"
 		}
-		fname := size + ext
-		os.WriteFile(filepath.Join(userDir, fname), imgData, 0o644)
-		imgMap[size] = filepath.Join("user", fname)
-	}
-	if len(imgMap) > 0 {
-		result, _ := json.Marshal(imgMap)
-		os.WriteFile(filepath.Join(userDir, "image.json"), result, 0o644)
+		os.WriteFile(filepath.Join(userDir, "large"+ext), imgData, 0o644)
 	}
 	log.Info("User profile for %s saved", username)
 }

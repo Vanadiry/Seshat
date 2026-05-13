@@ -27,25 +27,13 @@ func handleUser(dd string) http.HandlerFunc {
 
 func serveUserAvatar(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		size := r.URL.Query().Get("type")
-		if size == "" {
-			size = "large"
+		for _, ext := range []string{".jpg", ".png"} {
+			path := filepath.Join(dd, "user", "large"+ext)
+			if _, err := os.Stat(path); err == nil {
+				http.ServeFile(w, r, path)
+				return
+			}
 		}
-		data, err := os.ReadFile(filepath.Join(dd, "user", "image.json"))
-		if err != nil {
-			http.NotFound(w, r)
-			return
-		}
-		var m map[string]string
-		if json.Unmarshal(data, &m) != nil {
-			http.NotFound(w, r)
-			return
-		}
-		path, ok := m[size]
-		if !ok || path == "" {
-			http.NotFound(w, r)
-			return
-		}
-		http.ServeFile(w, r, filepath.Join(dd, path))
+		http.NotFound(w, r)
 	}
 }
