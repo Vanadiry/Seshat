@@ -37,7 +37,7 @@
   }
 
   var career = typeof p.career==='string' ? JSON.parse(p.career) : (p.career||[]);
-  var careerHtml = career.length ? '<div class="flex flex-wrap gap-1.5">'+career.map(function(c){return '<span class="bg-[#403638] text-[#FE8A95] px-2 py-0.5 rounded-md text-[12px]">'+c+'</span>'}).join('')+'</div>' : '';
+  var careerHtml = career.length ? '<div class="flex flex-wrap gap-1.5">'+career.map(function(c){return '<span class="bg-[#403638] text-[#FE8A95] px-2 py-0.5 rounded-md text-[12px]">'+(MSG.careerMap[c]||c)+'</span>'}).join('')+'</div>' : '';
 
   document.getElementById('view').innerHTML =
     '<div class="flex flex-col md:flex-row gap-6">'+

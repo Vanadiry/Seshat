@@ -53,6 +53,8 @@ var MSG = {
   epTypes: {0:'本篇',1:'SP',2:'OP',3:'ED',4:'预告',5:'MAD',6:'其他'},
   // Subject types (used in character appearances)
   subjectTypes: {1:'书籍',2:'动画',3:'音乐',4:'游戏',6:'三次元'},
+  genderMap: {male:'男', female:'女'},
+  careerMap: {actor:'演员', artist:'艺术家', illustrator:'插画家', producer:'制作人', seiyu:'声优', writer:'作家'},
 };
 
 var _remoteURLs = {};
@@ -207,7 +209,7 @@ function formatSummary(text) {
 function infoboxData(d) {
   var items = [];
   // Top-level fields
-  if (d.gender) items.push([MSG.infoboxGender, linkifyURL(linkifyAllNames(linkifyBBCode(d.gender)))]);
+  if (d.gender) items.push([MSG.infoboxGender, MSG.genderMap[d.gender]||d.gender]);
   if (d.blood_type) { var bt = MSG.bloodTypeMap; items.push([MSG.infoboxBloodType, bt[d.blood_type]||d.blood_type]); }
   if (d.birth_mon || d.birth_day) {
     var bd = [];
