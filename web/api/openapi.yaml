@@ -427,7 +427,7 @@ paths:
                 properties:
                   status: { type: string, example: "fetching" }
                   count: { type: integer, example: 2 }
-                  task_id: { type: string, example: "ae8687f0", description: "用于 GET /api/v0/progress/{task_id}" }
+                  task_id: { type: string, example: "ae8687f0", description: "用于 GET /api/v0/task/{task_id}" }
   /api/v0/fetch/all:
     post:
       tags: [拉取]
@@ -505,11 +505,11 @@ paths:
                 properties:
                   status: { type: string }
                   task_id: { type: string, example: "ae8687f0" }
-  /api/v0/progress/{task_id}:
+  /api/v0/task/{task_id}:
     get:
       tags: [拉取]
-      summary: 获取拉取进度｜SSE
-      description: 实时推送拉取进度（阶段、完成数/总数、下载速度）。前端可用 EventSource 订阅。
+      summary: 获取任务进度｜SSE
+      description: 实时推送任务进度。同时只允许一个任务运行，新任务在已有任务完成前返回 409。
       parameters:
         - name: task_id
           in: path
@@ -518,15 +518,38 @@ paths:
           example: "ae8687f0"
       responses:
         "200":
-          description: text/event-stream 流式进度
+          description: text/event-stream 流式进度，首条消息含 task 类型和 label 描述
           content:
             text/event-stream:
               schema:
                 type: string
                 example: |
-                  data: {"step":"subject","done":0,"total":1,"speed":"0.0/s","status":"fetching"}
-                  data: {"step":"characters","done":21,"total":39,"speed":"2.7/s","status":""}
-                  data: {"step":"complete","done":2,"total":2,"speed":"0.0/s","status":""}
+                  data: {"step":"start","done":0,"total":326,"task":"fetch_all","label":"刷新全部"}
+                  data: {"step":"subjects","done":15,"total":326,"speed":"3.2/s","status":""}
+                  data: {"step":"complete","done":326,"total":326}
+        "409":
+          description: 已有任务在运行
+  /api/v0/tasks:
+    get:
+      tags: [拉取]
+      summary: 列出当前活跃任务
+      description: 返回所有正在运行的任务 ID、类型和描述。页面刷新后可由此重连进度。
+      responses:
+        "200":
+          description: 活跃任务列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string, example: "ae8687f0" }
+                        task: { type: string, example: "fetch_all" }
+                        label: { type: string, example: "刷新全部" }
 
   # ── Tracker ──
   /api/v0/tracker:
