@@ -51,6 +51,8 @@ var MSG = {
 
   // Episode types
   epTypes: {0:'本篇',1:'SP',2:'OP',3:'ED',4:'预告',5:'MAD',6:'其他'},
+  // Subject types (used in character appearances)
+  subjectTypes: {1:'书籍',2:'动画',3:'音乐',4:'游戏',6:'三次元'},
 };
 
 var _remoteURLs = {};

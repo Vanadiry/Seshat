@@ -15,6 +15,7 @@
 <script>
 (async () => {
   const ID = new URLSearchParams(location.search).get('id');
+  window._charId = ID;
   if (!ID) { document.getElementById('view').innerHTML='<p class="text-sub text-center py-20">缺少角色 ID</p>'; return; }
 
   const c = (await api('/v0/characters/'+ID));
@@ -35,7 +36,7 @@
     infoHtml += '<div class="py-1 border-b border-[rgba(255,255,255,.06)] text-[14px]'+(items[i][2]?' ml-4':'')+'"><span class="text-sub">'+(items[i][0]?items[i][0]+': ':'')+'</span><span>'+items[i][1]+'</span></div>';
   }
 
-  // ── 布局：左栏（海报 + infobox）| 右栏上（摘要）| 右栏下（声优 + 出演）──
+  // ── layout ──
   document.getElementById('view').innerHTML =
     '<div class="flex flex-col md:flex-row gap-6">'+
     '<div class="w-full md:w-[260px] shrink-0">'+
@@ -43,15 +44,116 @@
     (infoHtml ? '<div class="mt-3 flex flex-col gap-0.5">'+infoHtml+'</div>' : '')+
     '</div>'+
     '<div class="flex-1 min-w-0 flex flex-col gap-5">'+
-    (c.summary ? '<p class="text-[14px] leading-relaxed text-sub">'+c.summary+'</p>' : '')+
+    (c.summary||(c.stat&&c.stat.collects) ? '<div class="flex flex-col md:flex-row gap-4"><div class="flex-1 min-w-0">'+(c.summary?'<div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">简介</span></div><p class="text-[14px] leading-relaxed text-sub">'+c.summary+'</p>':'')+'</div>'+(c.stat&&c.stat.collects?'<div class="w-full md:w-[230px] shrink-0 self-start bg-[#252528] border border-[rgba(255,255,255,.12)] rounded-xl overflow-hidden"><div class="bg-[#2a2a30] px-4 py-2"><span class="font-bold text-sm">收藏</span></div><div class="border-t border-[rgba(255,255,255,.1)]"></div><div class="px-4 pt-3 pb-3"><div class="flex items-baseline justify-center"><span class="text-2xl font-bold">'+c.stat.collects+'</span><span class="text-xs text-sub ml-1">人</span></div></div></div>':'')+'</div>' : '')+
     (c.actors&&c.actors.length ?
     '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">声优</span>'+(isRemote('/v0/characters/'+ID)?globeIcon('w-4 h-4'):'')+'</div>'+
     '<div class="flex flex-wrap gap-2">'+c.actors.map(function(a){return '<span onclick="location.href=\'/person.html?id='+a.id+'\'" class="bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-[#FE8A95]">'+a.name+'</span>'}).join('')+'</div></div>' : '')+
-    (c.subjects&&c.subjects.length ?
-    '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">出演</span>'+(isRemote('/v0/characters/'+ID)?globeIcon('w-4 h-4'):'')+'</div>'+
-    '<div class="flex flex-wrap gap-2">'+c.subjects.map(function(s){return '<span onclick="location.href=\'/subject.html?id='+s.id+'\'" class="bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-[#FE8A95]">'+s.name+'</span>'}).join('')+'</div></div>' : '')+
+    '<div id="appearances-section"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">出演</span><span class="text-xs text-sub">加载中…</span></div></div>'+
     '</div></div>';
+
+  loadAppearances(ID);
 })();
+
+var _appearAll = [], _appearShowing = 0;
+function loadAppearances(ID) {
+  Promise.all([
+    api('/v0/characters/'+ID+'/subjects'),
+    api('/v0/characters/'+ID+'/persons')
+  ]).then(function(results) {
+    console.log('Appearances API results:', results);
+    var subjects = Array.isArray(results[0]) ? results[0] : [];
+    var persons = Array.isArray(results[1]) ? results[1] : [];
+    // Merge: persons subject_id matches subjects id, persons takes priority
+    var map = {};
+    for (var i = 0; i < subjects.length; i++) {
+      var s = subjects[i];
+      map[s.id] = {id:s.id, name:s.name||'', name_cn:s.name_cn||'', staff:s.staff||'', type:s.type||0, person_id:0, person_name:''};
+    }
+    for (var i = 0; i < persons.length; i++) {
+      var p = persons[i];
+      map[p.subject_id] = {id:p.subject_id, name:p.subject_name||'', name_cn:p.subject_name_cn||'', staff:p.staff||'', type:p.subject_type||0, person_id:p.id||0, person_name:p.name||''};
+    }
+    _appearAll = [];
+    for (var k in map) { _appearAll.push(map[k]); }
+    _appearAll.sort(function(a,b){var o={2:0,1:1,4:2,3:3,6:4};return(o[a.type]||5)-(o[b.type]||5);})
+    _appearShowing = 0;
+    renderAppearances();
+  }).catch(function(err) {
+    console.error('loadAppearances failed:', err);
+    document.getElementById('appearances-section').innerHTML = '<div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">出演</span><span class="text-xs text-sub">暂无数据</span></div>';
+  });
+}
+
+function renderAppearances() {
+  var section = document.getElementById('appearances-section');
+  if (!_appearAll.length) {
+    section.innerHTML = '<div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">出演</span><span class="text-xs text-sub">暂无数据</span></div>';
+    return;
+  }
+  var end = Math.min(_appearShowing + 10, _appearAll.length);
+  var items = _appearAll.slice(0, end);
+  var typeCls = {1:'bg-[#33281a] text-[#d4a040]',2:'bg-[#1a2833] text-[#5c8eb0]',3:'bg-[#241a2e] text-[#8c74a8]',4:'bg-[#1a2e24] text-[#4c8c68]',6:'bg-[#252530] text-sub'};
+  var cards = [];
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    var typeLabel = MSG.subjectTypes[item.type]||'';
+    cards.push(
+	      '<div class="border-t border-[rgba(255,255,255,.06)] overflow-hidden" style="height:80px">'+
+	      '<div class="flex items-center gap-3 h-full">'+
+	        // Subject image with type badge
+	        '<div class="relative shrink-0 rounded overflow-hidden bg-[#202028] cursor-pointer" style="width:64px;aspect-ratio:1" onclick="location.href=\'/subject.html?id='+item.id+'\'">'+
+	          '<img src="'+img('subject',item.id,'grid')+'" '+imgOnError('subject',item.id,'grid')+' class="w-full h-full object-cover">'+
+	          (typeLabel ? '<span class="absolute top-0.5 right-0.5 text-[9px] font-semibold '+typeCls[item.type]+' px-1 py-px rounded">'+typeLabel+'</span>' : '')+
+	        '</div>'+
+	        // Text area
+	        '<div class="flex-1 min-w-0">'+
+	          '<div class="font-semibold text-[14px] cursor-pointer hover:text-[#FE8A95] truncate" onclick="location.href=\'/subject.html?id='+item.id+'\'">'+primaryName(item.name, item.name_cn)+'</div>'+
+	          (function(){var sub=subName(item.name, item.name_cn); return sub ? '<div class="text-xs text-sub truncate mt-0.5">'+sub+'</div>' : ''})()+
+	          '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1"><span class="bg-[#FE8A95] text-white px-1.5 py-px rounded text-[11px] font-semibold">'+(item.staff||'')+'</span></div>'+
+	        '</div>'+
+	        // Person area
+	        (item.person_id ?
+	          '<div class="flex items-start gap-2 shrink-0 cursor-pointer self-start mt-2" onclick="event.stopPropagation();location.href=\'/person.html?id='+item.person_id+'\'">'+
+	            '<span class="text-[14px] font-semibold hover:text-[#FE8A95]">'+item.person_name+'</span>'+
+	            '<img src="'+img('person',item.person_id,'grid')+'" '+imgOnError('person',item.person_id,'grid')+' class="w-10 h-10 rounded-lg object-cover bg-[#202028]">'+
+	          '</div>'
+	        : '')+
+	      '</div></div>'
+    );
+  }
+  // Pair into 2-column rows
+  var html = '';
+  for (var i = 0; i < cards.length; i += 2) {
+    html += '<div class="flex gap-4">'+
+      '<div class="flex-1 min-w-0">'+cards[i]+'</div>'+
+      '<div class="flex-1 min-w-0">'+(cards[i+1]||'')+'</div>'+
+      '</div>';
+  }
+  // Title row + globe
+  var remoteIcon = (isRemote('/v0/characters/'+window._charId+'/subjects')||isRemote('/v0/characters/'+window._charId+'/persons')) ? globeIcon('w-4 h-4') : '';
+  var titleHtml = '<div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">出演</span>'+remoteIcon+'</div>';
+  // Pagination
+  var pagerHtml = '';
+  _appearShowing = end;
+  if (_appearAll.length > 10) {
+    pagerHtml = '<div class="mt-3 text-center"><span class="text-xs text-sub">共 '+_appearAll.length+' 个条目</span>';
+    if (_appearShowing < _appearAll.length) {
+      var remaining = _appearAll.length - _appearShowing;
+      pagerHtml += ' <button onclick="showMoreAppearances()" class="ml-3 px-3 py-1 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-xs cursor-pointer hover:bg-[#30303b] hover:text-white">展开更多</button>';
+      if (remaining > 10) pagerHtml += ' <button onclick="showAllAppearances()" class="ml-2 px-3 py-1 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-xs cursor-pointer hover:bg-[#30303b] hover:text-white">展开全部</button>';
+    }
+    pagerHtml += '</div>';
+  }
+  section.innerHTML = titleHtml + html + pagerHtml;
+}
+
+function showMoreAppearances() {
+  renderAppearances();
+}
+function showAllAppearances() {
+  _appearShowing = _appearAll.length;
+  renderAppearances();
+}
 </script>
 </body>
 </html>
