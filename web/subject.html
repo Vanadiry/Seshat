@@ -241,9 +241,30 @@ async function overview(s, infoItems) {
   }
 
   if (rels.length) {
-    html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">关联条目</span></div><div class="flex gap-3 overflow-x-auto pb-2 thin-scroll">';
+    // Sort by type priority: 续→番外→书→游戏→其他, same types cluster
+    function relPriority(r) {
+      if (!r) return 99;
+      if (r.indexOf('续')!==-1) return 0;
+      if (r.indexOf('番外')!==-1) return 1;
+      if (r.indexOf('书')!==-1) return 2;
+      if (r.indexOf('游戏')!==-1) return 3;
+      return 99;
+    }
+    rels.sort(function(a,b){
+      var pa = relPriority(a.relation), pb = relPriority(b.relation);
+      if (pa !== pb) return pa - pb;
+      var ra = a.relation||'', rb = b.relation||'';
+      if (ra < rb) return -1; if (ra > rb) return 1; return 0;
+    });
+    html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">关联条目</span></div><div class="flex items-start gap-3 overflow-x-auto pb-2 thin-scroll">';
+    var relLastRel = '';
     for (var i=0; i<rels.length; i++) {
       var r = rels[i];
+      var rel = r.relation||'';
+      if (relLastRel !== '' && rel !== relLastRel) {
+        html += '<div class="border-l border-[rgba(255,255,255,.12)] self-stretch shrink-0 -mx-1"></div>';
+      }
+      relLastRel = rel;
       html += '<div onclick="location.href=\'/subject.html?id='+r.id+'\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">'+
         // Image with floating badge
         '<div class="relative rounded-lg overflow-hidden bg-[#202028] aspect-square">'+
