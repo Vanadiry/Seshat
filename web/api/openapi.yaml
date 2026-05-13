@@ -393,84 +393,94 @@ paths:
 
   # ── 搜索 ──
   /api/v0/search/subjects:
-    get:
-      tags: [搜索]
-      summary: 条目搜索
-      parameters:
-        - { name: q, in: query, required: true, schema: { type: string }, example: "CLANNAD" }
-      responses:
-        "200":
-          description: 搜索结果
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { type: object }
-  /api/v0/search/characters:
-    get:
-      tags: [搜索]
-      summary: 角色搜索
-      parameters:
-        - { name: q, in: query, required: true, schema: { type: string }, example: "古河渚" }
-      responses:
-        "200":
-          description: 搜索结果
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { type: object }
-  /api/v0/search/persons:
-    get:
-      tags: [搜索]
-      summary: 人物搜索
-      parameters:
-        - { name: q, in: query, required: true, schema: { type: string }, example: "麻枝准" }
-      responses:
-        "200":
-          description: 搜索结果
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { type: object }
-  /api/v0/search/tags:
-    get:
-      tags: [搜索]
-      summary: 标签搜索
-      parameters:
-        - { name: q, in: query, required: true, schema: { type: string }, example: "治愈" }
-      responses:
-        "200":
-          description: 搜索结果
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { type: object }
-  /api/v0/search/deep:
     post:
       tags: [搜索]
-      summary: 深度搜索｜SSE
-      description: 扫描全部 JSON 文件全文搜索，结果通过 SSE 实时推送。
+      summary: 条目搜索
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                q: { type: string, example: "CLANNAD" }
-                type: { type: string, default: "subjects,characters,persons", example: "subjects" }
+                keyword: { type: string, example: "CLANNAD" }
+                filter: { type: object, example: { type: [2] } }
       responses:
         "200":
-          description: text/event-stream 流式结果
+          description: 搜索结果
           content:
-            text/event-stream:
+            application/json:
               schema:
-                type: string
-                example: |
-                  data: {"type":"subjects","id":51,"name":"CLANNAD"}
-                  data: {"step":"complete","total":1}
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { type: object }
+  /api/v0/search/characters:
+    post:
+      tags: [搜索]
+      summary: 角色搜索
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                keyword: { type: string, example: "古河渚" }
+      responses:
+        "200":
+          description: 搜索结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { type: object }
+  /api/v0/search/persons:
+    post:
+      tags: [搜索]
+      summary: 人物搜索
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                keyword: { type: string, example: "麻枝准" }
+      responses:
+        "200":
+          description: 搜索结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { type: object }
+  /api/v0/search/tags:
+    post:
+      tags: [搜索]
+      summary: 标签搜索
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                keyword: { type: string, example: "治愈" }
+      responses:
+        "200":
+          description: 搜索结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { type: object }
 
   # ── 拉取 ──
   /api/v0/fetch/subject:

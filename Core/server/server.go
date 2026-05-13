@@ -147,11 +147,10 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/elo/ranking", handleELORanking(dd))
 
 	// ── Search ──
-	mux.HandleFunc("GET /api/v0/search/subjects", handleSearchSubjects(dd))
-	mux.HandleFunc("GET /api/v0/search/characters", handleSearchCharacters(dd))
-	mux.HandleFunc("GET /api/v0/search/persons", handleSearchPersons(dd))
-	mux.HandleFunc("GET /api/v0/search/tags", handleSearchTags(dd))
-	mux.HandleFunc("POST /api/v0/search/deep", handleSearchDeep(cfg, dd))
+	mux.HandleFunc("POST /api/v0/search/subjects", handleSearchSubjects(dd))
+	mux.HandleFunc("POST /api/v0/search/characters", handleSearchCharacters(dd))
+	mux.HandleFunc("POST /api/v0/search/persons", handleSearchPersons(dd))
+	mux.HandleFunc("POST /api/v0/search/tags", handleSearchTags(dd))
 
 	// ── Image API (official-style: /v0/subjects/{id}/image?type=large|grid) ──
 	imgHandler := func(kind string) http.HandlerFunc {
