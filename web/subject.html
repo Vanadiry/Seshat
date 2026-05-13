@@ -11,6 +11,7 @@
   .thin-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.4); }
   .thin-scroll::-webkit-scrollbar-thumb:active { background: rgba(255,255,255,.5); }
   .thin-scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.15) transparent; }
+  .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 </style>
 </head>
 <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
@@ -240,12 +241,19 @@ async function overview(s, infoItems) {
   }
 
   if (rels.length) {
-    html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">关联条目</span></div><div class="flex flex-wrap gap-3">';
+    html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">关联条目</span></div><div class="flex gap-3 overflow-x-auto pb-2 thin-scroll">';
     for (var i=0; i<rels.length; i++) {
       var r = rels[i];
-      html += '<div onclick="location.href=\'/subject.html?id='+r.id+'\'" class="flex gap-3 items-center bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95]">';
-      html += '<img src="'+img('subject',r.id,'grid')+'" onerror="this.remove()" class="w-[75px] h-[100px] rounded object-cover bg-[#202028] shrink-0">';
-      html += '<div>'+(r.relation ? '<div class="text-[12px] text-[#FE8A95] mb-0.5">'+r.relation+'</div>' : '')+'<div class="text-[14px] font-semibold">'+(r.name||'#'+r.id)+'</div></div></div>';
+      html += '<div onclick="location.href=\'/subject.html?id='+r.id+'\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">'+
+        // Image with floating badge
+        '<div class="relative rounded-lg overflow-hidden bg-[#202028] aspect-square">'+
+        '<img src="'+img('subject',r.id,'grid')+'" onerror="this.remove()" class="w-full h-full object-cover">'+
+        (r.relation ? '<span class="absolute top-1 right-1 bg-black/60 text-white px-1.5 py-0.5 rounded text-[10px] font-semibold">'+r.relation+'</span>' : '')+
+        '</div>'+
+        // Title
+        '<div class="mt-1.5 px-0.5">'+
+        '<div class="text-[13px] font-semibold line-clamp-3">'+(r.name_cn||r.name||'#'+r.id)+'</div>'+
+        '</div></div>';
     }
     html += '</div></div>';
   }
