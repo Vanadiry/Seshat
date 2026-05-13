@@ -424,10 +424,13 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		uname := cfg.User.Username
 		if uname == "" { http.Error(w, `{"error":"username not configured"}`, 400); return }
+		p := newProgress(1)
 		go func() {
 			fetchUserCollections(uname, bg, dd)
+			p.Send("complete", 1, 1, "")
+			p.Close()
 		}()
-		writeJSON(w, map[string]any{"status": "fetching", "username": uname, "saved_to_tracker": "_user-" + uname + ".json"})
+		writeJSON(w, map[string]any{"status": "fetching", "username": uname, "task_id": p.ID})
 	}
 }
 
