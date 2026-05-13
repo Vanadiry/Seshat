@@ -165,61 +165,56 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	}()
 	wg.Wait()
 
-	// Character details — retry 3 times, remove from list on 404
+	// Character details + Person details + Episodes + Relations — all in parallel
+	var wg3 sync.WaitGroup
+
+	// Character details
 	type charRef struct{ ID int `json:"id"` }
 	var charIDs []charRef
 	for _, c := range chars { charIDs = append(charIDs, charRef{ID: c.ID}) }
-	fetchConcurrent(charIDs, func(c charRef) {
-		data, err := getRawWithRetry(bg, fmt.Sprintf("v0/characters/%d", c.ID), 3)
-		if err != nil {
-			if strings.Contains(err.Error(), "HTTP 404") {
-				log.Warn("Character #%d: 404, removing from list", c.ID)
-				removeListEntry(charListPath, c.ID)
-			} else {
-				log.Warn("Character #%d: %v", c.ID, err)
+	wg3.Add(1)
+	go func() {
+		defer wg3.Done()
+		fetchConcurrent(charIDs, func(c charRef) {
+			data, err := getRawWithRetry(bg, fmt.Sprintf("v0/characters/%d", c.ID), 3)
+			if err != nil {
+				if strings.Contains(err.Error(), "HTTP 404") { log.Warn("Character #%d: 404, removing from list", c.ID); removeListEntry(charListPath, c.ID) } else { log.Warn("Character #%d: %v", c.ID, err) }
+				return
 			}
-			return
-		}
-		cache.Put(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(data))
-		if cn := extractNameCN(data); cn != "" {
-			mergeListEntry(charListPath, c.ID, "", cn)
-		}
-	}, p, "characters", maxConcurrency)
+			cache.Put(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(data))
+			if cn := extractNameCN(data); cn != "" { mergeListEntry(charListPath, c.ID, "", cn) }
+		}, p, "characters", maxConcurrency)
+	}()
 
-	// Person details — crew + actors, retry 3 times, remove from list on 404
+	// Person details
 	type personRef struct{ ID int `json:"id"` }
 	personSet := map[int]bool{}
 	for _, p := range persons { personSet[p.ID] = true }
-	for _, c := range chars {
-		for _, a := range c.Actors {
-			if a.ID > 0 { personSet[a.ID] = true }
-		}
-	}
+	for _, c := range chars { for _, a := range c.Actors { if a.ID > 0 { personSet[a.ID] = true } } }
 	var personIDs []personRef
 	for id := range personSet { personIDs = append(personIDs, personRef{ID: id}) }
-	fetchConcurrent(personIDs, func(pp personRef) {
-		data, err := getRawWithRetry(bg, fmt.Sprintf("v0/persons/%d", pp.ID), 3)
-		if err != nil {
-			if strings.Contains(err.Error(), "HTTP 404") {
-				log.Warn("Person #%d: 404, removing from list", pp.ID)
-				removeListEntry(persListPath, pp.ID)
-			} else {
-				log.Warn("Person #%d: %v", pp.ID, err)
+	wg3.Add(1)
+	go func() {
+		defer wg3.Done()
+		fetchConcurrent(personIDs, func(pp personRef) {
+			data, err := getRawWithRetry(bg, fmt.Sprintf("v0/persons/%d", pp.ID), 3)
+			if err != nil {
+				if strings.Contains(err.Error(), "HTTP 404") { log.Warn("Person #%d: 404, removing from list", pp.ID); removeListEntry(persListPath, pp.ID) } else { log.Warn("Person #%d: %v", pp.ID, err) }
+				return
 			}
-			return
-		}
-		cache.Put(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(data))
-		if cn := extractNameCN(data); cn != "" {
-			mergeListEntry(persListPath, pp.ID, "", cn)
-		}
-	}, p, "persons", maxConcurrency)
+			cache.Put(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(data))
+			if cn := extractNameCN(data); cn != "" { mergeListEntry(persListPath, pp.ID, "", cn) }
+		}, p, "persons", maxConcurrency)
+	}()
 
-	// Episodes — paginate with limit=100
-	{
+	// Episodes — paginate all types in parallel
+	wg3.Add(1)
+	go func() {
+		defer wg3.Done()
 		var allEps []json.RawMessage
 		offset := 0
 		for {
-			data, err := bg.GetRaw(fmt.Sprintf("v0/episodes?subject_id=%d&type=0&limit=100&offset=%d", sid, offset))
+			data, err := bg.GetRaw(fmt.Sprintf("v0/episodes?subject_id=%d&limit=100&offset=%d", sid, offset))
 			if err != nil { break }
 			var page struct {
 				Data  []json.RawMessage `json:"data"`
@@ -235,12 +230,17 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 			result, _ := json.Marshal(allEps)
 			cache.Put(dd, cache.Key("subjects", sid, "episodes.json"), cache.StripImages(result))
 		}
-	}
+	}()
 
 	// Relations
-	if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/subjects", sid)); err == nil {
-		cache.Put(dd, cache.Key("subjects", sid, "subjects.json"), cache.StripImages(data))
-	}
+	wg3.Add(1)
+	go func() {
+		defer wg3.Done()
+		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/subjects", sid)); err == nil {
+			cache.Put(dd, cache.Key("subjects", sid, "subjects.json"), cache.StripImages(data))
+		}
+	}()
+	wg3.Wait()
 
 	log.Info("Subject #%d API fetch done", sid)
 }
