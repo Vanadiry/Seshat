@@ -213,6 +213,15 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>`;
 
   document.getElementById('btn-fetch').addEventListener('click', openFetch);
+
+  // Reconnect to active tasks after page refresh
+  api('/v0/tasks').then(function(d) {
+    if (d && d.tasks && d.tasks.length) {
+      for (var i=0; i<d.tasks.length; i++) {
+        startProgress(d.tasks[i]);
+      }
+    }
+  });
 });
 
 // ── 拉取弹窗：输入行 + 操作按钮 + 危险区 + 二次确认 ──
@@ -433,7 +442,7 @@ function startProgress(taskId) {
   t.style.display = 'block';
   const fill = document.getElementById('pfill');
   fill.style.width = '0%'; t.textContent = MSG.progressConnecting;
-  const evt = new EventSource(API + '/v0/progress/' + taskId);
+  const evt = new EventSource(API + '/v0/task/' + taskId);
   evt.onmessage = function(e) {
     const d = JSON.parse(e.data);
     if (d.step === 'complete') {

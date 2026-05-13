@@ -85,6 +85,20 @@ func getProgress(id string) *Progress {
 	return progressMap[id]
 }
 
+func activeTasks() []string {
+	progressMu.Lock()
+	defer progressMu.Unlock()
+	var ids []string
+	for id := range progressMap {
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+func handleActiveTasks(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, map[string]any{"tasks": activeTasks()})
+}
+
 func handleProgress(w http.ResponseWriter, r *http.Request) {
 	p := getProgress(r.PathValue("id"))
 	if p == nil { writeJSON(w, map[string]string{"error": "task not found"}); return }

@@ -89,7 +89,8 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/openapi.yaml", serveFile(embedFS, "web/api/openapi.yaml", "application/yaml"))
 
 	// ── SSE progress ──
-	mux.HandleFunc("GET /api/v0/progress/{id}", handleProgress)
+	mux.HandleFunc("GET /api/v0/task/{id}", handleProgress)
+	mux.HandleFunc("GET /api/v0/tasks", handleActiveTasks)
 
 	// ── Cache API ──
 	mux.HandleFunc("GET /api/v0/subjects/list", handleListSubjects(dd))
