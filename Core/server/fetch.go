@@ -471,19 +471,21 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		newIDs := diffTrackerIDs(cfg, dd)
-		if len(newIDs) == 0 { writeJSON(w, map[string]any{"status": "up-to-date", "count": 0}); return }
 		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
-		var idStrs []string
-		for _, sid := range newIDs { idStrs = append(idStrs, strconv.Itoa(sid)) }
-		p := newProgress(len(newIDs), "fetch_update", "增量更新 "+strconv.Itoa(len(newIDs))+" 部")
-		for _, sid := range newIDs { addToSeshatTracker(cfg, sid) }
+		p := newProgress(11, "fetch_update", "增量更新")
 		go func() {
-			p.SetPhase(1, 5, "拉取动画数据")
-			fetchSubjectList(newIDs, bg, dd, imgDir, p)
-			p.SetPhase(2, 5, "建立索引")
+			fillImageGaps(dd, bg, p)
+			if len(newIDs) > 0 {
+				var idStrs []string
+				for _, sid := range newIDs { idStrs = append(idStrs, strconv.Itoa(sid)) }
+				for _, sid := range newIDs { addToSeshatTracker(cfg, sid) }
+				p.SetPhase(7, 11, "拉取动画数据")
+				fetchSubjectList(newIDs, bg, dd, imgDir, p)
+			}
+			p.SetPhase(8, 11, "建立索引")
 			buildIndexes(dd, p)
-			downloadImages(dd, bg, p)
-			p.Send("complete", len(newIDs), len(newIDs), "")
+			downloadImagesWithPhase(dd, bg, p, 9, 11)
+			p.Send("complete", 11, 11, "")
 			p.Close()
 		}()
 		writeJSON(w, map[string]any{"status": "fetching", "count": len(newIDs), "task_id": p.ID})
