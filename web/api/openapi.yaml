@@ -34,6 +34,19 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/SubjectListItem"
+  /api/v0/subjects/name:
+    get:
+      tags: [动画]
+      summary: 动画名称→ID 映射
+      operationId: subjectNames
+      responses:
+        "200":
+          description: name→id 字典
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: { type: integer }
   /api/v0/subjects/{id}:
     get:
       tags: [动画]
@@ -102,6 +115,19 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/NameEntry"
+  /api/v0/characters/name:
+    get:
+      tags: [角色]
+      summary: 角色名称→ID 映射
+      operationId: characterNames
+      responses:
+        "200":
+          description: name→id 字典
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: { type: integer }
   /api/v0/characters/{id}:
     get:
       tags: [角色]
@@ -183,6 +209,19 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/NameEntry"
+  /api/v0/persons/name:
+    get:
+      tags: [人物]
+      summary: 人物名称→ID 映射
+      operationId: personNames
+      responses:
+        "200":
+          description: name→id 字典
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: { type: integer }
   /api/v0/persons/{id}:
     get:
       tags: [制作成员]

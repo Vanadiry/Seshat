@@ -44,7 +44,7 @@
     '</div>'+
     '<div class="flex-1 min-w-0 flex flex-col gap-5">'+
     (p.career ? '<div class="flex flex-wrap gap-1.5">'+(typeof p.career==='string'?JSON.parse(p.career):p.career||[]).map(function(c){return '<span class="bg-[#403638] text-[#FE8A95] px-2 py-0.5 rounded-md text-[12px]">'+c+'</span>'}).join('')+'</div>' : '')+
-    (p.summary ? '<p class="text-[14px] leading-relaxed text-sub">'+p.summary+'</p>' : '')+
+    (p.summary ? '<p class="text-[14px] leading-relaxed text-sub">'+formatSummary(p.summary)+'</p>' : '')+
     (p.subjects&&p.subjects.length ?
     '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">参与作品</span>'+(isRemote('/v0/persons/'+ID)?globeIcon('w-4 h-4'):'')+'</div>'+
     '<div class="flex flex-wrap gap-2">'+p.subjects.map(function(s){return '<span onclick="location.href=\'/subject.html?id='+s.id+'\'" class="bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-[#FE8A95]">'+s.name+'</span>'}).join('')+'</div></div>' : '')+

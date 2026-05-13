@@ -222,7 +222,7 @@ async function overview(s, infoItems) {
   html += '<div class="flex-1 min-w-0">';
   if (epGrid) html += '<div class="mb-4"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">剧集</span>'+(isRemote('/v0/episodes?subject_id='+SID)?globeIcon('w-4 h-4'):'')+'<span class="text-xs text-sub">('+eps.length+')</span></div>'+epGrid+'</div>';
   html += '<div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">简介</span></div>';
-  html += '<p class="text-[14px] leading-relaxed text-sub mb-4">'+(s.summary||'暂无简介')+'</p>';
+  html += '<p class="text-[14px] leading-relaxed text-sub mb-4">'+formatSummary(s.summary||'暂无简介')+'</p>';
   if (tagsHtml) html += '<div class="mb-2"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">标签</span></div>'+tagsHtml+'</div>';
   html += '</div>';
   // ── 右上右栏：评分面板 ──

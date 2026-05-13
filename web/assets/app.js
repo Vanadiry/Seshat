@@ -113,7 +113,7 @@ function addRemoteGlobe(el) {
 var _personMap = null;
 function loadPersonMap() {
   if (_personMap && Object.keys(_personMap).length) return Promise.resolve(_personMap);
-  return api('/v0/person-names').then(function(data) {
+  return api('/v0/persons/name').then(function(data) {
     _personMap = data || {};
     _personRegex = null;
     return _personMap;
@@ -143,6 +143,18 @@ function linkifyPerson(text) {
 function linkifyURL(text) {
   if (!text) return text;
   return text.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" class="text-[#FE8A95] hover:underline"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">$1</a>');
+}
+
+// ── linkifyBBCode：转换 [url=...]...[/url] 为链接 ──
+function linkifyBBCode(text) {
+  if (!text) return text;
+  return text.replace(/\[url=(https?:\/\/[^\]]+)\](.+?)\[\/url\]/g, '<a href="$1" target="_blank" rel="noopener" class="text-[#FE8A95] hover:underline"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">$2</a>');
+}
+
+// ── formatSummary：简介专用 — BBCode 链接 + 换行转 <br> ──
+function formatSummary(text) {
+  if (!text) return text;
+  return linkifyBBCode(text).replace(/\r\n|\n/g, '<br><span style="display:block;height:0.5em"></span>');
 }
 
 // ── infoboxData：提取侧栏信息（infobox + 顶层字段）──
