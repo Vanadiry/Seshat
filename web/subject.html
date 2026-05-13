@@ -291,16 +291,25 @@ async function episodes() {
 
   function epRows(list, label) {
     if (!list.length) return '';
-    var html = '<div class="mb-6"><div class="text-sm text-sub font-semibold mb-3">'+label+'</div>';
+    // Build individual episode cards
+    var cards = [];
     for (var i=0; i<list.length; i++) {
       var e = list[i];
       var epName = primaryName(e.name, e.name_cn);
       var epSub = subName(e.name, e.name_cn);
       var desc = e.desc ? linkifyPerson(e.desc).replace(/\r\n|\n|\\n|\\r\\n/g, '<br>') : '';
-      html += '<div class="border-t border-[rgba(255,255,255,.06)] py-3">'+
+      cards.push('<div class="border-t border-[rgba(255,255,255,.06)] py-3">'+
         '<div class="flex items-baseline gap-2"><span class="text-[#FE8A95] text-sm font-bold w-8 shrink-0">'+(e.type===0?String(Math.floor(e.sort||e.ep||0)).padStart(2,'0'):types[e.type])+'</span><span class="font-semibold text-[14px]">'+epName+'</span>'+(epSub ? '<span class="text-xs text-sub">'+epSub+'</span>' : '')+'</div>'+
-        '<div class="text-xs text-sub mt-1 ml-10">'+(e.airdate?'首播日期: '+e.airdate:'')+(e.airdate&&e.duration?' ｜ ':'')+(e.duration?'时长: '+e.duration:'')+'</div>'+
+        '<div class="text-xs text-sub mt-1 ml-10">'+(e.airdate?'首播: '+e.airdate:'')+(e.airdate&&e.duration?' ｜ ':'')+(e.duration?'时长: '+e.duration:'')+'</div>'+
         (desc ? '<div class="text-[13px] text-sub mt-1 ml-10 leading-relaxed">'+desc+'</div>' : '')+
+        '</div>');
+    }
+    // Pair into 2-column rows
+    var html = '<div class="mb-6"><div class="text-sm text-sub font-semibold mb-3">'+label+'</div>';
+    for (var i=0; i<cards.length; i+=2) {
+      html += '<div class="flex gap-4">'+
+        '<div class="flex-1 min-w-0">'+cards[i]+'</div>'+
+        '<div class="flex-1 min-w-0">'+(cards[i+1]||'')+'</div>'+
         '</div>';
     }
     html += '</div>';
