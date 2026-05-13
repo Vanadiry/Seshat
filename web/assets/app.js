@@ -38,8 +38,9 @@ const API = window.BACKEND_URL || '/api';
 // ── UI text (edit here to customize dialog messages) ──
 var MSG = {
   // Top bar
-  customBackendWarn: '⚠ 当前为自定义后端，非预期行为。',
-
+  customBackendWarn: '自定义后端模式，所有数据将从远程获取',
+  fallbackWarn: '回退模式，缺失数据将从回退端点获取',
+  bothWarn: '自定义后端和回退模式，请确保你明白此配置',
   // Fetch dialog
   dialogTitle: '从上游拉取数据',
   idLabel: '拉取一个或一组动画',
@@ -331,20 +332,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   tb.style.cssText = 'position:sticky;top:0;z-index:50';
   var custom = !!window.BACKEND_URL;
+  var fallback = !!window.FALLBACK_URL;
+  var both = custom && fallback;
+  var topBg = both ? 'bg-[#7c3aed]' : (custom ? 'bg-[#dc2626]' : (fallback ? 'bg-[#92400e]' : 'bg-[#1c1c22]'));
+  var topBord = (custom||fallback) ? 'border-[rgba(255,255,255,.2)]' : 'border-[rgba(255,255,255,.12)]';
+  var warnText = both ? MSG.bothWarn : (custom ? MSG.customBackendWarn : (fallback ? MSG.fallbackWarn : ''));
+  var navStyle = function(href) {
+    var c = navCls(href);
+    if (custom||fallback) {
+      if (c.indexOf('bg-') >= 0) return c;
+      return 'text-white hover:bg-[#ffffff22]';
+    }
+    return c;
+  };
   tb.innerHTML = `
-    <div class="${custom ? 'bg-[#dc2626]' : 'bg-[#1c1c22]'} border-b ${custom ? 'border-[rgba(255,255,255,.2)]' : 'border-[rgba(255,255,255,.12)]'}">
-      <div class="max-w-[1200px] mx-auto px-5 flex items-center gap-3 h-12">
+    <div class="${topBg} border-b ${topBord}">
+      <div class="max-w-[1200px] mx-auto px-5 flex items-center gap-3 h-12 relative">
         <h1 class="text-lg font-bold cursor-pointer shrink-0" onclick="location.href='/'">Seshat</h1>
         <nav class="flex gap-1 ml-2 items-center">
-          <a href="/" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${custom ? 'text-white hover:bg-[#ffffff22]' : navCls('/')}">动画</a>
-          <a href="/character-list.html" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${custom ? 'text-white hover:bg-[#ffffff22]' : navCls('/character-list.html')}">角色</a>
-          <a href="/person-list.html" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${custom ? 'text-white hover:bg-[#ffffff22]' : navCls('/person-list.html')}">人物</a>
-          <a href="/tags.html" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${custom ? 'text-white hover:bg-[#ffffff22]' : navCls('/tags.html')}">标签</a>
-          <a href="/doc/api" class="text-sub no-underline px-3 py-1.5 rounded-lg text-sm ${custom ? 'text-white hover:bg-[#ffffff22]' : navCls('/doc/api')}">API</a>
-          ${custom ? '<span class="text-[#FFCA28] text-sm font-bold ml-2 shrink-0">⚠ 当前为自定义后端，非预期行为。</span>' : ''}
+          <a href="/" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/')}">动画</a>
+          <a href="/character-list.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/character-list.html')}">角色</a>
+          <a href="/person-list.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/person-list.html')}">人物</a>
+          <a href="/tags.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/tags.html')}">标签</a>
+          <a href="/doc/api" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/doc/api')}">API</a>
         </nav>
         <div class="flex-1"></div>
-        <button onclick="location.href='/search.html'" class="px-3 py-1.5 rounded-lg border ${custom ? 'border-[rgba(255,255,255,.3)] text-white' : 'border-[rgba(255,255,255,.12)] text-sub'} bg-transparent text-sm cursor-pointer hover:bg-[#30303b] hover:text-white" title="搜索">🔍</button>
+        ${warnText ? '<span class="absolute left-1/2 -translate-x-1/2 text-[#FFCA28] text-sm font-bold pointer-events-none">'+warnText+'</span>' : ''}
+        <a href="/search.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/search.html')}">搜索</a>
         <button id="btn-fetch" class="px-4 py-1.5 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">+ 拉取</button>
       </div>
       <!-- Progress bar inside topbar -->
