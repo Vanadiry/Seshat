@@ -288,21 +288,28 @@ async function episodes() {
   var epsRaw = await api('/v0/subjects/'+SID+'/episodes');
   var eps = Array.isArray(epsRaw) ? epsRaw : (epsRaw&&epsRaw.data ? epsRaw.data : []);
   var types = MSG.epTypes;
-  var main = eps.filter(function(e){return e.type===0}).sort(function(a,b){return a.sort-b.sort});
-  var sp = eps.filter(function(e){return e.type!==0}).sort(function(a,b){return a.sort-b.sort});
 
   function epRows(list, label) {
     if (!list.length) return '';
     var html = '<div class="mb-6"><div class="text-sm text-sub font-semibold mb-3">'+label+'</div>';
     for (var i=0; i<list.length; i++) {
       var e = list[i];
-      html += '<div class="ml-2 pl-4 border-l-2 border-[rgba(255,255,255,.08)] h-12 py-0">';
-      html += '<div class="flex items-center gap-3"><span class="text-[#FE8A95] text-sm font-bold w-10">'+(e.type===0?String(Math.floor(e.sort||e.ep||0)).padStart(2,'0'):types[e.type])+'</span><span class="font-semibold">'+(e.name_cn||e.name)+'</span></div>';
-      html += '<div class="text-[12px] text-sub mt-1 ml-13">'+(e.name||'')+' · '+(e.duration||'')+' · '+(e.airdate||'')+(e.desc ? '<p class="mt-1 leading-relaxed">'+e.desc+'</p>' : '')+'</div></div>';
+      var epName = primaryName(e.name, e.name_cn);
+      var epSub = subName(e.name, e.name_cn);
+      var desc = e.desc ? linkifyPerson(e.desc).replace(/\r\n|\n|\\n|\\r\\n/g, '<br>') : '';
+      html += '<div class="border-t border-[rgba(255,255,255,.06)] py-3">'+
+        '<div class="flex items-baseline gap-2"><span class="text-[#FE8A95] text-sm font-bold w-8 shrink-0">'+(e.type===0?String(Math.floor(e.sort||e.ep||0)).padStart(2,'0'):types[e.type])+'</span><span class="font-semibold text-[14px]">'+epName+'</span>'+(epSub ? '<span class="text-xs text-sub">'+epSub+'</span>' : '')+'</div>'+
+        '<div class="text-xs text-sub mt-1 ml-10">'+(e.airdate?'首播日期: '+e.airdate:'')+(e.airdate&&e.duration?' ｜ ':'')+(e.duration?'时长: '+e.duration:'')+'</div>'+
+        (desc ? '<div class="text-[13px] text-sub mt-1 ml-10 leading-relaxed">'+desc+'</div>' : '')+
+        '</div>';
     }
     html += '</div>';
     return html;
   }
+
+  var sorted = eps.slice().sort(function(a,b){return (a.sort||0)-(b.sort||0)});
+  var main = sorted.filter(function(e){return e.type===0});
+  var sp = sorted.filter(function(e){return e.type!==0});
 
   document.getElementById('view').innerHTML = '<div class="flex items-center gap-2 mb-4"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">剧集 ('+eps.length+')</span></div>' +
     epRows(main, '本篇 ('+main.length+')') + epRows(sp, 'SP / 其他 ('+sp.length+')');
