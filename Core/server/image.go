@@ -25,19 +25,19 @@ func downloadImages(dd string, bg *bangumi.Client, p *Progress) {
 
 	// Subjects
 	subjList := loadNameList(cache.IndexFile(dd, "subjects.json"))
-	if p != nil { p.Send("images_subjects", 0, len(subjList), "downloading") }
+	if p != nil { p.SetPhase(3, 5, "下载Subject图像"); p.Send("images_subjects", 0, len(subjList), "downloading") }
 	dlImageList(subjList, "subject", subjImg, imgBase, bg, dd, p, "images_subjects")
 	saveJSON(cache.IndexFile(dd, "subjects_image.json"), subjImg)
 
 	// Characters
 	charList := loadNameList(cache.IndexFile(dd, "characters.json"))
-	if p != nil { p.Send("images_characters", 0, len(charList), "downloading") }
+	if p != nil { p.SetPhase(4, 5, "下载角色图像"); p.Send("images_characters", 0, len(charList), "downloading") }
 	dlImageList(charList, "character", charImg, imgBase, bg, dd, p, "images_characters")
 	saveJSON(cache.IndexFile(dd, "characters_image.json"), charImg)
 
 	// Persons
 	persList := loadNameList(cache.IndexFile(dd, "persons.json"))
-	if p != nil { p.Send("images_persons", 0, len(persList), "downloading") }
+	if p != nil { p.SetPhase(5, 5, "下载人物图像"); p.Send("images_persons", 0, len(persList), "downloading") }
 	dlImageList(persList, "person", persImg, imgBase, bg, dd, p, "images_persons")
 	saveJSON(cache.IndexFile(dd, "persons_image.json"), persImg)
 

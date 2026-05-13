@@ -11,14 +11,17 @@ import (
 )
 
 type Progress struct {
-	ID      string
-	Channel chan string
-	Total   int
-	Done    int
-	Task    string `json:"task"` // e.g. "fetch", "rebuild"
-	Label   string `json:"label"` // e.g. "拉取动画 #51", "刷新全部"
-	started time.Time
-	mu      sync.Mutex
+	ID        string
+	Channel   chan string
+	Total     int
+	Done      int
+	Task      string `json:"task"`   // e.g. "fetch", "rebuild"
+	Label     string `json:"label"`  // e.g. "拉取动画 #51", "刷新全部"
+	Phase     int    `json:"phase"`  // current phase number (1-based)
+	Phases    int    `json:"phases"` // total number of phases
+	PhaseName string `json:"name"`   // human-readable phase name, e.g. "下载角色图像"
+	started   time.Time
+	mu        sync.Mutex
 }
 
 var (
@@ -54,7 +57,7 @@ func newProgress(total int, task, label string) *Progress {
 	progressMu.Lock()
 	progressMap[p.ID] = p
 	progressMu.Unlock()
-	startMsg, _ := json.Marshal(map[string]any{"step":"start","done":0,"total":total,"task":task,"label":label})
+	startMsg, _ := json.Marshal(map[string]any{"step":"start","done":0,"total":total,"task":task,"label":label,"phase":p.Phase,"phases":p.Phases,"phase_name":p.PhaseName})
 	p.Channel <- string(startMsg)
 	return p
 }
@@ -74,9 +77,20 @@ func (p *Progress) Close() {
 	})
 }
 
+func (p *Progress) SetPhase(phase int, phases int, name string) {
+	p.mu.Lock()
+	p.Phase = phase
+	p.Phases = phases
+	p.PhaseName = name
+	p.mu.Unlock()
+}
+
 func (p *Progress) Send(step string, done, total int, status string) {
 	p.mu.Lock()
 	p.Done = done
+	phase := p.Phase
+	phases := p.Phases
+	phaseName := p.PhaseName
 	p.mu.Unlock()
 	elapsed := time.Since(p.started).Seconds()
 	speed := float64(0)
@@ -84,11 +98,14 @@ func (p *Progress) Send(step string, done, total int, status string) {
 		speed = float64(done) / elapsed
 	}
 	data, _ := json.Marshal(map[string]any{
-		"step":  step,
-		"done":  done,
-		"total": total,
-		"status": status,
-		"speed": fmt.Sprintf("%.1f/s", speed),
+		"step":       step,
+		"done":       done,
+		"total":      total,
+		"status":     status,
+		"speed":      fmt.Sprintf("%.1f/s", speed),
+		"phase":      phase,
+		"phases":     phases,
+		"phase_name": phaseName,
 	})
 	select {
 	case p.Channel <- string(data):

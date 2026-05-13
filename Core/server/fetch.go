@@ -455,10 +455,10 @@ func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 		p := newProgress(len(ids), "fetch_subject", "拉取动画 #"+strings.Join(idStrs, ", "))
 		for _, sid := range ids { addToSeshatTracker(cfg, sid) }
 		go func() {
+			p.SetPhase(1, 5, "拉取动画数据")
 			fetchSubjectList(ids, bg, dd, imgDir, p)
-			p.Send("phase", 2, 3, "building indexes")
+			p.SetPhase(2, 5, "建立索引")
 			buildIndexes(dd, p)
-			p.Send("phase", 3, 3, "downloading images")
 			downloadImages(dd, bg, p)
 			p.Send("complete", len(ids), len(ids), "")
 			p.Close()
@@ -478,10 +478,10 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 		p := newProgress(len(newIDs), "fetch_update", "增量更新 "+strconv.Itoa(len(newIDs))+" 部")
 		for _, sid := range newIDs { addToSeshatTracker(cfg, sid) }
 		go func() {
+			p.SetPhase(1, 5, "拉取动画数据")
 			fetchSubjectList(newIDs, bg, dd, imgDir, p)
-			p.Send("phase", 2, 3, "building indexes")
+			p.SetPhase(2, 5, "建立索引")
 			buildIndexes(dd, p)
-			p.Send("phase", 3, 3, "downloading images")
 			downloadImages(dd, bg, p)
 			p.Send("complete", len(newIDs), len(newIDs), "")
 			p.Close()

@@ -497,7 +497,12 @@ function startProgress(taskId, label) {
       setTimeout(function() { w.style.display = 'none'; t.style.display = 'none'; if (typeof onFetchDone==='function') onFetchDone(); }, 1500);
     } else if (typeof d.done === 'number' && d.total) {
       fill.style.width = Math.round(d.done/d.total*100) + '%';
-      t.textContent = taskLabel + ' ' + d.done + '/' + d.total + (d.speed?' · '+d.speed:'');
+      var parts = [];
+      if (d.phase && d.phases) parts.push(d.phase + '/' + d.phases);
+      if (d.phase_name) parts.push(d.phase_name);
+      parts.push(d.done + '/' + d.total);
+      if (d.speed) parts.push(d.speed);
+      t.textContent = (taskLabel ? taskLabel + ' · ' : '') + parts.join('，');
     } else if (d.status) {
       t.textContent = taskLabel + ': ' + d.status;
     }

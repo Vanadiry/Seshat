@@ -71,8 +71,10 @@ func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 			}
 		}
 	}
-	fetchSubjectList(allIDs, bg, dd, imgDir, nil)
+	p.SetPhase(1, 5, "拉取动画数据")
+	fetchSubjectList(allIDs, bg, dd, imgDir, p)
 	log.Info("All trackers refreshed: %d subjects", len(seen))
+	p.SetPhase(2, 5, "建立索引")
 	buildIndexes(dd, p)
 	downloadImages(dd, bg, p)
 }
@@ -102,8 +104,10 @@ func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, 
 		log.Warn("refreshTrackers: no IDs found for %v", names)
 		return
 	}
+	p.SetPhase(1, 5, "拉取动画数据")
 	fetchSubjectList(allIDs, bg, dd, imgDir, p)
 	log.Info("Trackers %v refreshed: %d subjects", names, len(seen))
+	p.SetPhase(2, 5, "建立索引")
 	buildIndexes(dd, p)
 	downloadImages(dd, bg, p)
 }
