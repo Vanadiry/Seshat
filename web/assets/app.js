@@ -1,4 +1,38 @@
 // Seshat shared JS — top bar, fetch dialog, SSE progress, API helpers
+document.addEventListener('dragstart', function(e) { if (e.target.tagName === 'IMG') e.preventDefault(); });
+
+// Drag-to-scroll on .thin-scroll containers
+(function() {
+  var el, startX, scrollLeft, down = false, dragged = false;
+  document.addEventListener('mousedown', function(e) {
+    el = e.target.closest('.thin-scroll');
+    if (!el) return;
+    down = true; dragged = false;
+    startX = e.pageX - el.getBoundingClientRect().left;
+    scrollLeft = el.scrollLeft;
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!down || !el) return;
+    var x = e.pageX - el.getBoundingClientRect().left;
+    if (!dragged && Math.abs(x - startX) < 5) return;
+    dragged = true;
+    e.preventDefault();
+    el.style.cursor = 'grabbing';
+    el.style.userSelect = 'none';
+    el.scrollLeft = scrollLeft - (x - startX);
+  });
+  document.addEventListener('mouseup', function() {
+    if (!down) return;
+    down = false;
+    if (el) { el.style.cursor = ''; el.style.userSelect = ''; }
+    el = null;
+  });
+  // Prevent click after drag
+  document.addEventListener('click', function(e) {
+    if (dragged) { e.stopPropagation(); e.preventDefault(); dragged = false; }
+  }, true);
+})();
+
 const API = window.BACKEND_URL || '/api';
 
 // ── UI text (edit here to customize dialog messages) ──

@@ -75,7 +75,7 @@ function loadAppearances(ID) {
     }
     _appearAll = [];
     for (var k in map) { _appearAll.push(map[k]); }
-    _appearAll.sort(function(a,b){var o={2:0,1:1,4:2,3:3,6:4};return(o[a.type]||5)-(o[b.type]||5);})
+    _appearAll.sort(function(a,b){var o={2:0,4:1,1:2,3:3,6:4};return(o[a.type]!=null?o[a.type]:5)-(o[b.type]!=null?o[b.type]:5);})
     _appearShowing = 0;
     renderAppearances();
   }).catch(function(err) {

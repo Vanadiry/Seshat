@@ -62,7 +62,7 @@ var _charsAll = [], _charsShowing = 0;
 function loadCharSection(ID) {
   api('/v0/persons/'+ID+'/characters').then(function(data) {
     _charsAll = Array.isArray(data) ? data : [];
-    _charsAll.sort(function(a,b){var o={2:0,1:1,4:2,3:3,6:4};return(o[a.subject_type]||5)-(o[b.subject_type]||5);});
+    _charsAll.sort(function(a,b){var o={2:0,4:1,1:2,3:3,6:4};return(o[a.subject_type]!=null?o[a.subject_type]:5)-(o[b.subject_type]!=null?o[b.subject_type]:5);});
     _charsShowing = 0;
     renderCharSection();
   }).catch(function() {
@@ -128,7 +128,7 @@ var _subjAll = [], _subjShowing = 0;
 function loadSubjectSection(ID) {
   api('/v0/persons/'+ID+'/subjects').then(function(data) {
     _subjAll = Array.isArray(data) ? data : [];
-    _subjAll.sort(function(a,b){var o={2:0,1:1,4:2,3:3,6:4};return(o[a.type]||5)-(o[b.type]||5);});
+    _subjAll.sort(function(a,b){var o={2:0,4:1,1:2,3:3,6:4};return(o[a.type]!=null?o[a.type]:5)-(o[b.type]!=null?o[b.type]:5);});
     _subjShowing = 0;
     renderSubjectSection();
   }).catch(function() {
