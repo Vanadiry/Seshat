@@ -361,11 +361,6 @@ document.addEventListener('DOMContentLoaded', () => {
         <a href="/search.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/search.html')}">搜索</a>
         <button id="btn-fetch" class="px-4 py-1.5 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">+ 拉取</button>
       </div>
-      <!-- Progress bar inside topbar -->
-      <div id="pwrap" class="hidden" style="height:2px">
-        <div id="pfill" class="h-full bg-[#FE8A95] w-0 transition-[width] duration-300"></div>
-      </div>
-      <div id="ptext" class="hidden text-[12px] text-sub px-5 pb-1 max-w-[1200px] mx-auto"></div>
     </div>`;
 
   document.getElementById('btn-fetch').addEventListener('click', openFetch);
@@ -584,34 +579,62 @@ async function doFetchIndex() {
   if (d.task_id) startProgress(d.task_id);
 }
 
-// ── SSE 进度条（嵌入顶栏底部）──
+// ── 进度通知横幅（右下角浮动）──
 function startProgress(taskId, label) {
-  var w = document.getElementById('pwrap');
-  var t = document.getElementById('ptext');
-  if (!w || !t) return;
-  w.style.display = 'block';
-  t.style.display = 'block';
-  var fill = document.getElementById('pfill');
+  var banner = document.getElementById('progress-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'progress-banner';
+    banner.className = 'hidden fixed bottom-4 right-4 z-[200] bg-[#1c1c22] border border-[rgba(255,255,255,.15)] rounded-xl shadow-2xl p-4 max-w-[320px] min-w-[260px]';
+    banner.innerHTML = '<div class="flex items-center gap-2"><span id="pb-label" class="text-sm font-bold truncate"></span><span id="pb-phase" class="text-xs text-sub shrink-0"></span></div><div id="pb-detail" class="text-xs text-sub mt-1"></div><div id="pb-bar" class="mt-2 h-1 rounded-full bg-[#30303b] overflow-hidden"><div id="pb-fill" class="h-full bg-[#FE8A95] w-0 transition-[width] duration-300"></div></div>';
+    document.body.appendChild(banner);
+  }
+  banner.classList.remove('hidden');
+  banner.style.borderColor = 'rgba(255,255,255,.15)';
+  var fill = document.getElementById('pb-fill');
   fill.style.width = '0%';
-  t.textContent = (label||MSG.progressConnecting) + ' …';
-  var taskLabel = label||'';
+  fill.style.background = '#FE8A95';
+  fill.style.transition = 'width 300ms';
+  document.getElementById('pb-label').textContent = label || MSG.progressConnecting;
+  document.getElementById('pb-detail').textContent = '';
+  document.getElementById('pb-phase').textContent = '';
+
+  var taskLabel = label || '';
   var evt = new EventSource(API + '/v0/task/' + taskId);
   evt.onmessage = function(e) {
     var d = JSON.parse(e.data);
-    if (d.label && !taskLabel) taskLabel = d.label;
+    if (d.label && !taskLabel) { taskLabel = d.label; document.getElementById('pb-label').textContent = d.label; }
     if (d.step === 'complete' || d.step === 'done') {
-      fill.style.width = '100%'; t.textContent = MSG.progressDone + (taskLabel?' - '+taskLabel:''); evt.close();
-      setTimeout(function() { w.style.display = 'none'; t.style.display = 'none'; if (typeof onFetchDone==='function') onFetchDone(); }, 1500);
+      document.getElementById('pb-label').textContent = taskLabel;
+      document.getElementById('pb-phase').textContent = '';
+      document.getElementById('pb-detail').textContent = MSG.progressDone;
+      fill.style.width = '100%';
+      fill.style.background = '#22c55e';
+      fill.style.transition = 'none';
+      banner.style.borderColor = 'rgba(34,197,94,.4)';
+      evt.close();
+      // 5 second countdown
+      var remaining = 5000;
+      var interval = setInterval(function() {
+        remaining -= 50;
+        if (remaining <= 0) {
+          clearInterval(interval);
+          banner.classList.add('hidden');
+          if (typeof onFetchDone === 'function') onFetchDone();
+        } else {
+          fill.style.width = Math.round(remaining / 5000 * 100) + '%';
+        }
+      }, 50);
     } else if (typeof d.done === 'number' && d.total) {
       fill.style.width = Math.round(d.done/d.total*100) + '%';
+      document.getElementById('pb-phase').textContent = (d.phase && d.phases) ? d.phase + '/' + d.phases : '';
       var parts = [];
-      if (d.phase && d.phases) parts.push(d.phase + '/' + d.phases);
       if (d.phase_name) parts.push(d.phase_name);
       parts.push(d.done + '/' + d.total);
       if (d.speed) parts.push(d.speed);
-      t.textContent = (taskLabel ? taskLabel + ' · ' : '') + parts.join('，');
+      document.getElementById('pb-detail').textContent = parts.join('，');
     } else if (d.status) {
-      t.textContent = taskLabel + ': ' + d.status;
+      document.getElementById('pb-detail').textContent = d.status;
     }
   };
   evt.onerror = function() { evt.close(); };
