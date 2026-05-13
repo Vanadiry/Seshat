@@ -3,15 +3,12 @@ package server
 import (
 	"strconv"
 	"strings"
-	"fmt"
 	"net/http"
 	"encoding/json"
 	"os"
 	"path/filepath"
 
 	"github.com/vanadiry/seshat/Core/cache"
-	"github.com/vanadiry/seshat/Core/config"
-	"github.com/vanadiry/seshat/Core/bangumi"
 )
 
 func mergeListEntry(path string, id int, name, nameCN string) {
@@ -144,24 +141,6 @@ func handleCacheReader(dd string) http.HandlerFunc {
 		if len(parts) >= 3 { file = parts[2] + ".json" }
 		data, err := cache.Get(dd, cache.Key(domain, id, file))
 		if err != nil { http.NotFound(w, r); return }
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
-	}
-}
-
-func handleUserProfile(cfg *config.Config, bg *bangumi.Client, dd string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		uname := cfg.User.Username
-		if uname == "" { http.Error(w, `{"error":"no username"}`, 404); return }
-		data, err := cache.Get(dd, fmt.Sprintf("users/%s.json", uname))
-		if err != nil {
-			raw, err := bg.GetRaw(fmt.Sprintf("v0/users/%s", uname))
-			if err != nil { http.Error(w, `{"error":"user not found"}`, 404); return }
-			cache.Put(dd, fmt.Sprintf("users/%s.json", uname), raw)
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(raw)
-			return
-		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(data)
 	}

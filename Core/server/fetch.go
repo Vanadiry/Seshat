@@ -333,6 +333,42 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 	log.Info("User collections for %s saved (%d items)", username, len(all))
 }
 
+func fetchUserProfile(username string, bg *bangumi.Client, dd string) {
+	log.Info("Fetching user profile for %s", username)
+	userDir := filepath.Join(dd, "user")
+	os.MkdirAll(userDir, 0o755)
+
+	// Fetch user info
+	data, err := bg.GetRaw(fmt.Sprintf("v0/users/%s", username))
+	if err != nil {
+		log.Warn("User profile %s: %v", username, err)
+		return
+	}
+	os.WriteFile(filepath.Join(userDir, "info.json"), data, 0o644)
+
+	// Fetch avatar images
+	imgMap := map[string]string{}
+	for _, size := range []string{"large", "medium", "small"} {
+		imgData, err := bg.GetImage(fmt.Sprintf("v0/users/%s/avatar?type=%s", username, size))
+		if err != nil {
+			log.Warn("User avatar %s %s: %v", username, size, err)
+			continue
+		}
+		ext := ".jpg"
+		if len(imgData) > 0 && imgData[0] == 0x89 {
+			ext = ".png"
+		}
+		fname := size + ext
+		os.WriteFile(filepath.Join(userDir, fname), imgData, 0o644)
+		imgMap[size] = filepath.Join("user", fname)
+	}
+	if len(imgMap) > 0 {
+		result, _ := json.Marshal(imgMap)
+		os.WriteFile(filepath.Join(userDir, "image.json"), result, 0o644)
+	}
+	log.Info("User profile for %s saved", username)
+}
+
 // countTrackerTotal 统计所有 tracker 中的 subject 总数。
 func fetchConcurrent[T any](items []T, fn func(T), p *Progress, stage string, concurrency int) {
 	if len(items) == 0 {
@@ -428,9 +464,12 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 		uname := cfg.User.Username
 		if uname == "" { http.Error(w, `{"error":"username not configured"}`, 400); return }
 		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
-		p := newProgress(1, "fetch_user", "拉取用户收藏")
+		p := newProgress(1, "fetch_user", "拉取用户数据")
 		go func() {
-			fetchUserCollections(uname, bg, dd)
+			fetchUserProfile(uname, bg, dd)
+			if cfg.User.FetchCollections {
+				fetchUserCollections(uname, bg, dd)
+			}
 			p.Send("complete", 1, 1, "")
 			p.Close()
 		}()

@@ -59,7 +59,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /search.html", serveFile(embedFS, "web/search.html", "text/html"))
 	mux.HandleFunc("GET /assets/app.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
-		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\n", cfg.Frontend.BackendURL, cfg.Frontend.PreferLang, cfg.User.Username, cfg.Frontend.FallbackURL, config.Dir())
+		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\nwindow.FETCH_COLLECTIONS=%v;\n", cfg.Frontend.BackendURL, cfg.Frontend.PreferLang, cfg.User.Username, cfg.Frontend.FallbackURL, config.Dir(), cfg.User.FetchCollections)
 		data, _ := fs.ReadFile(embedFS, "web/assets/app.js")
 		w.Write(data)
 	})
@@ -135,7 +135,8 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/tracker", handleTrackerList(cfg))
 
 	// ── User ──
-	mux.HandleFunc("GET /api/v0/user/profile", handleUserProfile(cfg, bg, dd))
+	mux.HandleFunc("GET /api/v0/users/{username}", handleUser(dd))
+	mux.HandleFunc("GET /api/v0/users/{username}/avatar", serveUserAvatar(dd))
 
 	// ── Tags ──
 	mux.HandleFunc("GET /api/v0/tags", handleTags(dd))

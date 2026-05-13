@@ -29,7 +29,8 @@ type FrontendConfig struct {
 }
 
 type UserConfig struct {
-	Username string `toml:"username"`
+	Username         string `toml:"username"`
+	FetchCollections bool   `toml:"fetch_collections"`
 }
 
 type Config struct {

@@ -681,22 +681,39 @@ paths:
           description: Tracker 已存在
 
   # ── 用户 ──
-  /api/v0/user/profile:
+  /api/v0/users/{username}:
     get:
       tags: [用户]
-      summary: 列出用户信息
+      summary: 用户信息
+      parameters:
+        - { name: username, in: path, required: true, schema: { type: string }, example: "vanadiry" }
       responses:
         "200":
-          description: 用户数据
+          description: 用户数据（不含 avatar）
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+  /api/v0/users/{username}/avatar:
+    get:
+      tags: [用户]
+      summary: 用户头像
+      parameters:
+        - { name: username, in: path, required: true, schema: { type: string }, example: "vanadiry" }
+        - { name: type, in: query, schema: { type: string, enum: [large, medium, small], default: large } }
+      responses:
+        "200":
+          description: 头像图片
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
   /api/v0/fetch/user:
     post:
       tags: [拉取]
-      summary: 拉取用户收藏
-      description: 从 config 读取 username，逐页拉取该用户的动画收藏。返回 task_id。
+      summary: 拉取用户数据
+      description: 拉取用户信息+头像，若 fetch_collections=true 则同时拉取收藏。返回 task_id。
       responses:
         "200":
           description: 后台执行
@@ -871,13 +888,9 @@ components:
         id: { type: integer, example: 485742 }
         username: { type: string, example: "vanadiry" }
         nickname: { type: string }
-        avatar:
-          type: object
-          properties:
-            large: { type: string }
-            medium: { type: string }
-            small: { type: string }
+        url: { type: string }
         sign: { type: string }
+        user_group: { type: integer }
 
     TagItem:
       type: object

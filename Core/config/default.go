@@ -24,6 +24,7 @@ prefer_lang = "original"
 
 [user]
 username = ""
+fetch_collections = false
 `
 
 const TrackerTemplate = `# Tracker: %s
