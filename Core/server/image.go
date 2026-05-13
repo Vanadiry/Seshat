@@ -77,6 +77,12 @@ func dlImageList(list []cache.NameEntry, kind string, imgMap map[int]cache.Image
 }
 
 func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.ImageEntry, imgBase string, mu *sync.Mutex) {
+	mu.Lock()
+	existing, hasAll := imgMap[id]
+	mu.Unlock()
+	if hasAll && existing.Large != "" && existing.Grid != "" && existing.Small != "" {
+		return // already have all three sizes, skip
+	}
 	var entry cache.ImageEntry
 	for _, size := range []string{"large", "grid", "small"} {
 		data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
