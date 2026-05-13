@@ -58,6 +58,7 @@ async function render() {
     var hdr = document.getElementById('subject-header');
     hdr.innerHTML = '<div class="max-w-[1200px] mx-auto px-6 h-12 py-0 flex items-center gap-3">' +
       '<a href="/" class="w-7 h-7 rounded-full border border-[rgba(255,255,255,.2)] flex items-center justify-center text-sub hover:text-white hover:border-[rgba(255,255,255,.4)] shrink-0 no-underline text-xs" title="返回">←</a>' +
+      (isRemote('/v0/subjects/'+SID) ? globeIcon('w-6 h-6') : '') +
       '<span class="text-xl font-bold truncate">'+primaryName(s.name, s.name_cn)+'</span>' +
       (function(){var sub=subName(s.name, s.name_cn); return sub ? '<span class="text-sm text-sub truncate hidden sm:inline">'+sub+'</span>' : ''})() +
       (s.platform ? '<span class="text-sub text-xs shrink-0">｜</span><span class="text-xs text-sub shrink-0">'+s.platform+'</span>' : '') +
@@ -209,7 +210,7 @@ async function overview(s, infoItems) {
 
   // ── 左栏：海报 + infobox ──
   html += '<div class="w-full md:w-[260px] shrink-0">';
-  html += '<img src="'+img('subject',SID,'large')+'" onerror="this.remove()" class="w-full rounded-xl">';
+  html += '<img src="'+img('subject',SID,'large')+'" '+imgOnError('subject',SID,'large')+' class="w-full rounded-xl">';
   if (infoHtml) html += '<div class="mt-3 flex flex-col gap-0.5">'+infoHtml+'</div>';
   html += '</div>';
 
@@ -219,7 +220,7 @@ async function overview(s, infoItems) {
   // ── 右上栏：左（剧集 + 简介 + 标签）| 右（评分）──
   html += '<div class="flex flex-col md:flex-row gap-5">';
   html += '<div class="flex-1 min-w-0">';
-  if (epGrid) html += '<div class="mb-4"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">剧集</span><span class="text-xs text-sub">('+eps.length+')</span></div>'+epGrid+'</div>';
+  if (epGrid) html += '<div class="mb-4"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">剧集</span>'+(isRemote('/v0/episodes?subject_id='+SID)?globeIcon('w-4 h-4'):'')+'<span class="text-xs text-sub">('+eps.length+')</span></div>'+epGrid+'</div>';
   html += '<div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">简介</span></div>';
   html += '<p class="text-[14px] leading-relaxed text-sub mb-4">'+(s.summary||'暂无简介')+'</p>';
   if (tagsHtml) html += '<div class="mb-2"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">标签</span></div>'+tagsHtml+'</div>';
@@ -241,7 +242,7 @@ async function overview(s, infoItems) {
 
   // ── 右下栏：主要角色 + 关联条目 ──
   if (mainChars.length) {
-    html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">主要角色</span><a href="javascript:switchTab(\'chars\')" class="text-[#FE8A95] text-xs ml-auto no-underline">更多角色 &raquo;</a></div>';
+    html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">主要角色</span>'+(isRemote('/v0/subjects/'+SID+'/characters')?globeIcon('w-4 h-4'):'')+'<a href="javascript:switchTab(\'chars\')" class="text-[#FE8A95] text-xs ml-auto no-underline">更多角色 &raquo;</a></div>';
     html += '<div class="flex gap-3 overflow-x-auto pb-2 thin-scroll" style="padding-top:4px">';
     for (var i=0; i<mainChars.length; i++) {
       var c = mainChars[i];
@@ -249,7 +250,7 @@ async function overview(s, infoItems) {
       html += '<div onclick="location.href=\'/character.html?id='+c.id+'\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">'+
         // Image with floating badge
         '<div class="relative rounded-lg overflow-hidden bg-[#202028]" style="aspect-ratio:1/1.414">'+
-        '<img src="'+img('character',c.id,'small')+'" onerror="this.remove()" class="w-full h-full object-cover">'+
+        '<img src="'+img('character',c.id,'small')+'" '+imgOnError('character',c.id,'small')+' class="w-full h-full object-cover">'+
         '<span class="absolute top-1 right-1 bg-black/60 text-white px-1.5 py-0.5 rounded text-[10px] font-semibold">'+c.relation+'</span>'+
         '</div>'+
         // Name + CV
@@ -277,7 +278,7 @@ async function overview(s, infoItems) {
       var ra = a.relation||'', rb = b.relation||'';
       if (ra < rb) return -1; if (ra > rb) return 1; return 0;
     });
-    html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">关联条目</span></div><div class="flex items-start gap-3 overflow-x-auto pb-2 thin-scroll" style="padding-top:4px">';
+    html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">关联条目</span>'+(isRemote('/v0/subjects/'+SID+'/subjects')?globeIcon('w-4 h-4'):'')+'</div><div class="flex items-start gap-3 overflow-x-auto pb-2 thin-scroll" style="padding-top:4px">';
     var relLastRel = '';
     for (var i=0; i<rels.length; i++) {
       var r = rels[i];
@@ -289,7 +290,7 @@ async function overview(s, infoItems) {
       html += '<div onclick="location.href=\'/subject.html?id='+r.id+'\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">'+
         // Image with floating badge
         '<div class="relative rounded-lg overflow-hidden bg-[#202028] aspect-square">'+
-        '<img src="'+img('subject',r.id,'small')+'" onerror="this.remove()" class="w-full h-full object-cover">'+
+        '<img src="'+img('subject',r.id,'small')+'" '+imgOnError('subject',r.id,'small')+' class="w-full h-full object-cover">'+
         (r.relation ? '<span class="absolute top-1 right-1 bg-black/60 text-white px-1.5 py-0.5 rounded text-[10px] font-semibold">'+r.relation+'</span>' : '')+
         '</div>'+
         // Title
@@ -382,7 +383,7 @@ async function characters() {
         for (var j=0; j<c.actors.length; j++) {
           var a = c.actors[j];
           actorsHtml += '<div class="flex items-center gap-2 cursor-pointer hover:opacity-80 shrink-0" onclick="event.stopPropagation();location.href=\'/person.html?id='+a.id+'\'">'+
-            '<img src="'+img('person',a.id,'grid')+'" onerror="this.remove()" class="w-8 h-8 rounded-lg object-cover bg-[#202028] shrink-0">'+
+            '<img src="'+img('person',a.id,'grid')+'" '+imgOnError('person',a.id,'grid')+' class="w-8 h-8 rounded-lg object-cover bg-[#202028] shrink-0">'+
             '<div class="shrink-0"><div class="text-[13px] font-semibold hover:text-[#FE8A95]">'+a.name+'</div><div class="text-[11px] text-sub">CV</div></div></div>';
         }
         actorsHtml += '</div>';
@@ -398,7 +399,7 @@ async function characters() {
       }
       cards.push('<div class="border-t border-[rgba(255,255,255,.06)]" style="height:128px">'+
         '<div class="flex items-center gap-3 h-full">'+
-        '<img src="'+img('character',c.id,'small')+'" onerror="this.remove()" class="shrink-0 rounded object-cover bg-[#202028] cursor-pointer" style="width:80px;aspect-ratio:1/1.414" onclick="location.href=\'/character.html?id='+c.id+'\'">'+
+        '<img src="'+img('character',c.id,'small')+'" '+imgOnError('character',c.id,'small')+' class="shrink-0 rounded object-cover bg-[#202028] cursor-pointer" style="width:80px;aspect-ratio:1/1.414" onclick="location.href=\'/character.html?id='+c.id+'\'">'+
         '<div class="flex-1 min-w-0 py-2 ml-1">'+
         '<div class="font-semibold text-[14px] cursor-pointer hover:text-[#FE8A95] inline-block truncate" onclick="location.href=\'/character.html?id='+c.id+'\'">'+c.name+'</div>'+
         '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5"><span class="bg-[#FE8A95] text-white px-1.5 py-px rounded text-[11px] font-semibold">'+c.relation+'</span>'+infoExtra+'</div>'+

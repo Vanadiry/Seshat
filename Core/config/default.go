@@ -15,9 +15,11 @@ base_url = "https://api.bgm.tv"
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
 
 # backend_url 置空则前端请求本地 /api/v0；设为 https://api.bgm.tv 则前端直连官方
+# fallback_url: 本地 404 时回退请求此地址，置空则不启用回退
 # prefer_lang: "original" 原文优先, "chinese" 中文优先
 [frontend]
 backend_url = ""
+fallback_url = ""
 prefer_lang = "original"
 
 [user]

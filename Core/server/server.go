@@ -59,7 +59,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /search.html", serveFile(embedFS, "web/search.html", "text/html"))
 	mux.HandleFunc("GET /assets/app.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
-		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\n", cfg.Frontend.BackendURL, cfg.Frontend.PreferLang, cfg.User.Username)
+		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.FALLBACK_URL=%q;\n", cfg.Frontend.BackendURL, cfg.Frontend.PreferLang, cfg.User.Username, cfg.Frontend.FallbackURL)
 		data, _ := fs.ReadFile(embedFS, "web/assets/app.js")
 		w.Write(data)
 	})
@@ -72,6 +72,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		w.Header().Set("Content-Type", "application/javascript")
 		http.ServeFileFS(w, r, embedFS, "web/assets/scalar-api-reference.js")
 	})
+		mux.HandleFunc("GET /assets/global.svg", serveFile(embedFS, "web/assets/global.svg", "image/svg+xml"))
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)

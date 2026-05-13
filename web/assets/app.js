@@ -53,8 +53,16 @@ var MSG = {
   epTypes: {0:'本篇',1:'SP',2:'OP',3:'ED',4:'预告',5:'MAD',6:'其他'},
 };
 
+var _remoteURLs = {};
+function isRemote(url) { return !!_remoteURLs[url]; }
+function markRemote(url) { _remoteURLs[url] = true; }
+
 async function api(url) {
-  const r = await fetch(API + url);
+  var r = await fetch(API + url);
+  if (!r.ok && window.FALLBACK_URL) {
+    var fr = await fetch(window.FALLBACK_URL + url);
+    if (fr.ok) { markRemote(url); return fr.json(); }
+  }
   if (!r.ok) return null;
   return r.json();
 }
@@ -62,7 +70,42 @@ async function api(url) {
 function apiLocal(url) {
   return fetch('/api' + url).then(function(r){ return r.ok ? r.json() : null; });
 }
-function img(kind, id, size) { return API + '/v0/' + kind + 's/' + id + '/image?type=' + (size||'grid'); }
+function img(kind, id, size) {
+  return API + '/v0/' + kind + 's/' + id + '/image?type=' + (size||'grid');
+}
+// imgOnError returns the onload + onerror attributes for <img> tags with fallback support.
+// onload detects the 150x150 placeholder and retries via FALLBACK_URL.
+// onerror retries via FALLBACK_URL on network error, then falls back to /images/no-image.png.
+// When fallback is triggered, addRemoteGlobe() wraps the image and adds a globe overlay.
+function imgOnError(kind, id, size) {
+  if (!window.FALLBACK_URL) return 'onerror="this.remove()"';
+  var fb = window.FALLBACK_URL + '/v0/' + kind + 's/' + id + '/image?type=' + (size||'grid');
+  return 'onload="if(!this._c){this._c=1;if(!this._r&&this.naturalWidth===150&&this.naturalHeight===150){this.src=\''+fb+'\';this._r=1;addRemoteGlobe(this);return;}}if(this._r&&!this._g){addRemoteGlobe(this);}" onerror="if(!this._r){this._r=1;this.src=\''+fb+'\';addRemoteGlobe(this);}else{this.src=\'/images/no-image.png\';}"';
+}
+
+// ── Remote globe marker helpers ──
+// globeIcon returns an <img> tag for the globe marker. Use in headers and section titles.
+function globeIcon(cls) {
+  return '<img src="/assets/global.svg" class="'+(cls||'w-5 h-5')+' shrink-0" title="此数据来自远程">';
+}
+// addRemoteGlobe wraps a remote-fallback image and adds a globe overlay at top-left corner.
+function addRemoteGlobe(el) {
+  if (el._g) return;
+  el._g = 1;
+  var wrap = document.createElement('span');
+  var s = 'position:relative;display:inline-block;line-height:0;vertical-align:top;';
+  if (el.classList.contains('w-full')) s += 'width:100%;';
+  if (el.style.width) s += 'width:' + el.style.width + ';';
+  if (el.style.height) s += 'height:' + el.style.height + ';';
+  wrap.style.cssText = s;
+  el.parentNode.insertBefore(wrap, el);
+  wrap.appendChild(el);
+  var globe = document.createElement('img');
+  globe.src = '/assets/global.svg';
+  globe.style.cssText = 'position:absolute;top:4px;left:4px;z-index:10;width:20px;height:20px;pointer-events:none;';
+  globe.title = '图片来自远程';
+  wrap.appendChild(globe);
+}
 
 // ── Person name → ID lookup for infobox links ──
 var _personMap = null;

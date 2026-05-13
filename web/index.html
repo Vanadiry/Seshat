@@ -25,7 +25,7 @@ function onFetchDone() { load(); }
 // ── 卡片渲染：海报 + 标题 + 评分/平台/年份 ──
 function renderItem(s) {
   return '<div onclick="location.href=\'/subject.html?id='+s.id+'\'" class="bg-[#2a2a2a] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">'+
-    '<img src="'+img('subject',s.id,'small')+'" loading="lazy" onerror="this.remove()" class="w-full style="aspect-ratio:1/1.414" object-cover bg-[#202028]">'+
+    '<img src="'+img('subject',s.id,'small')+' loading="lazy" '+imgOnError('subject',s.id,'small')+' class="w-full object-cover bg-[#202028]" style="aspect-ratio:1/1.414">'+
     '<div class="p-2.5"><div class="text-sm font-semibold truncate">'+primaryName(s.name, s.name_cn)+'</div>'+
     (function(){var sub=subName(s.name, s.name_cn); return sub ? '<div class="text-xs text-sub truncate mt-0.5">'+sub+'</div>' : ''})()+
     '<div class="text-xs text-sub mt-1 flex gap-1.5 items-center truncate">'+
