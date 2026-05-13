@@ -11,12 +11,14 @@ import (
 )
 
 type Progress struct {
-	ID       string
-	Channel  chan string
-	Total    int
-	Done     int
-	started  time.Time
-	mu       sync.Mutex
+	ID      string
+	Channel chan string
+	Total   int
+	Done    int
+	Task    string `json:"task"` // e.g. "fetch", "rebuild"
+	Label   string `json:"label"` // e.g. "拉取动画 #51", "刷新全部"
+	started time.Time
+	mu      sync.Mutex
 }
 
 var (
@@ -24,20 +26,35 @@ var (
 	progressMu  sync.Mutex
 )
 
-func newProgress(total int) *Progress {
+// taskLocked returns true if any task is currently active (not yet completed).
+func taskLocked() bool {
+	progressMu.Lock()
+	defer progressMu.Unlock()
+	for _, p := range progressMap {
+		select {
+		case <-p.Channel:
+		default:
+			return true // channel still open = task still running
+		}
+	}
+	return false
+}
+
+func newProgress(total int, task, label string) *Progress {
 	b := make([]byte, 4)
 	rand.Read(b)
 	p := &Progress{
 		ID:      hex.EncodeToString(b),
 		Channel: make(chan string, 64),
 		Total:   total,
+		Task:    task,
+		Label:   label,
 		started: time.Now(),
 	}
 	progressMu.Lock()
 	progressMap[p.ID] = p
 	progressMu.Unlock()
-	// Send initial event immediately so SSE connects without waiting
-	startMsg, _ := json.Marshal(map[string]any{"step":"start","done":0,"total":total,"speed":"0.0/s","status":"connecting"})
+	startMsg, _ := json.Marshal(map[string]any{"step":"start","done":0,"total":total,"task":task,"label":label})
 	p.Channel <- string(startMsg)
 	return p
 }
@@ -85,14 +102,19 @@ func getProgress(id string) *Progress {
 	return progressMap[id]
 }
 
-func activeTasks() []string {
+func activeTasks() []map[string]string {
 	progressMu.Lock()
 	defer progressMu.Unlock()
-	var ids []string
-	for id := range progressMap {
-		ids = append(ids, id)
+	var tasks []map[string]string
+	for _, p := range progressMap {
+		select {
+		case <-p.Channel:
+			continue // closed channel = done, skip
+		default:
+		}
+		tasks = append(tasks, map[string]string{"id": p.ID, "task": p.Task, "label": p.Label})
 	}
-	return ids
+	return tasks
 }
 
 func handleActiveTasks(w http.ResponseWriter, r *http.Request) {
