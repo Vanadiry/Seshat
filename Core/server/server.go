@@ -59,7 +59,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /search.html", serveFile(embedFS, "web/search.html", "text/html"))
 	mux.HandleFunc("GET /assets/app.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
-		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\n", cfg.Frontend.BackendURL, cfg.Frontend.PreferLang)
+		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\n", cfg.Frontend.BackendURL, cfg.Frontend.PreferLang, cfg.User.Username)
 		data, _ := fs.ReadFile(embedFS, "web/assets/app.js")
 		w.Write(data)
 	})

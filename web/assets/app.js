@@ -317,7 +317,8 @@ function initDialog() {
     });
   });
   document.getElementById('btn-user').addEventListener('click', function() {
-    confirmAction(MSG.confirmUserFetch, doUserFetch);
+    if (!window.USERNAME) { showError('未在配置文件中设置用户名（[user] username），无法拉取用户收藏。'); return; }
+    confirmAction('将从上游拉取用户 '+window.USERNAME+' 的收藏列表并存入 Tracker。完成后请运行「增量更新」来缓存动画数据。', doUserFetch);
   });
   document.getElementById('btn-update').addEventListener('click', function() {
     confirmAction(MSG.confirmUpdate, doFetchUpdate);
