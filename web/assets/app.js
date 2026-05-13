@@ -355,14 +355,27 @@ document.addEventListener('DOMContentLoaded', () => {
           <a href="/character-list.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/character-list.html')}">角色</a>
           <a href="/person-list.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/person-list.html')}">人物</a>
           <a href="/tags.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/tags.html')}">标签</a>
-          <a href="/doc/api" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/doc/api')}">API</a>
         </nav>
         <div class="flex-1"></div>
         ${warnText ? '<span class="absolute left-1/2 -translate-x-1/2 text-[#FFCA28] text-sm font-bold pointer-events-none">'+warnText+'</span>' : ''}
         <a href="/search.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/search.html')}">搜索</a>
         <button id="btn-fetch" class="px-4 py-1.5 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">+ 拉取</button>
+        <div class="relative">
+          <img id="user-avatar" src="" class="w-8 h-8 rounded-lg object-cover bg-[#202028] cursor-pointer shrink-0" onclick="toggleUserMenu(event)" style="display:none">
+          <div id="user-placeholder" class="w-8 h-8 rounded-lg cursor-pointer shrink-0" onclick="toggleUserMenu(event)" style="background:linear-gradient(135deg,#ff6b6b,#feca57,#48dbfb,#ff9ff3,#54a0ff);background-size:300% 300%;animation:rainbow 3s ease infinite"></div>
+          <div id="user-dropdown" class="hidden absolute right-0 top-full mt-2 bg-[#1c1c22] border border-[rgba(255,255,255,.15)] rounded-xl shadow-2xl py-2 w-[180px] z-[300] overflow-hidden">
+            <div id="user-dropdown-name" class="px-4 pt-1 pb-2 text-sm font-bold text-center"></div>
+            <div class="border-t border-[rgba(255,255,255,.06)] my-1"></div>
+            <a href="/doc/api" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-[#30303b] hover:text-white">API 文档</a>
+            <div class="border-t border-[rgba(255,255,255,.06)] my-1"></div>
+            <a href="https://github.com/Vanadiry/Seshat" target="_blank" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-[#30303b] hover:text-white">项目 GitHub</a>
+          </div>
+        </div>
       </div>
-    </div>`;
+    </div>
+    <style>
+      @keyframes rainbow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    </style>`;
 
   document.getElementById('btn-fetch').addEventListener('click', openFetch);
 
@@ -374,6 +387,29 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+
+  // Load user avatar
+  if (window.USERNAME) {
+    api('/v0/users/' + window.USERNAME).then(function(u) {
+      if (u && u.id) {
+        document.getElementById('user-dropdown-name').textContent = u.nickname || u.username;
+        var av = document.getElementById('user-avatar');
+        av.onerror = function() { av.style.display = 'none'; document.getElementById('user-placeholder').style.display = ''; };
+        av.src = API + '/v0/users/' + window.USERNAME + '/avatar?type=large';
+        av.style.display = '';
+        document.getElementById('user-placeholder').style.display = 'none';
+      }
+    });
+  }
+});
+
+function toggleUserMenu(e) {
+  e.stopPropagation();
+  var dd = document.getElementById('user-dropdown');
+  dd.classList.toggle('hidden');
+}
+document.addEventListener('click', function() {
+  document.getElementById('user-dropdown').classList.add('hidden');
 });
 
 // ── 拉取弹窗：输入行 + 操作按钮 + 危险区 + 二次确认 ──
