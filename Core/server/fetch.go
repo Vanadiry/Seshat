@@ -214,9 +214,27 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		}
 	}, p, "persons", maxConcurrency)
 
-	// Episodes
-	if data, err := bg.GetRaw(fmt.Sprintf("v0/episodes?subject_id=%d&limit=200", sid)); err == nil {
-		cache.Put(dd, fmt.Sprintf("subjects/%d/episodes.json", sid), cache.StripImages(data))
+	// Episodes — paginate with limit=100
+	{
+		var allEps []json.RawMessage
+		offset := 0
+		for {
+			data, err := bg.GetRaw(fmt.Sprintf("v0/episodes?subject_id=%d&type=0&limit=100&offset=%d", sid, offset))
+			if err != nil { break }
+			var page struct {
+				Data  []json.RawMessage `json:"data"`
+				Total int               `json:"total"`
+			}
+			if json.Unmarshal(data, &page) == nil && len(page.Data) > 0 {
+				allEps = append(allEps, page.Data...)
+				if len(allEps) >= page.Total { break }
+				offset += 100
+			} else { break }
+		}
+		if len(allEps) > 0 {
+			result, _ := json.Marshal(allEps)
+			cache.Put(dd, fmt.Sprintf("subjects/%d/episodes.json", sid), cache.StripImages(result))
+		}
 	}
 
 	// Relations

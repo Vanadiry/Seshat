@@ -100,6 +100,14 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(data)
 	})
+	mux.HandleFunc("GET /api/v0/episodes", func(w http.ResponseWriter, r *http.Request) {
+		sid := r.URL.Query().Get("subject_id")
+		if sid == "" { http.Error(w, `{"error":"subject_id required"}`, 400); return }
+		data, err := os.ReadFile(filepath.Join(cache.Dir(dd), "subjects", sid, "episodes.json"))
+		if err != nil { writeJSON(w, []any{}); return }
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+	})
 	mux.HandleFunc("GET /api/v0/", handleCacheReader(dd))
 
 	// ── Fetch ──

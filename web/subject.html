@@ -74,7 +74,7 @@ async function render() {
 }
 
 async function overview(s, infoItems) {
-  var epsRaw = await api('/v0/subjects/'+SID+'/episodes');
+  var epsRaw = await api('/v0/episodes?subject_id='+SID);
   var charsRaw = await api('/v0/subjects/'+SID+'/characters');
   var relsRaw = await api('/v0/subjects/'+SID+'/relations');
   var eps = Array.isArray(epsRaw) ? epsRaw : (epsRaw&&epsRaw.data ? epsRaw.data : []);
@@ -306,7 +306,7 @@ async function overview(s, infoItems) {
 }
 
 async function episodes() {
-  var epsRaw = await api('/v0/subjects/'+SID+'/episodes');
+  var epsRaw = await api('/v0/episodes?subject_id='+SID);
   var eps = Array.isArray(epsRaw) ? epsRaw : (epsRaw&&epsRaw.data ? epsRaw.data : []);
   var types = MSG.epTypes;
 
