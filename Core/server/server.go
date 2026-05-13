@@ -128,7 +128,6 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("POST /api/v0/fetch/user", handleFetchUser(cfg, bg, dd, id))
 	mux.HandleFunc("POST /api/v0/fetch/subject", handleFetchSubject(cfg, bg, dd, id))
 	mux.HandleFunc("POST /api/v0/fetch/update", handleFetchUpdate(cfg, bg, dd, id))
-	mux.HandleFunc("POST /api/v0/fetch/images", handleFetchImages(cfg, bg, dd))
 	mux.HandleFunc("POST /api/v0/fetch/index", handleFetchIndex(dd))
 
 	// ── Tracker ──

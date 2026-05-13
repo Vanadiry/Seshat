@@ -498,22 +498,6 @@ paths:
                   status: { type: string, example: "fetching" }
                   count: { type: integer, example: 3 }
                   task_id: { type: string, example: "ae8687f0" }
-  /api/v0/fetch/images:
-    post:
-      tags: [拉取]
-      summary: 重建图片缓存
-      description: 删除本地 images 目录，根据现有 list 文件重新下载所有图片。
-      responses:
-        "200":
-          description: 后台执行
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: string, example: "downloading" }
-                  count: { type: integer, example: 150 }
-                  task_id: { type: string, example: "ae8687f0" }
   /api/v0/fetch/index:
     post:
       tags: [拉取]

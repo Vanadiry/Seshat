@@ -17,7 +17,6 @@ var MSG = {
   btnRefreshAll: '刷新全部',
   btnDangerZone: '危险区',
   btnRebuildIndex: '重建索引',
-  btnRebuildImages: '重建图像',
   btnRebuildAll: '重建全部',
   btnExecute: '执行',
   btnCancel: '取消',
@@ -32,7 +31,6 @@ var MSG = {
   confirmUpdate: '对比 Tracker 与本地缓存，仅拉取新增的动画（不会删除已有数据）',
   confirmRefreshAll: '将从上游重新拉取全部 Tracker 数据，覆盖已有内容（本地多余数据不会删除）',
   confirmRebuildIndex: '扫描本地已缓存的 JSON 文件，重建所有索引（不会请求上游）',
-  confirmRebuildImages: '将删除并重新下载全部图像（根据现有 list 文件）',
   confirmRebuildAll: '⚠ 这将删除本地全部缓存文件，从上游完整重建。此操作不可逆。',
 
   // Validation
@@ -361,22 +359,20 @@ function initDialog() {
     '<input id="tracker-input" placeholder="Tracker 名称" pattern="[a-zA-Z0-9_\\-]*" class="flex-1 px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-[#151518] text-sm">'+
     '<button id="btn-tracker-fetch" class="w-9 h-9 rounded-lg bg-[#FE8A95] text-white font-bold cursor-pointer border-0 hover:opacity-90 flex items-center justify-center" title="拉取或创建">&check;</button></div>'+
 
-    '<div class="border-t border-[rgba(255,255,255,.06)] mb-4"></div>'+
+    
 
     // Action buttons
-    '<div class="grid grid-cols-2 gap-2 mb-2">'+
+    '<div class="grid grid-cols-3 gap-2 mb-2">'+
     '<button id="btn-user" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">拉取用户收藏</button>'+
     '<button id="btn-update" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">增量更新</button>'+
+    '<button id="btn-all" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">刷新全部</button>'+
     '</div>'+
-    '<button id="btn-all" class="w-full px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white mb-2">刷新全部</button>'+
 
     // Danger zone
-    '<div class="border-t border-[rgba(255,255,255,.06)] mb-3"></div>'+
     '<button id="btn-danger-toggle" class="w-full px-3 py-2 rounded-lg border border-[rgba(255,0,0,.3)] bg-transparent text-[#dc2626] text-sm cursor-pointer hover:bg-[#3a1a1a]">危险区</button>'+
     '<div id="danger-zone" class="hidden mt-2 grid grid-cols-2 gap-2">'+
     '<button id="btn-index" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">重建索引</button>'+
-    '<button id="btn-images" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">重建图像</button>'+
-    '<button id="btn-deep" class="px-3 py-2 rounded-lg bg-[#dc2626] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 col-span-2">重建全部</button>'+
+    '<button id="btn-deep" class="px-3 py-2 rounded-lg bg-[#dc2626] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">重建全部</button>'+
     '</div>'+
 
     // Confirmation overlay
@@ -438,9 +434,6 @@ function initDialog() {
   });
   document.getElementById('btn-index').addEventListener('click', function() {
     confirmAction(MSG.confirmRebuildIndex, doFetchIndex);
-  });
-  document.getElementById('btn-images').addEventListener('click', function() {
-    confirmAction(MSG.confirmRebuildImages, doFetchImages);
   });
   document.getElementById('btn-deep').addEventListener('click', function() {
     confirmAction(MSG.confirmRebuildAll, doDeepRebuild);
@@ -530,14 +523,6 @@ async function doDeepRebuild() {
 async function doFetchUpdate() {
   closeFetch();
   var res = await fetch(API + '/v0/fetch/update', {method:'POST'});
-  var d = await res.json();
-  if (d.error) { showError(d.error); return; }
-  if (d.task_id) startProgress(d.task_id);
-}
-
-async function doFetchImages() {
-  closeFetch();
-  var res = await fetch(API + '/v0/fetch/images', {method:'POST'});
   var d = await res.json();
   if (d.error) { showError(d.error); return; }
   if (d.task_id) startProgress(d.task_id);

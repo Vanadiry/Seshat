@@ -492,29 +492,6 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 	}
 }
 
-func handleFetchImages(cfg *config.Config, bg *bangumi.Client, dd string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		imgDir := filepath.Join(dd, "images")
-		os.RemoveAll(imgDir)
-		os.MkdirAll(imgDir, 0o755)
-		if len(noImageData) > 0 && noImagePath != "" { os.WriteFile(noImagePath, noImageData, 0o644) }
-		for _, name := range []string{"subjects_image.json", "characters_image.json", "persons_image.json"} {
-			os.WriteFile(cache.IndexFile(dd, name), []byte("{}"), 0o644)
-		}
-		total := len(loadNameList(cache.IndexFile(dd, "subjects.json"))) +
-			len(loadNameList(cache.IndexFile(dd, "characters.json"))) +
-			len(loadNameList(cache.IndexFile(dd, "persons.json")))
-		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
-		p := newProgress(total, "rebuild_images", "重建图像")
-		go func() {
-			downloadImages(dd, bg, p)
-			p.Send("complete", total, total, "")
-			p.Close()
-		}()
-		writeJSON(w, map[string]any{"status": "downloading", "count": total, "task_id": p.ID})
-	}
-}
-
 func handleFetchIndex(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
