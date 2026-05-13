@@ -74,7 +74,7 @@ func dlImageList(list []cache.NameEntry, kind string, imgMap map[int]cache.Image
 
 func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.ImageEntry, imgBase string, mu *sync.Mutex) {
 	var entry cache.ImageEntry
-	for _, size := range []string{"large", "grid"} {
+	for _, size := range []string{"large", "grid", "small"} {
 		data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
 		if err != nil {
 			continue
@@ -85,11 +85,13 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 		os.WriteFile(fullPath, data, 0o644)
 		if size == "large" {
 			entry.Large = relPath
-		} else {
+		} else if size == "grid" {
 			entry.Grid = relPath
+		} else if size == "small" {
+			entry.Small = relPath
 		}
 	}
-	if entry.Large != "" || entry.Grid != "" {
+	if entry.Large != "" || entry.Grid != "" || entry.Small != "" {
 		mu.Lock()
 		imgMap[id] = entry
 		mu.Unlock()
@@ -124,6 +126,8 @@ func serveImage(w http.ResponseWriter, r *http.Request, dd, kind, size string) {
 			path := entry.Large
 			if size == "grid" {
 				path = entry.Grid
+			} else if size == "small" {
+				path = entry.Small
 			}
 			if path != "" {
 				fullPath := filepath.Join(dd, "images", path)

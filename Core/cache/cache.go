@@ -108,6 +108,7 @@ type NameEntry struct {
 type ImageEntry struct {
 	Large string `json:"large"`
 	Grid  string `json:"grid"`
+	Small string `json:"small"`
 }
 
 func localImagePath(kind string, id int) string {
