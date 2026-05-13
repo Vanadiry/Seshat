@@ -128,6 +128,45 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/RelatedCharacter"
+  /api/v0/characters/{id}/subjects:
+    get:
+      tags: [角色]
+      summary: 列出角色出演的动画
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 动画数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    staff: { type: string, example: "主角" }
+                    name: { type: string, example: "CLANNAD" }
+                    name_cn: { type: string }
+                    id: { type: integer }
+  /api/v0/characters/{id}/persons:
+    get:
+      tags: [角色]
+      summary: 列出角色关联的人物（声优）
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 人物数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    staff: { type: string }
+                    name: { type: string }
+                    id: { type: integer }
+                    subject_id: { type: integer }
+                    subject_name: { type: string }
 
   # ── 制作成员 ──
   /api/v0/persons/list:
@@ -170,6 +209,45 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/RelatedPerson"
+  /api/v0/persons/{id}/subjects:
+    get:
+      tags: [制作成员]
+      summary: 列出人物参与的动画
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 动画数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    staff: { type: string, example: "导演" }
+                    name: { type: string, example: "CLANNAD" }
+                    name_cn: { type: string }
+                    id: { type: integer }
+  /api/v0/persons/{id}/characters:
+    get:
+      tags: [制作成员]
+      summary: 列出人物关联的角色
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 角色数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    staff: { type: string }
+                    name: { type: string }
+                    id: { type: integer }
+                    subject_id: { type: integer }
+                    subject_name: { type: string }
 
   # ── 标签 ──
   /api/v0/tags:

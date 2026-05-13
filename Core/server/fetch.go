@@ -207,7 +207,51 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		}, p, "persons", maxConcurrency)
 	}()
 
-	// Episodes — paginate all types in parallel
+	// Character subjects
+	wg3.Add(1)
+	go func() {
+		defer wg3.Done()
+		fetchConcurrent(charIDs, func(c charRef) {
+			data, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d/subjects", c.ID))
+			if err != nil { return }
+			cache.Put(dd, cache.Key("characters", c.ID, "subjects.json"), cache.StripImages(data))
+		}, nil, "", maxConcurrency)
+	}()
+
+	// Character persons
+	wg3.Add(1)
+	go func() {
+		defer wg3.Done()
+		fetchConcurrent(charIDs, func(c charRef) {
+			data, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d/persons", c.ID))
+			if err != nil { return }
+			cache.Put(dd, cache.Key("characters", c.ID, "persons.json"), cache.StripImages(data))
+		}, nil, "", maxConcurrency)
+	}()
+
+	// Person subjects
+	wg3.Add(1)
+	go func() {
+		defer wg3.Done()
+		fetchConcurrent(personIDs, func(pp personRef) {
+			data, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d/subjects", pp.ID))
+			if err != nil { return }
+			cache.Put(dd, cache.Key("persons", pp.ID, "subjects.json"), cache.StripImages(data))
+		}, nil, "", maxConcurrency)
+	}()
+
+	// Person characters
+	wg3.Add(1)
+	go func() {
+		defer wg3.Done()
+		fetchConcurrent(personIDs, func(pp personRef) {
+			data, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d/characters", pp.ID))
+			if err != nil { return }
+			cache.Put(dd, cache.Key("persons", pp.ID, "characters.json"), cache.StripImages(data))
+		}, nil, "", maxConcurrency)
+	}()
+
+	// Episodes
 	wg3.Add(1)
 	go func() {
 		defer wg3.Done()
