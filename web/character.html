@@ -80,14 +80,14 @@ function loadAppearances(ID) {
     renderAppearances();
   }).catch(function(err) {
     console.error('loadAppearances failed:', err);
-    document.getElementById('appearances-section').innerHTML = '<div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">出演</span><span class="text-xs text-sub">暂无数据</span></div>';
+    document.getElementById('appearances-section').innerHTML = '';
   });
 }
 
 function renderAppearances() {
   var section = document.getElementById('appearances-section');
   if (!_appearAll.length) {
-    section.innerHTML = '<div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">出演</span><span class="text-xs text-sub">暂无数据</span></div>';
+    section.innerHTML = '';
     return;
   }
   var end = Math.min(_appearShowing + 10, _appearAll.length);

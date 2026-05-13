@@ -23,7 +23,7 @@ var showing = 0;
 // ── 卡片渲染：左侧正方形头像 + 右侧两行（原名/中文名）──
 function renderItem(p) {
   return '<div onclick="location.href=\'/person.html?id='+p.id+'\'" class="flex items-center gap-3 bg-[#2a2a2a] rounded-lg overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:border-[#FE8A95] transition-colors h-[72px]">'+
-    '<img src="'+img('person',p.id,'grid')+' loading="lazy" '+imgOnError('person',p.id,'grid')+' class="w-[72px] h-[72px] object-cover bg-[#202028] shrink-0">'+
+    '<img src="'+img('person',p.id,'grid')+'\" loading=\"lazy\" '+imgOnError('person',p.id,'grid')+' class="w-[72px] h-[72px] object-cover bg-[#202028] shrink-0">'+
     '<div class="flex-1 min-w-0 pr-3 py-1">'+
     '<div class="text-sm font-semibold truncate">'+primaryName(p.name, p.name_cn)+'</div>'+
     (function(){var sub=subName(p.name, p.name_cn); return sub ? '<div class="text-xs text-sub truncate mt-0.5">'+sub+'</div>' : ''})()+
