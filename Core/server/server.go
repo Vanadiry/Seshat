@@ -73,6 +73,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		http.ServeFileFS(w, r, embedFS, "web/assets/scalar-api-reference.js")
 	})
 		mux.HandleFunc("GET /assets/global.svg", serveFile(embedFS, "web/assets/global.svg", "image/svg+xml"))
+		mux.HandleFunc("GET /assets/link.svg", serveFile(embedFS, "web/assets/link.svg", "image/svg+xml"))
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)

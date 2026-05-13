@@ -140,7 +140,7 @@ function linkifyPerson(text) {
 // ── linkifyURL：检测 URL 并转为可点击链接 ──
 function linkifyURL(text) {
   if (!text) return text;
-  return text.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" class="text-[#FE8A95] hover:underline">$1</a>');
+  return text.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" class="text-[#FE8A95] hover:underline"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">$1</a>');
 }
 
 // ── infoboxData：提取侧栏信息（infobox + 顶层字段）──
