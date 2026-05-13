@@ -248,8 +248,8 @@ async function overview(s, infoItems) {
       var actorName = c.actors && c.actors.length ? c.actors[0].name : '';
       html += '<div onclick="location.href=\'/character.html?id='+c.id+'\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">'+
         // Image with floating badge
-        '<div class="relative rounded-lg overflow-hidden bg-[#202028] aspect-square">'+
-        '<img src="'+img('character',c.id,'grid')+'" onerror="this.remove()" class="w-full h-full object-cover">'+
+        '<div class="relative rounded-lg overflow-hidden bg-[#202028]" style="aspect-ratio:1/1.414">'+
+        '<img src="'+img('character',c.id,'small')+'" onerror="this.remove()" class="w-full h-full object-cover">'+
         '<span class="absolute top-1 right-1 bg-black/60 text-white px-1.5 py-0.5 rounded text-[10px] font-semibold">'+c.relation+'</span>'+
         '</div>'+
         // Name + CV
@@ -289,7 +289,7 @@ async function overview(s, infoItems) {
       html += '<div onclick="location.href=\'/subject.html?id='+r.id+'\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">'+
         // Image with floating badge
         '<div class="relative rounded-lg overflow-hidden bg-[#202028] aspect-square">'+
-        '<img src="'+img('subject',r.id,'grid')+'" onerror="this.remove()" class="w-full h-full object-cover">'+
+        '<img src="'+img('subject',r.id,'small')+'" onerror="this.remove()" class="w-full h-full object-cover">'+
         (r.relation ? '<span class="absolute top-1 right-1 bg-black/60 text-white px-1.5 py-0.5 rounded text-[10px] font-semibold">'+r.relation+'</span>' : '')+
         '</div>'+
         // Title
@@ -396,9 +396,9 @@ async function characters() {
           }
         } catch(e) {}
       }
-      cards.push('<div class="border-t border-[rgba(255,255,255,.06)]" style="height:112px">'+
+      cards.push('<div class="border-t border-[rgba(255,255,255,.06)]" style="height:128px">'+
         '<div class="flex items-center gap-3 h-full">'+
-        '<img src="'+img('character',c.id,'grid')+'" onerror="this.remove()" class="shrink-0 rounded object-cover bg-[#202028] cursor-pointer" style="width:68px;aspect-ratio:1/1.414" onclick="location.href=\'/character.html?id='+c.id+'\'">'+
+        '<img src="'+img('character',c.id,'small')+'" onerror="this.remove()" class="shrink-0 rounded object-cover bg-[#202028] cursor-pointer" style="width:80px;aspect-ratio:1/1.414" onclick="location.href=\'/character.html?id='+c.id+'\'">'+
         '<div class="flex-1 min-w-0 py-2 ml-1">'+
         '<div class="font-semibold text-[14px] cursor-pointer hover:text-[#FE8A95] inline-block truncate" onclick="location.href=\'/character.html?id='+c.id+'\'">'+c.name+'</div>'+
         '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5"><span class="bg-[#FE8A95] text-white px-1.5 py-px rounded text-[11px] font-semibold">'+c.relation+'</span>'+infoExtra+'</div>'+
