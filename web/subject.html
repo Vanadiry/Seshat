@@ -76,7 +76,7 @@ async function render() {
 async function overview(s, infoItems) {
   var epsRaw = await api('/v0/episodes?subject_id='+SID);
   var charsRaw = await api('/v0/subjects/'+SID+'/characters');
-  var relsRaw = await api('/v0/subjects/'+SID+'/relations');
+  var relsRaw = await api('/v0/subjects/'+SID+'/subjects');
   var eps = Array.isArray(epsRaw) ? epsRaw : (epsRaw&&epsRaw.data ? epsRaw.data : []);
   var chars = Array.isArray(charsRaw) ? charsRaw : (charsRaw&&charsRaw.data ? charsRaw.data : []);
   var rels = Array.isArray(relsRaw) ? relsRaw : (relsRaw&&relsRaw.data ? relsRaw.data : []);

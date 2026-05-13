@@ -239,7 +239,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 
 	// Relations
 	if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/subjects", sid)); err == nil {
-		cache.Put(dd, fmt.Sprintf("subjects/%d/relations.json", sid), cache.StripImages(data))
+		cache.Put(dd, fmt.Sprintf("subjects/%d/subjects.json", sid), cache.StripImages(data))
 	}
 
 	log.Info("Subject #%d API fetch done", sid)

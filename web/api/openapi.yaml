@@ -72,7 +72,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Episode"
-  /api/v0/subjects/{id}/relations:
+  /api/v0/subjects/{id}/subjects:
     get:
       tags: [动画]
       summary: 列出动画关联的条目
