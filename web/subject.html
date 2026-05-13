@@ -351,51 +351,76 @@ async function characters() {
   charCount = chars.length; updateTabCount('chars', charCount);
   window._chars = chars;
 
+  // Build dynamic filter list from relation fields
+  var relSet = {};
+  for (var i=0; i<chars.length; i++) {
+    var rel = chars[i].relation || '其他';
+    relSet[rel] = (relSet[rel]||0) + 1;
+  }
+  var relKeys = Object.keys(relSet);
+  var curFilter = 'all';
+
+  function filterBar(active) {
+    curFilter = active;
+    var html = '<div class="flex flex-wrap gap-1.5 mb-3">';
+    html += '<span onclick="window.filterChars(\'all\')" class="px-3 py-1 rounded-full text-xs cursor-pointer '+(active==='all'?'bg-[#FE8A95] text-white':'bg-[#252530] text-sub hover:text-white')+'">全部 ('+chars.length+')</span>';
+    for (var k=0; k<relKeys.length; k++) {
+      var rk = relKeys[k];
+      html += '<span onclick="window.filterChars(\''+rk+'\')" class="px-3 py-1 rounded-full text-xs cursor-pointer '+(active===rk?'bg-[#FE8A95] text-white':'bg-[#252530] text-sub hover:text-white')+'">'+rk+' ('+relSet[rk]+')</span>';
+    }
+    html += '</div>';
+    return html;
+  }
+
   function renderCharList(list) {
-    var html = '';
+    var cards = [];
     for (var i=0; i<list.length; i++) {
       var c = list[i];
-      html += '<div class="flex gap-4 items-start bg-[#2a2a2a] border border-[rgba(255,255,255,.08)] rounded-lg p-3">';
-      html += '<img src="'+img('character',c.id,'grid')+'" onerror="this.remove()" class="w-[75px] h-[100px] rounded-lg object-cover bg-[#202028] shrink-0 cursor-pointer" onclick="location.href=\'/character.html?id='+c.id+'\'">';
-      html += '<div class="flex-1 min-w-0">';
-      html += '<div class="font-semibold cursor-pointer hover:text-[#FE8A95] inline-block" onclick="location.href=\'/character.html?id='+c.id+'\'">'+c.name+'</div>';
-      html += '<div class="flex flex-wrap gap-1.5 mt-1 items-center">';
-      html += '<span class="bg-[#FE8A95] text-white px-2 py-0.5 rounded-md text-[12px] font-semibold">'+c.relation+'</span>';
-      if (c.gender) html += '<span class="text-[12px] text-sub">性别:'+c.gender+'</span>';
+      var actorsHtml = '';
+      if (c.actors && c.actors.length) {
+        actorsHtml = '<div class="flex gap-3 overflow-x-auto mt-2 thin-scroll" style="max-width:100%">';
+        for (var j=0; j<c.actors.length; j++) {
+          var a = c.actors[j];
+          actorsHtml += '<div class="flex items-center gap-2 cursor-pointer hover:opacity-80 shrink-0" onclick="event.stopPropagation();location.href=\'/person.html?id='+a.id+'\'">'+
+            '<img src="'+img('person',a.id,'grid')+'" onerror="this.remove()" class="w-8 h-8 rounded-lg object-cover bg-[#202028] shrink-0">'+
+            '<div class="shrink-0"><div class="text-[13px] font-semibold hover:text-[#FE8A95]">'+a.name+'</div><div class="text-[11px] text-sub">CV</div></div></div>';
+        }
+        actorsHtml += '</div>';
+      }
+      var infoExtra = '';
+      if (c.gender) infoExtra += '<span class="text-[12px] text-sub">性别:'+c.gender+'</span> ';
       if (c.infobox) {
-        try {
-          var d = JSON.parse(c.infobox);
+        try { var d = JSON.parse(c.infobox);
           for (var j=0; j<d.length; j++) {
-            if (d[j].key==='生日'||d[j].key==='身高') html += '<span class="text-[12px] text-sub">'+d[j].value+'</span>';
+            if (d[j].key==='生日'||d[j].key==='身高') infoExtra += '<span class="text-[12px] text-sub">'+d[j].value+'</span> ';
           }
         } catch(e) {}
       }
-      html += '</div>';
-      if (c.actors && c.actors.length) {
-        html += '<div class="flex flex-wrap items-center gap-3 mt-2">';
-        for (var j=0; j<c.actors.length; j++) {
-          var a = c.actors[j];
-          html += '<div class="flex items-center gap-1.5 cursor-pointer hover:opacity-80" onclick="event.stopPropagation();location.href=\'/person.html?id='+a.id+'\'">';
-          html += '<img src="'+img('person',a.id,'grid')+'" onerror="this.remove()" class="w-6 h-6 rounded-full object-cover bg-[#202028] shrink-0">';
-          html += '<span class="text-[12px] text-sub">CV:</span><span class="text-[14px] font-semibold hover:text-[#FE8A95]">'+a.name+'</span></div>';
-        }
-        html += '</div>';
-      }
-      html += '</div></div>';
+      cards.push('<div class="border-t border-[rgba(255,255,255,.06)]" style="height:112px">'+
+        '<div class="flex items-center gap-3 h-full">'+
+        '<img src="'+img('character',c.id,'grid')+'" onerror="this.remove()" class="shrink-0 rounded object-cover bg-[#202028] cursor-pointer" style="width:68px;aspect-ratio:1/1.414" onclick="location.href=\'/character.html?id='+c.id+'\'">'+
+        '<div class="flex-1 min-w-0 py-2 ml-1">'+
+        '<div class="font-semibold text-[14px] cursor-pointer hover:text-[#FE8A95] inline-block truncate" onclick="location.href=\'/character.html?id='+c.id+'\'">'+c.name+'</div>'+
+        '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5"><span class="bg-[#FE8A95] text-white px-1.5 py-px rounded text-[11px] font-semibold">'+c.relation+'</span>'+infoExtra+'</div>'+
+        (actorsHtml || '')+
+        '</div></div></div>');
+    }
+    // Paired 2-column layout
+    var html = '';
+    for (var i=0; i<cards.length; i+=2) {
+      html += '<div class="flex gap-4">'+
+        '<div class="flex-1 min-w-0">'+cards[i]+'</div>'+
+        '<div class="flex-1 min-w-0">'+(cards[i+1]||'')+'</div>'+
+        '</div>';
     }
     return html;
   }
 
-  document.getElementById('view').innerHTML = '<div class="flex items-center gap-2 mb-4"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">角色 ('+chars.length+')</span>' +
-    '<span class="text-xs text-sub cursor-pointer hover:text-white ml-2" onclick="window.filterChars(\'all\')">全部</span>' +
-    '<span class="text-xs text-sub cursor-pointer hover:text-white ml-2" onclick="window.filterChars(\'主角\')">主角</span>' +
-    '<span class="text-xs text-sub cursor-pointer hover:text-white ml-2" onclick="window.filterChars(\'配角\')">配角</span>' +
-    '<span class="text-xs text-sub cursor-pointer hover:text-white ml-2" onclick="window.filterChars(\'客串\')">客串</span></div>' +
-    '<div id="char-list" class="flex flex-col gap-1">'+renderCharList(chars)+'</div>';
+  document.getElementById('view').innerHTML = filterBar('all') + '<div id="char-list">'+renderCharList(chars)+'</div>';
 
   window.filterChars = function(rel) {
     var list = rel === 'all' ? window._chars : window._chars.filter(function(c){return c.relation===rel});
-    document.getElementById('char-list').innerHTML = renderCharList(list);
+    document.getElementById('view').innerHTML = filterBar(rel) + '<div id="char-list">'+renderCharList(list)+'</div>';
   };
 }
 
