@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -293,11 +294,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 	log.Info("Fetching collections for %s", username)
 
-	type item struct {
-		SubjectID int `json:"subject_id"`
-		Type      int `json:"type"`
-	}
-	var all []item
+	all := map[string]int{}
 
 	offset := 0
 	for {
@@ -306,7 +303,6 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 			log.Warn("user collections offset %d: %v", offset, err)
 			break
 		}
-		// Parse just the data array
 		var resp struct {
 			Data []struct {
 				SubjectID   int `json:"subject_id"`
@@ -318,16 +314,13 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 		json.Unmarshal(data, &resp)
 		for _, d := range resp.Data {
 			if d.SubjectType == 2 {
-				all = append(all, item{SubjectID: d.SubjectID, Type: d.Type})
+				all[strconv.Itoa(d.SubjectID)] = d.Type
 			}
 		}
-		if offset+50 >= resp.Total {
-			break
-		}
+		if offset+50 >= resp.Total { break }
 		offset += 50
 	}
 
-	// Save to tracker with underscore prefix
 	path := filepath.Join(config.Dir(), "tracker", fmt.Sprintf("_user-%s.json", username))
 	os.MkdirAll(filepath.Dir(path), 0o755)
 	result, _ := json.MarshalIndent(map[string]any{
@@ -431,14 +424,10 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		uname := cfg.User.Username
 		if uname == "" { http.Error(w, `{"error":"username not configured"}`, 400); return }
-		p := newProgress(0)
 		go func() {
 			fetchUserCollections(uname, bg, dd)
-			refreshTrackers(cfg, bg, dd, imgDir, []string{"user"}, p)
-			p.Send("complete", 1, 1, "")
-			p.Close()
 		}()
-		writeJSON(w, map[string]any{"status": "fetching", "username": uname, "task_id": p.ID})
+		writeJSON(w, map[string]any{"status": "fetching", "username": uname, "saved_to_tracker": "_user-" + uname + ".json"})
 	}
 }
 

@@ -7,7 +7,7 @@ var MSG = {
   customBackendWarn: '⚠ 当前为自定义后端，非预期行为。',
 
   // Fetch dialog
-  dialogTitle: '拉取数据',
+  dialogTitle: '从上游拉取数据',
   idLabel: '拉取指定动画的完整数据到本地',
   idPlaceholder: '动画 ID，如 51 或 51,288',
   trackerLabel: '拉取或创建 Tracker',
@@ -28,7 +28,7 @@ var MSG = {
   confirmTrackerFetch: function(name) { return '确认拉取 Tracker ['+name+'] 中的全部动画数据？'; },
   confirmTrackerCreate: function(name) { return '未找到 Tracker ['+name+']。是否创建它？\n创建后请在 Tracker 文件中填写动画 ID，返回此处重新拉取。'; },
   trackerCreated: function(name) { return 'Tracker ['+name+'] 已创建。请在 ~/.vSoft/Seshat/tracker/'+name+'.toml 中填写动画 ID，然后返回此处重新拉取。'; },
-  confirmUserFetch: '将从上游拉取用户收藏列表，存入 Tracker [user] 中（不会覆盖已有 Tracker）',
+  confirmUserFetch: '将从上游拉取用户收藏列表，存入 Tracker 中。完成后请运行「增量更新」来缓存动画数据。',
   confirmUpdate: '对比 Tracker 与本地缓存，仅拉取新增的动画（不会删除已有数据）',
   confirmRefreshAll: '将从上游重新拉取全部 Tracker 数据，覆盖已有内容（本地多余数据不会删除）',
   confirmRebuildIndex: '扫描本地已缓存的 JSON 文件，重建所有索引（不会请求上游）',

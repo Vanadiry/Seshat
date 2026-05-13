@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/vanadiry/seshat/Core/bangumi"
@@ -142,15 +143,14 @@ func loadTrackerIDs(path string) []int {
 		if json.Unmarshal(data, &list) == nil && len(list.Subjects) > 0 {
 			return list.Subjects
 		}
-		var userList struct {
-			Subjects []struct {
-				SubjectID int `json:"subject_id"`
-			} `json:"subjects"`
+		var userMap struct {
+			Subjects map[string]int `json:"subjects"`
 		}
-		if json.Unmarshal(data, &userList) == nil {
+		if json.Unmarshal(data, &userMap) == nil && len(userMap.Subjects) > 0 {
 			var ids []int
-			for _, s := range userList.Subjects {
-				ids = append(ids, s.SubjectID)
+			for k := range userMap.Subjects {
+				id, _ := strconv.Atoi(k)
+				if id > 0 { ids = append(ids, id) }
 			}
 			return ids
 		}
