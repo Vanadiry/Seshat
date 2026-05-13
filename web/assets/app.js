@@ -58,6 +58,10 @@ async function api(url) {
   if (!r.ok) return null;
   return r.json();
 }
+// apiLocal always uses local backend for list/index data
+function apiLocal(url) {
+  return fetch('/api' + url).then(function(r){ return r.ok ? r.json() : null; });
+}
 function img(kind, id, size) { return API + '/v0/' + kind + 's/' + id + '/image?type=' + (size||'grid'); }
 
 // ── Person name → ID lookup for infobox links ──

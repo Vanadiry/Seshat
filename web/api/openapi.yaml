@@ -20,7 +20,7 @@ tags:
 
 paths:
   # ── 动画 ──
-  /api/v0/subjects:
+  /api/v0/subjects/list:
     get:
       tags: [动画]
       summary: 列出已缓存动画列表
@@ -88,7 +88,7 @@ paths:
                   $ref: "#/components/schemas/SubjectRelation"
 
   # ── 角色 ──
-  /api/v0/characters:
+  /api/v0/characters/list:
     get:
       tags: [角色]
       summary: 列出已缓存角色列表
@@ -130,7 +130,7 @@ paths:
                   $ref: "#/components/schemas/RelatedCharacter"
 
   # ── 制作成员 ──
-  /api/v0/persons:
+  /api/v0/persons/list:
     get:
       tags: [制作成员]
       summary: 列出已缓存人物列表
