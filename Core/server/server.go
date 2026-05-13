@@ -98,12 +98,17 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/subjects/list", handleListSubjects(dd))
 	mux.HandleFunc("GET /api/v0/characters/list", handleListCharacters(dd))
 	mux.HandleFunc("GET /api/v0/persons/list", handleListPersons(dd))
-	mux.HandleFunc("GET /api/v0/person-names", func(w http.ResponseWriter, r *http.Request) {
-		data, err := os.ReadFile(cache.IndexFile(dd, "persons_name.json"))
-		if err != nil { writeJSON(w, map[string]int{}); return }
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
-	})
+		nameHandler := func(domain string) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				data, err := os.ReadFile(cache.IndexFile(dd, domain+"_name.json"))
+				if err != nil { writeJSON(w, map[string]int{}); return }
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(data)
+			}
+		}
+		mux.HandleFunc("GET /api/v0/subjects/name", nameHandler("subjects"))
+		mux.HandleFunc("GET /api/v0/characters/name", nameHandler("characters"))
+		mux.HandleFunc("GET /api/v0/persons/name", nameHandler("persons"))
 	mux.HandleFunc("GET /api/v0/episodes", func(w http.ResponseWriter, r *http.Request) {
 		sid := r.URL.Query().Get("subject_id")
 		if sid == "" { http.Error(w, `{"error":"subject_id required"}`, 400); return }

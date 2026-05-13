@@ -64,7 +64,9 @@ func buildIndexes(dd string, p *Progress) {
 	})
 
 	saveJSON(cache.IndexFile(dd, "tags.json"), tags)
-	buildPersonNames(dd)
+	buildNameIndex(dd, "subjects")
+		buildNameIndex(dd, "characters")
+		buildPersonNames(dd)
 
 	log.Info("Indexes built: %d tags", len(tags))
 }
@@ -111,7 +113,9 @@ func rebuildTags(dd string) {
 	})
 	result, _ := json.Marshal(tags)
 	os.WriteFile(tagsPath(dd), result, 0o644)
-	buildPersonNames(dd)
+	buildNameIndex(dd, "subjects")
+		buildNameIndex(dd, "characters")
+		buildPersonNames(dd)
 	log.Info("Tags index rebuilt: %d tags", len(tags))
 }
 
@@ -126,6 +130,19 @@ func buildPersonNames(dd string) {
 	result, _ := json.Marshal(m)
 	os.WriteFile(cache.IndexFile(dd, "persons_name.json"), result, 0o644)
 	log.Info("persons_name.json built: %d names", len(m))
+}
+
+// buildNameIndex generates a name→id lookup for a given domain (subjects/characters/persons).
+func buildNameIndex(dd, domain string) {
+	data, err := os.ReadFile(cache.IndexFile(dd, domain+".json"))
+	if err != nil { log.Warn("%s_name: %s.json not found", domain, domain); return }
+	var list []cache.NameEntry
+	json.Unmarshal(data, &list)
+	m := map[string]int{}
+	for _, e := range list { m[e.Name] = e.ID }
+	result, _ := json.Marshal(m)
+	os.WriteFile(cache.IndexFile(dd, domain+"_name.json"), result, 0o644)
+	log.Info("%s_name.json built: %d names", domain, len(m))
 }
 
 // rebuildFromScan scans all cached API JSON files and rebuilds list files + tags.
@@ -198,7 +215,9 @@ saveJSON(cache.IndexFile(dd, "persons.json"), persons)
 	// Save tags
 	if p != nil { p.Send("phase", 3, 4, "saving tags") }
 	saveJSON(cache.IndexFile(dd, "tags.json"), tags)
-	buildPersonNames(dd)
+	buildNameIndex(dd, "subjects")
+		buildNameIndex(dd, "characters")
+		buildPersonNames(dd)
 
 	log.Info("Rebuild complete: %d subjects, %d chars, %d persons, %d tags",
 		len(subjects), len(chars), len(persons), len(tags))
