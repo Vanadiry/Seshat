@@ -76,6 +76,7 @@ func StripImages(data []byte) []byte {
 
 func stripImagesRecursive(v map[string]any) {
 	delete(v, "images")
+	delete(v, "image")
 	for _, key := range []string{"actors", "characters", "subjects", "persons", "responses", "data", "items"} {
 		if arr, ok := v[key].([]any); ok {
 			for _, item := range arr {
