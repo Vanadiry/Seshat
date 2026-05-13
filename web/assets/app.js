@@ -8,7 +8,7 @@ var MSG = {
 
   // Fetch dialog
   dialogTitle: '从上游拉取数据',
-  idLabel: '拉取指定动画的完整数据到本地',
+  idLabel: '拉取一个或一组动画',
   idPlaceholder: '动画 ID，如 51 或 51,288',
   trackerLabel: '拉取或创建 Tracker',
   trackerPlaceholder: 'Tracker 名称',
@@ -23,15 +23,15 @@ var MSG = {
   btnClose: '关闭',
 
   // Confirm messages
-  confirmFetchId: function(ids) { return '将从上游拉取动画 '+ids.split(',').map(function(s){return '#'+s.trim()}).join(', ')+' 的完整数据（角色、人员、剧集、图片）'; },
-  confirmTrackerFetch: function(name) { return '确认拉取 Tracker ['+name+'] 中的全部动画数据？'; },
-  confirmTrackerCreate: function(name) { return '未找到 Tracker ['+name+']。是否创建它？\n创建后请在 Tracker 文件中填写动画 ID，返回此处重新拉取。'; },
-  trackerCreated: function(name) { return 'Tracker ['+name+'] 已创建。请在 ~/.vSoft/Seshat/tracker/'+name+'.toml 中填写动画 ID，然后返回此处重新拉取。'; },
-  confirmUserFetch: '将从上游拉取用户收藏列表，存入 Tracker 中。完成后请运行「增量更新」来缓存动画数据。',
-  confirmUpdate: '对比 Tracker 与本地缓存，仅拉取新增的动画（不会删除已有数据）',
-  confirmRefreshAll: '将从上游重新拉取全部 Tracker 数据，覆盖已有内容（本地多余数据不会删除）',
-  confirmRebuildIndex: '扫描本地已缓存的 JSON 文件，重建所有索引（不会请求上游）',
-  confirmRebuildAll: '⚠ 这将删除本地全部缓存文件，从上游完整重建。此操作不可逆。',
+  confirmFetchId: function(ids) { return '将从拉取动画 '+ids.split(',').map(function(s){return '#'+s.trim()}).join(', ')+' 的完整数据'; },
+  confirmTrackerFetch: function(name) { return '将拉取 Tracker ['+name+'] 中记录的全部动画数据？'; },
+  confirmTrackerCreate: function(name) { return '未找到 Tracker ['+name+']。\n是否创建？'; },
+  trackerCreated: function(name) { var d = (window.SESHAT_HOME ? window.SESHAT_HOME+"/tracker" : '~/.vSoft/Seshat/tracker'); return 'Tracker ['+name+'] 已创建。请在 '+d+'/'+name+'.toml 中填写动画 ID，然后返回此处重新拉取。'; },
+  confirmUserFetch: '将拉取用户收藏列表，存入 Tracker 中。\n拉取成功够，请执行增量更新。',
+  confirmUpdate: '将对比本地与上游数据，并添加缺失的数据。',
+  confirmRefreshAll: '将从上游拉取全部 Tracker 数据，覆盖已有内容。本地多余数据不会删除。',
+  confirmRebuildIndex: '将从本地 JSON 中重建所有索引',
+  confirmRebuildAll: function() { var d = window.SESHAT_HOME || '~/.vSoft/Seshat'; return '将删除 '+d+'/data 的全部数据，并完整重建。'; },
 
   // Validation
   errInvalidTrackerName: 'Tracker 名称仅允许大小写字母、数字、短横线和下划线',
@@ -416,7 +416,7 @@ function initDialog() {
           fetch(API + '/v0/tracker/create', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name})})
             .then(function(r){return r.json()}).then(function(d){
               if (d.error) { showError(d.error); }
-              else { showError('Tracker ['+name+'] 已创建。请在 ~/.vSoft/Seshat/tracker/'+name+'.toml 中填写动画 ID，然后返回此处重新拉取。'); }
+              else { showError(MSG.trackerCreated(name)); }
             });
         });
       }
@@ -436,7 +436,7 @@ function initDialog() {
     confirmAction(MSG.confirmRebuildIndex, doFetchIndex);
   });
   document.getElementById('btn-deep').addEventListener('click', function() {
-    confirmAction(MSG.confirmRebuildAll, doDeepRebuild);
+    confirmAction(MSG.confirmRebuildAll(), doDeepRebuild);
   });
 }
 
