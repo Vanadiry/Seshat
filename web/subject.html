@@ -4,6 +4,14 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>动画详情</title>
 <script src="/assets/tailwindcss-3.4.js"></script>
 <script>tailwind.config={theme:{extend:{colors:{bg:'#1d1d1d',card:'#2a2a2a',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95','pink-bg':'#403638'}}}}</script>
+<style>
+  .thin-scroll::-webkit-scrollbar { height: 4px; }
+  .thin-scroll::-webkit-scrollbar-track { background: transparent; }
+  .thin-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
+  .thin-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.4); }
+  .thin-scroll::-webkit-scrollbar-thumb:active { background: rgba(255,255,255,.5); }
+  .thin-scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.15) transparent; }
+</style>
 </head>
 <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
 
@@ -212,17 +220,21 @@ async function overview(s, infoItems) {
   // ── 右下栏：主要角色 + 关联条目 ──
   if (mainChars.length) {
     html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">主要角色</span><a href="javascript:switchTab(\'chars\')" class="text-[#FE8A95] text-xs ml-auto no-underline">更多角色 &raquo;</a></div>';
-    html += '<div class="flex gap-3 overflow-x-auto pb-2" style="scrollbar-width:thin">';
+    html += '<div class="flex gap-3 overflow-x-auto pb-2 thin-scroll">';
     for (var i=0; i<mainChars.length; i++) {
       var c = mainChars[i];
-      var actorStr = c.actors && c.actors.length ? 'CV:'+c.actors.map(function(a){return a.name}).slice(0,2).join(',') : '';
-      html += '<div onclick="location.href=\'/character.html?id='+c.id+'\'" class="shrink-0 bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg p-2.5 cursor-pointer hover:border-[#FE8A95]" style="min-width:190px">';
-      html += '<div class="flex gap-2 items-center">';
-      html += '<img src="'+img('character',c.id,'grid')+'" onerror="this.remove()" class="w-11 h-11 rounded-lg object-cover bg-[#202028] shrink-0">';
-      html += '<div class="min-w-0"><div class="text-[14px] font-semibold truncate">'+c.name+'</div>';
-      html += '<div class="flex items-center gap-1.5 mt-0.5"><span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[11px] font-semibold shrink-0">'+c.relation+'</span>';
-      if (actorStr) html += '<span class="text-[12px] text-sub truncate">'+actorStr+'</span>';
-      html += '</div></div></div></div>';
+      var actorName = c.actors && c.actors.length ? c.actors[0].name : '';
+      html += '<div onclick="location.href=\'/character.html?id='+c.id+'\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">'+
+        // Image with floating badge
+        '<div class="relative rounded-lg overflow-hidden bg-[#202028] aspect-square">'+
+        '<img src="'+img('character',c.id,'grid')+'" onerror="this.remove()" class="w-full h-full object-cover">'+
+        '<span class="absolute top-1 right-1 bg-black/60 text-white px-1.5 py-0.5 rounded text-[10px] font-semibold">'+c.relation+'</span>'+
+        '</div>'+
+        // Name + CV
+        '<div class="mt-1.5 px-0.5">'+
+        '<div class="text-[13px] font-semibold truncate">'+primaryName(c.name, '')+'</div>'+
+        (actorName ? '<div class="text-[11px] text-sub truncate">CV: '+actorName+'</div>' : '')+
+        '</div></div>';
     }
     html += '</div></div>';
   }
