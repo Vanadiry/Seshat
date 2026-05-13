@@ -392,21 +392,62 @@ paths:
                   $ref: "#/components/schemas/ELOEntry"
 
   # ── 搜索 ──
-  /api/v0/search:
+  /api/v0/search/subjects:
     get:
       tags: [搜索]
-      summary: 搜索
-      description: 通过预建索引搜索。type 可选 subjects, characters, persons, tags（逗号分隔）。
+      summary: 条目搜索
       parameters:
         - { name: q, in: query, required: true, schema: { type: string }, example: "CLANNAD" }
-        - { name: type, in: query, schema: { type: string, default: "subjects,characters,persons,tags" } }
       responses:
         "200":
-          description: 分类搜索结果
+          description: 搜索结果
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SearchResult"
+                type: array
+                items: { type: object }
+  /api/v0/search/characters:
+    get:
+      tags: [搜索]
+      summary: 角色搜索
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string }, example: "古河渚" }
+      responses:
+        "200":
+          description: 搜索结果
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: object }
+  /api/v0/search/persons:
+    get:
+      tags: [搜索]
+      summary: 人物搜索
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string }, example: "麻枝准" }
+      responses:
+        "200":
+          description: 搜索结果
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: object }
+  /api/v0/search/tags:
+    get:
+      tags: [搜索]
+      summary: 标签搜索
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string }, example: "治愈" }
+      responses:
+        "200":
+          description: 搜索结果
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: object }
   /api/v0/search/deep:
     post:
       tags: [搜索]
@@ -833,14 +874,6 @@ components:
       properties:
         name: { type: string, example: "京阿尼" }
         count: { type: integer, example: 52 }
-
-    SearchResult:
-      type: object
-      properties:
-        subjects: { type: array, items: { type: object } }
-        characters: { type: array, items: { type: object } }
-        persons: { type: array, items: { type: object } }
-        tags: { type: array, items: { type: object } }
 
     ELOEntry:
       type: object

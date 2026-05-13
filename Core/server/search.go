@@ -13,24 +13,6 @@ import (
 	"path/filepath"
 )
 
-func quickSearch(dd, q string, types []string) map[string]any {
-	result := map[string]any{}
-	q = strings.ToLower(q)
-	for _, t := range types {
-		switch t {
-		case "subjects":
-			result["subjects"] = searchList(dd, "subjects.json", q)
-		case "characters":
-			result["characters"] = searchList(dd, "characters.json", q)
-		case "persons":
-			result["persons"] = searchList(dd, "persons.json", q)
-		case "tags":
-			result["tags"] = searchTags(dd, q)
-		}
-	}
-	return result
-}
-
 func searchList(dd, file, q string) []map[string]any {
 	data, err := os.ReadFile(cache.IndexFile(dd, file))
 	if err != nil {
@@ -142,16 +124,32 @@ func deepSearch(dd, q string, types []string) []map[string]any {
 }
 
 
-func handleSearch(cfg *config.Config, dd string) http.HandlerFunc {
+func handleSearchSubjects(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		q := strings.ToLower(r.URL.Query().Get("q"))
-		types := r.URL.Query().Get("type")
-		if types == "" { types = "subjects,characters,persons,tags" }
-		if q == "" {
-			writeJSON(w, map[string]any{"subjects": []any{}, "characters": []any{}, "persons": []any{}, "tags": []any{}})
-			return
-		}
-		writeJSON(w, quickSearch(dd, q, strings.Split(types, ",")))
+		q := r.URL.Query().Get("q")
+		if q == "" { writeJSON(w, []any{}); return }
+		writeJSON(w, searchList(dd, "subjects.json", strings.ToLower(q)))
+	}
+}
+func handleSearchCharacters(dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query().Get("q")
+		if q == "" { writeJSON(w, []any{}); return }
+		writeJSON(w, searchList(dd, "characters.json", strings.ToLower(q)))
+	}
+}
+func handleSearchPersons(dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query().Get("q")
+		if q == "" { writeJSON(w, []any{}); return }
+		writeJSON(w, searchList(dd, "persons.json", strings.ToLower(q)))
+	}
+}
+func handleSearchTags(dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query().Get("q")
+		if q == "" { writeJSON(w, []any{}); return }
+		writeJSON(w, searchTags(dd, strings.ToLower(q)))
 	}
 }
 func handleSearchDeep(cfg *config.Config, dd string) http.HandlerFunc {
