@@ -454,6 +454,7 @@ function confirmAction(msg, cb) {
   };
 }
 function showError(msg) {
+  document.getElementById('dlg-overlay').style.display = 'flex';
   document.getElementById('confirm-msg').textContent = msg;
   document.getElementById('confirm-overlay').style.display = 'flex';
   document.getElementById('btn-confirm-exec').style.display = 'none';
@@ -483,6 +484,7 @@ async function doFetch() {
   if (!ids.length) return;
   var res = await fetch(API + '/v0/fetch/subject', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids})});
   var d = await res.json();
+  if (d.error) { showError(d.error); return; }
   if (d.task_id) startProgress(d.task_id);
 }
 
@@ -508,6 +510,7 @@ async function doRefreshAll() {
   closeFetch();
   var res = await fetch(API + '/v0/fetch/all', {method:'POST'});
   var d = await res.json();
+  if (d.error) { showError(d.error); return; }
   if (d.task_id) startProgress(d.task_id);
 }
 
@@ -515,6 +518,7 @@ async function doDeepRebuild() {
   closeFetch();
   var res = await fetch(API + '/v0/fetch/deep', {method:'POST'});
   var d = await res.json();
+  if (d.error) { showError(d.error); return; }
   if (d.task_id) startProgress(d.task_id);
 }
 
@@ -522,6 +526,7 @@ async function doFetchUpdate() {
   closeFetch();
   var res = await fetch(API + '/v0/fetch/update', {method:'POST'});
   var d = await res.json();
+  if (d.error) { showError(d.error); return; }
   if (d.task_id) startProgress(d.task_id);
 }
 
@@ -529,6 +534,7 @@ async function doFetchImages() {
   closeFetch();
   var res = await fetch(API + '/v0/fetch/images', {method:'POST'});
   var d = await res.json();
+  if (d.error) { showError(d.error); return; }
   if (d.task_id) startProgress(d.task_id);
 }
 
@@ -536,6 +542,7 @@ async function doFetchIndex() {
   closeFetch();
   var res = await fetch(API + '/v0/fetch/index', {method:'POST'});
   var d = await res.json();
+  if (d.error) { showError(d.error); return; }
   if (d.task_id) startProgress(d.task_id);
 }
 
