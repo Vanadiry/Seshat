@@ -23,7 +23,7 @@ var showing = 0;
 
 function renderItem(s) {
   return '<div onclick="location.href=\'/subject.html?id='+s.id+'\'" class="bg-[#2a2a2a] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">'+
-    '<img src="'+img('subject',s.id,'small')+'\" loading=\"lazy\" '+imgOnError('subject',s.id,'small')+' class="w-full aspect-[3/4] object-cover bg-[#202028]">'+
+    '<img src="'+img('subject',s.id,'small')+'" loading=\"lazy\" '+imgOnError('subject',s.id,'small')+' class="w-full aspect-[3/4] object-cover bg-[#202028]">'+
     '<div class="p-2.5"><div class="text-sm font-semibold truncate">'+primaryName(s.name, s.name_cn)+'</div>'+
     '<div class="text-xs text-sub mt-1 flex gap-1.5 items-center">'+
     (s.rating&&s.rating.score?'<span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[12px] font-bold">★ '+s.rating.score.toFixed(1)+'</span>':'')+
@@ -60,7 +60,7 @@ function updatePager() {
   if (!tag) { document.getElementById('grid').innerHTML = '<div class="col-span-full text-center py-20 text-sub">缺少标签参数</div>'; return; }
 
   document.getElementById('detail-header').innerHTML = '<div class="max-w-[1200px] mx-auto px-6 py-2 flex items-center gap-3">' +
-    '<a href="/tags.html" class="w-7 h-7 rounded-full border border-[rgba(255,255,255,.2)] flex items-center justify-center text-sub hover:text-white hover:border-[rgba(255,255,255,.4)] shrink-0 no-underline text-xs" title="返回">←</a>' +
+    '<a href="javascript:history.back()" class="w-7 h-7 rounded-full border border-[rgba(255,255,255,.2)] flex items-center justify-center text-sub hover:text-white hover:border-[rgba(255,255,255,.4)] shrink-0 no-underline text-xs" title="返回">←</a>' +
     '<span class="text-xl font-bold truncate">标签: '+tag+'</span></div>';
   document.title = tag + ' - 标签';
 

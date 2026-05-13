@@ -57,7 +57,7 @@ async function render() {
     var infoItems = infoboxData(s);
     var hdr = document.getElementById('subject-header');
     hdr.innerHTML = '<div class="max-w-[1200px] mx-auto px-6 h-12 py-0 flex items-center gap-3">' +
-      '<a href="/" class="w-7 h-7 rounded-full border border-[rgba(255,255,255,.2)] flex items-center justify-center text-sub hover:text-white hover:border-[rgba(255,255,255,.4)] shrink-0 no-underline text-xs" title="返回">←</a>' +
+      '<a href="javascript:history.back()" class="w-7 h-7 rounded-full border border-[rgba(255,255,255,.2)] flex items-center justify-center text-sub hover:text-white hover:border-[rgba(255,255,255,.4)] shrink-0 no-underline text-xs" title="返回">←</a>' +
       (isRemote('/v0/subjects/'+SID) ? globeIcon('w-6 h-6') : '') +
       '<span class="text-xl font-bold truncate">'+primaryName(s.name, s.name_cn)+'</span>' +
       (function(){var sub=subName(s.name, s.name_cn); return sub ? '<span class="text-sm text-sub truncate hidden sm:inline">'+sub+'</span>' : ''})() +
@@ -226,9 +226,9 @@ async function overview(s, infoItems) {
   if (tagsHtml) html += '<div class="mb-2"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">标签</span></div>'+tagsHtml+'</div>';
   html += '</div>';
   // ── 右上右栏：评分面板 ──
-  html += '<div class="w-full md:w-[230px] shrink-0 self-start bg-[#252528] border border-[rgba(255,255,255,.12)] rounded-xl overflow-hidden">';
+  html += '<div class="w-full md:w-[230px] shrink-0 self-start bg-[#252528] border border-[rgba(255,255,255,.12)] rounded-xl">';
   // Header strip
-  html += '<div class="bg-[#2a2a30] px-4 py-2"><span class="font-bold">评分</span></div>';
+  html += '<div class="bg-[#2a2a30] px-4 py-2 rounded-t-xl"><span class="font-bold">评分</span></div>';
   html += '<div class="border-t border-[rgba(255,255,255,.1)]"></div>';
   // Content
   html += '<div class="px-4 pt-2 pb-2">';

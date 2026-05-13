@@ -287,8 +287,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const path = location.pathname;
   function navCls(href) {
-    if (href === '/' && (path === '/' || path === '/index.html')) return 'bg-[#30303b] text-white';
-    if (href !== '/' && path.startsWith(href)) return 'bg-[#30303b] text-white';
+    var p = path;
+    if (p === '/subject.html') p = '/';
+    else if (p === '/character.html') p = '/character-list.html';
+    else if (p === '/person.html') p = '/person-list.html';
+    else if (p === '/tags-subject.html') p = '/tags.html';
+    if (href === '/' && (p === '/' || p === '/index.html')) return 'bg-[#30303b] text-white';
+    if (href !== '/' && p.startsWith(href)) return 'bg-[#30303b] text-white';
     return 'hover:bg-[#30303b] hover:text-white';
   }
 
