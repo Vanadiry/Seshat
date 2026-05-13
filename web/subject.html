@@ -221,7 +221,7 @@ async function overview(s, infoItems) {
   // ── 右下栏：主要角色 + 关联条目 ──
   if (mainChars.length) {
     html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">主要角色</span><a href="javascript:switchTab(\'chars\')" class="text-[#FE8A95] text-xs ml-auto no-underline">更多角色 &raquo;</a></div>';
-    html += '<div class="flex gap-3 overflow-x-auto pb-2 thin-scroll">';
+    html += '<div class="flex gap-3 overflow-x-auto pb-2 thin-scroll" style="padding-top:4px">';
     for (var i=0; i<mainChars.length; i++) {
       var c = mainChars[i];
       var actorName = c.actors && c.actors.length ? c.actors[0].name : '';
@@ -256,7 +256,7 @@ async function overview(s, infoItems) {
       var ra = a.relation||'', rb = b.relation||'';
       if (ra < rb) return -1; if (ra > rb) return 1; return 0;
     });
-    html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">关联条目</span></div><div class="flex items-start gap-3 overflow-x-auto pb-2 thin-scroll">';
+    html += '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">关联条目</span></div><div class="flex items-start gap-3 overflow-x-auto pb-2 thin-scroll" style="padding-top:4px">';
     var relLastRel = '';
     for (var i=0; i<rels.length; i++) {
       var r = rels[i];
