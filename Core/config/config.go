@@ -14,6 +14,7 @@ type ServerConfig struct {
 	BindAddr    string `toml:"bind_addr"`
 	Port        int    `toml:"port"`
 	Concurrency int    `toml:"concurrency"`
+	DataHome    string `toml:"data_home"`
 }
 
 type UpstreamConfig struct {
@@ -22,13 +23,12 @@ type UpstreamConfig struct {
 }
 
 type FrontendConfig struct {
-	BackendURL  string `toml:"backend_url"`
-	DisplayLang string `toml:"display_lang"`
+	BackendURL string `toml:"backend_url"`
+	PreferLang string `toml:"prefer_lang"`
 }
 
 type UserConfig struct {
-	Username    string `toml:"username"`
-	SyncEnabled bool   `toml:"sync_enabled"`
+	Username string `toml:"username"`
 }
 
 type Config struct {
@@ -36,7 +36,6 @@ type Config struct {
 	Upstream UpstreamConfig `toml:"upstream"`
 	Frontend FrontendConfig `toml:"frontend"`
 	User     UserConfig     `toml:"user"`
-	DataHome string         `toml:"data_home"`
 }
 
 var Defaults = Config{
@@ -44,14 +43,14 @@ var Defaults = Config{
 		BindAddr:    "127.0.0.1",
 		Port:        4000,
 		Concurrency: 32,
+		DataHome:    "",
 	},
 	Upstream: UpstreamConfig{
 		BaseURL:   "https://api.bgm.tv",
 		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
 	},
-	Frontend: FrontendConfig{BackendURL: "", DisplayLang: "original"},
-	User:     UserConfig{Username: "", SyncEnabled: false},
-	DataHome: "",
+	Frontend: FrontendConfig{BackendURL: "", PreferLang: "original"},
+	User:     UserConfig{Username: ""},
 }
 
 func Dir() string {
@@ -115,8 +114,8 @@ func Validate(cfg *Config) error {
 }
 
 func (c *Config) DataDir() string {
-	if c.DataHome != "" {
-		return c.DataHome
+	if c.Server.DataHome != "" {
+		return c.Server.DataHome
 	}
 	return filepath.Join(Dir(), "data")
 }

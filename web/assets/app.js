@@ -156,11 +156,11 @@ function infoboxData(d) {
 
 // ── primaryName / subName：根据 display_lang 配置决定主副标题顺序 ──
 function primaryName(name, nameCN) {
-  if (window.DISPLAY_LANG === 'chinese') return nameCN || name;
+  if (window.PREFER_LANG === 'chinese') return nameCN || name;
   return name || nameCN;
 }
 function subName(name, nameCN) {
-  if (window.DISPLAY_LANG === 'chinese') { return (nameCN && name && name !== nameCN) ? name : ''; }
+  if (window.PREFER_LANG === 'chinese') { return (nameCN && name && name !== nameCN) ? name : ''; }
   return (nameCN && name !== nameCN) ? nameCN : '';
 }
 

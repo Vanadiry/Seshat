@@ -64,7 +64,7 @@ func TestDataDir(t *testing.T) {
 		t.Errorf("expected %s, got %s", expected, dd)
 	}
 
-	cfg.DataHome = "/custom/data"
+	cfg.Server.DataHome = "/custom/data"
 	if dd := cfg.DataDir(); dd != "/custom/data" {
 		t.Errorf("expected /custom/data, got %s", dd)
 	}

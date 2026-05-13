@@ -20,8 +20,8 @@ func testServer(t *testing.T) (*httptest.Server, string) {
 	t.Cleanup(func() { os.Unsetenv("SESHAT_HOME") })
 
 	cfg := config.Defaults
-	cfg.DataHome = filepath.Join(tmp, "data")
-	os.MkdirAll(cfg.DataHome, 0o755)
+	cfg.Server.DataHome = filepath.Join(tmp, "data")
+	os.MkdirAll(cfg.Server.DataHome, 0o755)
 	os.MkdirAll(cfg.TrackerDir(), 0o755)
 
 	router := server.New(&cfg, nil)
