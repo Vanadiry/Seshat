@@ -97,7 +97,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		if p != nil { p.Send("subject", 1, 1, "error") }
 		return
 	}
-	cache.Put(dd, fmt.Sprintf("subjects/%d.json", sid), cache.StripImages(data))
+	cache.Put(dd, cache.Key("subjects", sid, "info.json"), cache.StripImages(data))
 
 	// 提取 subject 摘要写入全局 list
 	var ss struct {
@@ -139,7 +139,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	go func() {
 		defer wg.Done()
 		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/characters", sid)); err == nil {
-			cache.Put(dd, fmt.Sprintf("subjects/%d/characters.json", sid), cache.StripImages(data))
+			cache.Put(dd, cache.Key("subjects", sid, "characters.json"), cache.StripImages(data))
 			json.Unmarshal(data, &chars)
 			for _, c := range chars {
 				mergeListEntry(charListPath, c.ID, c.Name, "")
@@ -156,7 +156,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	go func() {
 		defer wg.Done()
 		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/persons", sid)); err == nil {
-			cache.Put(dd, fmt.Sprintf("subjects/%d/persons.json", sid), cache.StripImages(data))
+			cache.Put(dd, cache.Key("subjects", sid, "persons.json"), cache.StripImages(data))
 			json.Unmarshal(data, &persons)
 			for _, p := range persons {
 				mergeListEntry(persListPath, p.ID, p.Name, "")
@@ -180,7 +180,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 			}
 			return
 		}
-		cache.Put(dd, fmt.Sprintf("characters/%d.json", c.ID), cache.StripImages(data))
+		cache.Put(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(data))
 		if cn := extractNameCN(data); cn != "" {
 			mergeListEntry(charListPath, c.ID, "", cn)
 		}
@@ -208,7 +208,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 			}
 			return
 		}
-		cache.Put(dd, fmt.Sprintf("persons/%d.json", pp.ID), cache.StripImages(data))
+		cache.Put(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(data))
 		if cn := extractNameCN(data); cn != "" {
 			mergeListEntry(persListPath, pp.ID, "", cn)
 		}
@@ -233,13 +233,13 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		}
 		if len(allEps) > 0 {
 			result, _ := json.Marshal(allEps)
-			cache.Put(dd, fmt.Sprintf("subjects/%d/episodes.json", sid), cache.StripImages(result))
+			cache.Put(dd, cache.Key("subjects", sid, "episodes.json"), cache.StripImages(result))
 		}
 	}
 
 	// Relations
 	if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/subjects", sid)); err == nil {
-		cache.Put(dd, fmt.Sprintf("subjects/%d/subjects.json", sid), cache.StripImages(data))
+		cache.Put(dd, cache.Key("subjects", sid, "subjects.json"), cache.StripImages(data))
 	}
 
 	log.Info("Subject #%d API fetch done", sid)

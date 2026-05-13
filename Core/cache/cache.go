@@ -8,8 +8,15 @@ import (
 	"strings"
 )
 
-func Dir(dataDir string) string          { return filepath.Join(dataDir, "api") }
-func IndexDir(dataDir string) string     { return filepath.Join(dataDir, "index") }
+func Dir(dataDir string) string      { return filepath.Join(dataDir, "api") }
+func IndexDir(dataDir string) string { return filepath.Join(dataDir, "index") }
+
+// Key builds a cache path: {subdomain}/{id%10}/{id}/{file}
+// e.g. Key("subjects", 51, "info.json") → "subjects/1/51/info.json"
+func Key(subdomain string, id int, file string) string {
+	return fmt.Sprintf("%s/%d/%d/%s", subdomain, id%10, id, file)
+}
+
 func Get(dataDir, key string) ([]byte, error) { return os.ReadFile(filepath.Join(Dir(dataDir), key)) }
 func Put(dataDir, key string, data []byte) error {
 	p := filepath.Join(Dir(dataDir), key)

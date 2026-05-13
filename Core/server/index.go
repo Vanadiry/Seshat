@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"sort"
 	"net/http"
 	"encoding/json"
@@ -13,6 +12,26 @@ import (
 	"github.com/vanadiry/seshat/Core/log"
 )
 
+// scanAPIDir walks the new cache layout {domain}/{id%10}/{id}/*.json and calls fn for each file.
+func scanAPIDir(dd, domain string, fn func(path string)) {
+	base := filepath.Join(cache.Dir(dd), domain)
+	digits, _ := os.ReadDir(base)
+	for _, d := range digits {
+		if !d.IsDir() { continue }
+		ids, _ := os.ReadDir(filepath.Join(base, d.Name()))
+		for _, id := range ids {
+			if !id.IsDir() { continue }
+			idDir := filepath.Join(base, d.Name(), id.Name())
+			files, _ := os.ReadDir(idDir)
+			for _, f := range files {
+				if strings.HasSuffix(f.Name(), ".json") && !f.IsDir() {
+					fn(filepath.Join(idDir, f.Name()))
+				}
+			}
+		}
+	}
+}
+
 func buildIndexes(dd string, p *Progress) {
 	log.Info("Building indexes...")
 	os.MkdirAll(cache.IndexDir(dd), 0o755)
@@ -23,33 +42,26 @@ func buildIndexes(dd string, p *Progress) {
 
 	tags := map[string]tagInfo{}
 
-	apiDir := cache.Dir(dd)
-
-	// Scan subjects for tags
-	subjDir := filepath.Join(apiDir, "subjects")
-	if entries, _ := os.ReadDir(subjDir); len(entries) > 0 {
-		for _, e := range entries {
-			if !strings.HasSuffix(e.Name(), ".json") || strings.Contains(e.Name(), "/") {
-				continue
-			}
-			data, _ := os.ReadFile(filepath.Join(subjDir, e.Name()))
-			var s struct {
-				ID   int `json:"id"`
-				Tags []struct{
-					Name  string `json:"name"`
-					Count int    `json:"count"`
-				} `json:"tags"`
-			}
-			if json.Unmarshal(data, &s) == nil && s.ID > 0 {
-				for _, t := range s.Tags {
-					info := tags[t.Name]
-					info.Count++
-					info.Subjects = append(info.Subjects, s.ID)
-					tags[t.Name] = info
-				}
+	// Scan subjects for tags (new dir layout: subjects/{id%10}/{id}/info.json)
+	scanAPIDir(dd, "subjects", func(path string) {
+		if !strings.HasSuffix(path, "info.json") { return }
+		data, _ := os.ReadFile(path)
+		var s struct {
+			ID   int `json:"id"`
+			Tags []struct{
+				Name  string `json:"name"`
+				Count int    `json:"count"`
+			} `json:"tags"`
+		}
+		if json.Unmarshal(data, &s) == nil && s.ID > 0 {
+			for _, t := range s.Tags {
+				info := tags[t.Name]
+				info.Count++
+				info.Subjects = append(info.Subjects, s.ID)
+				tags[t.Name] = info
 			}
 		}
-	}
+	})
 
 	saveJSON(cache.IndexFile(dd, "tags.json"), tags)
 	buildPersonNames(dd)
@@ -77,21 +89,11 @@ func loadTags(dd string) map[string]tagInfo {
 
 // rebuildTags 扫描所有已缓存的 subject JSON，重建 tags.json。
 func rebuildTags(dd string) {
-	dir := filepath.Join(cache.Dir(dd), "subjects")
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return
-	}
-
 	tags := map[string]tagInfo{}
-	for _, e := range entries {
-		if !strings.HasSuffix(e.Name(), ".json") || strings.Contains(e.Name(), "/") {
-			continue
-		}
-		data, err := os.ReadFile(filepath.Join(dir, e.Name()))
-		if err != nil {
-			continue
-		}
+	scanAPIDir(dd, "subjects", func(path string) {
+		if !strings.HasSuffix(path, "info.json") { return }
+		data, err := os.ReadFile(path)
+		if err != nil { return }
 		var s struct {
 			ID   int `json:"id"`
 			Tags []struct {
@@ -99,17 +101,14 @@ func rebuildTags(dd string) {
 				Count int    `json:"count"`
 			} `json:"tags"`
 		}
-		if err := json.Unmarshal(data, &s); err != nil {
-			continue
-		}
+		if err := json.Unmarshal(data, &s); err != nil { return }
 		for _, t := range s.Tags {
 			info := tags[t.Name]
 			info.Count++
 			info.Subjects = append(info.Subjects, s.ID)
 			tags[t.Name] = info
 		}
-	}
-
+	})
 	result, _ := json.Marshal(tags)
 	os.WriteFile(tagsPath(dd), result, 0o644)
 	buildPersonNames(dd)
@@ -133,7 +132,6 @@ func buildPersonNames(dd string) {
 func rebuildFromScan(dd string, p *Progress) {
 	log.Info("Rebuilding indexes from scan...")
 	os.MkdirAll(cache.IndexDir(dd), 0o755)
-	apiDir := cache.Dir(dd)
 
 	var subjects []cache.SubjectSummary
 	var chars []cache.NameEntry
@@ -142,89 +140,60 @@ func rebuildFromScan(dd string, p *Progress) {
 
 	// Scan subjects
 	if p != nil { p.Send("phase", 0, 4, "scanning subjects") }
-	subjDir := filepath.Join(apiDir, "subjects")
-	if entries, _ := os.ReadDir(subjDir); len(entries) > 0 {
-		for _, e := range entries {
-			if !strings.HasSuffix(e.Name(), ".json") || strings.Contains(e.Name(), "/") { continue }
-			data, _ := os.ReadFile(filepath.Join(subjDir, e.Name()))
-			var s struct {
-				ID       int     `json:"id"`
-				Name     string  `json:"name"`
-				NameCN   string  `json:"name_cn"`
-				Rating   struct{ Score float64 `json:"score"` } `json:"rating"`
-				Platform string  `json:"platform"`
-				Date     string  `json:"date"`
-				Tags     []struct{ Name string `json:"name"`; Count int `json:"count"` } `json:"tags"`
-			}
-			if json.Unmarshal(data, &s) == nil && s.ID > 0 {
-				subjects = append(subjects, cache.SubjectSummary{
-					ID: s.ID, Name: s.Name, NameCN: s.NameCN,
-					Score: s.Rating.Score, Platform: s.Platform, Date: s.Date,
-				})
-				for _, t := range s.Tags {
-					info := tags[t.Name]
-					info.Count++
-					info.Subjects = append(info.Subjects, s.ID)
-					tags[t.Name] = info
-				}
-			}
+	scanAPIDir(dd, "subjects", func(path string) {
+		if !strings.HasSuffix(path, "info.json") { return }
+		data, _ := os.ReadFile(path)
+		var s struct {
+			ID       int     `json:"id"`
+			Name     string  `json:"name"`
+			NameCN   string  `json:"name_cn"`
+			Rating   struct{ Score float64 `json:"score"` } `json:"rating"`
+			Platform string  `json:"platform"`
+			Date     string  `json:"date"`
+			Tags     []struct{ Name string `json:"name"`; Count int `json:"count"` } `json:"tags"`
 		}
-	}
+		if json.Unmarshal(data, &s) == nil && s.ID > 0 {
+			subjects = append(subjects, cache.SubjectSummary{ID: s.ID, Name: s.Name, NameCN: s.NameCN, Score: s.Rating.Score, Platform: s.Platform, Date: s.Date})
+			for _, t := range s.Tags { info := tags[t.Name]; info.Count++; info.Subjects = append(info.Subjects, s.ID); tags[t.Name] = info }
+		}
+	})
 	saveJSON(cache.IndexFile(dd, "subjects.json"), subjects)
 
 	// Scan characters
 	if p != nil { p.Send("phase", 1, 4, "scanning characters") }
-	charDir := filepath.Join(apiDir, "characters")
-	if entries, _ := os.ReadDir(charDir); len(entries) > 0 {
-		for _, e := range entries {
-			if !strings.HasSuffix(e.Name(), ".json") || strings.Contains(e.Name(), "/") { continue }
-			data, _ := os.ReadFile(filepath.Join(charDir, e.Name()))
-			var c struct {
-				ID      int    `json:"id"`
-				Name    string `json:"name"`
-				Infobox []struct{ Key string `json:"key"`; Value json.RawMessage `json:"value"` } `json:"infobox"`
-			}
-			if json.Unmarshal(data, &c) == nil && c.ID > 0 {
-				nameCN := ""
-				for _, ib := range c.Infobox {
-					if ib.Key == "简体中文名" {
-						var v string
-						if json.Unmarshal(ib.Value, &v) == nil { nameCN = v }
-						break
-					}
-				}
-				chars = append(chars, cache.NameEntry{ID: c.ID, Name: c.Name, NameCN: nameCN})
-			}
+	scanAPIDir(dd, "characters", func(path string) {
+		if !strings.HasSuffix(path, "info.json") { return }
+		data, _ := os.ReadFile(path)
+		var c struct {
+			ID      int    `json:"id"`
+			Name    string `json:"name"`
+			Infobox []struct{ Key string `json:"key"`; Value json.RawMessage `json:"value"` } `json:"infobox"`
 		}
-	}
+		if json.Unmarshal(data, &c) == nil && c.ID > 0 {
+			nameCN := ""
+			for _, ib := range c.Infobox { if ib.Key == "简体中文名" { var v string; if json.Unmarshal(ib.Value, &v) == nil { nameCN = v }; break } }
+			chars = append(chars, cache.NameEntry{ID: c.ID, Name: c.Name, NameCN: nameCN})
+		}
+	})
 	saveJSON(cache.IndexFile(dd, "characters.json"), chars)
 
 	// Scan persons
 	if p != nil { p.Send("phase", 2, 4, "scanning persons") }
-	persDir := filepath.Join(apiDir, "persons")
-	if entries, _ := os.ReadDir(persDir); len(entries) > 0 {
-		for _, e := range entries {
-			if !strings.HasSuffix(e.Name(), ".json") || strings.Contains(e.Name(), "/") { continue }
-			data, _ := os.ReadFile(filepath.Join(persDir, e.Name()))
-			var p struct {
-				ID      int    `json:"id"`
-				Name    string `json:"name"`
-				Infobox []struct{ Key string `json:"key"`; Value json.RawMessage `json:"value"` } `json:"infobox"`
-			}
-			if json.Unmarshal(data, &p) == nil && p.ID > 0 {
-				nameCN := ""
-				for _, ib := range p.Infobox {
-					if ib.Key == "简体中文名" {
-						var v string
-						if json.Unmarshal(ib.Value, &v) == nil { nameCN = v }
-						break
-					}
-				}
-				persons = append(persons, cache.NameEntry{ID: p.ID, Name: p.Name, NameCN: nameCN})
-			}
+	scanAPIDir(dd, "persons", func(path string) {
+		if !strings.HasSuffix(path, "info.json") { return }
+		data, _ := os.ReadFile(path)
+		var p struct {
+			ID      int    `json:"id"`
+			Name    string `json:"name"`
+			Infobox []struct{ Key string `json:"key"`; Value json.RawMessage `json:"value"` } `json:"infobox"`
 		}
-	}
-	saveJSON(cache.IndexFile(dd, "persons.json"), persons)
+		if json.Unmarshal(data, &p) == nil && p.ID > 0 {
+			nameCN := ""
+			for _, ib := range p.Infobox { if ib.Key == "简体中文名" { var v string; if json.Unmarshal(ib.Value, &v) == nil { nameCN = v }; break } }
+			persons = append(persons, cache.NameEntry{ID: p.ID, Name: p.Name, NameCN: nameCN})
+		}
+	})
+saveJSON(cache.IndexFile(dd, "persons.json"), persons)
 
 	// Save tags
 	if p != nil { p.Send("phase", 3, 4, "saving tags") }
@@ -254,7 +223,7 @@ func handleTagSubjects(dd string) http.HandlerFunc {
 		if !ok { writeJSON(w, []int{}); return }
 		var subjects []any
 		for _, sid := range info.Subjects {
-			data, err := cache.Get(dd, fmt.Sprintf("subjects/%d.json", sid))
+			data, err := cache.Get(dd, cache.Key("subjects", sid, "info.json"))
 			if err != nil { continue }
 			var s struct {
 				ID int `json:"id"`; Name string `json:"name"`; NameCN string `json:"name_cn"`

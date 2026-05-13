@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -103,7 +104,9 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/episodes", func(w http.ResponseWriter, r *http.Request) {
 		sid := r.URL.Query().Get("subject_id")
 		if sid == "" { http.Error(w, `{"error":"subject_id required"}`, 400); return }
-		data, err := os.ReadFile(filepath.Join(cache.Dir(dd), "subjects", sid, "episodes.json"))
+		id, err := strconv.Atoi(sid)
+		if err != nil { writeJSON(w, []any{}); return }
+		data, err := cache.Get(dd, cache.Key("subjects", id, "episodes.json"))
 		if err != nil { writeJSON(w, []any{}); return }
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(data)

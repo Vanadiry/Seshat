@@ -1,6 +1,7 @@
 package server
 
 import (
+	"strconv"
 	"strings"
 	"fmt"
 	"net/http"
@@ -133,8 +134,15 @@ func handleListPersons(dd string) http.HandlerFunc {
 
 func handleCacheReader(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		key := strings.TrimPrefix(r.URL.Path, "/api/v0/") + ".json"
-		data, err := cache.Get(dd, key)
+		path := strings.TrimPrefix(r.URL.Path, "/api/v0/")
+		parts := strings.Split(strings.Trim(path, "/"), "/")
+		if len(parts) < 2 { http.NotFound(w, r); return }
+		domain := parts[0]
+		id, err := strconv.Atoi(parts[1])
+		if err != nil { http.NotFound(w, r); return }
+		file := "info.json"
+		if len(parts) >= 3 { file = parts[2] + ".json" }
+		data, err := cache.Get(dd, cache.Key(domain, id, file))
 		if err != nil { http.NotFound(w, r); return }
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(data)
