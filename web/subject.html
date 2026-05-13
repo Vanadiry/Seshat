@@ -24,17 +24,29 @@
 <script>
 var SID = new URLSearchParams(location.search).get('id');
 var tab = new URLSearchParams(location.search).get('tab') || 'overview';
+var epCount = 0, charCount = 0, persCount = 0;
 
 function switchTab(t) { tab = t; history.replaceState({},'', '?id='+SID+'&tab='+t); render(); }
 
 function tabsHtml() {
+  var counts = {ep: epCount, chars: charCount, persons: persCount};
   var items = [
     ['overview','概览'], ['ep','剧集'], ['chars','角色'], ['persons','制作人员']
   ];
   return items.map(function(i) {
+    var label = i[1];
+    if (counts[i[0]] && tab === i[0]) label += ' ('+counts[i[0]]+')';
     var cls = tab===i[0] ? 'text-white border-b-2 border-[#FE8A95]' : 'text-sub hover:text-white';
-    return '<a href="javascript:switchTab(\''+i[0]+'\')" class="'+cls+' no-underline px-3 py-1 text-sm inline-block">'+i[1]+'</a>';
+    return '<a href="javascript:switchTab(\''+i[0]+'\')" id="tab-'+i[0]+'" class="'+cls+' no-underline px-3 py-1 text-sm inline-block whitespace-nowrap">'+label+'</a>';
   }).join('');
+}
+
+function updateTabCount(kind, count) {
+  if (tab !== kind) return; // Only update the currently active tab
+  var el = document.getElementById('tab-'+kind);
+  if (!el || count <= 0) return;
+  var base = {ep:'剧集', chars:'角色', persons:'制作人员'}[kind]||'';
+  el.textContent = base + ' ('+count+')';
 }
 
 async function render() {
@@ -51,7 +63,7 @@ async function render() {
       (s.platform ? '<span class="text-sub text-xs shrink-0">｜</span><span class="text-xs text-sub shrink-0">'+s.platform+'</span>' : '') +
       '<span class="text-sub text-xs shrink-0">｜</span><span class="text-xs text-sub shrink-0">ID: '+SID+'</span>' +
       '<span class="flex-1"></span>' +
-      '<span class="flex gap-0 shrink-0">'+tabsHtml()+'</span></div>';
+      '<span class="flex gap-0 shrink-0 ml-2">'+tabsHtml()+'</span></div>';
     if (tab === 'overview') await overview(s, infoItems);
     else if (tab === 'ep') await episodes();
     else if (tab === 'chars') await characters();
@@ -68,6 +80,15 @@ async function overview(s, infoItems) {
   var eps = Array.isArray(epsRaw) ? epsRaw : (epsRaw&&epsRaw.data ? epsRaw.data : []);
   var chars = Array.isArray(charsRaw) ? charsRaw : (charsRaw&&charsRaw.data ? charsRaw.data : []);
   var rels = Array.isArray(relsRaw) ? relsRaw : (relsRaw&&relsRaw.data ? relsRaw.data : []);
+  epCount = eps.length; charCount = chars.length;
+  updateTabCount('ep', epCount);
+  updateTabCount('chars', charCount);
+  // Load persons count asynchronously
+  api('/v0/subjects/'+SID+'/persons').then(function(pRaw){
+    var p = Array.isArray(pRaw) ? pRaw : (pRaw&&pRaw.data ? pRaw.data : []);
+    persCount = p.length;
+    updateTabCount('persons', persCount);
+  });
 
   var mainChars = chars.filter(function(c){return c.relation==='主角'||c.relation==='配角'}).slice(0,12);
 
@@ -316,17 +337,18 @@ async function episodes() {
     return html;
   }
 
+  epCount = eps.length; updateTabCount('ep', epCount);
   var sorted = eps.slice().sort(function(a,b){return (a.sort||0)-(b.sort||0)});
   var main = sorted.filter(function(e){return e.type===0});
   var sp = sorted.filter(function(e){return e.type!==0});
 
-  document.getElementById('view').innerHTML = '<div class="flex items-center gap-2 mb-4"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">剧集 ('+eps.length+')</span></div>' +
-    epRows(main, '本篇 ('+main.length+')') + epRows(sp, 'SP / 其他 ('+sp.length+')');
+  document.getElementById('view').innerHTML = epRows(main, '本篇 ('+main.length+')') + epRows(sp, 'SP / 其他 ('+sp.length+')');
 }
 
 async function characters() {
   var charsRaw = await api('/v0/subjects/'+SID+'/characters');
   var chars = Array.isArray(charsRaw) ? charsRaw : [];
+  charCount = chars.length; updateTabCount('chars', charCount);
   window._chars = chars;
 
   function renderCharList(list) {
@@ -380,6 +402,7 @@ async function characters() {
 async function personsList() {
   var personsRaw = await api('/v0/subjects/'+SID+'/persons');
   var persons = Array.isArray(personsRaw) ? personsRaw : [];
+  persCount = persons.length; updateTabCount('persons', persCount);
   var groups = {};
   for (var i=0; i<persons.length; i++) {
     var key = persons[i].relation || '其他';
