@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
   api('/v0/tasks').then(function(d) {
     if (d && d.tasks && d.tasks.length) {
       for (var i=0; i<d.tasks.length; i++) {
-        startProgress(d.tasks[i]);
+        startProgress(d.tasks[i].id, d.tasks[i].label);
       }
     }
   });
@@ -434,26 +434,29 @@ async function doFetchIndex() {
 }
 
 // ── SSE 进度条（嵌入顶栏底部）──
-function startProgress(taskId) {
-  const w = document.getElementById('pwrap');
-  const t = document.getElementById('ptext');
+function startProgress(taskId, label) {
+  var w = document.getElementById('pwrap');
+  var t = document.getElementById('ptext');
   if (!w || !t) return;
   w.style.display = 'block';
   t.style.display = 'block';
-  const fill = document.getElementById('pfill');
-  fill.style.width = '0%'; t.textContent = MSG.progressConnecting;
-  const evt = new EventSource(API + '/v0/task/' + taskId);
+  var fill = document.getElementById('pfill');
+  fill.style.width = '0%';
+  t.textContent = (label||MSG.progressConnecting) + ' …';
+  var taskLabel = label||'';
+  var evt = new EventSource(API + '/v0/task/' + taskId);
   evt.onmessage = function(e) {
-    const d = JSON.parse(e.data);
-    if (d.step === 'complete') {
-      fill.style.width = '100%'; t.textContent = MSG.progressDone; evt.close();
-      setTimeout(() => { w.style.display = 'none'; t.style.display = 'none'; if (typeof onFetchDone==='function') onFetchDone(); }, 1500);
-    } else if (d.done !== undefined && d.total) {
+    var d = JSON.parse(e.data);
+    if (d.label && !taskLabel) taskLabel = d.label;
+    if (d.step === 'complete' || d.step === 'done') {
+      fill.style.width = '100%'; t.textContent = MSG.progressDone + (taskLabel?' - '+taskLabel:''); evt.close();
+      setTimeout(function() { w.style.display = 'none'; t.style.display = 'none'; if (typeof onFetchDone==='function') onFetchDone(); }, 1500);
+    } else if (typeof d.done === 'number' && d.total) {
       fill.style.width = Math.round(d.done/d.total*100) + '%';
-      t.textContent = (d.step||'') + ' ' + d.done + '/' + d.total + (d.speed?' · '+d.speed:'');
+      t.textContent = taskLabel + ' ' + d.done + '/' + d.total + (d.speed?' · '+d.speed:'');
     } else if (d.status) {
-      t.textContent = (d.step||'') + ': ' + d.status;
+      t.textContent = taskLabel + ': ' + d.status;
     }
   };
-  evt.onerror = () => evt.close();
+  evt.onerror = function() { evt.close(); };
 }
