@@ -109,17 +109,31 @@ function addRemoteGlobe(el) {
   wrap.appendChild(globe);
 }
 
-// ── Person name → ID lookup for infobox links ──
-var _personMap = null;
+// ── Name → ID lookup maps (subjects/characters/persons) ──
+var _subjectMap = null, _charMap = null, _personMap = null;
 function loadPersonMap() {
-  if (_personMap && Object.keys(_personMap).length) return Promise.resolve(_personMap);
-  return api('/v0/persons/name').then(function(data) {
-    _personMap = data || {};
+  if (_personMap && Object.keys(_personMap).length) return Promise.resolve();
+  return Promise.all([
+    api('/v0/subjects/name'),
+    api('/v0/characters/name'),
+    api('/v0/persons/name')
+  ]).then(function(results) {
+    _subjectMap = results[0] || {};
+    _charMap = results[1] || {};
+    _personMap = results[2] || {};
     _personRegex = null;
-    return _personMap;
   });
 }
-// ── Person 名→ID 查找（供 infobox 链接使用）──
+
+// ── Local name lookup (subjects > characters > persons) ──
+function lookupLocalName(name) {
+  if (_subjectMap && _subjectMap[name]) return '/subject.html?id=' + _subjectMap[name];
+  if (_charMap && _charMap[name]) return '/character.html?id=' + _charMap[name];
+  if (_personMap && _personMap[name]) return '/person.html?id=' + _personMap[name];
+  return null;
+}
+
+// ── Regex building for name matching ──
 var _personRegex = null;
 function buildPersonRegex() {
   if (_personRegex) return _personRegex;
@@ -130,13 +144,41 @@ function buildPersonRegex() {
   _personRegex = new RegExp(escaped.join('|'), 'g');
   return _personRegex;
 }
-function linkifyPerson(text) {
-  if (!text || !_personMap || !Object.keys(_personMap).length) return text;
-  var re = buildPersonRegex();
+
+function buildRegexForMap(map) {
+  if (!map) return null;
+  var names = Object.keys(map);
+  if (!names.length) return null;
+  names.sort(function(a,b){return b.length-a.length});
+  var escaped = names.map(function(n){return n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')});
+  return new RegExp(escaped.join('|'), 'g');
+}
+
+function linkifyByMap(text, map, hrefPrefix) {
+  if (!text || !map || !Object.keys(map).length) return text;
+  var re = buildRegexForMap(map);
   if (!re) return text;
   return text.replace(re, function(match) {
-    return '<a href="/person.html?id='+_personMap[match]+'" class="text-[#FE8A95] hover:underline">'+match+'</a>';
+    return '<a href="' + hrefPrefix + map[match] + '" class="text-[#FE8A95] hover:underline">' + match + '</a>';
   });
+}
+
+// Keep existing linkifyPerson for backward compat (used in infobox)
+function linkifyPerson(text) { return linkifyByMap(text, _personMap, '/person.html?id='); }
+
+// Apply all three name matchers, skipping text already inside <a> tags
+function linkifyAllNames(text) {
+  if (!text) return text;
+  var parts = text.split(/(<a\b[^>]*>.*?<\/a>)/);
+  for (var i = 0; i < parts.length; i++) {
+    if (parts[i].indexOf('<a') === 0) continue;
+    var t = parts[i];
+    t = linkifyByMap(t, _subjectMap, '/subject.html?id=');
+    t = linkifyByMap(t, _charMap, '/character.html?id=');
+    t = linkifyPerson(t);
+    parts[i] = t;
+  }
+  return parts.join('');
 }
 
 // ── linkifyURL：检测 URL 并转为可点击链接 ──
@@ -145,23 +187,27 @@ function linkifyURL(text) {
   return text.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" class="text-[#FE8A95] hover:underline"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">$1</a>');
 }
 
-// ── linkifyBBCode：转换 [url=...]...[/url] 为链接 ──
+// ── linkifyBBCode：转换 [url=...]...[/url]，优先匹配本地 name ──
 function linkifyBBCode(text) {
   if (!text) return text;
-  return text.replace(/\[url=(https?:\/\/[^\]]+)\](.+?)\[\/url\]/g, '<a href="$1" target="_blank" rel="noopener" class="text-[#FE8A95] hover:underline"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">$2</a>');
+  return text.replace(/\[url=(https?:\/\/[^\]]+)\](.+?)\[\/url\]/g, function(match, url, inner) {
+    var local = lookupLocalName(inner);
+    if (local) return '<a href="' + local + '" class="text-[#FE8A95] hover:underline">' + inner + '</a>';
+    return '<a href="' + url + '" target="_blank" rel="noopener" class="text-[#FE8A95] hover:underline"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">' + inner + '</a>';
+  });
 }
 
-// ── formatSummary：简介专用 — BBCode 链接 + 换行转 <br> ──
+// ── formatSummary：BBCode → name 匹配 → 换行 ──
 function formatSummary(text) {
   if (!text) return text;
-  return linkifyBBCode(text).replace(/\r\n|\n/g, '<br><span style="display:block;height:0.5em"></span>');
+  return linkifyAllNames(linkifyBBCode(text)).replace(/\r\n|\n/g, '<br><span style="display:block;height:0.5em"></span>');
 }
 
 // ── infoboxData：提取侧栏信息（infobox + 顶层字段）──
 function infoboxData(d) {
   var items = [];
   // Top-level fields
-  if (d.gender) items.push([MSG.infoboxGender, linkifyURL(linkifyPerson(d.gender))]);
+  if (d.gender) items.push([MSG.infoboxGender, linkifyURL(linkifyAllNames(linkifyBBCode(d.gender)))]);
   if (d.blood_type) { var bt = MSG.bloodTypeMap; items.push([MSG.infoboxBloodType, bt[d.blood_type]||d.blood_type]); }
   if (d.birth_mon || d.birth_day) {
     var bd = [];
@@ -178,31 +224,31 @@ function infoboxData(d) {
       if (!ib[i].key) continue;
       var v = ib[i].value;
       if (typeof v === 'string') {
-        items.push([ib[i].key, linkifyURL(linkifyPerson(v)), 0]);
+        items.push([ib[i].key, linkifyURL(linkifyAllNames(linkifyBBCode(v))), 0]);
       } else if (Array.isArray(v)) {
         if (v.length > 0 && typeof v[0] === 'object') {
           if (v[0].k) {
             // Key-value pairs: [{k: "纯假名", v: "..."}]
             items.push([ib[i].key, '', 0]);
             for (var j = 0; j < v.length; j++) {
-              if (v[j].k) items.push([v[j].k, linkifyURL(linkifyPerson(v[j].v||'')), 1]);
+              if (v[j].k) items.push([v[j].k, linkifyURL(linkifyAllNames(linkifyBBCode(v[j].v||''))), 1]);
             }
           } else if (v[0].v) {
             // Value-only objects: [{v: "クラナド"}]
             items.push([ib[i].key, '', 0]);
             for (var j = 0; j < v.length; j++) {
-              if (v[j].v) items.push(['', linkifyURL(linkifyPerson(v[j].v)), 1]);
+              if (v[j].v) items.push(['', linkifyURL(linkifyAllNames(linkifyBBCode(v[j].v))), 1]);
             }
           } else {
             // Fallback: show first string from array
             for (var j = 0; j < v.length; j++) {
-              if (typeof v[j] === 'string') { items.push([ib[i].key, linkifyURL(linkifyPerson(v[j])), 0]); break; }
+              if (typeof v[j] === 'string') { items.push([ib[i].key, linkifyURL(linkifyAllNames(linkifyBBCode(v[j]))), 0]); break; }
             }
           }
         } else {
           // Plain string array
           for (var j = 0; j < v.length; j++) {
-            if (typeof v[j] === 'string') { items.push([ib[i].key, linkifyURL(linkifyPerson(v[j])), 0]); break; }
+            if (typeof v[j] === 'string') { items.push([ib[i].key, linkifyURL(linkifyAllNames(linkifyBBCode(v[j]))), 0]); break; }
           }
         }
       }
