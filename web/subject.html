@@ -436,23 +436,26 @@ async function personsList() {
   }
   var entries = Object.entries(groups);
 
-  var sideLinks = '';
+  var sideLinks = '<div class="bg-[#252530] rounded-lg overflow-hidden"><div class="p-3 max-h-[calc(100vh-14rem)] overflow-y-auto thin-scroll">';
   for (var i=0; i<entries.length; i++) {
     sideLinks += '<a href="#g-'+entries[i][0]+'" class="text-sub text-xs no-underline block py-0.5 hover:text-white">'+entries[i][0]+' ('+entries[i][1].length+')</a>';
   }
+  sideLinks += '</div></div>';
 
   var mainHtml = '';
   for (var i=0; i<entries.length; i++) {
     var k = entries[i][0], v = entries[i][1];
-    mainHtml += '<div class="mb-5" id="g-'+k+'"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">'+k+'</span><span class="text-xs text-sub">('+v.length+')</span></div>';
+    // 2-column grid for names within each section
+    var nameHtml = '<div class="grid grid-cols-2 gap-x-4 gap-y-0.5">';
     for (var j=0; j<v.length; j++) {
       var p = v[j];
-      mainHtml += '<div onclick="location.href=\'/person.html?id='+p.id+'\'" class="flex items-center gap-2 py-1.5 border-b border-[rgba(255,255,255,.04)] cursor-pointer hover:text-[#FE8A95] text-sm">'+p.name+(p.eps?'<span class="text-xs text-sub ml-1">('+p.eps+')</span>':'')+'</div>';
+      nameHtml += '<div onclick="location.href=\'/person.html?id='+p.id+'\'" class="flex items-center gap-2 py-1 border-b border-[rgba(255,255,255,.04)] cursor-pointer hover:text-[#FE8A95] text-sm truncate">'+p.name+(p.eps?'<span class="text-xs text-sub ml-1 shrink-0">('+p.eps+')</span>':'')+'</div>';
     }
-    mainHtml += '</div>';
+    nameHtml += '</div>';
+    mainHtml += '<div class="mb-4 bg-[#252530] rounded-lg p-3" id="g-'+k+'" style="break-inside:avoid"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">'+k+'</span><span class="text-xs text-sub">('+v.length+')</span></div>'+nameHtml+'</div>';
   }
 
-  document.getElementById('view').innerHTML = '<div class="flex gap-6"><div class="w-[140px] shrink-0 hidden md:block sticky top-44 self-start">'+sideLinks+'</div><div class="flex-1">'+mainHtml+'</div></div>';
+  document.getElementById('view').innerHTML = '<div class="flex gap-6"><div class="flex-1" style="column-count:2;column-gap:1.5rem">'+mainHtml+'</div><div class="w-[140px] shrink-0 hidden md:block sticky top-44 self-start">'+sideLinks+'</div></div>';
 }
 
 render();
