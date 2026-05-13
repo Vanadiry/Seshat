@@ -118,14 +118,14 @@ func rebuildTags(dd string) {
 // buildPersonNames generates a name→id lookup from persons.json.
 func buildPersonNames(dd string) {
 	data, err := os.ReadFile(cache.IndexFile(dd, "persons.json"))
-	if err != nil { log.Warn("person_names: persons.json not found"); return }
+	if err != nil { log.Warn("persons_name: persons.json not found"); return }
 	var list []cache.NameEntry
 	json.Unmarshal(data, &list)
 	m := map[string]int{}
 	for _, p := range list { m[p.Name] = p.ID }
 	result, _ := json.Marshal(m)
-	os.WriteFile(cache.IndexFile(dd, "person_names.json"), result, 0o644)
-	log.Info("person_names.json built: %d names", len(m))
+	os.WriteFile(cache.IndexFile(dd, "persons_name.json"), result, 0o644)
+	log.Info("persons_name.json built: %d names", len(m))
 }
 
 // rebuildFromScan scans all cached API JSON files and rebuilds list files + tags.

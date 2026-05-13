@@ -79,7 +79,7 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 		if err != nil {
 			continue
 		}
-		relPath := fmt.Sprintf("%s_%s/%d/%d.jpg", kind, size, id%10, id)
+		relPath := fmt.Sprintf("%ss_%s/%d/%d.jpg", kind, size, id%10, id)
 		fullPath := filepath.Join(imgBase, relPath)
 		os.MkdirAll(filepath.Dir(fullPath), 0o755)
 		os.WriteFile(fullPath, data, 0o644)
