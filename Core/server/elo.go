@@ -21,6 +21,7 @@ type eloEntry struct {
 	ID     int     `json:"id"`
 	Name   string  `json:"name"`
 	NameCN string  `json:"name_cn"`
+	Score  float64 `json:"score"`
 	Rating float64 `json:"rating"`
 }
 
@@ -40,8 +41,8 @@ func eloDir(dd string) string {
 	return filepath.Join(dd, "elo")
 }
 
-func eloScorePath(dd string) string {
-	return filepath.Join(dd, "elo", "score.json")
+func eloRatingPath(dd string) string {
+	return filepath.Join(dd, "elo", "rating.json")
 }
 
 func eloHistoryPath(dd string) string {
@@ -49,7 +50,7 @@ func eloHistoryPath(dd string) string {
 }
 
 func loadELO(dd string) map[int]float64 {
-	data, err := os.ReadFile(eloScorePath(dd))
+	data, err := os.ReadFile(eloRatingPath(dd))
 	if err != nil {
 		return map[int]float64{}
 	}
@@ -64,7 +65,7 @@ func loadELO(dd string) map[int]float64 {
 func saveELO(dd string, m map[int]float64) {
 	os.MkdirAll(eloDir(dd), 0o755)
 	data, _ := json.Marshal(m)
-	os.WriteFile(eloScorePath(dd), data, 0o644)
+	os.WriteFile(eloRatingPath(dd), data, 0o644)
 }
 
 func loadELOHistory(dd string) []eloHistory {
@@ -147,7 +148,7 @@ func loadSubjectIndex(dd string) []eloEntry {
 	json.Unmarshal(data, &list)
 	var result []eloEntry
 	for _, s := range list {
-		result = append(result, eloEntry{ID: s.ID, Name: s.Name, NameCN: s.NameCN})
+		result = append(result, eloEntry{ID: s.ID, Name: s.Name, NameCN: s.NameCN, Score: s.Score})
 	}
 	return result
 }

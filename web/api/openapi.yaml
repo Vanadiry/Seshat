@@ -917,6 +917,7 @@ components:
         id: { type: integer, example: 51 }
         name: { type: string, example: "CLANNAD" }
         name_cn: { type: string, example: "CLANNAD" }
+        score: { type: number, example: 8.4 }
         rating: { type: number, example: 1516.0 }
     EloPairEntry:
       type: object
