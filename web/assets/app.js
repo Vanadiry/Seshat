@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <style>
       @keyframes rainbow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
       @keyframes imgFadeIn { from{opacity:0} to{opacity:1} }
-      img, .grid > *, #results > div, #view > div, #appearances-section > div, #chars-section > div, #subjects-section > div { animation: imgFadeIn .35s ease }
+      img, .grid > *, #results > div, #view > div, #appearances-section > div, #chars-section > div, #subjects-section > div, #stats-list > div { animation: imgFadeIn .35s ease }
     </style>`;
 
   document.getElementById('btn-fetch').addEventListener('click', openFetch);
