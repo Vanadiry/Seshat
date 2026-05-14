@@ -95,7 +95,7 @@ async function overview(s, infoItems) {
 
   // Episode grid — sorted by sort, inline type separators
   var epGrid = '';
-  var allEps = eps.slice().sort(function(a,b){return (a.sort||0)-(b.sort||0)});
+  var allEps = eps.slice().sort(function(a,b){var ta=a.type||0,tb=b.type||0;if(ta!==tb)return ta-tb;return(a.sort||0)-(b.sort||0)});
   if (allEps.length) {
     var epCls = {
       0: 'bg-[#252530] text-sub',
@@ -339,7 +339,7 @@ async function episodes() {
   }
 
   epCount = eps.length; updateTabCount('ep', epCount);
-  var sorted = eps.slice().sort(function(a,b){return (a.sort||0)-(b.sort||0)});
+  var sorted = eps.slice().sort(function(a,b){var ta=a.type||0,tb=b.type||0;if(ta!==tb)return ta-tb;return(a.sort||0)-(b.sort||0)});
   var main = sorted.filter(function(e){return e.type===0});
   var sp = sorted.filter(function(e){return e.type!==0});
 

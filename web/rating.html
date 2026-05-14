@@ -21,7 +21,7 @@
   <!-- PK区 -->
   <div class="flex items-center gap-3 mb-4">
     <span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span>
-    <span class="font-bold text-lg">评分</span>
+    <span class="font-bold">评分</span>
     <button onclick="loadPair()" class="ml-2 px-3 py-1 rounded-lg text-xs cursor-pointer border border-[rgba(255,255,255,.12)] bg-transparent text-sub hover:text-white">刷新</button>
   </div>
   <div id="pk-area" class="flex gap-2 mb-6" style="min-height:280px">
@@ -53,7 +53,7 @@
   <div id="pk-loading" class="text-center py-20 text-sub">加载中…</div>
 
   <!-- 历史 -->
-  <div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">对战历史</span></div>
+  <div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">历史</span></div>
   <div id="history-area"><div class="text-center py-10 text-sub">加载中…</div></div>
   <div id="history-pager" class="mt-3 text-center"></div>
 </main>
@@ -168,10 +168,10 @@ function renderHistory() {
     var n = no.name;
     var primary = n === '加载中…' ? '加载中…' : (n ? primaryName(n, no.name_cn||'') : '无标题');
     var sub = n === '加载中…' ? '' : (n ? subName(n, no.name_cn||'') : '');
-    return '<div class="flex-1 flex items-center gap-3 py-1.5 pl-2">'+
+    return '<div style="flex:1 1 50%;max-width:50%;overflow:hidden" class="flex items-center gap-3 py-1.5 pl-2">'+
       '<img src="'+img('subject', id, 'grid')+'" '+imgOnError('subject', id, 'grid')+' class="w-8 h-8 rounded object-cover bg-[#151518] shrink-0">'+
-      '<div class="min-w-0"><div class="text-sm font-semibold truncate">'+primary+'</div>'+(sub?'<div class="text-xs text-sub truncate">'+sub+'</div>':'')+'</div>'+
-      '<span class="text-xs text-sub ml-auto shrink-0">#'+id+'</span></div>';
+      '<div class="min-w-0 flex-1"><div class="text-sm font-semibold truncate">'+primary+'</div>'+(sub?'<div class="text-xs text-sub truncate">'+sub+'</div>':'')+'</div>'+
+      '<span class="text-xs text-sub shrink-0">#'+id+'</span></div>';
   }
 
   function timeHTML(t) {
