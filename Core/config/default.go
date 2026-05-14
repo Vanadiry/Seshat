@@ -22,9 +22,13 @@ fallback_url = ""
 `
 
 const DefaultPreferencesJSON = `{
-  "_comment": "用户偏好设置，修改后刷新页面即可生效，无需重启后端",
+  "_comment": "修改后刷新页面即可生效，无需重启后端",
   "prefer_lang": {
-    "_comment": "控制标题展示方式，original 原文优先, chinese 中文优先",
+    "_choice": [
+      {"original": "原文优先"},
+      {"chinese": "中文优先"}
+    ],
+    "_comment": "标题展示方式",
     "value": "original"
   },
   "username": {
