@@ -12,17 +12,29 @@ import (
 	"time"
 
 	"github.com/vanadiry/seshat/Core/cache"
+	"github.com/vanadiry/seshat/Core/config"
 )
 
 const eloK = 32
 const eloDefault = 1500
 
 type eloEntry struct {
+	ID     int      `json:"id"`
+	Name   string   `json:"name"`
+	NameCN string   `json:"name_cn"`
+	Score  float64  `json:"score"`
+	Rating *float64 `json:"rating,omitempty"`
+}
+
+type eloOrphan struct {
 	ID     int     `json:"id"`
-	Name   string  `json:"name"`
-	NameCN string  `json:"name_cn"`
-	Score  float64 `json:"score"`
 	Rating float64 `json:"rating"`
+}
+
+type eloRankingResult struct {
+	Entries  []eloEntry  `json:"entries"`
+	NoRating []eloEntry  `json:"no_rating"`
+	Orphans  []eloOrphan `json:"orphans"`
 }
 
 type eloPairEntry struct {
@@ -37,20 +49,16 @@ type eloHistory struct {
 	Time    string `json:"time"`
 }
 
-func eloDir(dd string) string {
-	return filepath.Join(dd, "elo")
+func eloRatingPath() string {
+	return filepath.Join(config.Dir(), "elo", "rating.json")
 }
 
-func eloRatingPath(dd string) string {
-	return filepath.Join(dd, "elo", "rating.json")
+func eloHistoryPath() string {
+	return filepath.Join(config.Dir(), "elo", "history.json")
 }
 
-func eloHistoryPath(dd string) string {
-	return filepath.Join(dd, "elo", "history.json")
-}
-
-func loadELO(dd string) map[int]float64 {
-	data, err := os.ReadFile(eloRatingPath(dd))
+func loadELO() map[int]float64 {
+	data, err := os.ReadFile(eloRatingPath())
 	if err != nil {
 		return map[int]float64{}
 	}
@@ -62,14 +70,14 @@ func loadELO(dd string) map[int]float64 {
 	return m
 }
 
-func saveELO(dd string, m map[int]float64) {
-	os.MkdirAll(eloDir(dd), 0o755)
+func saveELO(m map[int]float64) {
+	os.MkdirAll(filepath.Join(config.Dir(), "elo"), 0o755)
 	data, _ := json.Marshal(m)
-	os.WriteFile(eloRatingPath(dd), data, 0o644)
+	os.WriteFile(eloRatingPath(), data, 0o644)
 }
 
-func loadELOHistory(dd string) []eloHistory {
-	data, err := os.ReadFile(eloHistoryPath(dd))
+func loadELOHistory() []eloHistory {
+	data, err := os.ReadFile(eloHistoryPath())
 	if err != nil {
 		return []eloHistory{}
 	}
@@ -81,10 +89,10 @@ func loadELOHistory(dd string) []eloHistory {
 	return h
 }
 
-func saveELOHistory(dd string, h []eloHistory) {
-	os.MkdirAll(eloDir(dd), 0o755)
+func saveELOHistory(h []eloHistory) {
+	os.MkdirAll(filepath.Join(config.Dir(), "elo"), 0o755)
 	data, _ := json.Marshal(h)
-	os.WriteFile(eloHistoryPath(dd), data, 0o644)
+	os.WriteFile(eloHistoryPath(), data, 0o644)
 }
 
 // getELOPair returns two random cached subjects for comparison.
@@ -110,7 +118,7 @@ func getELOPair(dd string) []eloPairEntry {
 
 // updateELO updates ratings after a comparison and records the battle in history.
 func updateELO(dd string, winnerID, loserID int) {
-	scores := loadELO(dd)
+	scores := loadELO()
 	wa := scores[winnerID]
 	if wa == 0 {
 		wa = eloDefault
@@ -126,11 +134,11 @@ func updateELO(dd string, winnerID, loserID int) {
 	scores[winnerID] = wa + eloK*(1.0-ea)
 	scores[loserID] = wb + eloK*(0.0-eb)
 
-	saveELO(dd, scores)
+	saveELO(scores)
 
-	history := loadELOHistory(dd)
+	history := loadELOHistory()
 	history = append(history, eloHistory{Winner: winnerID, Loser: loserID, Time: time.Now().Format(time.RFC3339)})
-	saveELOHistory(dd, history)
+	saveELOHistory(history)
 }
 
 // loadSubjectIndex reads subjects.json index for fast lookup.
@@ -153,18 +161,36 @@ func loadSubjectIndex(dd string) []eloEntry {
 	return result
 }
 
-// getELORanking returns subjects sorted by ELO rating descending.
-func getELORanking(dd string) []eloEntry {
-	scores := loadELO(dd)
-	list := loadSubjectIndex(dd)
-	for i := range list {
-		list[i].Rating = scores[list[i].ID]
-		if list[i].Rating == 0 {
-			list[i].Rating = eloDefault
+// getELORanking returns entries with ELO, entries without ELO, and orphan scores.
+func getELORanking(dd string) eloRankingResult {
+	scores := loadELO()
+	all := loadSubjectIndex(dd)
+	seen := map[int]bool{}
+
+	var entries []eloEntry
+	var noRating []eloEntry
+	for i := range all {
+		if v, ok := scores[all[i].ID]; ok {
+			r := v
+			all[i].Rating = &r
+			entries = append(entries, all[i])
+		} else {
+			noRating = append(noRating, all[i])
+		}
+		seen[all[i].ID] = true
+	}
+	sort.Slice(entries, func(i, j int) bool { return *entries[i].Rating > *entries[j].Rating })
+	sort.Slice(noRating, func(i, j int) bool { return noRating[i].Score > noRating[j].Score })
+
+	var orphans []eloOrphan
+	for id, rating := range scores {
+		if !seen[id] && rating != 0 {
+			orphans = append(orphans, eloOrphan{ID: id, Rating: rating})
 		}
 	}
-	sort.Slice(list, func(i, j int) bool { return list[i].Rating > list[j].Rating })
-	return list
+	sort.Slice(orphans, func(i, j int) bool { return orphans[i].Rating > orphans[j].Rating })
+
+	return eloRankingResult{Entries: entries, NoRating: noRating, Orphans: orphans}
 }
 
 // subjectSummary returns a lightweight subject entry (only Score is used externally).
@@ -214,5 +240,5 @@ func handleELORanking(dd string) http.HandlerFunc {
 }
 
 func handleELOHistory(dd string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) { writeJSON(w, loadELOHistory(dd)) }
+	return func(w http.ResponseWriter, r *http.Request) { writeJSON(w, loadELOHistory()) }
 }

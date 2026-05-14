@@ -381,15 +381,14 @@ paths:
     get:
       tags: [ELO]
       summary: ELO 排名
+      description: 返回三组数据：entries（有ELO+本地）、no_rating（仅有本地）、orphans（仅有ELO）
       responses:
         "200":
-          description: 按 ELO 分数降序排列
+          description: 分组排名结果
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ELOEntry"
+                $ref: "#/components/schemas/EloRankingResult"
   /api/v0/elo/history:
     get:
       tags: [ELO]
@@ -932,6 +931,24 @@ components:
         name_cn: { type: string, example: "CLANNAD" }
         score: { type: number, example: 8.4 }
         rating: { type: number, example: 1516.0 }
+    EloRankingResult:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/ELOEntry"
+        no_rating:
+          type: array
+          items:
+            $ref: "#/components/schemas/ELOEntry"
+        orphans:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer, example: 999 }
+              rating: { type: number, example: 1520.0 }
     EloPairEntry:
       type: object
       properties:
