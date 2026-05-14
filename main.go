@@ -20,7 +20,7 @@ func main() {
 	dd := cfg.DataDir()
 	os.MkdirAll(dd, 0o755)
 	os.MkdirAll(cfg.TrackerDir(), 0o755)
-	log.Init(dd)
+	log.Init()
 	log.Info("Starting Seshat...")
 
 	router := server.New(cfg, webFS)

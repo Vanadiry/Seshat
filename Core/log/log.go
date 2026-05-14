@@ -11,13 +11,15 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/vanadiry/seshat/Core/config"
 )
 
 var logger *stdlog.Logger
 
-// Init 初始化日志系统，同时输出到控制台和 SESHAT_HOME/Logs/seshat_YYYYMMDD_HHMMSS.log。
-func Init(dataDir string) {
-	logDir := filepath.Join(dataDir, "logs")
+// Init 初始化日志系统，同时输出到控制台和 SESHAT_HOME/logs/seshat_YYYYMMDD_HHMMSS.log。
+func Init() {
+	logDir := filepath.Join(config.Dir(), "logs")
 	os.MkdirAll(logDir, 0o755)
 
 	ts := time.Now().Format("20060102_150405")
