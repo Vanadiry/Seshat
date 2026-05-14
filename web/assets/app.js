@@ -56,13 +56,16 @@ var MSG = {
   btnExecute: '执行',
   btnCancel: '取消',
   btnClose: '关闭',
+  btnImportColl: '导入收藏至 Tracker',
+  confirmImportColl: '将从用户收藏列表中读取数据，并存入 Tracker。\n之后拉取数据时将能够拉取你的收藏。',
+  importCollDone: function(n) { return '已将 '+n+' 个条目导入至 tracker/user.json'; },
 
   // Confirm messages
   confirmFetchId: function(ids) { return '将从拉取动画 '+ids.split(',').map(function(s){return '#'+s.trim()}).join(', ')+' 的完整数据'; },
   confirmTrackerFetch: function(name) { return '将拉取 Tracker ['+name+'] 中记录的全部动画数据？'; },
   confirmTrackerCreate: function(name) { return '未找到 Tracker ['+name+']。\n是否创建？'; },
   trackerCreated: function(name) { var d = (window.SESHAT_HOME ? window.SESHAT_HOME+"/tracker" : '~/.vSoft/Seshat/tracker'); return 'Tracker ['+name+'] 已创建。请在 '+d+'/'+name+'.toml 中填写动画 ID，然后返回此处重新拉取。'; },
-  confirmUserFetch: function() { return window.FETCH_COLLECTIONS ? '将拉取 '+window.USERNAME+' 的数据，收藏列表将存入 Tracker 中。\n拉取成功后，请执行增量更新。' : '将拉取 '+window.USERNAME+' 的数据（不含收藏列表）'; },
+  confirmUserFetch: function() { return '将拉取 '+window.USERNAME+' 的用户数据与收藏列表'; },
   confirmUpdate: '将对比本地与上游数据，并添加缺失的数据。',
   confirmRefreshAll: '将从上游拉取全部 Tracker 数据，覆盖已有内容。本地多余数据不会删除。',
   confirmRebuildIndex: '将从本地 JSON 中重建所有索引',
@@ -451,11 +454,15 @@ function initDialog() {
     '<button id="btn-tracker-fetch" class="w-9 h-9 rounded-lg bg-[#FE8A95] text-white font-bold cursor-pointer border-0 hover:opacity-90 flex items-center justify-center" title="拉取或创建">&check;</button></div>'+
 
     // Action buttons
-    '<div class="grid grid-cols-3 gap-2 mb-2">'+
-    '<button id="btn-user" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">'+MSG.btnUserFetch+'</button>'+
+    '<div class="flex flex-col gap-2 mb-2">'+
+    '<div class="grid grid-cols-2 gap-2">'+
     '<button id="btn-update" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">'+MSG.btnUpdate+'</button>'+
     '<button id="btn-all" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">'+MSG.btnRefreshAll+'</button>'+
     '</div>'+
+    '<div class="grid grid-cols-2 gap-2">'+
+    '<button id="btn-user" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">'+MSG.btnUserFetch+'</button>'+
+    '<button id="btn-import-coll" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">'+MSG.btnImportColl+'</button>'+
+    '</div></div>'+
 
     // Danger zone
     '<button id="btn-danger-toggle" class="w-full px-3 py-2 rounded-lg border border-[rgba(255,0,0,.3)] bg-transparent text-[#dc2626] text-sm cursor-pointer hover:bg-[#3a1a1a]">'+MSG.btnDangerZone+'</button>'+
@@ -514,6 +521,15 @@ function initDialog() {
   document.getElementById('btn-user').addEventListener('click', function() {
     if (!window.USERNAME) { showError(MSG.errNoUsername); return; }
     confirmAction(MSG.confirmUserFetch(), doUserFetch);
+  });
+  document.getElementById('btn-import-coll').addEventListener('click', function() {
+    confirmAction('将用户收藏列表导入为 Tracker，之后可参与增量更新。', function() {
+      closeFetch();
+      fetch(API + '/v0/tracker/import-collections', {method:'POST'}).then(function(r){return r.json()}).then(function(d) {
+        if (d.error) showError(d.error);
+        else showError(MSG.importCollDone(d.count));
+      });
+    });
   });
   document.getElementById('btn-update').addEventListener('click', function() {
     confirmAction(MSG.confirmUpdate, doFetchUpdate);
@@ -586,7 +602,7 @@ async function doTrackerFetch() {
 }
 
 async function doUserFetch() {
-  var res = await fetch(API + '/v0/fetch/user', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({collections: !!window.FETCH_COLLECTIONS})});
+  var res = await fetch(API + '/v0/fetch/user', {method:'POST'});
   var d = await res.json().catch(function(){return {error:'请求失败 ('+res.status+')'}});
   if (d.error) { showError(MSG.errUserFetchFailed + d.error); return; }
   closeFetch();

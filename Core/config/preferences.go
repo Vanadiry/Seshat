@@ -8,25 +8,19 @@ import (
 
 // Preferences is the flat runtime representation of user preferences.
 type Preferences struct {
-	PreferLang       string
-	Username         string
-	FetchCollections bool
+	PreferLang string
+	Username   string
 }
 
 type prefString struct {
 	Comment string `json:"_comment"`
 	Value   string `json:"value"`
 }
-type prefBool struct {
-	Comment string `json:"_comment"`
-	Value   bool   `json:"value"`
-}
 
 type preferencesFile struct {
-	Comment          string     `json:"_comment"`
-	PreferLang       prefString `json:"prefer_lang"`
-	Username         prefString `json:"username"`
-	FetchCollections prefBool   `json:"fetch_collections"`
+	Comment    string     `json:"_comment"`
+	PreferLang prefString `json:"prefer_lang"`
+	Username   prefString `json:"username"`
 }
 
 var DefaultPreferences = Preferences{
@@ -52,8 +46,7 @@ func LoadPreferences() (*Preferences, error) {
 		return &DefaultPreferences, nil
 	}
 	return &Preferences{
-		PreferLang:       f.PreferLang.Value,
-		Username:         f.Username.Value,
-		FetchCollections: f.FetchCollections.Value,
+		PreferLang: f.PreferLang.Value,
+		Username:   f.Username.Value,
 	}, nil
 }

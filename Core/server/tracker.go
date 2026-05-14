@@ -248,3 +248,24 @@ func handleTrackerList(cfg *config.Config) http.HandlerFunc {
 		writeJSON(w, list)
 	}
 }
+
+func handleImportCollections(dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile(filepath.Join(dd, "user", "collections.json"))
+		if err != nil { http.Error(w, `{"error":"collections not found"}`, 400); return }
+		var coll struct {
+			Subjects map[string]int `json:"subjects"`
+		}
+		if json.Unmarshal(data, &coll) != nil { http.Error(w, `{"error":"invalid collections data"}`, 400); return }
+		var ids []int
+		for sid := range coll.Subjects {
+			id, _ := strconv.Atoi(sid)
+			if id > 0 { ids = append(ids, id) }
+		}
+		td := filepath.Join(config.Dir(), "tracker")
+		os.MkdirAll(td, 0o755)
+		trackerData, _ := json.Marshal(map[string]any{"name": "user", "subjects": ids})
+		os.WriteFile(filepath.Join(td, "user.json"), trackerData, 0o644)
+		writeJSON(w, map[string]any{"status": "ok", "count": len(ids)})
+	}
+}

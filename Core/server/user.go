@@ -6,8 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-
-	"github.com/vanadiry/seshat/Core/config"
 )
 
 func handleUser(dd string) http.HandlerFunc {
@@ -43,28 +41,22 @@ func serveUserAvatar(dd string) http.HandlerFunc {
 
 func handleUserCollections(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		username := r.PathValue("username")
-		if username == "" {
+		data, err := os.ReadFile(filepath.Join(dd, "user", "collections.json"))
+		if err != nil {
 			writeJSON(w, map[string]any{"data": []any{}})
 			return
 		}
-		// Read _user.json tracker file
-		data, err := os.ReadFile(filepath.Join(config.Dir(), "tracker", "_user.json"))
-		items := map[int]int{}
-		if err == nil {
-			var tracker struct {
-				Subjects map[string]int `json:"subjects"`
-			}
-			if json.Unmarshal(data, &tracker) == nil {
-				for sid, t := range tracker.Subjects {
-					id, _ := strconv.Atoi(sid)
-					if id > 0 { items[id] = t }
-				}
-			}
+		var coll struct {
+			Subjects map[string]int `json:"subjects"`
+		}
+		if json.Unmarshal(data, &coll) != nil {
+			writeJSON(w, map[string]any{"data": []any{}})
+			return
 		}
 		var list []map[string]any
-		for id, t := range items {
-			list = append(list, map[string]any{"subject_id": id, "type": t})
+		for sid, t := range coll.Subjects {
+			id, _ := strconv.Atoi(sid)
+			if id > 0 { list = append(list, map[string]any{"subject_id": id, "type": t}) }
 		}
 		writeJSON(w, map[string]any{"data": list})
 	}

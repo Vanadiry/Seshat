@@ -30,10 +30,6 @@ const DefaultPreferencesJSON = `{
   "username": {
     "_comment": "在此处填写你的 Bangumi番组计划 ID，将能够拉取收藏和头像等信息",
     "value": ""
-  },
-  "fetch_collections": {
-    "_comment": "拉取你 Bangumi番组计划 信息时，是否要拉取收藏",
-    "value": false
   }
 }
 `

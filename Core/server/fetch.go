@@ -295,6 +295,7 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 	log.Info("Fetching collections for %s", username)
 
 	all := map[string]int{}
+	var ids []int
 
 	offset := 0
 	for {
@@ -315,33 +316,35 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 		for _, d := range resp.Data {
 			if d.SubjectType == 2 {
 				all[strconv.Itoa(d.SubjectID)] = d.Type
+				ids = append(ids, d.SubjectID)
 			}
 		}
 		if offset+50 >= resp.Total { break }
 		offset += 50
 	}
 
-	path := filepath.Join(config.Dir(), "tracker", "_user.json")
-	os.MkdirAll(filepath.Dir(path), 0o755)
-	result, _ := json.MarshalIndent(map[string]any{
-		"auto":       true,
-		"username":   username,
-		"updated_at": time.Now().Format(time.RFC3339),
-		"subjects":   all,
-	}, "", "  ")
-	os.WriteFile(path, result, 0o644)
+	// Save collections for frontend display
+	userDir := filepath.Join(dd, "user")
+	os.MkdirAll(userDir, 0o755)
+	collData, _ := json.Marshal(map[string]any{"subjects": all, "updated_at": time.Now().Format(time.RFC3339)})
+	os.WriteFile(filepath.Join(userDir, "collections.json"), collData, 0o644)
+
+	// Save as standard tracker
+	trackerDir := filepath.Join(config.Dir(), "tracker")
+	os.MkdirAll(trackerDir, 0o755)
+	trackerData, _ := json.Marshal(map[string]any{"name": "user", "subjects": ids})
+	os.WriteFile(filepath.Join(trackerDir, "user.json"), trackerData, 0o644)
+
 	log.Info("User collections for %s saved (%d items)", username, len(all))
 }
 
-func fetchUserProfile(username string, bg *bangumi.Client, dd string) {
-	log.Info("Fetching user profile for %s", username)
+func fetchUserInfo(username string, bg *bangumi.Client, dd string) {
+	log.Info("Fetching user info for %s", username)
 	userDir := filepath.Join(dd, "user")
 	os.MkdirAll(userDir, 0o755)
-
-	// Fetch user info
 	data, err := bg.GetRaw(fmt.Sprintf("v0/users/%s", username))
 	if err != nil {
-		log.Warn("User profile %s: %v", username, err)
+		log.Warn("User info %s: %v", username, err)
 		return
 	}
 	var userData map[string]any
@@ -349,19 +352,23 @@ func fetchUserProfile(username string, bg *bangumi.Client, dd string) {
 	delete(userData, "avatar")
 	clean, _ := json.Marshal(userData)
 	os.WriteFile(filepath.Join(userDir, "info.json"), clean, 0o644)
+}
 
-	// Fetch avatar
+func fetchUserAvatar(username string, bg *bangumi.Client, dd string) {
+	log.Info("Fetching user avatar for %s", username)
+	userDir := filepath.Join(dd, "user")
+	os.MkdirAll(userDir, 0o755)
 	imgData, err := bg.GetImage(fmt.Sprintf("v0/users/%s/avatar?type=large", username))
 	if err != nil {
 		log.Warn("User avatar %s: %v", username, err)
-	} else {
-		ext := ".jpg"
-		if len(imgData) > 0 && imgData[0] == 0x89 {
-			ext = ".png"
-		}
-		os.WriteFile(filepath.Join(userDir, "large"+ext), imgData, 0o644)
+		return
 	}
-	log.Info("User profile for %s saved", username)
+	ext := ".jpg"
+	if len(imgData) > 0 && imgData[0] == 0x89 {
+		ext = ".png"
+	}
+	os.WriteFile(filepath.Join(userDir, "large"+ext), imgData, 0o644)
+	log.Info("User avatar for %s saved", username)
 }
 
 // countTrackerTotal 统计所有 tracker 中的 subject 总数。
@@ -461,15 +468,24 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 	uname := pref.Username
 		if uname == "" { http.Error(w, `{"error":"username not configured"}`, 400); return }
 		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
-		var req struct{ Collections bool `json:"collections"` }
-		json.NewDecoder(r.Body).Decode(&req)
-		p := newProgress(1, "fetch_user", "拉取用户数据")
+		p := newProgress(3, "fetch_user", "拉取用户数据")
 		go func() {
-			fetchUserProfile(uname, bg, dd)
-			if req.Collections {
-				fetchUserCollections(uname, bg, dd)
-			}
-			p.Send("complete", 1, 1, "")
+			p.SetPhase(1, 3, "拉取用户信息")
+			p.Send("user_info", 0, 1, "")
+			fetchUserInfo(uname, bg, dd)
+			p.Send("user_info", 1, 1, "")
+
+			p.SetPhase(2, 3, "拉取用户头像")
+			p.Send("user_avatar", 0, 1, "")
+			fetchUserAvatar(uname, bg, dd)
+			p.Send("user_avatar", 1, 1, "")
+
+			p.SetPhase(3, 3, "拉取用户收藏")
+			p.Send("user_collections", 0, 1, "")
+			fetchUserCollections(uname, bg, dd)
+			p.Send("user_collections", 1, 1, "")
+
+			p.Send("complete", 3, 3, "")
 			p.Close()
 		}()
 		writeJSON(w, map[string]any{"status": "fetching", "username": uname, "task_id": p.ID})
