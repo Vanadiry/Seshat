@@ -46,7 +46,8 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 			http.Redirect(w, r, "/"+p, http.StatusMovedPermanently)
 			return
 		}
-		http.ServeFileFS(w, r, embedFS, "web/"+page+".html")
+		if embedFS == nil { http.NotFound(w, r); return }
+			http.ServeFileFS(w, r, embedFS, "web/"+page+".html")
 	})
 	// app.js with config injection
 	mux.HandleFunc("GET /assets/app.js", func(w http.ResponseWriter, r *http.Request) {
