@@ -42,12 +42,12 @@ var MSG = {
   fallbackWarn: '回退模式，缺失数据将从回退端点获取',
   bothWarn: '自定义后端和回退模式，请确保你明白此配置',
   // Fetch dialog
-  dialogTitle: '从上游拉取数据',
-  idLabel: '拉取一个或一组动画',
-  idPlaceholder: '动画 ID，如 51 或 51,288',
+  dialogTitle: '管理数据',
+  idLabel: '拉取动画',
+  idPlaceholder: '动画 ID，如 51 或 51, 288',
   trackerLabel: '拉取或创建 Tracker',
   trackerPlaceholder: 'Tracker 名称',
-  btnUserFetch: '拉取用户数据',
+  btnUserFetch: '刷新用户数据',
   btnUpdate: '增量更新',
   btnRefreshAll: '刷新全部',
   btnDangerZone: '危险区',
@@ -70,8 +70,8 @@ var MSG = {
 
   // Validation
   errInvalidTrackerName: 'Tracker 名称仅允许大小写字母、数字、短横线和下划线',
-  errUserFetchFailed: '拉取用户数据失败: ',
-  errNoUsername: '未在配置文件中设置用户名（[user] username），无法拉取用户数据。',
+  errUserFetchFailed: '刷新用户数据失败: ',
+  errNoUsername: '未在配置中设置用户名（[user] username），无法刷新用户数据。',
 
   // Progress
   progressConnecting: '连接中…',
@@ -359,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="flex-1"></div>
         ${warnText ? '<span class="absolute left-1/2 -translate-x-1/2 text-[#FFCA28] text-sm font-bold pointer-events-none">'+warnText+'</span>' : ''}
         <a href="/search.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/search.html')}">搜索</a>
-        <button id="btn-fetch" class="px-4 py-1.5 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">+ 拉取</button>
+        <button id="btn-fetch" class="px-4 py-1.5 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">管理数据</button>
         <div class="relative">
           <img id="user-avatar" src="" class="w-8 h-8 rounded-lg object-cover bg-[#202028] cursor-pointer shrink-0" onclick="toggleUserMenu(event)" style="display:none">
           <div id="user-placeholder" class="w-8 h-8 rounded-lg cursor-pointer shrink-0" onclick="toggleUserMenu(event)" style="background:linear-gradient(135deg,#ff6b6b,#feca57,#48dbfb,#ff9ff3,#54a0ff);background-size:300% 300%;animation:rainbow 3s ease infinite"></div>
@@ -375,6 +375,8 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
     <style>
       @keyframes rainbow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+      @keyframes imgFadeIn { from{opacity:0} to{opacity:1} }
+      img, .grid > *, #results > div, #view > div, #appearances-section > div, #chars-section > div, #subjects-section > div { animation: imgFadeIn .35s ease }
     </style>`;
 
   document.getElementById('btn-fetch').addEventListener('click', openFetch);
@@ -620,11 +622,15 @@ function startProgress(taskId, label) {
   if (!banner) {
     banner = document.createElement('div');
     banner.id = 'progress-banner';
-    banner.className = 'hidden fixed bottom-4 right-4 z-[200] bg-[#1c1c22] border border-[rgba(255,255,255,.15)] rounded-xl shadow-2xl p-4 max-w-[320px] min-w-[260px]';
+    banner.className = 'fixed bottom-4 right-4 z-[200] bg-[#1c1c22] border border-[rgba(255,255,255,.15)] rounded-xl shadow-2xl p-4 max-w-[320px] min-w-[260px]';
+    banner.style.opacity = '0';
+    banner.style.pointerEvents = 'none';
     banner.innerHTML = '<div class="flex items-center gap-2"><span id="pb-label" class="text-sm font-bold truncate"></span><span id="pb-phase" class="text-xs text-sub shrink-0"></span></div><div id="pb-detail" class="text-xs text-sub mt-1"></div><div id="pb-bar" class="mt-2 h-1 rounded-full bg-[#30303b] overflow-hidden"><div id="pb-fill" class="h-full bg-[#FE8A95] w-0 transition-[width] duration-300"></div></div>';
     document.body.appendChild(banner);
   }
-  banner.classList.remove('hidden');
+  banner.style.opacity = '1';
+  banner.style.pointerEvents = 'auto';
+  banner.style.transition = 'opacity .3s';
   banner.style.borderColor = 'rgba(255,255,255,.15)';
   var fill = document.getElementById('pb-fill');
   fill.style.width = '0%';
@@ -654,8 +660,9 @@ function startProgress(taskId, label) {
         remaining -= 50;
         if (remaining <= 0) {
           clearInterval(interval);
-          banner.classList.add('hidden');
-          if (typeof onFetchDone === 'function') onFetchDone();
+          banner.style.opacity = '0';
+          banner.style.pointerEvents = 'none';
+          setTimeout(function() { if (typeof onFetchDone === 'function') onFetchDone(); }, 300);
         } else {
           fill.style.width = Math.round(remaining / 5000 * 100) + '%';
         }

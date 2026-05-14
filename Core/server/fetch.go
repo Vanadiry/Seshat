@@ -344,7 +344,11 @@ func fetchUserProfile(username string, bg *bangumi.Client, dd string) {
 		log.Warn("User profile %s: %v", username, err)
 		return
 	}
-	os.WriteFile(filepath.Join(userDir, "info.json"), data, 0o644)
+	var userData map[string]any
+	json.Unmarshal(data, &userData)
+	delete(userData, "avatar")
+	clean, _ := json.Marshal(userData)
+	os.WriteFile(filepath.Join(userDir, "info.json"), clean, 0o644)
 
 	// Fetch avatar
 	imgData, err := bg.GetImage(fmt.Sprintf("v0/users/%s/avatar?type=large", username))

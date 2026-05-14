@@ -1,32 +1,37 @@
 <!DOCTYPE html>
 <html lang="zh-CN" class="bg-[#1d1d1d]">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>搜索</title>
+<meta charset="utf-8"><meta name="view-transition" content="same-origin"><meta name="viewport" content="width=device-width, initial-scale=1"><title>搜索</title>
 <script src="/assets/tailwindcss-3.4.js"></script>
 <script>tailwind.config={theme:{extend:{colors:{bg:'#1d1d1d',card:'#2a2a2a',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95','pink-bg':'#403638'}}}}</script>
+<style>
+  select.search-type { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.52)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px; appearance: none; }
+  #search-area { transition: margin-top .35s ease; }
+</style>
 </head>
 <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
 
 <div id="topbar"></div>
 
-<main class="max-w-[700px] mx-auto p-6">
-  <div class="mt-12 flex gap-2">
-    <input id="q" placeholder="搜索…" class="flex-1 px-4 py-3 rounded-lg border border-[rgba(255,255,255,.12)] bg-[#151518] text-base" onkeydown="if(event.key==='Enter')doSearch()" autofocus>
-    <button onclick="doSearch()" class="px-6 py-3 rounded-lg bg-[#FE8A95] text-white font-semibold cursor-pointer border-0 hover:opacity-90">搜索</button>
+<main class="max-w-[640px] mx-auto p-6">
+  <div id="search-area" class="mt-[25vh]">
+    <div class="flex items-stretch bg-[#151518] border border-[rgba(255,255,255,.15)] rounded-xl overflow-hidden focus-within:border-[#FE8A95] transition-colors">
+      <select id="search-type" class="search-type bg-[#202028] text-sub text-sm font-semibold pl-4 pr-6 rounded-l-xl border-0 outline-none cursor-pointer shrink-0 hover:text-white" style="width:72px;text-align:center;text-align-last:center">
+        <option value="subjects">动画</option>
+        <option value="characters">角色</option>
+        <option value="persons">人物</option>
+        <option value="tags" id="opt-tags">标签</option>
+      </select>
+      <input id="q" placeholder="搜索…" class="flex-1 px-4 py-3 bg-transparent text-base outline-none border-0 min-w-0" onkeydown="if(event.key==='Enter')doSearch()" autofocus>
+      <button onclick="doSearch()" class="bg-[#FE8A95] text-white font-semibold cursor-pointer border-0 hover:opacity-90 shrink-0 py-3" style="width:72px">搜索</button>
+    </div>
   </div>
-  <div class="flex flex-wrap gap-3 mt-4 justify-center">
-    <label class="flex items-center gap-1.5 text-sm text-sub cursor-pointer"><input type="radio" name="search-type" class="accent-[#FE8A95]" data-type="subjects" checked><span>动画</span></label>
-    <label class="flex items-center gap-1.5 text-sm text-sub cursor-pointer"><input type="radio" name="search-type" class="accent-[#FE8A95]" data-type="characters"><span>角色</span></label>
-    <label class="flex items-center gap-1.5 text-sm text-sub cursor-pointer"><input type="radio" name="search-type" class="accent-[#FE8A95]" data-type="persons"><span>人物</span></label>
-    <label id="label-tags" class="flex items-center gap-1.5 text-sm text-sub cursor-pointer"><input type="radio" name="search-type" class="accent-[#FE8A95]" data-type="tags"><span>标签</span></label>
-  </div>
-  <div id="status" class="text-center text-sub text-sm mt-2 hidden"></div>
   <div id="results" class="mt-6"></div>
 </main>
 
 <script src="assets/app.js"></script>
 <script>
-if (window.BACKEND_URL) document.getElementById('label-tags').style.display = 'none';
+if (window.BACKEND_URL) document.getElementById('opt-tags').style.display = 'none';
 
 var qp = new URLSearchParams(location.search);
 var initQ = qp.get('q');
@@ -35,9 +40,9 @@ if (initQ) { document.getElementById('q').value = initQ; doSearch(); }
 async function doSearch() {
   var q = document.getElementById('q').value.trim();
   if (!q) return;
-  var checked = document.querySelector('[data-type]:checked');
-  if (!checked) return;
-  var type = checked.dataset.type;
+  var type = document.getElementById('search-type').value;
+  if (!type) return;
+  document.getElementById('search-area').style.marginTop = '0';
   var res = document.getElementById('results');
   res.innerHTML = '<div class="text-center py-10 text-sub">搜索中…</div>';
 
