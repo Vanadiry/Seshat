@@ -16,15 +16,26 @@ user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 
 # backend_url 置空则前端请求本地 /api/v0；设为 https://api.bgm.tv 则前端直连官方
 # fallback_url: 本地 404 时回退请求此地址，置空则不启用回退
-# prefer_lang: "original" 原文优先, "chinese" 中文优先
 [frontend]
 backend_url = ""
 fallback_url = ""
-prefer_lang = "original"
+`
 
-[user]
-username = ""
-fetch_collections = false
+const DefaultPreferencesJSON = `{
+  "_comment": "用户偏好设置，修改后刷新页面即可生效，无需重启后端",
+  "prefer_lang": {
+    "_comment": "控制标题展示方式，original 原文优先, chinese 中文优先",
+    "value": "original"
+  },
+  "username": {
+    "_comment": "在此处填写你的 Bangumi番组计划 ID，将能够拉取收藏和头像等信息",
+    "value": ""
+  },
+  "fetch_collections": {
+    "_comment": "拉取你 Bangumi番组计划 信息时，是否要拉取收藏",
+    "value": false
+  }
+}
 `
 
 const TrackerTemplate = `# Tracker: %s

@@ -36,6 +36,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	imgDir := filepath.Join(dd, "images")
 	os.MkdirAll(imgDir, 0o755)
 	noImagePath = filepath.Join(imgDir, "no-image.png")
+	config.LoadPreferences() // ensure settings dir and preferences.json exist at startup
 
 	// 从 embed 加载 no-image.png，写入 images 目录，并缓存内容用于后续比对
 	if embedFS != nil {
@@ -62,7 +63,9 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /assets/app.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
 		w.Header().Set("Cache-Control", "no-cache")
-		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\nwindow.FETCH_COLLECTIONS=%v;\n", cfg.Frontend.BackendURL, cfg.Frontend.PreferLang, cfg.User.Username, cfg.Frontend.FallbackURL, config.Dir(), cfg.User.FetchCollections)
+		pref, _ := config.LoadPreferences()
+	if pref == nil { pref = &config.DefaultPreferences }
+	fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\nwindow.FETCH_COLLECTIONS=%v;\n", cfg.Frontend.BackendURL, pref.PreferLang, pref.Username, cfg.Frontend.FallbackURL, config.Dir(), pref.FetchCollections)
 		data, _ := fs.ReadFile(embedFS, "web/assets/app.js")
 		w.Write(data)
 	})

@@ -24,20 +24,13 @@ type UpstreamConfig struct {
 
 type FrontendConfig struct {
 	BackendURL  string `toml:"backend_url"`
-	PreferLang  string `toml:"prefer_lang"`
 	FallbackURL string `toml:"fallback_url"`
-}
-
-type UserConfig struct {
-	Username         string `toml:"username"`
-	FetchCollections bool   `toml:"fetch_collections"`
 }
 
 type Config struct {
 	Server   ServerConfig   `toml:"server"`
 	Upstream UpstreamConfig `toml:"upstream"`
 	Frontend FrontendConfig `toml:"frontend"`
-	User     UserConfig     `toml:"user"`
 }
 
 var Defaults = Config{
@@ -51,8 +44,7 @@ var Defaults = Config{
 		BaseURL:   "https://api.bgm.tv",
 		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
 	},
-	Frontend: FrontendConfig{BackendURL: "", PreferLang: "original", FallbackURL: ""},
-	User:     UserConfig{Username: ""},
+	Frontend: FrontendConfig{BackendURL: "", FallbackURL: ""},
 }
 
 func Dir() string {

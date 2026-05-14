@@ -456,7 +456,9 @@ func handleFetchTracker(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
-		uname := cfg.User.Username
+		pref, _ := config.LoadPreferences()
+	if pref == nil { pref = &config.DefaultPreferences }
+	uname := pref.Username
 		if uname == "" { http.Error(w, `{"error":"username not configured"}`, 400); return }
 		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
 		var req struct{ Collections bool `json:"collections"` }
