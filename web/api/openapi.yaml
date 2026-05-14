@@ -17,6 +17,7 @@ tags:
   - name: 图片
   - name: 统计
   - name: ELO
+  - name: 设置
   - name: 用户
 
 paths:
@@ -705,6 +706,33 @@ paths:
           description: 创建成功
         "409":
           description: Tracker 已存在
+
+  # ── 设置 ──
+  /api/v0/settings:
+    get:
+      tags: [设置]
+      summary: 读取用户偏好
+      responses:
+        "200":
+          description: JSON 内容
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      tags: [设置]
+      summary: 修改用户偏好
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+            example:
+              prefer_lang: "original"
+              username: "Vanadiry"
+      responses:
+        "200":
+          description: 返回 success/error 字段列表
 
   # ── 用户 ──
   /api/v0/users/{username}:

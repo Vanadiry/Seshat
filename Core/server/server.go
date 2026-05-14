@@ -123,6 +123,10 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/tracker", handleTrackerList(cfg))
 	mux.HandleFunc("POST /api/v0/tracker/import-collections", handleImportCollections(dd))
 
+	// ── Settings ──
+	mux.HandleFunc("GET /api/v0/settings", handleSettingsGet)
+	mux.HandleFunc("POST /api/v0/settings", handleSettingsPost)
+
 	// ── User ──
 	mux.HandleFunc("GET /api/v0/users/{username}", handleUser(dd))
 	mux.HandleFunc("GET /api/v0/users/{username}/avatar", serveUserAvatar(dd))
