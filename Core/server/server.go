@@ -57,6 +57,8 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /tags.html", serveFile(embedFS, "web/tags.html", "text/html"))
 	mux.HandleFunc("GET /tags-subject.html", serveFile(embedFS, "web/tags-subject.html", "text/html"))
 	mux.HandleFunc("GET /search.html", serveFile(embedFS, "web/search.html", "text/html"))
+	mux.HandleFunc("GET /rating.html", serveFile(embedFS, "web/rating.html", "text/html"))
+	mux.HandleFunc("GET /stats.html", serveFile(embedFS, "web/stats.html", "text/html"))
 	mux.HandleFunc("GET /assets/app.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
 		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\nwindow.FETCH_COLLECTIONS=%v;\n", cfg.Frontend.BackendURL, cfg.Frontend.PreferLang, cfg.User.Username, cfg.Frontend.FallbackURL, config.Dir(), cfg.User.FetchCollections)

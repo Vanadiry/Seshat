@@ -358,7 +358,11 @@ document.addEventListener('DOMContentLoaded', () => {
         </nav>
         <div class="flex-1"></div>
         ${warnText ? '<span class="absolute left-1/2 -translate-x-1/2 text-[#FFCA28] text-sm font-bold pointer-events-none">'+warnText+'</span>' : ''}
-        <a href="/search.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/search.html')}">搜索</a>
+        <nav class="flex gap-1 items-center">
+          <a href="/rating.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/rating.html')}">评分</a>
+          <a href="/stats.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/stats.html')}">统计</a>
+          <a href="/search.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/search.html')}">搜索</a>
+        </nav>
         <button id="btn-fetch" class="px-4 py-1.5 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">管理数据</button>
         <div class="relative">
           <img id="user-avatar" src="" class="w-8 h-8 rounded-lg object-cover bg-[#202028] cursor-pointer shrink-0" onclick="toggleUserMenu(event)" style="display:none">
