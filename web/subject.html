@@ -78,9 +78,16 @@ async function overview(s, infoItems) {
   var epsRaw = await api('/v0/episodes?subject_id='+SID);
   var charsRaw = await api('/v0/subjects/'+SID+'/characters');
   var relsRaw = await api('/v0/subjects/'+SID+'/subjects');
+  var eloData = await api('/v0/elo/ranking');
   var eps = Array.isArray(epsRaw) ? epsRaw : (epsRaw&&epsRaw.data ? epsRaw.data : []);
   var chars = Array.isArray(charsRaw) ? charsRaw : (charsRaw&&charsRaw.data ? charsRaw.data : []);
   var rels = Array.isArray(relsRaw) ? relsRaw : (relsRaw&&relsRaw.data ? relsRaw.data : []);
+  var eloInfo = null;
+  if (eloData && eloData.entries) {
+    for (var i = 0; i < eloData.entries.length; i++) {
+      if (eloData.entries[i].id == SID) { eloInfo = eloData.entries[i]; break; }
+    }
+  }
   epCount = eps.length; charCount = chars.length;
   updateTabCount('ep', epCount);
   updateTabCount('chars', charCount);
@@ -232,6 +239,12 @@ async function overview(s, infoItems) {
   html += '<div class="border-t border-[rgba(255,255,255,.1)]"></div>';
   // Content
   html += '<div class="px-4 pt-2 pb-2">';
+  if (eloInfo && eloInfo.rating) {
+    html += '<div class="text-xs text-sub text-center">ELO Rating</div>';
+    html += '<div class="flex items-baseline justify-center"><span class="text-3xl font-bold">'+Math.round(eloInfo.rating)+'</span><span class="text-xs text-sub ml-1">'+(eloInfo.rank_pct||0).toFixed(1)+'%</span></div>';
+    html += '<div class="border-t border-[rgba(255,255,255,.12)] mt-2 mb-2"></div>';
+  }
+  html += '<div class="text-xs text-sub text-center">BGM Rank</div>';
   html += '<div class="flex items-baseline justify-center"><span class="text-3xl font-bold">'+scoreHtml+'</span><span class="text-xs text-sub ml-1">/ 10</span></div>';
   html += '<div class="text-xs text-sub text-center mt-1">'+totalHtml+' 人评分 · 排名 '+rankHtml+'</div>';
   if (histHtml) html += '<div class="border-t border-[rgba(255,255,255,.12)] mt-3 mb-1"></div>';

@@ -4,6 +4,7 @@
 <meta charset="utf-8"><meta name="view-transition" content="same-origin"><meta name="viewport" content="width=device-width, initial-scale=1"><title>统计</title>
 <script src="/assets/tailwindcss-3.4.js"></script>
 <script>tailwind.config={theme:{extend:{colors:{bg:'#1d1d1d',card:'#2a2a2a',bord:'rgba(255,255,255,.12)',text:'rgba(255,255,255,.88)',sub:'rgba(255,255,255,.52)',pink:'#FE8A95','pink-bg':'#403638'}}}}</script>
+<style>.sn{font-variant-numeric:tabular-nums}</style>
 </head>
 <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
 <div id="topbar"></div>
@@ -127,7 +128,7 @@ function render() {
     }
   });
 
-  var html = '<div class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-[rgba(255,255,255,.06)]"><div class="w-10 shrink-0 text-center">动画</div><div class="flex-1 min-w-0"></div><div class="w-[100px] text-center shrink-0">ELO Rating</div><div class="w-[100px] text-center shrink-0">BGM Rank</div><div class="w-[60px] text-center shrink-0">ID</div></div>';
+  var html = '<div class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-[rgba(255,255,255,.06)]"><div class="w-10 shrink-0 text-center">动画</div><div class="flex-1 min-w-0"></div><div class="w-[100px] text-center shrink-0">ELO Rating</div><div class="w-[100px] text-center shrink-0 font-mono">BGM Rank</div><div class="w-[60px] text-center shrink-0">ID</div></div>';
   for (var i = 0; i < items.length; i++) {
     var it = items[i];
     var bg = i % 2 === 0 ? 'bg-[#202028]' : 'bg-[#1a1a1e]';
@@ -147,8 +148,8 @@ function render() {
       html += '<div id="orphan-'+it.id+'" class="flex items-center gap-4 px-3 py-1.5 border border-transparent '+bg+'">'+
         '<img src="'+img('subject', it.id, 'grid')+'" '+imgOnError('subject', it.id, 'grid')+' class="w-10 h-10 rounded object-cover bg-[#151518] shrink-0">'+
         '<div class="flex-1 min-w-0"><div class="text-sm font-semibold truncate'+(it.name ? '' : ' text-sub')+'">'+oTitle+'</div>'+(oSub?'<div class="text-xs text-sub truncate">'+oSub+'</div>':'')+'</div>'+
-        '<span class="'+eloCls+' w-[100px] text-center shrink-0">'+it.rating.toFixed(0)+'</span>'+
-        '<span class="'+bkgCls+' w-[100px] text-center shrink-0">'+(it.score != null ? it.score.toFixed(1) : '-')+'</span>'+
+        '<span class="'+eloCls+' w-[120px] flex justify-center gap-1 shrink-0 font-mono"><span class="flex-1 text-right font-mono">'+(it.rating ? it.rating.toFixed(0) : '1500')+'</span><span class="text-xs text-sub flex-1 text-left font-mono">'+(it.rank_pct != null ? (it.rank_pct).toFixed(1)+'%' : '')+'</span></span>'+
+        '<span class="'+bkgCls+' w-[80px] text-center shrink-0">'+(it.score != null ? it.score.toFixed(1) : '-')+'</span>'+
         '<span class="text-xs text-sub w-[60px] text-center shrink-0">#'+it.id+'</span></div>';
     } else {
       var primary = primaryName(it.name, it.name_cn);
@@ -157,9 +158,9 @@ function render() {
       html += '<div onclick="location.href=\'/subject?id='+it.id+'\'" class="flex items-center gap-4 px-3 py-1.5 cursor-pointer hover:border-[#FE8A95] border border-transparent '+bg+'">'+
         '<img src="'+img('subject', it.id, 'grid')+'" '+imgOnError('subject', it.id, 'grid')+' class="w-10 h-10 rounded object-cover bg-[#151518] shrink-0">'+
         '<div class="flex-1 min-w-0"><div class="text-sm font-semibold truncate">'+primary+'</div>'+(sub?'<div class="text-xs text-sub truncate">'+sub+'</div>':'')+'</div>'+
-        '<span class="'+eloCls+' w-[100px] text-center shrink-0">'+ratingVal+'</span>'+
-        '<span class="'+bkgCls+' w-[100px] text-center shrink-0">'+(it.score ? it.score.toFixed(1) : '-')+'</span>'+
-        '<span class="text-xs text-sub w-[60px] text-center shrink-0">#'+it.id+'</span></div>';
+        '<span class="'+eloCls+' w-[120px] flex justify-center gap-1 shrink-0 font-mono"><span class="flex-1 text-right font-mono">'+ratingVal+'</span><span class="text-sub flex-1 text-right font-mono">'+(it.rank_pct != null ? (it.rank_pct).toFixed(1)+'%' : '')+'</span></span>'+
+        '<span class="'+bkgCls+' w-[100px] text-center shrink-0 font-mono">'+(it.score ? it.score.toFixed(1) : '-')+'</span>'+
+        '<span class="text-xs text-sub w-[60px] text-left shrink-0 font-mono">#'+it.id+'</span></div>';
     }
   }
   document.getElementById('stats-list').innerHTML = html;
