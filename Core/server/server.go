@@ -146,6 +146,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/elo/pair", handleELOPair(dd))
 	mux.HandleFunc("POST /api/v0/elo/compare", handleELOCompare(dd))
 	mux.HandleFunc("GET /api/v0/elo/ranking", handleELORanking(dd))
+	mux.HandleFunc("GET /api/v0/elo/history", handleELOHistory(dd))
 
 	// ── Search ──
 	mux.HandleFunc("POST /api/v0/search/subjects", handleSearchSubjects(dd))

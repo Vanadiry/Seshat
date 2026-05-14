@@ -362,7 +362,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/ELOEntry"
+                  $ref: "#/components/schemas/EloPairEntry"
   /api/v0/elo/compare:
     post:
       tags: [ELO]
@@ -390,6 +390,19 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ELOEntry"
+  /api/v0/elo/history:
+    get:
+      tags: [ELO]
+      summary: ELO 对战历史
+      responses:
+        "200":
+          description: 对战历史列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EloHistory"
 
   # ── 搜索 ──
   /api/v0/search/subjects:
@@ -904,8 +917,19 @@ components:
         id: { type: integer, example: 51 }
         name: { type: string, example: "CLANNAD" }
         name_cn: { type: string, example: "CLANNAD" }
-        score: { type: number, example: 8.4 }
         rating: { type: number, example: 1516.0 }
+    EloPairEntry:
+      type: object
+      properties:
+        id: { type: integer, example: 51 }
+        name: { type: string, example: "CLANNAD" }
+        name_cn: { type: string, example: "CLANNAD" }
+    EloHistory:
+      type: object
+      properties:
+        winner: { type: integer, example: 51 }
+        loser: { type: integer, example: 68 }
+        time: { type: string, example: "2026-05-14T12:00:00Z" }
 
     TrackerItem:
       type: object

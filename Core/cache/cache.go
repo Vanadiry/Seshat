@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 func Dir(dataDir string) string      { return filepath.Join(dataDir, "api") }
@@ -28,14 +27,18 @@ func Has(dataDir, key string) bool {
 	return err == nil
 }
 func List(dataDir, dir string) ([]string, error) {
-	entries, err := os.ReadDir(filepath.Join(Dir(dataDir), dir))
+	base := filepath.Join(Dir(dataDir), dir)
+	var names []string
+	digits, err := os.ReadDir(base)
 	if err != nil {
 		return nil, err
 	}
-	var names []string
-	for _, e := range entries {
-		if strings.HasSuffix(e.Name(), ".json") {
-			names = append(names, strings.TrimSuffix(e.Name(), ".json"))
+	for _, d := range digits {
+		if !d.IsDir() { continue }
+		ids, _ := os.ReadDir(filepath.Join(base, d.Name()))
+		for _, id := range ids {
+			if !id.IsDir() { continue }
+			names = append(names, id.Name())
 		}
 	}
 	return names, nil
