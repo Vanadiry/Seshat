@@ -36,9 +36,6 @@ func buildIndexes(dd string, p *Progress) {
 	log.Info("Building indexes...")
 	os.MkdirAll(cache.IndexDir(dd), 0o755)
 	os.MkdirAll(filepath.Join(dd, "images"), 0o755)
-	if len(noImageData) > 0 && noImagePath != "" {
-		os.WriteFile(noImagePath, noImageData, 0o644)
-	}
 
 	tags := map[string]tagInfo{}
 

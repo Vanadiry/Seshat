@@ -272,12 +272,6 @@ func serveImage(w http.ResponseWriter, r *http.Request, dd, kind, size string) {
 			}
 		}
 	}
-	// 回退
-	if len(noImageData) > 0 {
-		w.Header().Set("Content-Type", "image/png")
-		w.Header().Set("Cache-Control", "public, max-age=86400")
-		w.Write(noImageData)
-		return
-	}
-	http.NotFound(w, r)
+	// 回退 - 重定向到占位图
+	http.Redirect(w, r, "/assets/no-image.png", http.StatusFound)
 }

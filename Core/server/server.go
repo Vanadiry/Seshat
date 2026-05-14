@@ -24,10 +24,6 @@ var maxConcurrency = 32
 // listMutex 保护 list 文件的并发读写。
 var listMutex sync.Mutex
 
-// noImageData 存放 no-image.png 的内容，用于在下载时识别占位图。
-var noImageData []byte
-var noImagePath string
-
 // mergeListEntry 将一个条目合并到 list 文件中（按 ID 去重，若已存在则更新 name）。
 func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	maxConcurrency = cfg.Server.Concurrency
@@ -36,16 +32,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	os.MkdirAll(cache.IndexDir(dd), 0o755)
 	imgDir := filepath.Join(dd, "images")
 	os.MkdirAll(imgDir, 0o755)
-	noImagePath = filepath.Join(imgDir, "no-image.png")
 	config.LoadPreferences() // ensure settings dir and preferences.json exist at startup
-
-	// 从 embed 加载 no-image.png，写入 images 目录，并缓存内容用于后续比对
-	if embedFS != nil {
-		if b, err := fs.ReadFile(embedFS, "web/assets/no-image.png"); err == nil {
-			noImageData = b
-			os.WriteFile(noImagePath, b, 0o644)
-		}
-	}
 
 	id := imgDir
 	bg := bangumi.NewClient(cfg.Upstream.UserAgent, cfg.Upstream.BaseURL)
@@ -166,13 +153,6 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/subjects/{id}/image", imgHandler("subject"))
 	mux.HandleFunc("GET /api/v0/characters/{id}/image", imgHandler("character"))
 	mux.HandleFunc("GET /api/v0/persons/{id}/image", imgHandler("person"))
-	// no-image placeholder
-	mux.HandleFunc("GET /images/no-image.png", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "image/png")
-		w.Header().Set("Cache-Control", "public, max-age=86400")
-		w.Write(noImageData)
-	})
-
 	return withLogging(withCORS(mux))
 }
 
