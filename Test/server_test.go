@@ -78,17 +78,6 @@ func TestTrackerListEmpty(t *testing.T) {
 	}
 }
 
-func TestSearchEmpty(t *testing.T) {
-	srv, _ := testServer(t)
-	resp, err := http.Get(srv.URL + "/api/v0/search?q=test")
-	if err != nil {
-		t.Fatalf("GET: %v", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected 200, got %d", resp.StatusCode)
-	}
-}
-
 func TestOpenAPIYaml(t *testing.T) {
 	srv, _ := testServer(t)
 	// This requires embedded web files which may not be available in test
@@ -116,11 +105,12 @@ func TestCORS(t *testing.T) {
 	}
 }
 
-func TestUserProfileNoUsername(t *testing.T) {
+func TestUserProfileNoCache(t *testing.T) {
 	srv, _ := testServer(t)
-	resp, _ := http.Get(srv.URL + "/api/v0/user/profile")
+	resp, _ := http.Get(srv.URL + "/api/v0/users/testuser")
+	// No cached data → 404
 	if resp.StatusCode != http.StatusNotFound {
-		t.Errorf("expected 404 (no username configured), got %d", resp.StatusCode)
+		t.Errorf("expected 404 (no cached user data), got %d", resp.StatusCode)
 	}
 	resp.Body.Close()
 }

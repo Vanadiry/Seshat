@@ -27,8 +27,9 @@ func TestHasNotFound(t *testing.T) {
 
 func TestList(t *testing.T) {
 	dir := t.TempDir()
-	cache.Put(dir, "subjects/51.json", []byte(`{}`))
-	cache.Put(dir, "subjects/288.json", []byte(`{}`))
+	// New cache layout: subjects/{id%10}/{id}/info.json
+	cache.Put(dir, "subjects/1/51/info.json", []byte(`{}`))
+	cache.Put(dir, "subjects/8/288/info.json", []byte(`{}`))
 	list, _ := cache.List(dir, "subjects")
 	if len(list) != 2 {
 		t.Errorf("expected 2, got %d", len(list))

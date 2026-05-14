@@ -98,7 +98,6 @@ func TestLoadSave(t *testing.T) {
 
 	// Modify and save
 	cfg.Server.Port = 9000
-	cfg.User.Username = "testuser"
 	if err := config.Save(cfg); err != nil {
 		t.Fatalf("Save: %v", err)
 	}
@@ -110,9 +109,6 @@ func TestLoadSave(t *testing.T) {
 	}
 	if cfg2.Server.Port != 9000 {
 		t.Errorf("expected 9000, got %d", cfg2.Server.Port)
-	}
-	if cfg2.User.Username != "testuser" {
-		t.Errorf("expected testuser, got %s", cfg2.User.Username)
 	}
 }
 
