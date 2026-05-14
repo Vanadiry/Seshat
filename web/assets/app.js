@@ -166,9 +166,9 @@ function loadPersonMap() {
 
 // ── Local name lookup (subjects > characters > persons) ──
 function lookupLocalName(name) {
-  if (_subjectMap && _subjectMap[name]) return '/subject.html?id=' + _subjectMap[name];
-  if (_charMap && _charMap[name]) return '/character.html?id=' + _charMap[name];
-  if (_personMap && _personMap[name]) return '/person.html?id=' + _personMap[name];
+  if (_subjectMap && _subjectMap[name]) return '/subject?id=' + _subjectMap[name];
+  if (_charMap && _charMap[name]) return '/character?id=' + _charMap[name];
+  if (_personMap && _personMap[name]) return '/person?id=' + _personMap[name];
   return null;
 }
 
@@ -203,7 +203,7 @@ function linkifyByMap(text, map, hrefPrefix) {
 }
 
 // Keep existing linkifyPerson for backward compat (used in infobox)
-function linkifyPerson(text) { return linkifyByMap(text, _personMap, '/person.html?id='); }
+function linkifyPerson(text) { return linkifyByMap(text, _personMap, '/person?id='); }
 
 // Apply all three name matchers, skipping text already inside <a> tags
 function linkifyAllNames(text) {
@@ -212,8 +212,8 @@ function linkifyAllNames(text) {
   for (var i = 0; i < parts.length; i++) {
     if (parts[i].indexOf('<a') === 0) continue;
     var t = parts[i];
-    t = linkifyByMap(t, _subjectMap, '/subject.html?id=');
-    t = linkifyByMap(t, _charMap, '/character.html?id=');
+    t = linkifyByMap(t, _subjectMap, '/subject?id=');
+    t = linkifyByMap(t, _charMap, '/character?id=');
     t = linkifyPerson(t);
     parts[i] = t;
   }
@@ -325,11 +325,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const path = location.pathname;
   function navCls(href) {
     var p = path;
-    if (p === '/subject.html') p = '/';
-    else if (p === '/character.html') p = '/character-list.html';
-    else if (p === '/person.html') p = '/person-list.html';
-    else if (p === '/tags-subject.html') p = '/tags.html';
-    if (href === '/' && (p === '/' || p === '/index.html')) return 'bg-[#30303b] text-white';
+    if (p === '/subject') p = '/';
+    else if (p === '/character') p = '/characters';
+    else if (p === '/persons') p = '/persons';
+    else if (p === '/tag') p = '/tags';
+    if (href === '/' && (p === '/')) return 'bg-[#30303b] text-white';
     if (href !== '/' && p.startsWith(href)) return 'bg-[#30303b] text-white';
     return 'hover:bg-[#30303b] hover:text-white';
   }
@@ -355,9 +355,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <h1 class="text-lg font-bold cursor-pointer shrink-0" onclick="location.href='/'">Seshat</h1>
         <nav class="flex gap-1 ml-2 items-center">
           <a href="/" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/')}">动画</a>
-          <a href="/character-list.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/character-list.html')}">角色</a>
-          <a href="/person-list.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/person-list.html')}">人物</a>
-          <a href="/tags.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/tags.html')}">标签</a>
+          <a href="/characters" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/characters')}">角色</a>
+          <a href="/persons" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/persons')}">人物</a>
+          <a href="/tags" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/tags')}">标签</a>
           <a href="/stats.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/stats.html')}">统计</a>
         </nav>
         <div class="flex-1"></div>

@@ -129,7 +129,7 @@ function render() {
       var primary = primaryName(it.name, it.name_cn);
       var sub = subName(it.name, it.name_cn);
       var ratingVal = it.rating ? (typeof it.rating === 'number' ? it.rating.toFixed(0) : it.rating) : '-';
-      html += '<div onclick="location.href=\'/subject.html?id='+it.id+'\'" class="flex items-center gap-4 px-3 py-1.5 cursor-pointer hover:border-[#FE8A95] border border-transparent '+bg+'">'+
+      html += '<div onclick="location.href=\'/subject?id='+it.id+'\'" class="flex items-center gap-4 px-3 py-1.5 cursor-pointer hover:border-[#FE8A95] border border-transparent '+bg+'">'+
         '<img src="'+img('subject', it.id, 'grid')+'" '+imgOnError('subject', it.id, 'grid')+' class="w-10 h-10 rounded object-cover bg-[#151518] shrink-0">'+
         '<div class="flex-1 min-w-0"><div class="text-sm font-semibold truncate">'+primary+'</div>'+(sub?'<div class="text-xs text-sub truncate">'+sub+'</div>':'')+'</div>'+
         '<span class="'+eloCls+' w-[100px] text-center shrink-0">'+ratingVal+'</span>'+

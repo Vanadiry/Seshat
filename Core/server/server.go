@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -50,37 +51,30 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	bg := bangumi.NewClient(cfg.Upstream.UserAgent, cfg.Upstream.BaseURL)
 
 	// ── Frontend ──
-	mux.HandleFunc("GET /subject.html", serveFile(embedFS, "web/subject.html", "text/html"))
-	mux.HandleFunc("GET /character.html", serveFile(embedFS, "web/character.html", "text/html"))
-	mux.HandleFunc("GET /person.html", serveFile(embedFS, "web/person.html", "text/html"))
-	mux.HandleFunc("GET /character-list.html", serveFile(embedFS, "web/character-list.html", "text/html"))
-	mux.HandleFunc("GET /person-list.html", serveFile(embedFS, "web/person-list.html", "text/html"))
-	mux.HandleFunc("GET /tags.html", serveFile(embedFS, "web/tags.html", "text/html"))
-	mux.HandleFunc("GET /tags-subject.html", serveFile(embedFS, "web/tags-subject.html", "text/html"))
-	mux.HandleFunc("GET /search.html", serveFile(embedFS, "web/search.html", "text/html"))
-	mux.HandleFunc("GET /rating.html", serveFile(embedFS, "web/rating.html", "text/html"))
-	mux.HandleFunc("GET /stats.html", serveFile(embedFS, "web/stats.html", "text/html"))
-	mux.HandleFunc("GET /settings.html", serveFile(embedFS, "web/settings.html", "text/html"))
+	mux.HandleFunc("GET /{page}", func(w http.ResponseWriter, r *http.Request) {
+		page := r.PathValue("page")
+		if strings.HasSuffix(page, ".html") {
+			p := strings.TrimSuffix(page, ".html")
+			if p == "index" { http.Redirect(w, r, "/", http.StatusMovedPermanently); return }
+			http.Redirect(w, r, "/"+p, http.StatusMovedPermanently)
+			return
+		}
+		http.ServeFileFS(w, r, embedFS, "web/"+page+".html")
+	})
+	// app.js with config injection
 	mux.HandleFunc("GET /assets/app.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
 		w.Header().Set("Cache-Control", "no-cache")
 		pref, _ := config.LoadPreferences()
-	if pref == nil { pref = &config.DefaultPreferences }
-	fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\n", cfg.Frontend.BackendURL, pref.PreferLang, pref.Username, cfg.Frontend.FallbackURL, config.Dir())
+		if pref == nil { pref = &config.DefaultPreferences }
+		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\n", cfg.Frontend.BackendURL, pref.PreferLang, pref.Username, cfg.Frontend.FallbackURL, config.Dir())
 		data, _ := fs.ReadFile(embedFS, "web/assets/app.js")
 		w.Write(data)
 	})
-	mux.HandleFunc("GET /assets/app.css", serveFile(embedFS, "web/assets/app.css", "text/css"))
-	mux.HandleFunc("GET /assets/tailwindcss-3.4.js", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/javascript")
-		http.ServeFileFS(w, r, embedFS, "web/assets/tailwindcss-3.4.js")
+	// All other assets
+	mux.HandleFunc("GET /assets/{path...}", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFileFS(w, r, embedFS, "web/assets/"+r.PathValue("path"))
 	})
-	mux.HandleFunc("GET /assets/scalar-api-reference.js", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/javascript")
-		http.ServeFileFS(w, r, embedFS, "web/assets/scalar-api-reference.js")
-	})
-		mux.HandleFunc("GET /assets/global.svg", serveFile(embedFS, "web/assets/global.svg", "image/svg+xml"))
-		mux.HandleFunc("GET /assets/link.svg", serveFile(embedFS, "web/assets/link.svg", "image/svg+xml"))
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)

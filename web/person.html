@@ -85,16 +85,16 @@ function renderCharSection() {
     cards.push(
       '<div class="border-t border-[rgba(255,255,255,.06)] overflow-hidden" style="height:80px">'+
       '<div class="flex items-center gap-3 h-full">'+
-        '<div class="relative shrink-0 rounded overflow-hidden bg-[#202028] cursor-pointer" style="width:64px;aspect-ratio:1" onclick="location.href=\'/subject.html?id='+item.subject_id+'\'">'+
+        '<div class="relative shrink-0 rounded overflow-hidden bg-[#202028] cursor-pointer" style="width:64px;aspect-ratio:1" onclick="location.href=\'/subject?id='+item.subject_id+'\'">'+
           '<img src="'+img('subject',item.subject_id,'grid')+'" '+imgOnError('subject',item.subject_id,'grid')+' class="w-full h-full object-cover">'+
           (typeLabel ? '<span class="absolute top-0.5 right-0.5 text-[9px] font-semibold '+typeCls[item.subject_type]+' px-1 py-px rounded">'+typeLabel+'</span>' : '')+
         '</div>'+
         '<div class="flex-1 min-w-0">'+
-          '<div class="font-semibold text-[14px] cursor-pointer hover:text-[#FE8A95] truncate" onclick="location.href=\'/subject.html?id='+item.subject_id+'\'">'+primaryName(item.subject_name, item.subject_name_cn||'')+'</div>'+
+          '<div class="font-semibold text-[14px] cursor-pointer hover:text-[#FE8A95] truncate" onclick="location.href=\'/subject?id='+item.subject_id+'\'">'+primaryName(item.subject_name, item.subject_name_cn||'')+'</div>'+
           (function(){var sub=subName(item.subject_name, item.subject_name_cn||''); return sub ? '<div class="text-xs text-sub truncate mt-0.5">'+sub+'</div>' : ''})()+
           '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1"><span class="bg-[#FE8A95] text-white px-1.5 py-px rounded text-[11px] font-semibold">'+(item.staff||'')+'</span></div>'+
         '</div>'+
-        '<div class="flex items-start gap-2 shrink-0 cursor-pointer self-start mt-2" onclick="event.stopPropagation();location.href=\'/character.html?id='+item.id+'\'">'+
+        '<div class="flex items-start gap-2 shrink-0 cursor-pointer self-start mt-2" onclick="event.stopPropagation();location.href=\'/character?id='+item.id+'\'">'+
           '<span class="text-[14px] font-semibold hover:text-[#FE8A95]">'+item.name+'</span>'+
           '<img src="'+img('character',item.id,'grid')+'" '+imgOnError('character',item.id,'grid')+' class="w-10 h-10 rounded-lg object-cover bg-[#202028]">'+
         '</div>'+
@@ -151,12 +151,12 @@ function renderSubjectSection() {
     cards.push(
       '<div class="border-t border-[rgba(255,255,255,.06)] overflow-hidden" style="height:80px">'+
       '<div class="flex items-center gap-3 h-full">'+
-        '<div class="relative shrink-0 rounded overflow-hidden bg-[#202028] cursor-pointer" style="width:64px;aspect-ratio:1" onclick="location.href=\'/subject.html?id='+item.id+'\'">'+
+        '<div class="relative shrink-0 rounded overflow-hidden bg-[#202028] cursor-pointer" style="width:64px;aspect-ratio:1" onclick="location.href=\'/subject?id='+item.id+'\'">'+
           '<img src="'+img('subject',item.id,'grid')+'" '+imgOnError('subject',item.id,'grid')+' class="w-full h-full object-cover">'+
           (typeLabel ? '<span class="absolute top-0.5 right-0.5 text-[9px] font-semibold '+typeCls[item.type]+' px-1 py-px rounded">'+typeLabel+'</span>' : '')+
         '</div>'+
         '<div class="flex-1 min-w-0">'+
-          '<div class="font-semibold text-[14px] cursor-pointer hover:text-[#FE8A95] truncate" onclick="location.href=\'/subject.html?id='+item.id+'\'">'+primaryName(item.name, item.name_cn||'')+'</div>'+
+          '<div class="font-semibold text-[14px] cursor-pointer hover:text-[#FE8A95] truncate" onclick="location.href=\'/subject?id='+item.id+'\'">'+primaryName(item.name, item.name_cn||'')+'</div>'+
           (function(){var sub=subName(item.name, item.name_cn||''); return sub ? '<div class="text-xs text-sub truncate mt-0.5">'+sub+'</div>' : ''})()+
           '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1"><span class="bg-[#FE8A95] text-white px-1.5 py-px rounded text-[11px] font-semibold">'+(item.staff||'')+'</span></div>'+
         '</div>'+

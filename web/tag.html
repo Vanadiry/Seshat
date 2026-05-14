@@ -22,7 +22,7 @@ var allItems = [];
 var showing = 0;
 
 function renderItem(s) {
-  return '<div onclick="location.href=\'/subject.html?id='+s.id+'\'" class="bg-[#2a2a2a] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">'+
+  return '<div onclick="location.href=\'/subject?id='+s.id+'\'" class="bg-[#2a2a2a] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">'+
     '<img src="'+img('subject',s.id,'small')+'" loading=\"lazy\" '+imgOnError('subject',s.id,'small')+' class="w-full aspect-[3/4] object-cover bg-[#202028]">'+
     '<div class="p-2.5"><div class="text-sm font-semibold truncate">'+primaryName(s.name, s.name_cn)+'</div>'+
     '<div class="text-xs text-sub mt-1 flex gap-1.5 items-center">'+

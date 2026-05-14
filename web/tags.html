@@ -21,7 +21,7 @@ var allItems = [];
 var showing = 0;
 
 function renderItem(t) {
-  return '<a href="/tags-subject.html?tag='+encodeURIComponent(t.name)+'" class="no-underline bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1.5 text-sm hover:border-[#FE8A95] transition-colors"><span class="text-[rgba(255,255,255,.88)] hover:text-[#FE8A95]">'+t.name+'</span><small class="text-sub ml-1.5">'+t.count+'</small></a>';
+  return '<a href="/tag?tag='+encodeURIComponent(t.name)+'" class="no-underline bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1.5 text-sm hover:border-[#FE8A95] transition-colors"><span class="text-[rgba(255,255,255,.88)] hover:text-[#FE8A95]">'+t.name+'</span><small class="text-sub ml-1.5">'+t.count+'</small></a>';
 }
 
 function showMore(n) {

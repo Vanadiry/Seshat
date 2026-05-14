@@ -64,7 +64,7 @@ async function doSearch() {
 }
 
 var typeLabels = {subjects:'动画', characters:'角色', persons:'人物', tags:'标签'};
-var typeLinks = {subjects:'/subject.html?id=', characters:'/character.html?id=', persons:'/person.html?id='};
+var typeLinks = {subjects:'/subject?id=', characters:'/character?id=', persons:'/person?id='};
 
 function renderResults(data, type) {
   var res = document.getElementById('results');
@@ -76,7 +76,7 @@ function renderResults(data, type) {
   for (var i = 0; i < data.length; i++) {
     var it = data[i];
     if (type === 'tags') {
-      html += '<a href="/tags-subject.html?tag='+encodeURIComponent(it.name)+'" class="no-underline flex gap-3 items-center bg-[#2a2a2a] border border-[rgba(255,255,255,.08)] rounded-lg py-1.5 px-2 cursor-pointer hover:border-[#FE8A95]"><div class="text-sm font-semibold">'+it.name+'</div><div class="text-xs text-sub">'+it.count+' 个条目</div></a>';
+      html += '<a href="/tag?tag='+encodeURIComponent(it.name)+'" class="no-underline flex gap-3 items-center bg-[#2a2a2a] border border-[rgba(255,255,255,.08)] rounded-lg py-1.5 px-2 cursor-pointer hover:border-[#FE8A95]"><div class="text-sm font-semibold">'+it.name+'</div><div class="text-xs text-sub">'+it.count+' 个条目</div></a>';
     } else {
       var imgSrc = img(type==='subjects'?'subject':(type==='characters'?'character':'person'), it.id, 'grid');
       var imgErr = imgOnError(type==='subjects'?'subject':(type==='characters'?'character':'person'), it.id, 'grid');

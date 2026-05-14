@@ -153,7 +153,7 @@ async function overview(s, infoItems) {
     var shown = s.tags.slice(0, 20);
     tagsHtml = '<div class="flex flex-wrap gap-x-2 gap-y-1">';
     for (var i=0; i<shown.length; i++) {
-      tagsHtml += '<a href="/tags-subject.html?tag='+encodeURIComponent(shown[i].name)+'" class="no-underline bg-[#252530] rounded-full px-2.5 py-0.5 text-[14px] text-sub hover:text-[#FE8A95] hover:bg-[#2a2a3a] transition-colors">'+shown[i].name+'<small class="text-xs text-sub ml-1">'+shown[i].count+'</small></a>';
+      tagsHtml += '<a href="/tag?tag='+encodeURIComponent(shown[i].name)+'" class="no-underline bg-[#252530] rounded-full px-2.5 py-0.5 text-[14px] text-sub hover:text-[#FE8A95] hover:bg-[#2a2a3a] transition-colors">'+shown[i].name+'<small class="text-xs text-sub ml-1">'+shown[i].count+'</small></a>';
     }
     tagsHtml += '</div>';
   }
@@ -247,7 +247,7 @@ async function overview(s, infoItems) {
     for (var i=0; i<mainChars.length; i++) {
       var c = mainChars[i];
       var actorName = c.actors && c.actors.length ? c.actors[0].name : '';
-      html += '<div onclick="location.href=\'/character.html?id='+c.id+'\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">'+
+      html += '<div onclick="location.href=\'/character?id='+c.id+'\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">'+
         // Image with floating badge
         '<div class="relative rounded-lg overflow-hidden bg-[#202028]" style="aspect-ratio:1/1.414">'+
         '<img src="'+img('character',c.id,'small')+'" '+imgOnError('character',c.id,'small')+' class="w-full h-full object-cover">'+
@@ -287,7 +287,7 @@ async function overview(s, infoItems) {
         html += '<div class="border-l border-[rgba(255,255,255,.12)] self-stretch shrink-0 -mx-1"></div>';
       }
       relLastRel = rel;
-      html += '<div onclick="location.href=\'/subject.html?id='+r.id+'\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">'+
+      html += '<div onclick="location.href=\'/subject?id='+r.id+'\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">'+
         // Image with floating badge
         '<div class="relative rounded-lg overflow-hidden bg-[#202028] aspect-square">'+
         '<img src="'+img('subject',r.id,'small')+'" '+imgOnError('subject',r.id,'small')+' class="w-full h-full object-cover">'+
@@ -382,7 +382,7 @@ async function characters() {
         actorsHtml = '<div class="flex gap-3 overflow-x-auto mt-2 thin-scroll" style="max-width:100%">';
         for (var j=0; j<c.actors.length; j++) {
           var a = c.actors[j];
-          actorsHtml += '<div class="flex items-center gap-2 cursor-pointer hover:opacity-80 shrink-0" onclick="event.stopPropagation();location.href=\'/person.html?id='+a.id+'\'">'+
+          actorsHtml += '<div class="flex items-center gap-2 cursor-pointer hover:opacity-80 shrink-0" onclick="event.stopPropagation();location.href=\'/person?id='+a.id+'\'">'+
             '<img src="'+img('person',a.id,'grid')+'" '+imgOnError('person',a.id,'grid')+' class="w-8 h-8 rounded-lg object-cover bg-[#202028] shrink-0">'+
             '<div class="shrink-0"><div class="text-[13px] font-semibold hover:text-[#FE8A95]">'+a.name+'</div><div class="text-[11px] text-sub">CV</div></div></div>';
         }
@@ -399,9 +399,9 @@ async function characters() {
       }
       cards.push('<div class="border-t border-[rgba(255,255,255,.06)]" style="height:128px">'+
         '<div class="flex items-center gap-3 h-full">'+
-        '<img src="'+img('character',c.id,'small')+'" '+imgOnError('character',c.id,'small')+' class="shrink-0 rounded object-cover bg-[#202028] cursor-pointer" style="width:80px;aspect-ratio:1/1.414" onclick="location.href=\'/character.html?id='+c.id+'\'">'+
+        '<img src="'+img('character',c.id,'small')+'" '+imgOnError('character',c.id,'small')+' class="shrink-0 rounded object-cover bg-[#202028] cursor-pointer" style="width:80px;aspect-ratio:1/1.414" onclick="location.href=\'/character?id='+c.id+'\'">'+
         '<div class="flex-1 min-w-0 py-2 ml-1">'+
-        '<div class="font-semibold text-[14px] cursor-pointer hover:text-[#FE8A95] inline-block truncate" onclick="location.href=\'/character.html?id='+c.id+'\'">'+c.name+'</div>'+
+        '<div class="font-semibold text-[14px] cursor-pointer hover:text-[#FE8A95] inline-block truncate" onclick="location.href=\'/character?id='+c.id+'\'">'+c.name+'</div>'+
         '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5"><span class="bg-[#FE8A95] text-white px-1.5 py-px rounded text-[11px] font-semibold">'+c.relation+'</span>'+infoExtra+'</div>'+
         (actorsHtml || '')+
         '</div></div></div>');
@@ -450,7 +450,7 @@ async function personsList() {
     var nameHtml = '<div class="grid grid-cols-2 gap-x-4 gap-y-0.5">';
     for (var j=0; j<v.length; j++) {
       var p = v[j];
-      nameHtml += '<div onclick="location.href=\'/person.html?id='+p.id+'\'" class="flex items-center gap-2 py-1 border-b border-[rgba(255,255,255,.04)] cursor-pointer hover:text-[#FE8A95] text-sm truncate">'+p.name+(p.eps?'<span class="text-xs text-sub ml-1 shrink-0">('+p.eps+')</span>':'')+'</div>';
+      nameHtml += '<div onclick="location.href=\'/person?id='+p.id+'\'" class="flex items-center gap-2 py-1 border-b border-[rgba(255,255,255,.04)] cursor-pointer hover:text-[#FE8A95] text-sm truncate">'+p.name+(p.eps?'<span class="text-xs text-sub ml-1 shrink-0">('+p.eps+')</span>':'')+'</div>';
     }
     nameHtml += '</div>';
     mainHtml += '<div class="mb-4 bg-[#252530] rounded-lg p-3" id="g-'+k+'" style="break-inside:avoid"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">'+k+'</span><span class="text-xs text-sub">('+v.length+')</span></div>'+nameHtml+'</div>';
