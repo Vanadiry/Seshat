@@ -242,3 +242,26 @@ func handleELORanking(dd string) http.HandlerFunc {
 func handleELOHistory(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) { writeJSON(w, loadELOHistory()) }
 }
+
+func rebuildELO() {
+	scores := map[int]float64{}
+	history := loadELOHistory()
+	for _, h := range history {
+		wa := scores[h.Winner]
+		if wa == 0 { wa = eloDefault }
+		wb := scores[h.Loser]
+		if wb == 0 { wb = eloDefault }
+		ea := 1.0 / (1.0 + math.Pow(10, (wb-wa)/400))
+		eb := 1.0 / (1.0 + math.Pow(10, (wa-wb)/400))
+		scores[h.Winner] = wa + eloK*(1.0-ea)
+		scores[h.Loser] = wb + eloK*(0.0-eb)
+	}
+	saveELO(scores)
+}
+
+func handleELORebuild(dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		rebuildELO()
+		writeJSON(w, map[string]any{"status": "ok", "count": len(loadELO())})
+	}
+}

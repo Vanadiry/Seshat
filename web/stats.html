@@ -13,7 +13,6 @@
   <div class="flex items-center gap-3 mb-4 flex-wrap">
     <span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span>
     <span class="font-bold">评分</span>
-    <span id="backend-note" class="text-xs text-sub" style="display:none">（仅能展示有本地索引和elo rating的部分）</span>
     <span class="text-xs text-sub" style="margin-left:auto">排序</span>
     <div class="flex gap-1">
       <button id="btn-sort-elo" class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-[#FE8A95] bg-[#FE8A95] text-white font-semibold" onclick="sortBy('elo')">ELO</button>
@@ -29,8 +28,7 @@
 </main>
 <script src="assets/app.js"></script>
 <script>
-if (window.BACKEND_URL) document.getElementById('backend-note').style.display = '';
-else document.getElementById('toggles').style.display = '';
+if (!window.BACKEND_URL) document.getElementById('toggles').style.display = '';
 
 var _entries = [], _noRating = [], _orphans = [];
 var _orphanNames = {};

@@ -466,8 +466,9 @@ function initDialog() {
 
     // Danger zone
     '<button id="btn-danger-toggle" class="w-full px-3 py-2 rounded-lg border border-[rgba(255,0,0,.3)] bg-transparent text-[#dc2626] text-sm cursor-pointer hover:bg-[#3a1a1a]">'+MSG.btnDangerZone+'</button>'+
-    '<div id="danger-zone" class="hidden mt-2 grid grid-cols-2 gap-2">'+
+    '<div id="danger-zone" class="hidden mt-2 grid grid-cols-3 gap-2">'+
     '<button id="btn-index" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">'+MSG.btnRebuildIndex+'</button>'+
+    '<button id="btn-rebuild-elo" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">重建 ELO</button>'+
     '<button id="btn-deep" class="px-3 py-2 rounded-lg bg-[#dc2626] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">'+MSG.btnRebuildAll+'</button>'+
     '</div>'+
 
@@ -542,6 +543,14 @@ function initDialog() {
   });
   document.getElementById('btn-deep').addEventListener('click', function() {
     confirmAction(MSG.confirmRebuildAll(), doDeepRebuild);
+  });
+  document.getElementById('btn-rebuild-elo').addEventListener('click', function() {
+    confirmAction('将清空当前 ELO 分数并从对战历史完整重建', function() {
+      closeFetch();
+      fetch(API + '/v0/elo/rebuild', {method:'POST'}).then(function(r){return r.json()}).then(function(d) {
+        showError(d.status==='ok' ? '已重建 '+d.count+' 条 ELO 分数' : '重建失败');
+      });
+    });
   });
 }
 
