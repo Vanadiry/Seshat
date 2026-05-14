@@ -23,11 +23,20 @@ var showing = 0;
 function onFetchDone() { load(); }
 
 // ── 卡片渲染：海报 + 标题 + 评分/平台/年份 ──
+var _collTypes = {1:'想看', 2:'看过', 3:'抛弃'};
+var _collCls = {1:'bg-[#332200] text-[#e8a040]', 2:'bg-[#1a2e1a] text-[#68a868]', 3:'bg-[#222] text-sub'};
 function renderItem(s) {
+  var sub = subName(s.name, s.name_cn);
+  var badges = '';
+  if (s._elo) badges += '<span class="bg-[#2a2a3a] text-[#8b9dc3] px-1.5 py-px rounded text-[10px] font-semibold">ELO '+s._elo+'</span>';
+  if (s._coll) badges += '<span class="'+(_collCls[s._coll]||'')+' px-1.5 py-px rounded text-[10px] font-semibold">'+(_collTypes[s._coll]||'')+'</span>';
   return '<div onclick="location.href=\'/subject.html?id='+s.id+'\'" class="bg-[#2a2a2a] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">'+
-    '<img src="'+img('subject',s.id,'small')+'\" loading=\"lazy\" '+imgOnError('subject',s.id,'small')+' class="w-full object-cover bg-[#202028]" style="aspect-ratio:1/1.414">'+
+    '<div class="relative">'+
+      '<img src="'+img('subject',s.id,'small')+'\" loading=\"lazy\" '+imgOnError('subject',s.id,'small')+' class="w-full object-cover bg-[#202028]" style="aspect-ratio:1/1.414">'+
+      (badges ? '<div class="absolute top-1 right-1 flex flex-col items-end gap-0.5">'+badges+'</div>' : '')+
+    '</div>'+
     '<div class="p-2.5"><div class="text-sm font-semibold truncate">'+primaryName(s.name, s.name_cn)+'</div>'+
-    (function(){var sub=subName(s.name, s.name_cn); return sub ? '<div class="text-xs text-sub truncate mt-0.5">'+sub+'</div>' : ''})()+
+    '<div class="text-xs text-sub truncate mt-0.5'+(sub?'':' invisible')+'">'+(sub||' ')+'</div>'+
     '<div class="text-xs text-sub mt-1 flex gap-1.5 items-center truncate">'+
     (s.score?'<span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[12px] font-bold shrink-0">★ '+s.score.toFixed(1)+'</span>':'')+
     (s.platform?'<span class="bg-[#403638] text-[#FE8A95] px-1.5 py-px rounded-md text-[12px] shrink-0">'+s.platform+'</span>':'')+
@@ -68,16 +77,47 @@ async function load() {
   if (q) { searchLoad(q); return; }
   document.getElementById('grid').innerHTML = '<div class="col-span-full text-center py-20 text-sub">加载中…</div>';
   try {
-    allItems = (await apiLocal('/v0/subjects/list'))||[];
-    if (!allItems.length) {
-      document.getElementById('grid').innerHTML = '<div class="col-span-full text-center py-20 text-sub">暂无数据。点击「+ 拉取」添加</div>';
-      document.getElementById('pager').innerHTML = '';
-      return;
-    }
-    document.getElementById('grid').innerHTML = '';
-    showing = 0;
-    showMore(pageSize);
+    var subjects = (await apiLocal('/v0/subjects/list'))||[];
+    // Merge ELO ratings + collections
+    Promise.all([
+      api('/v0/elo/ranking'),
+      window.USERNAME ? api('/v0/users/'+window.USERNAME+'/collections') : Promise.resolve(null)
+    ]).then(function(results) {
+      var eloData = results[0], collData = results[1];
+      if (eloData && eloData.entries) {
+        var eloMap = {};
+        for (var i = 0; i < eloData.entries.length; i++) {
+          var e = eloData.entries[i];
+          eloMap[e.id] = e.rating ? Math.round(e.rating) : null;
+        }
+        for (var i = 0; i < subjects.length; i++) {
+          if (eloMap[subjects[i].id]) subjects[i]._elo = eloMap[subjects[i].id];
+        }
+      }
+      if (collData && collData.data) {
+        var collMap = {};
+        for (var i = 0; i < collData.data.length; i++) {
+          collMap[collData.data[i].subject_id] = collData.data[i].type;
+        }
+        for (var i = 0; i < subjects.length; i++) {
+          if (collMap[subjects[i].id]) subjects[i]._coll = collMap[subjects[i].id];
+        }
+      }
+      finishLoad(subjects);
+    }).catch(function() { finishLoad(subjects); });
   } catch(e) { document.getElementById('grid').innerHTML = '<div class="col-span-full text-center py-20 text-sub">无法连接</div>'; }
+}
+
+function finishLoad(items) {
+  allItems = items;
+  if (!allItems.length) {
+    document.getElementById('grid').innerHTML = '<div class="col-span-full text-center py-20 text-sub">暂无数据。点击「+ 拉取」添加</div>';
+    document.getElementById('pager').innerHTML = '';
+    return;
+  }
+  document.getElementById('grid').innerHTML = '';
+  showing = 0;
+  showMore(pageSize);
 }
 
 async function searchLoad(q) {

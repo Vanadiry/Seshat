@@ -60,6 +60,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /search.html", serveFile(embedFS, "web/search.html", "text/html"))
 	mux.HandleFunc("GET /rating.html", serveFile(embedFS, "web/rating.html", "text/html"))
 	mux.HandleFunc("GET /stats.html", serveFile(embedFS, "web/stats.html", "text/html"))
+	mux.HandleFunc("GET /settings.html", serveFile(embedFS, "web/settings.html", "text/html"))
 	mux.HandleFunc("GET /assets/app.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
 		w.Header().Set("Cache-Control", "no-cache")
@@ -143,6 +144,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	// ── User ──
 	mux.HandleFunc("GET /api/v0/users/{username}", handleUser(dd))
 	mux.HandleFunc("GET /api/v0/users/{username}/avatar", serveUserAvatar(dd))
+	mux.HandleFunc("GET /api/v0/users/{username}/collections", handleUserCollections(dd))
 
 	// ── Tags ──
 	mux.HandleFunc("GET /api/v0/tags", handleTags(dd))

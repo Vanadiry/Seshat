@@ -71,7 +71,7 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			fetchAll(sid, bg, dd, imgDir, p)
+			fetchAll(sid, bg, dd, imgDir, nil)
 			if p != nil {
 				mu.Lock()
 				done++
@@ -321,7 +321,7 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 		offset += 50
 	}
 
-	path := filepath.Join(config.Dir(), "tracker", fmt.Sprintf("_user-%s.json", username))
+	path := filepath.Join(config.Dir(), "tracker", "_user.json")
 	os.MkdirAll(filepath.Dir(path), 0o755)
 	result, _ := json.MarshalIndent(map[string]any{
 		"auto":       true,

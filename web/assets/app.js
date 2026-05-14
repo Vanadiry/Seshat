@@ -367,11 +367,12 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="relative">
           <img id="user-avatar" src="" class="w-8 h-8 rounded-lg object-cover bg-[#202028] cursor-pointer shrink-0" onclick="toggleUserMenu(event)" style="display:none">
           <div id="user-placeholder" class="w-8 h-8 rounded-lg cursor-pointer shrink-0" onclick="toggleUserMenu(event)" style="background:linear-gradient(135deg,#ff6b6b,#feca57,#48dbfb,#ff9ff3,#54a0ff);background-size:300% 300%;animation:rainbow 3s ease infinite"></div>
-          <div id="user-dropdown" class="hidden absolute right-0 top-full mt-2 bg-[#1c1c22] border border-[rgba(255,255,255,.15)] rounded-xl shadow-2xl py-2 w-[180px] z-[300] overflow-hidden">
+          <div id="user-dropdown" class="absolute right-0 top-full mt-2 bg-[#1c1c22] border border-[rgba(255,255,255,.15)] rounded-xl shadow-2xl py-2 w-[180px] z-[300] overflow-hidden" style="opacity:0;pointer-events:none;transition:opacity .2s ease">
             <div id="user-dropdown-name" class="px-4 pt-1 pb-2 text-sm font-bold text-center"></div>
             <div class="border-t border-[rgba(255,255,255,.06)] my-1"></div>
-            <a href="/doc/api" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-[#30303b] hover:text-white">API 文档</a>
+            <a href="/settings.html" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-[#30303b] hover:text-white">设置</a>
             <div class="border-t border-[rgba(255,255,255,.06)] my-1"></div>
+            <a href="/doc/api" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-[#30303b] hover:text-white">API 文档</a>
             <a href="https://github.com/Vanadiry/Seshat" target="_blank" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-[#30303b] hover:text-white">项目 GitHub</a>
           </div>
         </div>
@@ -412,10 +413,14 @@ document.addEventListener('DOMContentLoaded', () => {
 function toggleUserMenu(e) {
   e.stopPropagation();
   var dd = document.getElementById('user-dropdown');
-  dd.classList.toggle('hidden');
+  var show = dd.style.opacity === '0' || dd.style.opacity === '';
+  dd.style.opacity = show ? '1' : '0';
+  dd.style.pointerEvents = show ? 'auto' : 'none';
 }
 document.addEventListener('click', function() {
-  document.getElementById('user-dropdown').classList.add('hidden');
+  var dd = document.getElementById('user-dropdown');
+  dd.style.opacity = '0';
+  dd.style.pointerEvents = 'none';
 });
 
 // ── 拉取弹窗：输入行 + 操作按钮 + 危险区 + 二次确认 ──

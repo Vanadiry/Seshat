@@ -706,6 +706,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+  /api/v0/users/{username}/collections:
+    get:
+      tags: [用户]
+      summary: 用户收藏
+      parameters:
+        - { name: username, in: path, required: true, schema: { type: string }, example: "vanadiry" }
+      responses:
+        "200":
+          description: 收藏列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        subject_id: { type: integer }
+                        type: { type: integer, description: "1=想看 2=看过 3=抛弃" }
   /api/v0/users/{username}/avatar:
     get:
       tags: [用户]
