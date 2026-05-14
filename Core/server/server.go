@@ -132,6 +132,9 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/tags", handleTags(dd))
 	mux.HandleFunc("GET /api/v0/tags/{name}/subjects", handleTagSubjects(dd))
 
+	// ── Stats ──
+	mux.HandleFunc("GET /api/v0/stats", handleStats(dd))
+
 	// ── ELO ──
 	mux.HandleFunc("GET /api/v0/elo/pair", handleELOPair(dd))
 	mux.HandleFunc("POST /api/v0/elo/compare", handleELOCompare(dd))

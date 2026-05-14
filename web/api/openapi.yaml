@@ -15,6 +15,7 @@ tags:
   - name: 拉取
   - name: Tracker
   - name: 图片
+  - name: 统计
   - name: ELO
   - name: 用户
 
@@ -348,6 +349,19 @@ paths:
       responses:
         "200": { description: 图片文件 }
         "404": { description: 未缓存，返回占位图 }
+
+  # ── 统计 ──
+  /api/v0/stats:
+    get:
+      tags: [统计]
+      summary: 数据统计
+      responses:
+        "200":
+          description: 图片、缓存、Tracker、收藏等统计
+          content:
+            application/json:
+              schema:
+                type: object
 
   # ── ELO ──
   /api/v0/elo/pair:

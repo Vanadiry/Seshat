@@ -8,9 +8,11 @@
 <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
 <div id="topbar"></div>
 <main class="max-w-[900px] mx-auto p-6">
+  <div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">条目统计</span></div>
+  <div id="stats-dash" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 text-xs text-sub"></div>
   <div class="flex items-center gap-3 mb-4 flex-wrap">
     <span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span>
-    <span class="font-bold text-lg">评分</span>
+    <span class="font-bold">评分</span>
     <span id="backend-note" class="text-xs text-sub" style="display:none">（仅能展示有本地索引和elo rating的部分）</span>
     <span class="text-xs text-sub" style="margin-left:auto">排序</span>
     <div class="flex gap-1">
@@ -43,6 +45,31 @@ function updateBtn(id, on) {
     ? 'px-3 py-1 rounded-lg text-xs cursor-pointer border border-[#FE8A95] bg-[#FE8A95] text-white font-semibold'
     : 'px-3 py-1 rounded-lg text-xs cursor-pointer border border-[rgba(255,255,255,.12)] bg-transparent text-sub hover:text-white';
   b.innerHTML = (on ? '✓ ' : '') + (id === 'btn-no-rating' ? '无 ELO Rating' : '无本地数据');
+}
+
+function loadStats() {
+  api('/v0/stats').then(function(s) {
+    if (!s) return;
+    var cards = [];
+    if (s.cache_entries) {
+      var total = s.cache_entries.subjects + s.cache_entries.characters + s.cache_entries.persons;
+      cards.push({label:'条目', value: s.cache_entries.subjects+' / '+s.cache_entries.characters+' / '+s.cache_entries.persons, sub:'动画 / 角色 / 人物（共 '+total+'）'});
+    }
+    if (s.images) {
+      cards.push({label:'图片', value: s.images.unique_subjects+' / '+s.images.unique_characters+' / '+s.images.unique_persons, sub:'动画 / 角色 / 人物'});
+    }
+    if (s.elo_scores != null) {
+      cards.push({label:'ELO Rating', value: s.elo_scores+' / '+s.elo_comparisons, sub:'有评分条目 / 评分次数'});
+    }
+    if (s.trackers) {
+      cards.push({label:'Tracker', value: s.trackers.length+' / '+s.tracker_total, sub:'Tracker / 条目总数'});
+    }
+    var html = '';
+    for (var i = 0; i < cards.length; i++) {
+      html += '<div class="bg-[#202028] border border-[rgba(255,255,255,.06)] rounded-xl p-3" style="max-width:220px;max-height:100px"><div class="text-sub truncate">'+cards[i].label+'</div><div class="text-lg font-bold mt-1 truncate">'+cards[i].value+'</div>'+(cards[i].sub?'<div class="text-xs text-sub mt-0.5 truncate">'+cards[i].sub+'</div>':'')+'</div>';
+    }
+    document.getElementById('stats-dash').innerHTML = html;
+  });
 }
 
 async function load() {
@@ -140,6 +167,7 @@ function render() {
   document.getElementById('stats-list').innerHTML = html;
 }
 
+loadStats();
 load();
 </script>
 </body>
