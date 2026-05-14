@@ -1,23 +1,23 @@
 package config
 
-const DefaultConfigTOML = `# Seshat 配置文件
+const DefaultConfigTOML = `# Seshat 配置
+# 要修改此处内容，建议先阅读文档
 
 [server]
-bind_addr = "127.0.0.1"
-port = 4000
-concurrency = 32
-# data_home = "" — 留空则使用 SESHAT_HOME/data
-data_home = ""
+bind_addr = "127.0.0.1"     # 监听地址，设为0.0.0.0将对局域网开放
+port = 12500                # 开放端口
+concurrency = 32            # 并发数，建议32即可
+data_home = ""              # 数据目录，留空则使用SESHAT_HOME/data
 
-# base_url = "" 表示不请求上游，仅浏览本地缓存
 [upstream]
+# 上游地址，控制后端拉取数据时的请求位置，建议不动。留空将不能拉取数据。
 base_url = "https://api.bgm.tv"
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
 
-# backend_url 置空则前端请求本地 /api/v0；设为 https://api.bgm.tv 则前端直连官方
-# fallback_url: 本地 404 时回退请求此地址，置空则不启用回退
 [frontend]
+# 后端地址。留空则请求本地/api/v0。设为https://api.bgm.tv则前端直连番组计划。
 backend_url = ""
+# 回退地址。当本地请求404时回退到此地址，留空则不启用回退。
 fallback_url = ""
 `
 

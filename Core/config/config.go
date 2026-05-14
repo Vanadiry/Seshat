@@ -36,7 +36,7 @@ type Config struct {
 var Defaults = Config{
 	Server: ServerConfig{
 		BindAddr:    "127.0.0.1",
-		Port:        4000,
+		Port:        12500,
 		Concurrency: 32,
 		DataHome:    "",
 	},

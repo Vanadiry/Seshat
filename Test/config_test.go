@@ -10,8 +10,8 @@ import (
 
 func TestDefaults(t *testing.T) {
 	cfg := config.Defaults
-	if cfg.Server.Port != 4000 {
-		t.Errorf("expected port 4000, got %d", cfg.Server.Port)
+	if cfg.Server.Port != 12500 {
+		t.Errorf("expected port 12500, got %d", cfg.Server.Port)
 	}
 	if cfg.Server.BindAddr != "127.0.0.1" {
 		t.Errorf("expected 127.0.0.1, got %s", cfg.Server.BindAddr)
@@ -92,8 +92,8 @@ func TestLoadSave(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if cfg.Server.Port != 4000 {
-		t.Errorf("expected 4000, got %d", cfg.Server.Port)
+	if cfg.Server.Port != 12500 {
+		t.Errorf("expected 12500, got %d", cfg.Server.Port)
 	}
 
 	// Modify and save
