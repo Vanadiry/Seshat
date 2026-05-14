@@ -327,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var p = path;
     if (p === '/subject') p = '/';
     else if (p === '/character') p = '/characters';
-    else if (p === '/persons') p = '/persons';
+    else if (p === '/person') p = '/persons';
     else if (p === '/tag') p = '/tags';
     if (href === '/' && (p === '/')) return 'bg-[#30303b] text-white';
     if (href !== '/' && p.startsWith(href)) return 'bg-[#30303b] text-white';
@@ -358,13 +358,13 @@ document.addEventListener('DOMContentLoaded', () => {
           <a href="/characters" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/characters')}">角色</a>
           <a href="/persons" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/persons')}">人物</a>
           <a href="/tags" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/tags')}">标签</a>
-          <a href="/stats.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/stats.html')}">统计</a>
+          <a href="/stats" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/stats')}">统计</a>
         </nav>
         <div class="flex-1"></div>
         ${warnText ? '<span class="absolute left-1/2 -translate-x-1/2 text-[#FFCA28] text-sm font-bold pointer-events-none">'+warnText+'</span>' : ''}
         <nav class="flex gap-1 items-center">
-          <a href="/rating.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/rating.html')}">评分</a>
-          <a href="/search.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/search.html')}">搜索</a>
+          <a href="/rating" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/rating')}">评分</a>
+          <a href="/search" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/search')}">搜索</a>
         </nav>
         <button id="btn-fetch" class="px-4 py-1.5 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">管理数据</button>
         <div class="relative">
@@ -373,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div id="user-dropdown" class="absolute right-0 top-full mt-2 bg-[#1c1c22] border border-[rgba(255,255,255,.15)] rounded-xl shadow-2xl py-2 w-[180px] z-[300] overflow-hidden" style="opacity:0;pointer-events:none;transition:opacity .2s ease">
             <div id="user-dropdown-name" class="px-4 pt-1 pb-2 text-sm font-bold text-center"></div>
             <div class="border-t border-[rgba(255,255,255,.06)] my-1"></div>
-            <a href="/settings.html" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-[#30303b] hover:text-white">设置</a>
+            <a href="/settings" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-[#30303b] hover:text-white">设置</a>
             <div class="border-t border-[rgba(255,255,255,.06)] my-1"></div>
             <a href="/doc/api" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-[#30303b] hover:text-white">API 文档</a>
             <a href="https://github.com/Vanadiry/Seshat" target="_blank" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-[#30303b] hover:text-white">项目 GitHub</a>
