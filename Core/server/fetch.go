@@ -324,7 +324,7 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 	}
 
 	// Save collections for frontend display
-	userDir := filepath.Join(dd, "user")
+	userDir := filepath.Join(config.Dir(), "user", "info")
 	os.MkdirAll(userDir, 0o755)
 	collData, _ := json.Marshal(map[string]any{"subjects": all, "updated_at": time.Now().Format(time.RFC3339)})
 	os.WriteFile(filepath.Join(userDir, "collections.json"), collData, 0o644)
@@ -340,7 +340,7 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 
 func fetchUserInfo(username string, bg *bangumi.Client, dd string) {
 	log.Info("Fetching user info for %s", username)
-	userDir := filepath.Join(dd, "user")
+	userDir := filepath.Join(config.Dir(), "user", "info")
 	os.MkdirAll(userDir, 0o755)
 	data, err := bg.GetRaw(fmt.Sprintf("v0/users/%s", username))
 	if err != nil {
@@ -356,7 +356,7 @@ func fetchUserInfo(username string, bg *bangumi.Client, dd string) {
 
 func fetchUserAvatar(username string, bg *bangumi.Client, dd string) {
 	log.Info("Fetching user avatar for %s", username)
-	userDir := filepath.Join(dd, "user")
+	userDir := filepath.Join(config.Dir(), "user", "info")
 	os.MkdirAll(userDir, 0o755)
 	imgData, err := bg.GetImage(fmt.Sprintf("v0/users/%s/avatar?type=large", username))
 	if err != nil {

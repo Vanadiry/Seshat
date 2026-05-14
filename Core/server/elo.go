@@ -50,11 +50,11 @@ type eloHistory struct {
 }
 
 func eloRatingPath() string {
-	return filepath.Join(config.Dir(), "elo", "rating.json")
+	return filepath.Join(config.Dir(), "user", "elo", "rating.json")
 }
 
 func eloHistoryPath() string {
-	return filepath.Join(config.Dir(), "elo", "history.json")
+	return filepath.Join(config.Dir(), "user", "elo", "history.json")
 }
 
 func loadELO() map[int]float64 {
@@ -71,7 +71,7 @@ func loadELO() map[int]float64 {
 }
 
 func saveELO(m map[int]float64) {
-	os.MkdirAll(filepath.Join(config.Dir(), "elo"), 0o755)
+	os.MkdirAll(filepath.Join(config.Dir(), "user", "elo"), 0o755)
 	data, _ := json.Marshal(m)
 	os.WriteFile(eloRatingPath(), data, 0o644)
 }
@@ -90,7 +90,7 @@ func loadELOHistory() []eloHistory {
 }
 
 func saveELOHistory(h []eloHistory) {
-	os.MkdirAll(filepath.Join(config.Dir(), "elo"), 0o755)
+	os.MkdirAll(filepath.Join(config.Dir(), "user", "elo"), 0o755)
 	data, _ := json.Marshal(h)
 	os.WriteFile(eloHistoryPath(), data, 0o644)
 }

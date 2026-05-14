@@ -6,11 +6,15 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/vanadiry/seshat/Core/config"
 )
+
+func userDir() string { return filepath.Join(config.Dir(), "user", "info") }
 
 func handleUser(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		data, err := os.ReadFile(filepath.Join(dd, "user", "info.json"))
+		data, err := os.ReadFile(filepath.Join(userDir(), "info.json"))
 		if err != nil {
 			http.NotFound(w, r)
 			return
@@ -29,7 +33,7 @@ func handleUser(dd string) http.HandlerFunc {
 func serveUserAvatar(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		for _, ext := range []string{".jpg", ".png"} {
-			path := filepath.Join(dd, "user", "large"+ext)
+			path := filepath.Join(userDir(), "large"+ext)
 			if _, err := os.Stat(path); err == nil {
 				http.ServeFile(w, r, path)
 				return
@@ -41,7 +45,7 @@ func serveUserAvatar(dd string) http.HandlerFunc {
 
 func handleUserCollections(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		data, err := os.ReadFile(filepath.Join(dd, "user", "collections.json"))
+		data, err := os.ReadFile(filepath.Join(userDir(), "collections.json"))
 		if err != nil {
 			writeJSON(w, map[string]any{"data": []any{}})
 			return

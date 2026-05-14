@@ -251,7 +251,7 @@ func handleTrackerList(cfg *config.Config) http.HandlerFunc {
 
 func handleImportCollections(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		data, err := os.ReadFile(filepath.Join(dd, "user", "collections.json"))
+		data, err := os.ReadFile(filepath.Join(config.Dir(), "user", "info", "collections.json"))
 		if err != nil { http.Error(w, `{"error":"collections not found"}`, 400); return }
 		var coll struct {
 			Subjects map[string]int `json:"subjects"`
