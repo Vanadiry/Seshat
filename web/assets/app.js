@@ -355,12 +355,12 @@ document.addEventListener('DOMContentLoaded', () => {
           <a href="/character-list.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/character-list.html')}">角色</a>
           <a href="/person-list.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/person-list.html')}">人物</a>
           <a href="/tags.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/tags.html')}">标签</a>
+          <a href="/stats.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/stats.html')}">统计</a>
         </nav>
         <div class="flex-1"></div>
         ${warnText ? '<span class="absolute left-1/2 -translate-x-1/2 text-[#FFCA28] text-sm font-bold pointer-events-none">'+warnText+'</span>' : ''}
         <nav class="flex gap-1 items-center">
           <a href="/rating.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/rating.html')}">评分</a>
-          <a href="/stats.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/stats.html')}">统计</a>
           <a href="/search.html" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle('/search.html')}">搜索</a>
         </nav>
         <button id="btn-fetch" class="px-4 py-1.5 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">管理数据</button>
@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <style>
       @keyframes rainbow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
       @keyframes imgFadeIn { from{opacity:0} to{opacity:1} }
-      img, .grid > *, #results > div, #view > div, #appearances-section > div, #chars-section > div, #subjects-section > div, #stats-list > div { animation: imgFadeIn .35s ease }
+      img, .grid > *, #results > div, #view > div, #appearances-section > div, #chars-section > div, #subjects-section > div, #stats-list > div, #history-area > div { animation: imgFadeIn .35s ease }
     </style>`;
 
   document.getElementById('btn-fetch').addEventListener('click', openFetch);
