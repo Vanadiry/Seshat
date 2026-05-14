@@ -726,7 +726,16 @@ paths:
     post:
       tags: [拉取]
       summary: 拉取用户数据
-      description: 拉取用户信息+头像，若 fetch_collections=true 则同时拉取收藏。返回 task_id。
+      description: '拉取用户信息+头像。body 可传 {"collections": true} 同时拉取收藏。'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                collections:
+                  type: boolean
+                  default: false
       responses:
         "200":
           description: 后台执行
@@ -735,9 +744,13 @@ paths:
               schema:
                 type: object
                 properties:
-                  status: { type: string }
-                  username: { type: string }
-                  task_id: { type: string, example: "ae8687f0" }
+                  status:
+                    type: string
+                  username:
+                    type: string
+                  task_id:
+                    type: string
+                    example: "ae8687f0"
 
 components:
   responses:

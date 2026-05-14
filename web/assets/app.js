@@ -581,7 +581,7 @@ async function doTrackerFetch() {
 }
 
 async function doUserFetch() {
-  var res = await fetch(API + '/v0/fetch/user', {method:'POST'});
+  var res = await fetch(API + '/v0/fetch/user', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({collections: !!window.FETCH_COLLECTIONS})});
   var d = await res.json().catch(function(){return {error:'请求失败 ('+res.status+')'}});
   if (d.error) { showError(MSG.errUserFetchFailed + d.error); return; }
   closeFetch();

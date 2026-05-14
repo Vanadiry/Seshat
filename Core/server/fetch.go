@@ -459,10 +459,12 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 		uname := cfg.User.Username
 		if uname == "" { http.Error(w, `{"error":"username not configured"}`, 400); return }
 		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
+		var req struct{ Collections bool `json:"collections"` }
+		json.NewDecoder(r.Body).Decode(&req)
 		p := newProgress(1, "fetch_user", "拉取用户数据")
 		go func() {
 			fetchUserProfile(uname, bg, dd)
-			if cfg.User.FetchCollections {
+			if req.Collections {
 				fetchUserCollections(uname, bg, dd)
 			}
 			p.Send("complete", 1, 1, "")
