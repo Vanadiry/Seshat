@@ -19,11 +19,12 @@ const eloK = 32
 const eloDefault = 1500
 
 type eloEntry struct {
-	ID     int      `json:"id"`
-	Name   string   `json:"name"`
-	NameCN string   `json:"name_cn"`
-	Score  float64  `json:"score"`
-	Rating *float64 `json:"rating,omitempty"`
+	ID      int      `json:"id"`
+	Name    string   `json:"name"`
+	NameCN  string   `json:"name_cn"`
+	Score   float64  `json:"score"`
+	Rating  *float64 `json:"rating,omitempty"`
+	RankPct float64  `json:"rank_pct"`
 }
 
 type eloOrphan struct {
@@ -180,6 +181,11 @@ func getELORanking(dd string) eloRankingResult {
 		seen[all[i].ID] = true
 	}
 	sort.Slice(entries, func(i, j int) bool { return *entries[i].Rating > *entries[j].Rating })
+	if n := len(entries); n > 1 {
+		for i := range entries {
+			entries[i].RankPct = math.Round(float64(n-1-i)/float64(n-1)*100*10) / 10
+		}
+	}
 	sort.Slice(noRating, func(i, j int) bool { return noRating[i].Score > noRating[j].Score })
 
 	var orphans []eloOrphan

@@ -994,6 +994,7 @@ components:
         name_cn: { type: string, example: "CLANNAD" }
         score: { type: number, example: 8.4 }
         rating: { type: number, example: 1516.0 }
+        rank_pct: { type: number, example: 99.0, description: "排位百分比，100=最高" }
     EloRankingResult:
       type: object
       properties:
