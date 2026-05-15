@@ -42,7 +42,7 @@ var Defaults = Config{
 	},
 	Upstream: UpstreamConfig{
 		BaseURL:   "https://api.bgm.tv",
-		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+		UserAgent: "Vanadiry/Seshat/v0.2.4 (https://github.com/Vanadiry/Seshat)",
 	},
 	Frontend: FrontendConfig{BackendURL: "", FallbackURL: ""},
 }

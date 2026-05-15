@@ -12,7 +12,7 @@ data_home = ""              # 数据目录，留空则使用SESHAT_HOME/data
 [upstream]
 # 上游地址，控制后端拉取数据时的请求位置，建议不动。留空将不能拉取数据。
 base_url = "https://api.bgm.tv"
-user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+user_agent = "Vanadiry/Seshat/v0.2.4 (https://github.com/Vanadiry/Seshat)"
 
 [frontend]
 # 后端地址。留空则请求本地/api/v0。设为https://api.bgm.tv则前端直连番组计划。
