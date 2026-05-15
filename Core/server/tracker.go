@@ -160,22 +160,42 @@ func loadTrackerIDs(path string) []int {
 		}
 		return nil
 	}
-	// TOML: ids = [1, 2, 3]
+	// TOML: ids = [1, 2, 3] 或 ids = [\n1,\n2\n]
 	var ids []int
+	inArray := false
 	for _, line := range strings.Split(string(data), "\n") {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "ids = [") {
-			content := strings.TrimSuffix(strings.TrimPrefix(line, "ids = ["), "]")
-			for _, s := range strings.Split(content, ",") {
-				var id int
-				fmt.Sscanf(strings.TrimSpace(s), "%d", &id)
-				if id > 0 {
-					ids = append(ids, id)
-				}
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "ids = [") {
+			inArray = true
+			rest := strings.TrimPrefix(trimmed, "ids = [")
+			if idx := strings.Index(rest, "]"); idx >= 0 {
+				rest = rest[:idx]
+				inArray = false
+			}
+			parseIDList(rest, &ids)
+			continue
+		}
+		if inArray {
+			if idx := strings.Index(trimmed, "]"); idx >= 0 {
+				rest := trimmed[:idx]
+				inArray = false
+				parseIDList(rest, &ids)
+			} else {
+				parseIDList(trimmed, &ids)
 			}
 		}
 	}
 	return ids
+}
+
+func parseIDList(s string, ids *[]int) {
+	for _, part := range strings.Split(s, ",") {
+		var id int
+		fmt.Sscanf(strings.TrimSpace(part), "%d", &id)
+		if id > 0 {
+			*ids = append(*ids, id)
+		}
+	}
 }
 
 
