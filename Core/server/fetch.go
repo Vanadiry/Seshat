@@ -329,12 +329,6 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 	collData, _ := json.Marshal(map[string]any{"subjects": all, "updated_at": time.Now().Format(time.RFC3339)})
 	os.WriteFile(filepath.Join(userDir, "collections.json"), collData, 0o644)
 
-	// Save as standard tracker
-	trackerDir := filepath.Join(config.Dir(), "tracker")
-	os.MkdirAll(trackerDir, 0o755)
-	trackerData, _ := json.Marshal(map[string]any{"name": "user", "subjects": ids})
-	os.WriteFile(filepath.Join(trackerDir, "user.json"), trackerData, 0o644)
-
 	log.Info("User collections for %s saved (%d items)", username, len(all))
 }
 
