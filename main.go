@@ -5,11 +5,33 @@ import (
 	stdlog "log"
 	"net/http"
 	"os"
+	"os/exec"
+	"runtime"
+	"time"
 
 	"github.com/vanadiry/seshat/Core/config"
 	"github.com/vanadiry/seshat/Core/log"
 	"github.com/vanadiry/seshat/Core/server"
 )
+
+func openBrowser(url string) {
+	var cmd string
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = "open"
+	case "linux":
+		cmd = "xdg-open"
+	case "windows":
+		cmd = "cmd"
+	default:
+		return
+	}
+	args := []string{url}
+	if cmd == "cmd" {
+		args = []string{"/c", "start", url}
+	}
+	exec.Command(cmd, args...).Start()
+}
 
 func main() {
 	cfg, err := config.Load()
@@ -27,6 +49,12 @@ func main() {
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.BindAddr, cfg.Server.Port)
 	log.Info("Listening on http://%s", addr)
+
+	go func() {
+		time.Sleep(200 * time.Millisecond)
+		openBrowser(fmt.Sprintf("http://%s", addr))
+	}()
+
 	if err := http.ListenAndServe(addr, router); err != nil {
 		stdlog.Fatal(err)
 	}
