@@ -524,9 +524,6 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 		go func() {
 			fillImageGaps(dd, bg, p)
 			if len(newIDs) > 0 {
-				var idStrs []string
-				for _, sid := range newIDs { idStrs = append(idStrs, strconv.Itoa(sid)) }
-				for _, sid := range newIDs { addToSeshatTracker(cfg, sid) }
 				p.SetPhase(7, 11, "拉取动画数据")
 				fetchSubjectList(newIDs, bg, dd, imgDir, p)
 			}
