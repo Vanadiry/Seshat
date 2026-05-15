@@ -24,13 +24,39 @@
 
 ## 使用
 
-下载二进制文件，然后运行即可。程序会在本地开启 WebUI 前端和 Go 后端。  
-访问 `http://127.0.0.1:12500` 即可打开 Seshat WebUI。
+下载对应系统的二进制文件后运行即可，macOS/Linux 请先赋予可执行权限。  
+运行时，请保持终端窗口打开。
+
+<details><summary>macOS</summary>
+
+1. 打开终端，输入 `chmod +x`，然后将二进制文件拖入终端，点击回车。
+2. 再将二进制文件拖入终端，点击回车。（若提示“移动到废纸篓”，继续第三步）
+3. 在终端输入 `xattr -cr`，然后将二进制文件拖入终端，点击回车。
+4. 再执行一遍第二步，程序应当启动。
+
+</details>
+
+<details><summary>Linux</summary>
+
+1. 打开终端，输入 `chmod +x`，然后将二进制文件拖入终端，点击回车。
+2. 再将二进制文件拖入终端，点击回车。
+
+</details>
+
+<details><summary>Windows</summary>
+
+直接运行 exe 即可。如果被 Defender 拦截，需要手动放行。
+
+</details>
+<br />
+
+程序会在本地启动 Go 后端，并自动拉起前端。  
+如果 WebUI 没有自动打开，请访问 `http://127.0.0.1:12500`。
 
 详细使用方法，请阅读 [docs/guide](/docs/guide.md).
 
 ## 从源码构建
 
 ```bash
-go build
+python build.py
 ```
