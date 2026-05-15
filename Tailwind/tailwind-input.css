@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@source "../web/*.html";
+@source "../web/*/*.html";
+
+@theme {
+  --color-bg: #1d1d1d;
+  --color-card: #2a2a2a;
+  --color-bord: rgba(255, 255, 255, .12);
+  --color-text: rgba(255, 255, 255, .88);
+  --color-sub: rgba(255, 255, 255, .52);
+  --color-pink: #FE8A95;
+  --color-pink-bg: #403638;
+}

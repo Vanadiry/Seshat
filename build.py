@@ -1,5 +1,7 @@
 import subprocess
 import os
+import platform
+import urllib.request
 
 TARGETS = [
     ("darwin", "arm64"),
@@ -10,6 +12,8 @@ TARGETS = [
 ]
 
 DIST = "build"
+TW_DIR = "Tailwind"
+TW_VERSION = "v4.3.0"
 
 def get_version():
     try:
@@ -21,9 +25,49 @@ def get_version():
     except Exception:
         return "dev"
 
+def ensure_tailwind():
+    sys_os = platform.system()
+    if sys_os == "Darwin":
+        tw_os = "macos"
+    elif sys_os == "Linux":
+        tw_os = "linux"
+    elif sys_os == "Windows":
+        tw_os = "windows"
+    else:
+        raise RuntimeError(f"Unsupported OS: {sys_os}")
+
+    machine = platform.machine().lower()
+    if machine in ("arm64", "aarch64"):
+        tw_arch = "arm64"
+    elif machine in ("x86_64", "amd64"):
+        tw_arch = "x64"
+    else:
+        raise RuntimeError(f"Unsupported arch: {machine}")
+
+    ext = ".exe" if tw_os == "windows" else ""
+    name = f"tailwindcss-{tw_os}-{tw_arch}{ext}"
+    path = os.path.join(TW_DIR, name)
+    if os.path.exists(path):
+        return path
+
+    url = f"https://github.com/tailwindlabs/tailwindcss/releases/download/{TW_VERSION}/{name}"
+    print(f"Downloading {url} ...")
+    urllib.request.urlretrieve(url, path)
+    os.chmod(path, 0o755)
+    return path
+
 def main():
     version = get_version()
     os.makedirs(DIST, exist_ok=True)
+    os.makedirs(TW_DIR, exist_ok=True)
+
+    # Compile Tailwind CSS
+    tw = ensure_tailwind()
+    subprocess.run(
+        [tw, "-i", f"{TW_DIR}/tailwind-input.css",
+         "-o", "web/assets/style.css", "--minify"], check=True
+    )
+
     for goos, goarch in TARGETS:
         ext = ".exe" if goos == "windows" else ""
         out = f"{DIST}/seshat-{version}-{goos}-{goarch}{ext}"

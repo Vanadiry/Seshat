@@ -1,19 +1,12 @@
 # macOS Shit
 .DS_Store
 
-# Build
-build/
-seshatd
-tmp/
-*.db
-*.db-shm
-*.db-wal
-
 # Config
 config.toml
 config.yaml
 
 # Dev
 .vscode/
-/Plan
 TODO.md
+build/
+Tailwind/tailwindcss-*
