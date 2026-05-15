@@ -32,7 +32,7 @@ func TestPreferencesLoadSave(t *testing.T) {
 func TestSettingsAPI(t *testing.T) {
 	srv, _ := testServer(t)
 
-	// GET
+	// GET — returns nested preferences with _choice/_comment/value structure
 	resp, err := http.Get(srv.URL + "/api/v0/settings")
 	if err != nil {
 		t.Fatalf("GET settings: %v", err)
@@ -43,11 +43,16 @@ func TestSettingsAPI(t *testing.T) {
 	var data map[string]any
 	json.NewDecoder(resp.Body).Decode(&data)
 	resp.Body.Close()
-	if data["prefer_lang"] == nil {
+	lang, ok := data["prefer_lang"]
+	if !ok {
 		t.Error("missing prefer_lang")
 	}
+	langObj := lang.(map[string]any)
+	if langObj["value"] != "original" {
+		t.Errorf("expected original, got %v", langObj["value"])
+	}
 
-	// POST — valid update
+	// POST — valid update to value field
 	resp, err = http.Post(srv.URL+"/api/v0/settings", "application/json",
 		strings.NewReader(`{"prefer_lang":"chinese"}`))
 	if err != nil {

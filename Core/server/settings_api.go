@@ -9,10 +9,8 @@ import (
 	"github.com/vanadiry/seshat/Core/config"
 )
 
-var prefPath = config.PrefPath()
-
 func handleSettingsGet(w http.ResponseWriter, r *http.Request) {
-	data, err := os.ReadFile(prefPath)
+	data, err := os.ReadFile(config.PrefPath())
 	if err != nil {
 		writeJSON(w, map[string]any{})
 		return
@@ -24,7 +22,7 @@ func handleSettingsGet(w http.ResponseWriter, r *http.Request) {
 
 func handleSettingsPost(w http.ResponseWriter, r *http.Request) {
 	existing := map[string]any{}
-	if data, err := os.ReadFile(prefPath); err == nil {
+	if data, err := os.ReadFile(config.PrefPath()); err == nil {
 		json.Unmarshal(data, &existing)
 	}
 
@@ -46,7 +44,7 @@ func handleSettingsPost(w http.ResponseWriter, r *http.Request) {
 
 	os.MkdirAll(config.PrefDir(), 0o755)
 	result, _ := json.MarshalIndent(existing, "", "  ")
-	os.WriteFile(prefPath, result, 0o644)
+	os.WriteFile(config.PrefPath(), result, 0o644)
 
 	resp := map[string]any{}
 	if len(okList) > 0 { resp["success"] = strings.Join(okList, ", ") }
