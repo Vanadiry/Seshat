@@ -11,6 +11,7 @@ TARGETS = [
     ("windows", "amd64"),
 ]
 
+RELEASE = True           # False = 开发构建  True = 精简发布
 DIST = "build"
 TW_DIR = "Tailwind"
 TW_VERSION = "v4.3.0"
@@ -72,7 +73,10 @@ def main():
         ext = ".exe" if goos == "windows" else ""
         out = f"{DIST}/seshat-{version}-{goos}-{goarch}{ext}"
         env = {**os.environ, "GOOS": goos, "GOARCH": goarch}
-        subprocess.run(["go", "build", "-o", out, "."], env=env, check=True)
+        args = ["go", "build", "-o", out]
+        if RELEASE:
+            args.insert(2, "-ldflags=-s -w")
+        subprocess.run(args + ["."], env=env, check=True)
         print(f"OK. {goos} {goarch}")
 
 if __name__ == "__main__":
