@@ -52,10 +52,10 @@ function loadStats() {
     var cards = [];
     if (s.cache_entries) {
       var total = s.cache_entries.subjects + s.cache_entries.characters + s.cache_entries.persons;
-      cards.push({label:'条目', value: s.cache_entries.subjects+' / '+s.cache_entries.characters+' / '+s.cache_entries.persons, sub:'动画 / 角色 / 人物（共 '+total+'）'});
+      cards.push({label:'条目（共'+total+'项）', value: s.cache_entries.subjects+' / '+s.cache_entries.characters+' / '+s.cache_entries.persons, sub:'动画 / 角色 / 人物'});
     }
     if (s.images) {
-      cards.push({label:'图片', value: s.images.unique_subjects+' / '+s.images.unique_characters+' / '+s.images.unique_persons, sub:'动画 / 角色 / 人物'});
+      cards.push({label:'图片（共'+(s.images.total || 0)+'项）', value: s.images.unique_subjects+' / '+s.images.unique_characters+' / '+s.images.unique_persons, sub:'动画 / 角色 / 人物'});
     }
     if (s.elo_scores != null) {
       cards.push({label:'ELO Rating', value: s.elo_scores+' / '+s.elo_comparisons, sub:'有评分条目 / 评分次数'});
@@ -65,7 +65,7 @@ function loadStats() {
     }
     var html = '';
     for (var i = 0; i < cards.length; i++) {
-      html += '<div class="bg-[#202028] border border-[rgba(255,255,255,.06)] rounded-xl p-3" style="max-width:220px;max-height:100px"><div class="text-sub truncate">'+cards[i].label+'</div><div class="text-lg font-bold mt-1 truncate">'+cards[i].value+'</div>'+(cards[i].sub?'<div class="text-xs text-sub mt-0.5 truncate">'+cards[i].sub+'</div>':'')+'</div>';
+      html += '<div class="bg-[#202028] border border-[rgba(255,255,255,.06)] rounded-xl p-3 flex items-center" style="max-width:260px;max-height:100px"><div class="min-w-0 flex-1"><div class="text-sub truncate">'+cards[i].label+'</div><div class="text-lg font-bold mt-1 truncate">'+cards[i].value+'</div>'+(cards[i].sub?'<div class="text-xs text-sub mt-0.5 truncate">'+cards[i].sub+'</div>':'')+'</div>'+(cards[i].total != null ? '<div class="text-2xl font-bold text-[#FE8A95] shrink-0 ml-3">'+cards[i].total+'</div>' : '')+'</div>';
     }
     document.getElementById('stats-dash').innerHTML = html;
   });
@@ -97,7 +97,6 @@ function sortBy(key) {
 function render() {
   var isElo = sortKey === 'elo';
   var items = [];
-  // Merge items based on toggles
   for (var i = 0; i < _entries.length; i++) items.push(_entries[i]);
   if (_showNoRating) { for (var i = 0; i < _noRating.length; i++) items.push(_noRating[i]); }
   if (_showOrphans) {
@@ -115,7 +114,6 @@ function render() {
       }
     }
   }
-  // Sort
   items.sort(function(a, b) {
     if (isElo) {
       var ra = a.rating ? (typeof a.rating === 'number' ? a.rating : a.rating) : 0;
