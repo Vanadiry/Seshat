@@ -5,8 +5,8 @@
 
 特别感谢 [番组计划](https://bgm.tv/) 的数据源。
 
-<img src="/docs/image/readme-02.png" width="608"/>
-<div style="display:flex; gap:8px;">
+<img src="/docs/image/readme-02.png" width="600"/>
+<div style="display:flex">
 <img src="/docs/image/readme-01.png" width="300"/><img src="/docs/image/readme-03.png" width="
 300"/>
 </div>
