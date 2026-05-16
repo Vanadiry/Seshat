@@ -54,3 +54,10 @@
 如果 WebUI 没有自动打开，请访问 `http://127.0.0.1:12500`。
 
 详细使用方法，请阅读 [docs/guide](/docs/guide.md).
+
+## 从源码构建
+
+```bash
+pnpm install
+python script/build.py
+```
