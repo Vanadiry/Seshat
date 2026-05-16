@@ -8,5 +8,10 @@ config.yaml
 # Dev
 .vscode/
 TODO.md
+node_modules/
+pnpm-workspace.yaml
+
+# Build
 build/
-Tailwind/tailwindcss-*
+web/assets/app.min.js
+web/**.html
