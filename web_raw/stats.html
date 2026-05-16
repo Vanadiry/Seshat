@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="zh-CN" class="bg-[#1d1d1d]">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="view-transition" content="same-origin" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>统计 | Seshat</title>
+
+        <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+        <link rel="stylesheet" href="/assets/style.css" />
+        <style>
+            .sn {
+                font-variant-numeric: tabular-nums;
+            }
+        </style>
+    </head>
+    <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+        <div id="topbar"></div>
+        <main class="max-w-[900px] mx-auto p-6">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span
+                ><span class="font-bold">条目统计</span>
+            </div>
+            <div
+                id="stats-dash"
+                class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 text-xs text-sub"
+            ></div>
+            <div class="flex items-center gap-3 mb-4 flex-wrap">
+                <span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span>
+                <span class="font-bold">评分</span>
+                <span class="text-xs text-sub" style="margin-left: auto"
+                    >排序</span
+                >
+                <div class="flex gap-1">
+                    <button
+                        id="btn-sort-elo"
+                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-[#FE8A95] bg-[#FE8A95] text-white font-semibold"
+                        onclick="sortBy('elo')"
+                    >
+                        ELO
+                    </button>
+                    <button
+                        id="btn-sort-score"
+                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-[rgba(255,255,255,.12)] bg-transparent text-sub hover:text-white"
+                        onclick="sortBy('score')"
+                    >
+                        评分
+                    </button>
+                </div>
+                <span class="text-xs text-sub ml-4">显示</span>
+                <div class="flex gap-1" id="toggles" style="display: none">
+                    <button
+                        id="btn-no-rating"
+                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-[rgba(255,255,255,.12)] bg-transparent text-sub hover:text-white"
+                        onclick="toggleNoRating()"
+                    >
+                        无 ELO Rating
+                    </button>
+                    <button
+                        id="btn-orphans"
+                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-[rgba(255,255,255,.12)] bg-transparent text-sub hover:text-white"
+                        onclick="toggleOrphans()"
+                    >
+                        无本地数据
+                    </button>
+                </div>
+            </div>
+            <div id="stats-list">
+                <div class="text-center py-20 text-sub">加载中…</div>
+            </div>
+        </main>
+        <script src="assets/app.min.js"></script>
+        <script>
+            if (!window.BACKEND_URL)
+                document.getElementById("toggles").style.display = "";
+
+            var _entries = [],
+                _noRating = [],
+                _orphans = [];
+            var _orphanNames = {};
+            var _showNoRating = false,
+                _showOrphans = false;
+            var sortKey = "elo";
+
+            function toggleNoRating() {
+                _showNoRating = !_showNoRating;
+                updateBtn("btn-no-rating", _showNoRating);
+                render();
+            }
+            function toggleOrphans() {
+                _showOrphans = !_showOrphans;
+                updateBtn("btn-orphans", _showOrphans);
+                render();
+            }
+            function updateBtn(id, on) {
+                var b = document.getElementById(id);
+                b.className = on
+                    ? "px-3 py-1 rounded-lg text-xs cursor-pointer border border-[#FE8A95] bg-[#FE8A95] text-white font-semibold"
+                    : "px-3 py-1 rounded-lg text-xs cursor-pointer border border-[rgba(255,255,255,.12)] bg-transparent text-sub hover:text-white";
+                b.innerHTML =
+                    (on ? "✓ " : "") +
+                    (id === "btn-no-rating" ? "无 ELO Rating" : "无本地数据");
+            }
+
+            function loadStats() {
+                api("/v0/stats").then(function (s) {
+                    if (!s) return;
+                    var cards = [];
+                    if (s.cache_entries) {
+                        var total =
+                            s.cache_entries.subjects +
+                            s.cache_entries.characters +
+                            s.cache_entries.persons;
+                        cards.push({
+                            label: "条目（共" + total + "项）",
+                            value:
+                                s.cache_entries.subjects +
+                                " / " +
+                                s.cache_entries.characters +
+                                " / " +
+                                s.cache_entries.persons,
+                            sub: "动画 / 角色 / 人物"
+                        });
+                    }
+                    if (s.images) {
+                        cards.push({
+                            label: "图片（共" + (s.images.total || 0) + "项）",
+                            value:
+                                s.images.unique_subjects +
+                                " / " +
+                                s.images.unique_characters +
+                                " / " +
+                                s.images.unique_persons,
+                            sub: "动画 / 角色 / 人物"
+                        });
+                    }
+                    if (s.elo_scores != null) {
+                        cards.push({
+                            label: "ELO Rating",
+                            value: s.elo_scores + " / " + s.elo_comparisons,
+                            sub: "有评分条目 / 评分次数"
+                        });
+                    }
+                    if (s.trackers) {
+                        cards.push({
+                            label: "Tracker",
+                            value: s.trackers.length + " / " + s.tracker_total,
+                            sub: "Tracker / 条目总数"
+                        });
+                    }
+                    var html = "";
+                    for (var i = 0; i < cards.length; i++) {
+                        html +=
+                            '<div class="bg-[#202028] border border-[rgba(255,255,255,.06)] rounded-xl p-3 flex items-center" style="max-width:260px;max-height:100px"><div class="min-w-0 flex-1"><div class="text-sub truncate">' +
+                            cards[i].label +
+                            '</div><div class="text-lg font-bold mt-1 truncate">' +
+                            cards[i].value +
+                            "</div>" +
+                            (cards[i].sub
+                                ? '<div class="text-xs text-sub mt-0.5 truncate">' +
+                                  cards[i].sub +
+                                  "</div>"
+                                : "") +
+                            "</div>" +
+                            (cards[i].total != null
+                                ? '<div class="text-2xl font-bold text-[#FE8A95] shrink-0 ml-3">' +
+                                  cards[i].total +
+                                  "</div>"
+                                : "") +
+                            "</div>";
+                    }
+                    document.getElementById("stats-dash").innerHTML = html;
+                });
+            }
+
+            async function load() {
+                try {
+                    var data = (await api("/v0/elo/ranking")) || {};
+                    _entries = data && data.entries ? data.entries : [];
+                    _noRating = data && data.no_rating ? data.no_rating : [];
+                    _orphans = data && data.orphans ? data.orphans : [];
+                    sortBy("elo");
+                } catch (e) {
+                    document.getElementById("stats-list").innerHTML =
+                        '<div class="text-center py-20 text-sub">加载失败</div>';
+                }
+            }
+
+            function sortBy(key) {
+                sortKey = key;
+                document.getElementById("btn-sort-elo").className =
+                    key === "elo"
+                        ? "px-3 py-1 rounded-lg text-xs cursor-pointer border border-[#FE8A95] bg-[#FE8A95] text-white font-semibold"
+                        : "px-3 py-1 rounded-lg text-xs cursor-pointer border border-[rgba(255,255,255,.12)] bg-transparent text-sub hover:text-white";
+                document.getElementById("btn-sort-score").className =
+                    key === "score"
+                        ? "px-3 py-1 rounded-lg text-xs cursor-pointer border border-[#FE8A95] bg-[#FE8A95] text-white font-semibold"
+                        : "px-3 py-1 rounded-lg text-xs cursor-pointer border border-[rgba(255,255,255,.12)] bg-transparent text-sub hover:text-white";
+                render();
+            }
+
+            function render() {
+                var isElo = sortKey === "elo";
+                var items = [];
+                for (var i = 0; i < _entries.length; i++)
+                    items.push(_entries[i]);
+                if (_showNoRating) {
+                    for (var i = 0; i < _noRating.length; i++)
+                        items.push(_noRating[i]);
+                }
+                if (_showOrphans) {
+                    for (var i = 0; i < _orphans.length; i++) {
+                        var cached = _orphanNames[_orphans[i].id];
+                        items.push({
+                            id: _orphans[i].id,
+                            name: cached ? cached.name : undefined,
+                            name_cn: cached ? cached.name_cn : undefined,
+                            score: cached ? cached.score : undefined,
+                            rating: _orphans[i].rating,
+                            _orphan: true
+                        });
+                        if (!cached) {
+                            (function (id) {
+                                api("/v0/subjects/" + id).then(function (s) {
+                                    var score =
+                                        s && s.rating && s.rating.score
+                                            ? s.rating.score
+                                            : null;
+                                    _orphanNames[id] =
+                                        s && s.id
+                                            ? {
+                                                  name: s.name || "",
+                                                  name_cn: s.name_cn || "",
+                                                  score: score
+                                              }
+                                            : {
+                                                  name: null,
+                                                  name_cn: null,
+                                                  score: null
+                                              };
+                                    if (_showOrphans) render();
+                                });
+                            })(_orphans[i].id);
+                        }
+                    }
+                }
+                items.sort(function (a, b) {
+                    if (isElo) {
+                        var ra = a.rating
+                            ? typeof a.rating === "number"
+                                ? a.rating
+                                : a.rating
+                            : 0;
+                        var rb = b.rating
+                            ? typeof b.rating === "number"
+                                ? b.rating
+                                : b.rating
+                            : 0;
+                        var d = rb - ra;
+                        return d !== 0 ? d : (b.score || 0) - (a.score || 0);
+                    } else {
+                        var d = (b.score || 0) - (a.score || 0);
+                        return d !== 0 ? d : (b.rating || 0) - (a.rating || 0);
+                    }
+                });
+
+                var html =
+                    '<div class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-[rgba(255,255,255,.06)]"><div class="w-10 shrink-0 text-center">动画</div><div class="flex-1 min-w-0"></div><div class="w-[100px] text-center shrink-0">ELO Rating</div><div class="w-[100px] text-center shrink-0 font-mono">BGM Rank</div><div class="w-[60px] text-center shrink-0">ID</div></div>';
+                for (var i = 0; i < items.length; i++) {
+                    var it = items[i];
+                    var bg = i % 2 === 0 ? "bg-[#202028]" : "bg-[#1a1a1e]";
+                    var eloCls = isElo
+                        ? "text-sm font-semibold"
+                        : "text-sm text-sub";
+                    var bkgCls = isElo
+                        ? "text-sm text-sub"
+                        : "text-sm font-semibold";
+                    if (it._orphan) {
+                        var oTitle = "加载中…",
+                            oSub = "";
+                        if (it.name !== undefined) {
+                            if (it.name) {
+                                oTitle = primaryName(it.name, it.name_cn);
+                                oSub = subName(it.name, it.name_cn);
+                            } else {
+                                oTitle = "无标题";
+                                oSub =
+                                    "未能获取此条目的数据，可能是未储存此条目，或数据端点异常";
+                            }
+                        }
+                        html +=
+                            '<div id="orphan-' +
+                            it.id +
+                            '" class="flex items-center gap-4 px-3 py-1.5 border border-transparent ' +
+                            bg +
+                            '">' +
+                            '<img src="' +
+                            img("subject", it.id, "grid") +
+                            '" ' +
+                            imgOnError("subject", it.id, "grid") +
+                            ' class="w-10 h-10 rounded object-cover bg-[#151518] shrink-0">' +
+                            '<div class="flex-1 min-w-0"><div class="text-sm font-semibold truncate' +
+                            (it.name ? "" : " text-sub") +
+                            '">' +
+                            oTitle +
+                            "</div>" +
+                            (oSub
+                                ? '<div class="text-xs text-sub truncate">' +
+                                  oSub +
+                                  "</div>"
+                                : "") +
+                            "</div>" +
+                            '<span class="' +
+                            eloCls +
+                            ' w-[120px] flex justify-center gap-1 shrink-0 font-mono"><span class="flex-1 text-right font-mono">' +
+                            (it.rating ? it.rating.toFixed(0) : "1500") +
+                            '</span><span class="text-xs text-sub flex-1 text-left font-mono">' +
+                            (it.rank_pct != null
+                                ? it.rank_pct.toFixed(1) + "%"
+                                : "") +
+                            "</span></span>" +
+                            '<span class="' +
+                            bkgCls +
+                            ' w-[80px] text-center shrink-0">' +
+                            (it.score != null ? it.score.toFixed(1) : "-") +
+                            "</span>" +
+                            '<span class="text-xs text-sub w-[60px] text-center shrink-0">#' +
+                            it.id +
+                            "</span></div>";
+                    } else {
+                        var primary = primaryName(it.name, it.name_cn);
+                        var sub = subName(it.name, it.name_cn);
+                        var ratingVal = it.rating
+                            ? typeof it.rating === "number"
+                                ? it.rating.toFixed(0)
+                                : it.rating
+                            : "-";
+                        html +=
+                            "<div onclick=\"location.href='/subject?id=" +
+                            it.id +
+                            '\'" class="flex items-center gap-4 px-3 py-1.5 cursor-pointer hover:border-[#FE8A95] border border-transparent ' +
+                            bg +
+                            '">' +
+                            '<img src="' +
+                            img("subject", it.id, "grid") +
+                            '" ' +
+                            imgOnError("subject", it.id, "grid") +
+                            ' class="w-10 h-10 rounded object-cover bg-[#151518] shrink-0">' +
+                            '<div class="flex-1 min-w-0"><div class="text-sm font-semibold truncate">' +
+                            primary +
+                            "</div>" +
+                            (sub
+                                ? '<div class="text-xs text-sub truncate">' +
+                                  sub +
+                                  "</div>"
+                                : "") +
+                            "</div>" +
+                            '<span class="' +
+                            eloCls +
+                            ' w-[120px] flex justify-center gap-1 shrink-0 font-mono"><span class="flex-1 text-right font-mono">' +
+                            ratingVal +
+                            '</span><span class="text-sub flex-1 text-right font-mono">' +
+                            (it.rank_pct != null
+                                ? it.rank_pct.toFixed(1) + "%"
+                                : "") +
+                            "</span></span>" +
+                            '<span class="' +
+                            bkgCls +
+                            ' w-[100px] text-center shrink-0 font-mono">' +
+                            (it.score ? it.score.toFixed(1) : "-") +
+                            "</span>" +
+                            '<span class="text-xs text-sub w-[60px] text-left shrink-0 font-mono">#' +
+                            it.id +
+                            "</span></div>";
+                    }
+                }
+                document.getElementById("stats-list").innerHTML = html;
+            }
+
+            loadStats();
+            load();
+        </script>
+    </body>
+</html>

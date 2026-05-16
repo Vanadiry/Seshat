@@ -49,14 +49,14 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		if embedFS == nil { http.NotFound(w, r); return }
 			http.ServeFileFS(w, r, embedFS, "web/"+page+".html")
 	})
-	// app.js with config injection
-	mux.HandleFunc("GET /assets/app.js", func(w http.ResponseWriter, r *http.Request) {
+	// app.min.js with config injection
+	mux.HandleFunc("GET /assets/app.min.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
 		w.Header().Set("Cache-Control", "no-cache")
 		pref, _ := config.LoadPreferences()
 		if pref == nil { pref = &config.DefaultPreferences }
 		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\n", cfg.Frontend.BackendURL, pref.PreferLang, pref.Username, cfg.Frontend.FallbackURL, config.Dir())
-		data, _ := fs.ReadFile(embedFS, "web/assets/app.js")
+		data, _ := fs.ReadFile(embedFS, "web/assets/app.min.js")
 		w.Write(data)
 	})
 	// All other assets

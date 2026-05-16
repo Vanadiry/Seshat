@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN" class="bg-[#1d1d1d]">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="view-transition" content="same-origin" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>标签详情 | Seshat</title>
+
+        <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+        <link rel="stylesheet" href="/assets/style.css" />
+    </head>
+    <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+        <div id="topbar"></div>
+        <div
+            id="detail-header"
+            class="sticky top-12 z-40 bg-[#1c1c22] border-b border-[rgba(255,255,255,.12)]"
+        ></div>
+
+        <main class="max-w-[1200px] mx-auto p-6">
+            <div
+                id="grid"
+                class="grid grid-cols-[repeat(auto-fill,minmax(175px,1fr))] gap-4"
+            ></div>
+            <div id="pager" class="mt-6 text-center"></div>
+        </main>
+
+        <script src="assets/app.min.js"></script>
+        <script>
+            var pageSize = 100;
+            var allItems = [];
+            var showing = 0;
+
+            function renderItem(s) {
+                return (
+                    "<div onclick=\"location.href='/subject?id=" +
+                    s.id +
+                    '\'" class="bg-[#2a2a2a] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">' +
+                    '<img src="' +
+                    img("subject", s.id, "small") +
+                    '" loading=\"lazy\" ' +
+                    imgOnError("subject", s.id, "small") +
+                    ' class="w-full aspect-[3/4] object-cover bg-[#202028]">' +
+                    '<div class="p-2.5"><div class="text-sm font-semibold truncate">' +
+                    primaryName(s.name, s.name_cn) +
+                    "</div>" +
+                    '<div class="text-xs text-sub mt-1 flex gap-1.5 items-center">' +
+                    (s.rating && s.rating.score
+                        ? '<span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[12px] font-bold">★ ' +
+                          s.rating.score.toFixed(1) +
+                          "</span>"
+                        : "") +
+                    (s.platform
+                        ? '<span class="bg-[#403638] text-[#FE8A95] px-1.5 py-px rounded-md text-[12px]">' +
+                          s.platform +
+                          "</span>"
+                        : "") +
+                    "</div></div></div>"
+                );
+            }
+
+            function showMore(n) {
+                var grid = document.getElementById("grid");
+                var end = Math.min(showing + n, allItems.length);
+                var html = "";
+                for (var i = showing; i < end; i++) {
+                    html += renderItem(allItems[i]);
+                }
+                grid.innerHTML += html;
+                showing = end;
+                updatePager();
+            }
+            function showAll() {
+                showMore(allItems.length - showing);
+            }
+            function updatePager() {
+                var pager = document.getElementById("pager");
+                if (allItems.length <= pageSize) {
+                    pager.innerHTML =
+                        '<span class="text-xs text-sub">共 ' +
+                        allItems.length +
+                        " 个动画</span>";
+                    return;
+                }
+                var html =
+                    '<span class="text-xs text-sub">当前展示 ' +
+                    showing +
+                    "，共 " +
+                    allItems.length +
+                    " 个动画</span>";
+                if (showing < allItems.length) {
+                    html +=
+                        ' <button onclick="showMore(' +
+                        pageSize +
+                        ')" class="ml-3 px-3 py-1 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-xs cursor-pointer hover:bg-[#30303b] hover:text-white">展开更多</button>';
+                    html +=
+                        ' <button onclick="showAll()" class="ml-2 px-3 py-1 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-xs cursor-pointer hover:bg-[#30303b] hover:text-white">展开全部</button>';
+                }
+                pager.innerHTML = html;
+            }
+
+            (async () => {
+                var tag = new URLSearchParams(location.search).get("tag");
+                if (!tag) {
+                    document.getElementById("grid").innerHTML =
+                        '<div class="col-span-full text-center py-20 text-sub">缺少标签参数</div>';
+                    return;
+                }
+
+                document.getElementById("detail-header").innerHTML =
+                    '<div class="max-w-[1200px] mx-auto px-6 py-2 flex items-center gap-3">' +
+                    '<a href="javascript:history.back()" class="w-7 h-7 rounded-full border border-[rgba(255,255,255,.2)] flex items-center justify-center text-sub hover:text-white hover:border-[rgba(255,255,255,.4)] shrink-0 no-underline text-xs" title="返回">←</a>' +
+                    '<span class="text-xl font-bold truncate">标签: ' +
+                    tag +
+                    "</span></div>";
+                document.title = tag + " - 标签";
+
+                allItems =
+                    (await api(
+                        "/v0/tags/" + encodeURIComponent(tag) + "/subjects"
+                    )) || [];
+                if (!allItems.length) {
+                    document.getElementById("grid").innerHTML =
+                        '<div class="col-span-full text-center py-20 text-sub">暂无数据</div>';
+                    return;
+                }
+                showing = 0;
+                showMore(pageSize);
+            })();
+        </script>
+    </body>
+</html>

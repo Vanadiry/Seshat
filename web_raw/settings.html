@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh-CN" class="bg-[#1d1d1d]">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="view-transition" content="same-origin" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>设置 | Seshat</title>
+
+        <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+        <link rel="stylesheet" href="/assets/style.css" />
+    </head>
+    <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+        <div id="topbar"></div>
+        <main class="max-w-[600px] mx-auto p-6">
+            <div id="settings-form">
+                <div class="text-center py-20 text-sub">加载中…</div>
+            </div>
+        </main>
+        <script src="assets/app.min.js"></script>
+        <script>
+            var _settingsData = {};
+
+            function loadSettings() {
+                fetch(API + "/v0/settings")
+                    .then(function (r) {
+                        return r.json();
+                    })
+                    .then(function (data) {
+                        _settingsData = data || {};
+                        render();
+                    });
+            }
+
+            function render() {
+                var html = "";
+                var topComment = _settingsData._comment || "";
+                if (topComment)
+                    html +=
+                        '<p class="text-xs text-sub mb-4">' +
+                        topComment +
+                        "</p>";
+
+                var fields = [];
+                for (var k in _settingsData) {
+                    if (k === "_comment") continue;
+                    var v = _settingsData[k];
+                    if (typeof v === "object" && v.value !== undefined) {
+                        var choices = null;
+                        if (v._choice && Array.isArray(v._choice)) {
+                            choices = [];
+                            for (var c = 0; c < v._choice.length; c++) {
+                                var choiceObj = v._choice[c];
+                                var choiceKey = Object.keys(choiceObj)[0];
+                                choices.push({
+                                    key: choiceKey,
+                                    label: choiceObj[choiceKey]
+                                });
+                            }
+                        }
+                        fields.push({
+                            key: k,
+                            comment: v._comment || "",
+                            value: v.value,
+                            choices: choices
+                        });
+                    }
+                }
+                for (var i = 0; i < fields.length; i++) {
+                    var f = fields[i];
+                    html +=
+                        '<div class="bg-[#202028] border border-[rgba(255,255,255,.06)] rounded-xl p-4 mb-3">' +
+                        '<label class="text-xs text-sub mb-1 block">' +
+                        f.comment +
+                        "</label>";
+                    if (f.choices) {
+                        html +=
+                            '<select id="f-' +
+                            f.key +
+                            '" class="w-full px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-[#151518] text-sm outline-none">';
+                        for (var j = 0; j < f.choices.length; j++) {
+                            html +=
+                                '<option value="' +
+                                f.choices[j].key +
+                                '"' +
+                                (f.value === f.choices[j].key
+                                    ? " selected"
+                                    : "") +
+                                ">" +
+                                f.choices[j].label +
+                                "</option>";
+                        }
+                        html += "</select>";
+                    } else {
+                        html +=
+                            '<input id="f-' +
+                            f.key +
+                            '" value="' +
+                            f.value +
+                            '" class="w-full px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-[#151518] text-sm">';
+                    }
+                    html += "</div>";
+                }
+                html +=
+                    '<button onclick="saveSettings()" class="w-full px-4 py-2 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 mt-2">保存</button>';
+                html +=
+                    '<p id="save-msg" class="text-xs text-sub mt-3 text-center"></p>';
+                document.getElementById("settings-form").innerHTML = html;
+            }
+
+            function saveSettings() {
+                var updates = {};
+                for (var k in _settingsData) {
+                    if (k === "_comment") continue;
+                    var v = _settingsData[k];
+                    if (typeof v !== "object" || v.value === undefined)
+                        continue;
+                    var el = document.getElementById("f-" + k);
+                    if (!el) continue;
+                    updates[k] = el.type === "checkbox" ? el.checked : el.value;
+                }
+                var msg = document.getElementById("save-msg");
+                fetch(API + "/v0/settings", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(updates)
+                })
+                    .then(function (r) {
+                        return r.json();
+                    })
+                    .then(function (d) {
+                        if (d.error && !d.success) {
+                            msg.textContent = d.error;
+                            return;
+                        }
+                        var text = "";
+                        if (d.success) text += "✓ " + d.success;
+                        if (d.error)
+                            text += (text ? "  " : "") + "✗ " + d.error;
+                        msg.textContent = text || "保存成功";
+                        if (!d.error) loadSettings();
+                    });
+            }
+
+            loadSettings();
+        </script>
+    </body>
+</html>
