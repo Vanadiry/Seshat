@@ -48,7 +48,7 @@ var MSG = {
   trackerLabel: '拉取或创建 Tracker',
   trackerPlaceholder: 'Tracker 名称',
   btnUserFetch: '刷新用户数据',
-  btnUpdate: '增量更新',
+  btnUpdate: '拉取缺失',
   btnRefreshAll: '刷新全部',
   btnDangerZone: '危险区',
   btnRebuildIndex: '重建索引',
@@ -524,7 +524,7 @@ function initDialog() {
     confirmAction(MSG.confirmUserFetch(), doUserFetch);
   });
   document.getElementById('btn-import-coll').addEventListener('click', function() {
-    confirmAction('将用户收藏列表导入为 Tracker，之后可参与增量更新。', function() {
+    confirmAction('将用户收藏列表导入为 Tracker，之后可参与其他拉取行为。', function() {
       closeFetch();
       fetch(API + '/v0/tracker/import-collections', {method:'POST'}).then(function(r){return r.json()}).then(function(d) {
         if (d.error) showError(d.error);

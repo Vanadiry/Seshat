@@ -520,7 +520,7 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		newIDs := diffTrackerIDs(cfg, dd)
 		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
-		p := newProgress(11, "fetch_update", "增量更新")
+		p := newProgress(11, "fetch_update", "拉取缺失")
 		go func() {
 			fillImageGaps(dd, bg, p)
 			if len(newIDs) > 0 {

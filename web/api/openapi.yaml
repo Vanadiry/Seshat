@@ -1,58 +1,55 @@
 openapi: "3.0.0"
 info:
   title: Seshat API
-  description: 离线优先的 Bangumi 数据管理与浏览工具。所有数据从 Bangumi API 拉取并缓存本地。本地接口前缀 /api/v0，结构与官方 /v0 一致。backend_url 置空则前端请求本地 /api/v0，设为官方地址则直连官方 /v0。
-  version: "0.1.0"
+  description: 离线优先的 Bangumi 数据管理与浏览工具。
+  version: "0.2.5"
 servers:
   - url: http://127.0.0.1:12500
-    description: 本地服务器
+    description: Seshat 本地后端
 tags:
-  - name: 动画
+  - name: 条目
   - name: 角色
-  - name: 制作成员
+  - name: 人物
+  - name: 用户
   - name: 标签
-  - name: 搜索
   - name: 拉取
   - name: Tracker
-  - name: 图片
-  - name: 统计
   - name: ELO
-  - name: 设置
-  - name: 用户
+  - name: 其他
 
 paths:
-  # ── 动画 ──
-  /api/v0/subjects/list:
+  # 条目
+  /api/v0/subjects/list:                # 所有条目
     get:
-      tags: [动画]
-      summary: 列出已缓存动画列表
+      tags: [条目]
+      summary: 所有条目
       operationId: listSubjects
       responses:
         "200":
-          description: 动画列表
+          description: 条目列表
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/SubjectListItem"
-  /api/v0/subjects/name:
+  /api/v0/subjects/name:                # 条目对应ID索引
     get:
-      tags: [动画]
-      summary: 动画名称→ID 映射
+      tags: [条目]
+      summary: 条目对应ID索引
       operationId: subjectNames
       responses:
         "200":
-          description: name→id 字典
+          description: NAME对应ID字典
           content:
             application/json:
               schema:
                 type: object
                 additionalProperties: { type: integer }
-  /api/v0/subjects/{id}:
+  /api/v0/subjects/{id}:                # 条目详情
     get:
-      tags: [动画]
-      summary: 列出动画详情
+      tags: [条目]
+      summary: 条目详情
       operationId: getSubject
       parameters:
         - name: id
@@ -62,87 +59,27 @@ paths:
           example: 51
       responses:
         "200":
-          description: 完整动画数据
+          description: 完整条目数据
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Subject"
         "404":
           $ref: "#/components/responses/NotFound"
-  /api/v0/episodes:
+  /api/v0/subjects/{id}/image:          # 条目图像
     get:
-      tags: [动画]
-      summary: 列出动画关联的剧集列表
+      tags: [条目]
+      summary: 条目图像
       parameters:
-        - { name: subject_id, in: query, required: true, schema: { type: integer }, example: 51 }
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: type, in: query, schema: { type: string, enum: [large, grid, small], default: grid } }
       responses:
-        "200":
-          description: 剧集数组
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Episode"
-  /api/v0/subjects/{id}/subjects:
+        "200": { description: 图像文件 }
+        "302": { description: 未缓存，重定向到/assets/no-image.png }
+  /api/v0/subjects/{id}/characters:     # 条目关联的角色
     get:
-      tags: [动画]
-      summary: 列出动画关联的条目
-      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
-      responses:
-        "200":
-          description: 关联条目数组
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/SubjectRelation"
-
-  # ── 角色 ──
-  /api/v0/characters/list:
-    get:
-      tags: [角色]
-      summary: 列出已缓存角色列表
-      operationId: listCharacters
-      responses:
-        "200":
-          description: 角色列表
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/NameEntry"
-  /api/v0/characters/name:
-    get:
-      tags: [角色]
-      summary: 角色名称→ID 映射
-      operationId: characterNames
-      responses:
-        "200":
-          description: name→id 字典
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: { type: integer }
-  /api/v0/characters/{id}:
-    get:
-      tags: [角色]
-      summary: 列出角色详情
-      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
-      responses:
-        "200":
-          description: 角色完整数据
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Character"
-  /api/v0/subjects/{id}/characters:
-    get:
-      tags: [动画]
-      summary: 列出动画关联的角色
+      tags: [条目]
+      summary: 条目关联的角色
       parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
       responses:
         "200":
@@ -153,29 +90,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/RelatedCharacter"
-  /api/v0/characters/{id}/subjects:
+  /api/v0/subjects/{id}/persons:        # 条目关联的人物
     get:
-      tags: [角色]
-      summary: 列出角色出演的动画
-      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
-      responses:
-        "200":
-          description: 动画数组
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    staff: { type: string, example: "主角" }
-                    name: { type: string, example: "CLANNAD" }
-                    name_cn: { type: string }
-                    id: { type: integer }
-  /api/v0/characters/{id}/persons:
-    get:
-      tags: [角色]
-      summary: 列出角色关联的人物（声优）
+      tags: [条目]
+      summary: 条目关联的人物
       parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
       responses:
         "200":
@@ -185,256 +103,25 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    staff: { type: string }
-                    name: { type: string }
-                    id: { type: integer }
-                    subject_id: { type: integer }
-                    subject_name: { type: string }
-
-  # ── 制作成员 ──
-  /api/v0/persons/list:
-    get:
-      tags: [制作成员]
-      summary: 列出已缓存人物列表
-      operationId: listPersons
-      responses:
-        "200":
-          description: 人物列表
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/NameEntry"
-  /api/v0/persons/name:
-    get:
-      tags: [人物]
-      summary: 人物名称→ID 映射
-      operationId: personNames
-      responses:
-        "200":
-          description: name→id 字典
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: { type: integer }
-  /api/v0/persons/{id}:
-    get:
-      tags: [制作成员]
-      summary: 列出制作成员详情
-      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
-      responses:
-        "200":
-          description: 制作成员完整数据
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Person"
-  /api/v0/subjects/{id}/persons:
-    get:
-      tags: [动画]
-      summary: 列出动画关联的制作成员
-      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
-      responses:
-        "200":
-          description: 制作成员数组
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
                   $ref: "#/components/schemas/RelatedPerson"
-  /api/v0/persons/{id}/subjects:
+  /api/v0/subjects/{id}/subjects:       # 条目关联的条目
     get:
-      tags: [制作成员]
-      summary: 列出人物参与的动画
+      tags: [条目]
+      summary: 条目关联的条目
       parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
       responses:
         "200":
-          description: 动画数组
+          description: 关联条目数组
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    staff: { type: string, example: "导演" }
-                    name: { type: string, example: "CLANNAD" }
-                    name_cn: { type: string }
-                    id: { type: integer }
-  /api/v0/persons/{id}/characters:
-    get:
-      tags: [制作成员]
-      summary: 列出人物关联的角色
-      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
-      responses:
-        "200":
-          description: 角色数组
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    staff: { type: string }
-                    name: { type: string }
-                    id: { type: integer }
-                    subject_id: { type: integer }
-                    subject_name: { type: string }
-
-  # ── 标签 ──
-  /api/v0/tags:
-    get:
-      tags: [标签]
-      summary: 列出标签列表
-      responses:
-        "200":
-          description: 标签数组（以数量降序）
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TagItem"
-  /api/v0/tags/{name}/subjects:
-    get:
-      tags: [标签]
-      summary: 列出标签下的动画
-      parameters: [{ name: name, in: path, required: true, schema: { type: string } }]
-      responses:
-        "200":
-          description: 动画列表
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/SubjectListItem"
-
-  # ── 图片 ──
-  /api/v0/subjects/{id}/image:
-    get:
-      tags: [图片]
-      summary: 动画图片
-      parameters:
-        - { name: id, in: path, required: true, schema: { type: integer } }
-        - { name: type, in: query, schema: { type: string, enum: [large, grid, small], default: grid } }
-      responses:
-        "200": { description: 图片文件（JPEG） }
-        "302": { description: 未缓存，重定向到 /assets/no-image.png }
-  /api/v0/characters/{id}/image:
-    get:
-      tags: [图片]
-      summary: 角色图片
-      parameters:
-        - { name: id, in: path, required: true, schema: { type: integer } }
-        - { name: type, in: query, schema: { type: string, enum: [large, grid, small], default: grid } }
-      responses:
-        "200": { description: 图片文件（JPEG） }
-        "302": { description: 未缓存，重定向到 /assets/no-image.png }
-  /api/v0/persons/{id}/image:
-    get:
-      tags: [图片]
-      summary: 人物图片
-      parameters:
-        - { name: id, in: path, required: true, schema: { type: integer } }
-        - { name: type, in: query, schema: { type: string, enum: [large, grid, small], default: grid } }
-      responses:
-        "200": { description: 图片文件（JPEG） }
-        "302": { description: 未缓存，重定向到 /assets/no-image.png }
-
-  # ── 统计 ──
-  /api/v0/stats:
-    get:
-      tags: [统计]
-      summary: 数据统计
-      responses:
-        "200":
-          description: 图片、缓存、Tracker、收藏等统计
-          content:
-            application/json:
-              schema:
-                type: object
-
-  # ── ELO ──
-  /api/v0/elo/pair:
-    get:
-      tags: [ELO]
-      summary: 获取一对随机动画用于比较
-      responses:
-        "200":
-          description: 两部动画的基本信息
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/EloPairEntry"
-  /api/v0/elo/compare:
+                  $ref: "#/components/schemas/SubjectRelation"
+  /api/v0/search/subjects:              # 搜索条目
     post:
-      tags: [ELO]
-      summary: 提交比较结果
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                winner: { type: integer, example: 51 }
-                loser: { type: integer, example: 288 }
-      responses:
-        "200": { description: OK }
-  /api/v0/elo/ranking:
-    get:
-      tags: [ELO]
-      summary: ELO 排名
-      description: 返回三组数据：entries（有ELO+本地）、no_rating（仅有本地）、orphans（仅有ELO）
-      responses:
-        "200":
-          description: 分组排名结果
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/EloRankingResult"
-  /api/v0/elo/history:
-    get:
-      tags: [ELO]
-      summary: ELO 对战历史
-      responses:
-        "200":
-          description: 对战历史列表
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/EloHistory"
-  /api/v0/elo/rebuild:
-    post:
-      tags: [ELO]
-      summary: 从历史记录重建 ELO 评分
-      description: 清空当前所有 ELO 评分，从 history.json 按时间顺序重新计算所有评分。
-      responses:
-        "200":
-          description: 重建完成
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: string, example: "ok" }
-                  count: { type: integer, example: 42 }
-
-  # ── 搜索 ──
-  /api/v0/search/subjects:
-    post:
-      tags: [搜索]
-      summary: 条目搜索
+      tags: [条目]
+      summary: 搜索条目
       requestBody:
         content:
           application/json:
@@ -454,10 +141,114 @@ paths:
                   data:
                     type: array
                     items: { type: object }
-  /api/v0/search/characters:
+  /api/v0/episodes:                     # 条目关联的剧集
+    get:
+      tags: [条目]
+      summary: 条目关联的剧集列表
+      parameters:
+        - { name: subject_id, in: query, required: true, schema: { type: integer }, example: 51 }
+      responses:
+        "200":
+          description: 剧集数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Episode"
+  # 角色
+  /api/v0/characters/list:              # 所有角色
+    get:
+      tags: [角色]
+      summary: 所有角色
+      operationId: listCharacters
+      responses:
+        "200":
+          description: 角色列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NameEntry"
+  /api/v0/characters/name:              # 角色对应ID索引
+    get:
+      tags: [角色]
+      summary: 角色对应ID索引
+      operationId: characterNames
+      responses:
+        "200":
+          description: NAME对应ID字典
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: { type: integer }
+  /api/v0/characters/{id}:              # 角色详情
+    get:
+      tags: [角色]
+      summary: 角色详情
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 角色完整数据
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Character"
+  /api/v0/characters/{id}/image:        # 角色图像
+    get:
+      tags: [角色]
+      summary: 角色图像
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: type, in: query, schema: { type: string, enum: [large, grid, small], default: grid } }
+      responses:
+        "200": { description: 图片文件 }
+        "302": { description: 未缓存，重定向到/assets/no-image.png }
+  /api/v0/characters/{id}/persons:      # 角色关联的人物
+    get:
+      tags: [角色]
+      summary: 角色关联的人物
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 人物数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    staff: { type: string }
+                    name: { type: string }
+                    id: { type: integer }
+                    subject_id: { type: integer }
+                    subject_name: { type: string }
+  /api/v0/characters/{id}/subjects:     # 角色关联的条目
+    get:
+      tags: [角色]
+      summary: 角色关联的条目
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 条目数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    staff: { type: string, example: "主角" }
+                    name: { type: string, example: "CLANNAD" }
+                    name_cn: { type: string }
+                    id: { type: integer }
+  /api/v0/search/characters:            # 搜索角色
     post:
-      tags: [搜索]
-      summary: 角色搜索
+      tags: [角色]
+      summary: 搜索角色
       requestBody:
         content:
           application/json:
@@ -476,10 +267,99 @@ paths:
                   data:
                     type: array
                     items: { type: object }
-  /api/v0/search/persons:
+  # 人物
+  /api/v0/persons/list:                 # 所有人物
+    get:
+      tags: [人物]
+      summary: 所有人物
+      operationId: listPersons
+      responses:
+        "200":
+          description: 人物列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NameEntry"
+  /api/v0/persons/name:                 # 人物对应ID索引
+    get:
+      tags: [人物]
+      summary: 人物对应ID索引
+      operationId: personNames
+      responses:
+        "200":
+          description: NAME对应ID字典
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: { type: integer }
+  /api/v0/persons/{id}:                 # 人物详情
+    get:
+      tags: [人物]
+      summary: 人物详情
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 人物完整数据
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+  /api/v0/persons/{id}/image:           # 人物图像
+    get:
+      tags: [人物]
+      summary: 人物图像
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: type, in: query, schema: { type: string, enum: [large, grid, small], default: grid } }
+      responses:
+        "200": { description: 图片文件 }
+        "302": { description: 未缓存，重定向到/assets/no-image.png }
+  /api/v0/persons/{id}/characters:      # 人物关联的角色
+    get:
+      tags: [人物]
+      summary: 人物关联的角色
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 角色数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    staff: { type: string }
+                    name: { type: string }
+                    id: { type: integer }
+                    subject_id: { type: integer }
+                    subject_name: { type: string }
+  /api/v0/persons/{id}/subjects:        # 人物关联的条目
+    get:
+      tags: [人物]
+      summary: 人物关联的条目
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200":
+          description: 条目数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    staff: { type: string, example: "导演" }
+                    name: { type: string, example: "CLANNAD" }
+                    name_cn: { type: string }
+                    id: { type: integer }
+  /api/v0/search/persons:               # 搜索人物
     post:
-      tags: [搜索]
-      summary: 人物搜索
+      tags: [人物]
+      summary: 搜索人物
       requestBody:
         content:
           application/json:
@@ -498,275 +378,8 @@ paths:
                   data:
                     type: array
                     items: { type: object }
-  /api/v0/search/tags:
-    post:
-      tags: [搜索]
-      summary: 标签搜索
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                keyword: { type: string, example: "治愈" }
-      responses:
-        "200":
-          description: 搜索结果
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items: { type: object }
-
-  # ── 拉取 ──
-  /api/v0/fetch/subject:
-    post:
-      tags: [拉取]
-      summary: 单个或批量拉取动画
-      description: |
-        从 Bangumi API 拉取动画的全部数据并缓存到本地。
-        支持两种方式：
-        - `{"id": 51}` 拉取单个
-        - `{"ids": [51, 288, 9717]}` 批量拉取
-        自动记录到 `_seshat.json`，返回 `task_id` 用于订阅实时进度。
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                id: { type: integer, example: 51, description: 单个动画 ID }
-                ids: { type: array, items: { type: integer }, example: [51, 288, 9717], description: 多个动画 ID }
-            examples:
-              single:
-                value: { id: 51 }
-              batch:
-                value: { ids: [51, 288, 9717] }
-      responses:
-        "200":
-          description: 拉取已开始
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: string, example: "fetching" }
-                  count: { type: integer, example: 2 }
-                  task_id: { type: string, example: "ae8687f0", description: "用于 GET /api/v0/task/{task_id}" }
-  /api/v0/fetch/all:
-    post:
-      tags: [拉取]
-      summary: 拉取全部 tracker 中的动画
-      description: 扫描 Tracker 目录下所有列表，从上游全量拉取全部 subject 数据。覆盖已有，不删除本地多余数据。返回 task_id。
-      responses:
-        "200":
-          description: 后台执行
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: string }
-                  task_id: { type: string, example: "ae8687f0" }
-  /api/v0/fetch/update:
-    post:
-      tags: [拉取]
-      summary: 增量拉取新增的动画
-      description: 对比 Tracker 与本地 subjects.json，只拉取新增的 ID。若无新增返回 up-to-date。
-      responses:
-        "200":
-          description: 后台执行或无新增
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: string, example: "fetching" }
-                  count: { type: integer, example: 3 }
-                  task_id: { type: string, example: "ae8687f0" }
-  /api/v0/fetch/index:
-    post:
-      tags: [拉取]
-      summary: 从 API 缓存重建索引
-      description: 扫描 api/ 目录下所有已缓存的 JSON，重建 subjects.json、characters.json、persons.json、tags.json。不重建 images 索引。
-      responses:
-        "200":
-          description: 后台执行
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: string, example: "rebuilding" }
-                  task_id: { type: string, example: "ae8687f0" }
-  /api/v0/fetch/deep:
-    post:
-      tags: [拉取]
-      summary: 重建数据库
-      description: 清空所有缓存（api、images、tags、index），重新拉取全部 Tracker 数据。返回 task_id。
-      responses:
-        "200":
-          description: 后台执行
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: string }
-                  task_id: { type: string, example: "ae8687f0" }
-  /api/v0/task/{task_id}:
-    get:
-      tags: [拉取]
-      summary: 获取任务进度｜SSE
-      description: 实时推送任务进度。同时只允许一个任务运行，新任务在已有任务完成前返回 409。
-      parameters:
-        - name: task_id
-          in: path
-          required: true
-          schema: { type: string }
-          example: "ae8687f0"
-      responses:
-        "200":
-          description: text/event-stream 流式进度，首条消息含 task 类型和 label 描述
-          content:
-            text/event-stream:
-              schema:
-                type: string
-                example: |
-                  data: {"step":"start","done":0,"total":326,"task":"fetch_all","label":"刷新全部"}
-                  data: {"step":"subjects","done":15,"total":326,"speed":"3.2/s","status":""}
-                  data: {"step":"complete","done":326,"total":326}
-        "409":
-          description: 已有任务在运行
-  /api/v0/tasks:
-    get:
-      tags: [拉取]
-      summary: 列出当前活跃任务
-      description: 返回所有正在运行的任务 ID、类型和描述。页面刷新后可由此重连进度。
-      responses:
-        "200":
-          description: 活跃任务列表
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  tasks:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id: { type: string, example: "ae8687f0" }
-                        task: { type: string, example: "fetch_all" }
-                        label: { type: string, example: "刷新全部" }
-
-  # ── Tracker ──
-  /api/v0/tracker:
-    get:
-      tags: [Tracker]
-      summary: 列出所有 Tracker
-      responses:
-        "200":
-          description: Tracker 列表
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TrackerItem"
-  /api/v0/fetch/tracker:
-    post:
-      tags: [拉取]
-      summary: 按名称刷新指定 Tracker
-      description: 传入 Tracker 名称数组，刷新其中的全部 subject。返回 task_id。
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                names: { type: array, items: { type: string }, example: ["seshat", "user"] }
-      responses:
-        "200":
-          description: 后台执行
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: string }
-                  names: { type: array, items: { type: string } }
-                  task_id: { type: string, example: "ae8687f0" }
-  /api/v0/tracker/create:
-    post:
-      tags: [Tracker]
-      summary: 创建空 Tracker
-      description: 创建一个指定名称的空 `.toml` Tracker 文件，用户手动填入 ID。
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name: { type: string, example: "kyoani" }
-      responses:
-        "200":
-          description: 创建成功
-        "409":
-          description: Tracker 已存在
-  /api/v0/tracker/import-collections:
-    post:
-      tags: [Tracker]
-      summary: 导入用户收藏到 Tracker
-      description: 从拉取的用户收藏数据（user/info/collections.json）导入到 tracker/user.toml，方便跟踪。
-      responses:
-        "200":
-          description: 导入成功
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: string, example: "ok" }
-                  count: { type: integer, example: 326 }
-        "400":
-          description: 收藏数据不存在或格式无效
-
-  # ── 设置 ──
-  /api/v0/settings:
-    get:
-      tags: [设置]
-      summary: 读取用户偏好
-      description: 返回 preferences.json 的完整内容，包含 _choice、_comment 及 value 嵌套结构。
-      responses:
-        "200":
-          description: JSON 内容
-          content:
-            application/json:
-              schema:
-                type: object
-    post:
-      tags: [设置]
-      summary: 修改用户偏好
-      description: 传入顶层键对应的新值，仅更新已知键的 value 字段，保留 _choice 和 _comment。
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              example:
-                prefer_lang: "chinese"
-                username: "Vanadiry"
-      responses:
-        "200":
-          description: 返回 success 和/或 error 字段，列出成功/失败的键名
-
-  # ── 用户 ──
-  /api/v0/users/{username}:
+  # 用户
+  /api/v0/users/{username}:             # 用户信息
     get:
       tags: [用户]
       summary: 用户信息
@@ -774,12 +387,12 @@ paths:
         - { name: username, in: path, required: true, schema: { type: string }, example: "vanadiry" }
       responses:
         "200":
-          description: 用户数据（不含 avatar）
+          description: 用户详细数据
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
-  /api/v0/users/{username}/collections:
+  /api/v0/users/{username}/collections: # 用户收藏
     get:
       tags: [用户]
       summary: 用户收藏
@@ -799,8 +412,8 @@ paths:
                       type: object
                       properties:
                         subject_id: { type: integer }
-                        type: { type: integer, description: "1=想看 2=看过 3=抛弃" }
-  /api/v0/users/{username}/avatar:
+                        type: { type: integer, description: "1=想看，2=看过，3=抛弃" }
+  /api/v0/users/{username}/avatar:      # 用户头像
     get:
       tags: [用户]
       summary: 用户头像
@@ -815,11 +428,118 @@ paths:
               schema:
                 type: string
                 format: binary
-  /api/v0/fetch/user:
+  # 标签
+  /api/v0/tags:                         # 所有标签
+    get:
+      tags: [标签]
+      summary: 所有标签
+      responses:
+        "200":
+          description: 数量降序的标签数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TagItem"
+  /api/v0/tags/{name}/subjects:         # 标签关联的条目
+    get:
+      tags: [标签]
+      summary: 标签关联的条目
+      parameters: [{ name: name, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200":
+          description: 条目列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubjectListItem"
+  /api/v0/search/tags:                  # 搜索标签
+    post:
+      tags: [标签]
+      summary: 搜索标签
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                keyword: { type: string, example: "治愈" }
+      responses:
+        "200":
+          description: 搜索结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { type: object }
+  # 拉取
+  /api/v0/fetch/subject:                # 拉取条目
+    post:
+      tags: [拉取]
+      summary: 拉取条目
+      description: |
+        从Bangumi API拉取条目的全部数据并缓存到本地。
+        支持`{"id": 51}`拉取单个，`{"ids": [51, 288, 9717]}`拉取多个。
+        自动记录到_seshat.json，返回task_id。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id: { type: integer, example: 51, description: 单个条目ID }
+                ids: { type: array, items: { type: integer }, example: [51, 288, 9717], description: 多个条目ID }
+            examples:
+              single:
+                value: { id: 51 }
+              batch:
+                value: { ids: [51, 288, 9717] }
+      responses:
+        "200":
+          description: 拉取已开始
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "fetching" }
+                  count: { type: integer, example: 2 }
+                  task_id: { type: string, example: "ae8687f0", description: "用于GET /api/v0/task/{task_id}" }
+  /api/v0/fetch/tracker:                # 拉取Tracker
+    post:
+      tags: [拉取]
+      summary: 拉取Tracker
+      description: 传入Tracker名称数组，刷新其中的全部subject。返回task_id。
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                names: { type: array, items: { type: string }, example: ["seshat", "user"] }
+      responses:
+        "200":
+          description: 后台执行
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  names: { type: array, items: { type: string } }
+                  task_id: { type: string, example: "ae8687f0" }
+  /api/v0/fetch/user:                   # 拉取用户数据
     post:
       tags: [拉取]
       summary: 拉取用户数据
-      description: 拉取用户信息、头像和收藏，分 3 阶段执行。用户名取自 preferences.json 中的 username。
+      description: 拉取用户信息、头像和收藏。
       responses:
         "200":
           description: 后台执行
@@ -837,6 +557,269 @@ paths:
                     example: "ae8687f0"
         "400":
           description: 未设置用户名
+  /api/v0/fetch/all:                    # 拉取全部
+    post:
+      tags: [拉取]
+      summary: 拉取全部
+      description: 扫描Tracker目录下所有列表，从上游全量拉取数据。覆盖已有，不删除本地多余数据。返回task_id。
+      responses:
+        "200":
+          description: 后台执行
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  task_id: { type: string, example: "ae8687f0" }
+  /api/v0/fetch/update:                 # 拉取缺失
+    post:
+      tags: [拉取]
+      summary: 拉取缺失
+      description: 先请求本地缺少的数据，然后对比Tracker与本地subjects.json，拉取新增的ID。若无新增返回up-to-date。
+      responses:
+        "200":
+          description: 后台执行或无新增
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "fetching" }
+                  count: { type: integer, example: 3 }
+                  task_id: { type: string, example: "ae8687f0" }
+  /api/v0/fetch/index:                  # 重建索引
+    post:
+      tags: [拉取]
+      summary: 重建索引
+      description: 扫描api目录下所有已缓存的JSON，重建三项索引，不包括images索引。
+      responses:
+        "200":
+          description: 后台执行
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "rebuilding" }
+                  task_id: { type: string, example: "ae8687f0" }
+  /api/v0/fetch/deep:                   # 重建全部
+    post:
+      tags: [拉取]
+      summary: 重建全部
+      description: 清空data目录，重新拉取全部Tracker数据。返回task_id。
+      responses:
+        "200":
+          description: 后台执行
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  task_id: { type: string, example: "ae8687f0" }
+  /api/v0/task/{task_id}:               # 任务状态｜SSE
+    get:
+      tags: [拉取]
+      summary: 任务状态｜SSE
+      description: 实时推送任务进度。同时只允许一个任务运行，新任务在已有任务完成前返回409。
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema: { type: string }
+          example: "ae8687f0"
+      responses:
+        "200":
+          description: text/event-stream流式进度，首条消息含task类型和label描述
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: |
+                  data: {"step":"start","done":0,"total":326,"task":"fetch_all","label":"刷新全部"}
+                  data: {"step":"subjects","done":15,"total":326,"speed":"3.2/s","status":""}
+                  data: {"step":"complete","done":326,"total":326}
+        "409":
+          description: 已有任务在运行
+  /api/v0/tasks:                        # 当前任务
+    get:
+      tags: [拉取]
+      summary: 当前任务
+      description: 返回正在运行的任务ID、类型和描述。页面刷新后可由此重连进度。
+      responses:
+        "200":
+          description: 活跃任务列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string, example: "ae8687f0" }
+                        task: { type: string, example: "fetch_all" }
+                        label: { type: string, example: "刷新全部" }
+  # Tracker
+  /api/v0/tracker:                      # 所有Tracker
+    get:
+      tags: [Tracker]
+      summary: 所有Tracker
+      responses:
+        "200":
+          description: Tracker列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrackerItem"
+  /api/v0/tracker/create:               # 创建Tracker
+    post:
+      tags: [Tracker]
+      summary: 创建Tracker
+      description: 创建一个指定名称的空Tracker文件，用户手动填入ID。
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, example: "kyoani" }
+      responses:
+        "200":
+          description: 创建成功
+        "409":
+          description: Tracker已存在
+  /api/v0/tracker/import-collections:   # 以用户收藏创建Tracker
+    post:
+      tags: [Tracker]
+      summary: 以用户收藏创建Tracker
+      description: 将用户收藏的条目创建Tracker。
+      responses:
+        "200":
+          description: 导入成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "ok" }
+                  count: { type: integer, example: 326 }
+        "400":
+          description: 收藏数据不存在或格式无效
+
+  # ELO
+  /api/v0/elo/pair:                     # 随机配对
+    get:
+      tags: [ELO]
+      summary: 随机配对
+      responses:
+        "200":
+          description: 两部条目的基本信息
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EloPairEntry"
+  /api/v0/elo/compare:                  # 提交结果
+    post:
+      tags: [ELO]
+      summary: 提交结果
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                winner: { type: integer, example: 51 }
+                loser: { type: integer, example: 288 }
+      responses:
+        "200": { description: OK }
+  /api/v0/elo/ranking:                  # ELO评分
+    get:
+      tags: [ELO]
+      summary: ELO评分
+      description: 返回entries（有ELO+本地）、no_rating（仅有本地）、orphans（仅有ELO）
+      responses:
+        "200":
+          description: 分组排名结果
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EloRankingResult"
+  /api/v0/elo/history:                  # ELO历史
+    get:
+      tags: [ELO]
+      summary: ELO历史
+      responses:
+        "200":
+          description: 对战历史列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EloHistory"
+  /api/v0/elo/rebuild:                  # 重建评分
+    post:
+      tags: [ELO]
+      summary: 重建评分
+      description: 清空当前ELO评分，从history.json按时间顺序重新计算所有评分。
+      responses:
+        "200":
+          description: 重建完成
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "ok" }
+                  count: { type: integer, example: 42 }
+
+# 其他
+  /api/v0/settings:                     # 所有设置和修改设置
+    get:
+      tags: [其他]
+      summary: 所有设置
+      description: 返回preferences的完整内容。
+      responses:
+        "200":
+          description: JSON 内容
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      tags: [其他]
+      summary: 修改设置
+      description: 传入顶层键对应的新值，更新已知键的value字段。
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                prefer_lang: "chinese"
+                username: "Vanadiry"
+      responses:
+        "200":
+          description: 返回success和/或error，成功/失败的键名。
+  /api/v0/stats:                        # 统计数据
+    get:
+      tags: [其他]
+      summary: 统计数据
+      responses:
+        "200":
+          description: 图片、缓存、Tracker、收藏等统计
+          content:
+            application/json:
+              schema:
+                type: object
 
 components:
   responses:
