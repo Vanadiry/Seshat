@@ -307,16 +307,21 @@ function linkifyByMap(text, map, hrefPrefix) {
     if (!text || !map || !Object.keys(map).length) return text;
     var re = buildRegexForMap(map);
     if (!re) return text;
-    return text.replace(re, function (match) {
-        return (
-            '<a href="' +
-            hrefPrefix +
-            map[match] +
-            '" class="text-[#FE8A95] hover:underline">' +
-            match +
-            "</a>"
-        );
-    });
+    var parts = text.split(/(<a\b[^>]*>.*?<\/a>)/);
+    for (var i = 0; i < parts.length; i++) {
+        if (parts[i].indexOf("<a") === 0) continue;
+        parts[i] = parts[i].replace(re, function (match) {
+            return (
+                '<a href="' +
+                hrefPrefix +
+                map[match] +
+                '" class="text-[#FE8A95] hover:underline">' +
+                match +
+                "</a>"
+            );
+        });
+    }
+    return parts.join("");
 }
 
 // Keep existing linkifyPerson for backward compat (used in infobox)
@@ -342,10 +347,15 @@ function linkifyAllNames(text) {
 // ── linkifyURL：检测 URL 并转为可点击链接 ──
 function linkifyURL(text) {
     if (!text) return text;
-    return text.replace(
-        /(https?:\/\/[^\s<]+)/g,
-        '<a href="$1" target="_blank" rel="noopener" class="text-[#FE8A95] hover:underline"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">$1</a>'
-    );
+    var parts = text.split(/(<a\b[^>]*>.*?<\/a>)/);
+    for (var i = 0; i < parts.length; i++) {
+        if (parts[i].indexOf("<a") === 0) continue;
+        parts[i] = parts[i].replace(
+            /(https?:\/\/[^\s<]+)/g,
+            '<a href="$1" target="_blank" rel="noopener" class="text-[#FE8A95] hover:underline"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">$1</a>'
+        );
+    }
+    return parts.join("");
 }
 
 // ── linkifyBBCode：转换 [url=...]...[/url]，优先匹配本地 name ──
