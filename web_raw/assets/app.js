@@ -247,6 +247,9 @@ function addRemoteGlobe(el) {
     wrap.appendChild(globe);
 }
 
+// ── Infobox key blacklist：这些字段只做 URL/BBCode，不做名字匹配 ──
+var INFOBOX_NO_MATCH_KEYS = ["放送开始", "播放开始", "放送结束", "播放结束", "放送星期", "播放星期", "话数"];
+
 // ── Name → ID lookup maps (subjects/characters/persons) ──
 var _subjectMap = null,
     _charMap = null,
@@ -262,10 +265,99 @@ function loadPersonMap() {
         _charMap = results[1] || {};
         _personMap = results[2] || {};
         _personRegex = null;
+        _charPersonMerged = null;
     });
 }
 
-// ── Local name lookup (subjects > characters > persons) ──
+// ── Merged char + person map（person 优先）──
+var _charPersonMerged = null;
+function getCharPersonMergedMap() {
+    if (_charPersonMerged) return _charPersonMerged;
+    _charPersonMerged = {};
+    if (_charMap) {
+        for (var k in _charMap) {
+            if (_charMap.hasOwnProperty(k))
+                _charPersonMerged[k] = "/character?id=" + _charMap[k];
+        }
+    }
+    if (_personMap) {
+        for (var k in _personMap) {
+            if (_personMap.hasOwnProperty(k))
+                _charPersonMerged[k] = "/person?id=" + _personMap[k];
+        }
+    }
+    return _charPersonMerged;
+}
+
+// ── Subject 自由匹配（最长优先，不限制边界）──
+function linkifySubjectFree(text) {
+    return linkifyByMap(text, _subjectMap, "/subject?id=");
+}
+
+// ── 分段匹配：直接查合并 map，集数已在顶层保护 ──
+function matchSegmentCore(seg, merged) {
+    seg = seg.trim();
+    if (!seg) return seg;
+    var id = merged[seg];
+    if (!id) return seg;
+    return '<a href="' + id + '" class="text-[#FE8A95] hover:underline">' + seg + "</a>";
+}
+
+// ── Char+Person 自由匹配（仅 ≥3 字，最长优先）──
+function linkifyCharPersonFree3Plus(text) {
+    if (!text) return text;
+    var merged = getCharPersonMergedMap();
+    if (!merged || !Object.keys(merged).length) return text;
+    var subMap = {};
+    for (var k in merged) {
+        if (merged.hasOwnProperty(k) && k.length >= 3) subMap[k] = merged[k];
+    }
+    return linkifyByMap(text, subMap, "");
+}
+
+// ── 分隔符集合 ──
+var _SEPARATOR_RE = /([、,，\/\(\)（）\[\]])/;
+
+// ── Char+Person 分段匹配：按分隔符拆段，每段整体匹配 ──
+function linkifyCharPersonSegments(text) {
+    if (!text) return text;
+    var merged = getCharPersonMergedMap();
+    if (!merged || !Object.keys(merged).length) return text;
+    var parts = text.split(/(<a\b[^>]*>.*?<\/a>)/);
+    for (var i = 0; i < parts.length; i++) {
+        if (parts[i].indexOf("<a") === 0) continue;
+        var t = parts[i];
+        if (!t) continue;
+        var segs = t.split(_SEPARATOR_RE);
+        for (var j = 0; j < segs.length; j++) {
+            if (/^[、,，\/\(\)（）\[\]]$/.test(segs[j])) continue;
+            if (!segs[j].trim()) continue;
+            segs[j] = matchSegmentCore(segs[j], merged);
+        }
+        parts[i] = segs.join("");
+    }
+    return parts.join("");
+}
+
+// ── Infobox value 处理：BBCode → URL → 黑名单判定 → 保护集数 → 1a subject 自由匹配 → 1b ≥3 字自由匹配 → 2 分段匹配 → 还原集数 ──
+function processInfoboxValue(v, key) {
+    var t = linkifyBBCode(v);
+    t = linkifyURL(t);
+    if (INFOBOX_NO_MATCH_KEYS.indexOf(key) >= 0) return t;
+    // 保护集数括号（纯数字+逗号+连字符），避免内部数字被匹配
+    var epsBlocks = [];
+    t = t.replace(/\([\d\-,]+\)/g, function (m) {
+        epsBlocks.push(m);
+        return "\x00EPS" + (epsBlocks.length - 1) + "\x00";
+    });
+    t = linkifySubjectFree(t);
+    t = linkifyCharPersonFree3Plus(t);
+    t = linkifyCharPersonSegments(t);
+    t = t.replace(/\x00EPS(\d+)\x00/g, function (_, i) {
+        return epsBlocks[parseInt(i)];
+    });
+    return t;
+}
 function lookupLocalName(name) {
     if (_subjectMap && _subjectMap[name])
         return "/subject?id=" + _subjectMap[name];
@@ -426,7 +518,7 @@ function infoboxData(d) {
             if (typeof v === "string") {
                 items.push([
                     ib[i].key,
-                    linkifyURL(linkifyAllNames(linkifyBBCode(v))),
+                    processInfoboxValue(v, ib[i].key),
                     0
                 ]);
             } else if (Array.isArray(v)) {
@@ -438,11 +530,7 @@ function infoboxData(d) {
                             if (v[j].k)
                                 items.push([
                                     v[j].k,
-                                    linkifyURL(
-                                        linkifyAllNames(
-                                            linkifyBBCode(v[j].v || "")
-                                        )
-                                    ),
+                                    processInfoboxValue(v[j].v || "", ib[i].key),
                                     1
                                 ]);
                         }
@@ -453,9 +541,7 @@ function infoboxData(d) {
                             if (v[j].v)
                                 items.push([
                                     "",
-                                    linkifyURL(
-                                        linkifyAllNames(linkifyBBCode(v[j].v))
-                                    ),
+                                    processInfoboxValue(v[j].v, ib[i].key),
                                     1
                                 ]);
                         }
@@ -465,9 +551,7 @@ function infoboxData(d) {
                             if (typeof v[j] === "string") {
                                 items.push([
                                     ib[i].key,
-                                    linkifyURL(
-                                        linkifyAllNames(linkifyBBCode(v[j]))
-                                    ),
+                                    processInfoboxValue(v[j], ib[i].key),
                                     0
                                 ]);
                                 break;
@@ -480,9 +564,7 @@ function infoboxData(d) {
                         if (typeof v[j] === "string") {
                             items.push([
                                 ib[i].key,
-                                linkifyURL(
-                                    linkifyAllNames(linkifyBBCode(v[j]))
-                                ),
+                                processInfoboxValue(v[j], ib[i].key),
                                 0
                             ]);
                             break;
