@@ -261,12 +261,26 @@ function loadPersonMap() {
         api("/v0/characters/name"),
         api("/v0/persons/name")
     ]).then(function (results) {
-        _subjectMap = results[0] || {};
-        _charMap = results[1] || {};
-        _personMap = results[2] || {};
+        _subjectMap = invertNameMap(results[0]);
+        _charMap = invertNameMap(results[1]);
+        _personMap = invertNameMap(results[2]);
         _personRegex = null;
         _charPersonMerged = null;
     });
+}
+
+// ── 反转 name map：{id: [names]} → {name: id}，后者覆盖 ──
+function invertNameMap(raw) {
+    var m = {};
+    if (!raw) return m;
+    for (var id in raw) {
+        if (!raw.hasOwnProperty(id)) continue;
+        var names = raw[id];
+        for (var i = 0; i < names.length; i++) {
+            if (names[i]) m[names[i]] = parseInt(id);
+        }
+    }
+    return m;
 }
 
 // ── Merged char + person map（person 优先）──

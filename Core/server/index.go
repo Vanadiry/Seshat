@@ -122,11 +122,14 @@ func buildPersonNames(dd string) {
 	if err != nil { log.Warn("persons_name: persons.json not found"); return }
 	var list []cache.NameEntry
 	json.Unmarshal(data, &list)
-	m := map[string]int{}
-	for _, p := range list { m[p.Name] = p.ID }
+	m := map[int][]string{}
+	for _, p := range list {
+		if p.Name != "" { m[p.ID] = append(m[p.ID], p.Name) }
+		if p.NameCN != "" && p.NameCN != p.Name { m[p.ID] = append(m[p.ID], p.NameCN) }
+	}
 	result, _ := json.Marshal(m)
 	os.WriteFile(cache.IndexFile(dd, "persons_name.json"), result, 0o644)
-	log.Info("persons_name.json built: %d names", len(m))
+	log.Info("persons_name.json built: %d entries", len(m))
 }
 
 // buildNameIndex generates a name→id lookup for a given domain (subjects/characters/persons).
@@ -135,11 +138,14 @@ func buildNameIndex(dd, domain string) {
 	if err != nil { log.Warn("%s_name: %s.json not found", domain, domain); return }
 	var list []cache.NameEntry
 	json.Unmarshal(data, &list)
-	m := map[string]int{}
-	for _, e := range list { m[e.Name] = e.ID }
+	m := map[int][]string{}
+	for _, e := range list {
+		if e.Name != "" { m[e.ID] = append(m[e.ID], e.Name) }
+		if e.NameCN != "" && e.NameCN != e.Name { m[e.ID] = append(m[e.ID], e.NameCN) }
+	}
 	result, _ := json.Marshal(m)
 	os.WriteFile(cache.IndexFile(dd, domain+"_name.json"), result, 0o644)
-	log.Info("%s_name.json built: %d names", domain, len(m))
+	log.Info("%s_name.json built: %d entries", domain, len(m))
 }
 
 // rebuildFromScan scans all cached API JSON files and rebuilds list files + tags.
