@@ -1176,12 +1176,12 @@ function _makeToast(title, body, titleBg, bodyBg, autoCloseSec, replace, closabl
 }
 
 function showError(msg) {
-    _makeToast("错误", msg, "bg-[#dc2626]", "bg-[#7f1d1d]", 0, false);
+    _makeToast("错误", msg, "bg-toast-error", "bg-toast-error-bg", 0, false);
 }
 
 function showSuccess(msg) {
-    var bodyHTML = msg + '<div class="h-1 rounded-full bg-[rgba(255,255,255,.15)] overflow-hidden mt-1.5"><div class="h-full rounded-full" style="width:100%;background:#68a868;transition:width 5s linear"></div></div>';
-    var t = _makeToast("完成", bodyHTML, "bg-[#68a868]", "bg-[#2d5a2d]", 5);
+    var bodyHTML = msg + '<div class="h-1 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden mt-1.5"><div class="h-full rounded-full" style="width:100%;background:var(--c-toast-success);transition:width 5s linear"></div></div>';
+    var t = _makeToast("完成", bodyHTML, "bg-toast-success", "bg-toast-success-bg", 5);
     setTimeout(function () { t.el.querySelector(".h-full.rounded-full").style.width = "0"; }, 50);
 }
 function closeConfirm() {
@@ -1311,8 +1311,8 @@ async function doFetchIndex() {
 // ── 进度通知横幅（右下角浮动）──
 function startProgress(taskId, label) {
     var bodyHTML = '<div id="pb-detail" class="text-[11px] mb-1.5"></div>' +
-        '<div class="h-1 rounded-full bg-[rgba(255,255,255,.15)] overflow-hidden"><div id="pb-fill" class="h-full rounded-full" style="width:0;background:#FE8A95;transition:width .3s"></div></div>';
-    var t = _makeToast(label || MSG.progressConnecting, bodyHTML, "bg-pink", "bg-[#403638] text-text", 0, true, false);
+        '<div class="h-1 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden"><div id="pb-fill" class="h-full rounded-full" style="width:0;background:var(--c-toast-progress);transition:width .3s"></div></div>';
+    var t = _makeToast(label || MSG.progressConnecting, bodyHTML, "bg-toast-progress", "bg-toast-progress-bg text-text", 0, true, false);
 
     var fill = t.el.querySelector("#pb-fill");
     var detail = t.el.querySelector("#pb-detail");
@@ -1325,7 +1325,7 @@ function startProgress(taskId, label) {
         if (d.step === "complete" || d.step === "done") {
             fill.style.transition = "none"; fill.style.width = "100%"; fill.style.background = "#22c55e";
             if (detail) detail.textContent = MSG.progressDone;
-            t.update(taskLabel, null, "bg-[#68a868]", "bg-[#2d5a2d]");
+            t.update(taskLabel, null, "bg-toast-success", "bg-toast-success-bg");
             t.addClose();
             setTimeout(function () { fill.style.transition = "width 5s linear"; fill.style.width = "0"; }, 50);
             evt.close();

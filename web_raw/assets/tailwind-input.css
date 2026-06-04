@@ -39,6 +39,12 @@
     --c-warn-bar-purple: #4c1d95;
     --c-warn-bar-red: #7f1d1d;
     --c-warn-bar-amber: #451a03;
+    --c-toast-progress: #5c8eb0;
+    --c-toast-progress-bg: #1a2833;
+    --c-toast-success: #68a868;
+    --c-toast-success-bg: #243624;
+    --c-toast-error: #dc2626;
+    --c-toast-error-bg: #3a1a1a;
     color-scheme: dark;
 }
 
@@ -78,6 +84,12 @@ html.light {
     --c-warn-bar-purple: #c4b5fd;
     --c-warn-bar-red: #fecaca;
     --c-warn-bar-amber: #fde68a;
+    --c-toast-progress: #3a6d99;
+    --c-toast-progress-bg: #e8f0f8;
+    --c-toast-success: #4a9a4a;
+    --c-toast-success-bg: #e6f5e6;
+    --c-toast-error: #dc2626;
+    --c-toast-error-bg: #fee2e2;
     color-scheme: light;
 }
 
@@ -113,6 +125,12 @@ html.light {
     --color-tier-green-bg: var(--c-tier-green-bg);
     --color-elo-bg: var(--c-elo-bg);
     --color-elo-text: var(--c-elo-text);
+    --color-toast-progress: var(--c-toast-progress);
+    --color-toast-progress-bg: var(--c-toast-progress-bg);
+    --color-toast-success: var(--c-toast-success);
+    --color-toast-success-bg: var(--c-toast-success-bg);
+    --color-toast-error: var(--c-toast-error);
+    --color-toast-error-bg: var(--c-toast-error-bg);
 }
 
 /* Disable text selection globally — whitelist via .select-text */
