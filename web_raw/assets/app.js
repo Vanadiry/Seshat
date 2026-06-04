@@ -1113,13 +1113,76 @@ function confirmAction(msg, cb) {
         cb();
     };
 }
+// ── 通知组件（统一右下角）──
+var _currentToast = null;
+function _makeToast(title, body, titleBg, bodyBg, autoCloseSec, replace, closable) {
+    if (replace !== false && _currentToast) { _currentToast.remove(); _currentToast = null; }
+    var el = document.createElement("div");
+    el.className = "fixed bottom-4 right-4 z-[300] rounded-lg shadow-2xl transition-all duration-300 max-w-[380px] min-w-[300px]";
+    el.style.opacity = "0";
+    el.style.transform = "translateY(8px)";
+    if (replace === false && _currentToast) {
+        var curRect = _currentToast.getBoundingClientRect();
+        el.style.bottom = (window.innerHeight - curRect.top + 12) + "px";
+    }
+    el.innerHTML =
+        '<div class="' + titleBg + ' text-white font-semibold px-4 py-2 rounded-t-lg flex items-center justify-between text-[14px]">' +
+        '<span class="truncate">' + title + '</span>' +
+        (closable !== false ? '<span class="cursor-pointer opacity-60 hover:opacity-100 text-lg leading-none shrink-0 ml-3">✕</span>' : "") +
+        '</div>' +
+        (body ? '<div class="' + bodyBg + ' px-4 py-2.5 rounded-b-lg text-[13px] leading-relaxed">' + body + '</div>' : "");
+    document.body.appendChild(el);
+    requestAnimationFrame(function () { el.style.opacity = "1"; el.style.transform = "translateY(0)"; });
+
+    var timer = null, closed = false;
+    var fill = el.querySelector("#t-fill");
+    function close() { if (closed) return; closed = true;
+        if (timer) clearTimeout(timer);
+        el.style.opacity = "0"; el.style.transform = "translateY(8px)";
+        setTimeout(function () { el.remove(); if (_currentToast === el) _currentToast = null; }, 300);
+    }
+    var closeBtn = el.querySelector("span[class*='cursor-pointer']");
+    if (closeBtn) closeBtn.onclick = close;
+    if (autoCloseSec > 0) {
+        fill.style.width = "100%";
+        fill.style.background = "#68a868";
+        setTimeout(function () { fill.style.transition = "width " + autoCloseSec + "s linear"; fill.style.width = "0"; }, 50);
+        timer = setTimeout(close, autoCloseSec * 1000 + 100);
+    }
+    if (replace !== false) _currentToast = el;
+
+    return {
+        el: el,
+        update: function (newTitle, newBody, newTitleBg, newBodyBg) {
+            if (closed) return;
+            if (newTitleBg) el.querySelector("div:first-child").className = newTitleBg + " text-white font-semibold px-4 py-2 rounded-t-lg flex items-center justify-between text-[14px]";
+            if (newBodyBg && body) el.querySelector("div:last-child").className = newBodyBg + " px-4 py-2.5 rounded-b-lg text-[13px] leading-relaxed";
+            if (newTitle) el.querySelector("div:first-child span").textContent = newTitle;
+            if (newBody && body) el.querySelector("div:last-child").innerHTML = newBody;
+        },
+        addClose: function () {
+            var titleBar = el.querySelector("div:first-child");
+            if (!titleBar.querySelector("span[class*='cursor-pointer']")) {
+                var xBtn = document.createElement("span");
+                xBtn.className = "cursor-pointer opacity-60 hover:opacity-100 text-lg leading-none shrink-0 ml-3";
+                xBtn.textContent = "✕";
+                xBtn.onclick = close;
+                titleBar.appendChild(xBtn);
+            }
+        },
+        close: close,
+        closed: function () { return closed; }
+    };
+}
+
 function showError(msg) {
-    document.getElementById("dlg-overlay").style.display = "flex";
-    document.getElementById("confirm-msg").textContent = msg;
-    document.getElementById("confirm-overlay").style.display = "flex";
-    document.getElementById("btn-confirm-exec").style.display = "none";
-    document.getElementById("btn-confirm-cancel").textContent = MSG.btnClose;
-    confirmCb = null;
+    _makeToast("错误", msg, "bg-[#dc2626]", "bg-[#7f1d1d]", 0, false);
+}
+
+function showSuccess(msg) {
+    var bodyHTML = msg + '<div class="h-1 rounded-full bg-[rgba(255,255,255,.15)] overflow-hidden mt-1.5"><div class="h-full rounded-full" style="width:100%;background:#68a868;transition:width 5s linear"></div></div>';
+    var t = _makeToast("完成", bodyHTML, "bg-[#68a868]", "bg-[#2d5a2d]", 5);
+    setTimeout(function () { t.el.querySelector(".h-full.rounded-full").style.width = "0"; }, 50);
 }
 function closeConfirm() {
     document.getElementById("confirm-overlay").style.display = "none";
@@ -1247,78 +1310,42 @@ async function doFetchIndex() {
 
 // ── 进度通知横幅（右下角浮动）──
 function startProgress(taskId, label) {
-    var banner = document.getElementById("progress-banner");
-    if (!banner) {
-        banner = document.createElement("div");
-        banner.id = "progress-banner";
-        banner.className =
-            "fixed bottom-4 right-4 z-[200] bg-surface-raised border border-bord-strong rounded-xl shadow-2xl p-4 max-w-[320px] min-w-[260px]";
-        banner.style.opacity = "0";
-        banner.style.pointerEvents = "none";
-        banner.innerHTML =
-            '<div class="flex items-center gap-2"><span id="pb-label" class="text-sm font-bold truncate"></span><span id="pb-phase" class="text-xs text-sub shrink-0"></span></div><div id="pb-detail" class="text-xs text-sub mt-1"></div><div id="pb-bar" class="mt-2 h-1 rounded-full bg-active overflow-hidden"><div id="pb-fill" class="h-full bg-pink w-0 transition-[width] duration-300"></div></div>';
-        document.body.appendChild(banner);
-    }
-    banner.style.opacity = "1";
-    banner.style.pointerEvents = "auto";
-    banner.style.transition = "opacity .3s";
-    banner.style.borderColor = "rgba(255,255,255,.15)";
-    var fill = document.getElementById("pb-fill");
-    fill.style.width = "0%";
-    fill.style.background = "#FE8A95";
-    fill.style.transition = "width 300ms";
-    document.getElementById("pb-label").textContent =
-        label || MSG.progressConnecting;
-    document.getElementById("pb-detail").textContent = "";
-    document.getElementById("pb-phase").textContent = "";
+    var bodyHTML = '<div id="pb-detail" class="text-[11px] mb-1.5"></div>' +
+        '<div class="h-1 rounded-full bg-[rgba(255,255,255,.15)] overflow-hidden"><div id="pb-fill" class="h-full rounded-full" style="width:0;background:#FE8A95;transition:width .3s"></div></div>';
+    var t = _makeToast(label || MSG.progressConnecting, bodyHTML, "bg-pink", "bg-[#403638] text-text", 0, true, false);
 
+    var fill = t.el.querySelector("#pb-fill");
+    var detail = t.el.querySelector("#pb-detail");
     var taskLabel = label || "";
+
     var evt = new EventSource(API + "/v0/task/" + taskId);
     evt.onmessage = function (e) {
         var d = JSON.parse(e.data);
-        if (d.label && !taskLabel) {
-            taskLabel = d.label;
-            document.getElementById("pb-label").textContent = d.label;
-        }
+        if (d.label && !taskLabel) { taskLabel = d.label; }
         if (d.step === "complete" || d.step === "done") {
-            document.getElementById("pb-label").textContent = taskLabel;
-            document.getElementById("pb-phase").textContent = "";
-            document.getElementById("pb-detail").textContent = MSG.progressDone;
-            fill.style.width = "100%";
-            fill.style.background = "#22c55e";
-            fill.style.transition = "none";
-            banner.style.borderColor = "rgba(34,197,94,.4)";
+            fill.style.transition = "none"; fill.style.width = "100%"; fill.style.background = "#22c55e";
+            if (detail) detail.textContent = MSG.progressDone;
+            t.update(taskLabel, null, "bg-[#68a868]", "bg-[#2d5a2d]");
+            t.addClose();
+            setTimeout(function () { fill.style.transition = "width 5s linear"; fill.style.width = "0"; }, 50);
             evt.close();
-            // 5 second countdown
-            var remaining = 5000;
-            var interval = setInterval(function () {
-                remaining -= 50;
-                if (remaining <= 0) {
-                    clearInterval(interval);
-                    banner.style.opacity = "0";
-                    banner.style.pointerEvents = "none";
-                    setTimeout(function () {
-                        if (typeof onFetchDone === "function") onFetchDone();
-                    }, 300);
-                } else {
-                    fill.style.width =
-                        Math.round((remaining / 5000) * 100) + "%";
-                }
-            }, 50);
-        } else if (typeof d.done === "number" && d.total) {
+            setTimeout(function () { t.close(); if (typeof onFetchDone === "function") onFetchDone(); }, 5100);
+            return;
+        }
+        var title = taskLabel;
+        if (d.phase && d.phases) title += " (" + d.phase + "/" + d.phases + ")";
+        if (title !== taskLabel || (d.label && !label)) t.update(title);
+
+        if (typeof d.done === "number" && d.total) {
             fill.style.width = Math.round((d.done / d.total) * 100) + "%";
-            document.getElementById("pb-phase").textContent =
-                d.phase && d.phases ? d.phase + "/" + d.phases : "";
             var parts = [];
             if (d.phase_name) parts.push(d.phase_name);
             parts.push(d.done + "/" + d.total);
             if (d.speed) parts.push(d.speed);
-            document.getElementById("pb-detail").textContent = parts.join("，");
+            if (detail) detail.textContent = parts.join("，");
         } else if (d.status) {
-            document.getElementById("pb-detail").textContent = d.status;
+            if (detail) detail.textContent = d.status;
         }
     };
-    evt.onerror = function () {
-        evt.close();
-    };
+    evt.onerror = function () { evt.close(); };
 }
