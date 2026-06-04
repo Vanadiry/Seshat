@@ -403,7 +403,7 @@ func fetchConcurrent[T any](items []T, fn func(T), p *Progress, stage string, co
 func handleFetchAll(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
-		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
+		if taskLocked() { http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409); return }
 		p := newProgress(countTrackerTotal(cfg), "fetch_all", "刷新全部")
 		go func() {
 			refreshAllTrackers(cfg, bg, dd, imgDir, p)
@@ -417,7 +417,7 @@ func handleFetchAll(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 func handleFetchDeep(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
-		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
+		if taskLocked() { http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409); return }
 		p := newProgress(countTrackerTotal(cfg), "rebuild_all", "重建全部")
 		go func() {
 			forceRefresh(cfg, bg, dd, imgDir, p)
@@ -431,7 +431,7 @@ func handleFetchDeep(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 func handleFetchTracker(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
-		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
+		if taskLocked() { http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409); return }
 		var req struct{ Names []string `json:"names"` }
 		json.NewDecoder(r.Body).Decode(&req)
 		for _, n := range req.Names {
@@ -461,7 +461,7 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 	if pref == nil { pref = &config.DefaultPreferences }
 	uname := pref.Username
 		if uname == "" { http.Error(w, `{"error":"username not configured"}`, 400); return }
-		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
+		if taskLocked() { http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409); return }
 		p := newProgress(3, "fetch_user", "拉取用户数据")
 		go func() {
 			p.SetPhase(1, 3, "拉取用户信息")
@@ -497,7 +497,7 @@ func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 		ids := req.IDs
 		if req.ID != 0 { ids = []int{req.ID} }
 		if len(ids) == 0 { http.Error(w, `{"error":"id or ids required"}`, 400); return }
-		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
+		if taskLocked() { http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409); return }
 		var idStrs []string
 		for _, sid := range ids { idStrs = append(idStrs, strconv.Itoa(sid)) }
 		p := newProgress(len(ids), "fetch_subject", "拉取动画 #"+strings.Join(idStrs, ", "))
@@ -520,7 +520,7 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		newIDs := diffTrackerIDs(cfg, dd)
-		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
+		if taskLocked() { http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409); return }
 		p := newProgress(11, "fetch_update", "拉取缺失")
 		go func() {
 			fillImageGaps(dd, bg, p)
@@ -540,7 +540,7 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 
 func handleFetchIndex(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
+		if taskLocked() { http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409); return }
 		p := newProgress(4, "rebuild_index", "重建索引")
 		go func() {
 			rebuildFromScan(dd, p)
@@ -554,7 +554,7 @@ func handleFetchIndex(dd string) http.HandlerFunc {
 func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
-		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
+		if taskLocked() { http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409); return }
 		// Collect all subject IDs from index
 		allIDs := collectAllSubjectIDs(dd)
 		if len(allIDs) == 0 { writeJSON(w, map[string]any{"status": "done", "count": 0}); return }
@@ -576,7 +576,7 @@ func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 func handleFetchMeta(cfg *config.Config, bg *bangumi.Client, dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
-		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
+		if taskLocked() { http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409); return }
 		allIDs := collectAllSubjectIDs(dd)
 		charIDs := collectNameIDs(cache.IndexFile(dd, "characters.json"))
 		persIDs := collectNameIDs(cache.IndexFile(dd, "persons.json"))
