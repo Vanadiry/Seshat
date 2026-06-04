@@ -34,6 +34,8 @@
     --c-elo-bg: #2a2a3a;
     --c-elo-text: #8b9dc3;
     --c-pk-overlay: rgba(0, 0, 0, 0.85);
+    --c-warn: #ef5350;
+    --c-warn-bg: #3a1a1a;
     color-scheme: dark;
 }
 
@@ -68,6 +70,8 @@ html.light {
     --c-elo-bg: #e0e3ec;
     --c-elo-text: #5a6d8a;
     --c-pk-overlay: rgba(0, 0, 0, 0.5);
+    --c-warn: #c62828;
+    --c-warn-bg: #fce4e4;
     color-scheme: light;
 }
 
@@ -88,6 +92,8 @@ html.light {
     --color-bord-xstrong: var(--c-bord-xstrong);
     --color-pink: var(--c-pink);
     --color-pink-bg: var(--c-pink-bg);
+    --color-warn: var(--c-warn);
+    --color-warn-bg: var(--c-warn-bg);
     --color-tier-gold: var(--c-tier-gold);
     --color-tier-gold-bg: var(--c-tier-gold-bg);
     --color-tier-blue: var(--c-tier-blue);
