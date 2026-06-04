@@ -207,12 +207,10 @@ function apiLocal(url) {
 function img(kind, id, size) {
     return API + "/v0/" + kind + "s/" + id + "/image?type=" + (size || "grid");
 }
-// imgOnError returns the onload + onerror attributes for <img> tags with fallback support.
-// onload detects no-image placeholder by URL and retries via FALLBACK_URL.
-// onerror retries via FALLBACK_URL on network error, then falls back to placeholder.
-// When fallback is triggered, addRemoteGlobe() wraps the image and adds a globe overlay.
+// imgOnError returns onerror attribute. If fallback is configured, first error retries via
+// FALLBACK_URL; second error shows local placeholder. Without fallback, shows placeholder directly.
 function imgOnError(kind, id, size) {
-    if (!window.FALLBACK_URL) return 'onerror="this.remove()"';
+    if (!window.FALLBACK_URL) return "onerror=\"this.src='/assets/no-image.png'\"";
     var fb =
         window.FALLBACK_URL +
         "/v0/" +
@@ -222,9 +220,7 @@ function imgOnError(kind, id, size) {
         "/image?type=" +
         (size || "grid");
     return (
-        "onload=\"if(!this._c){this._c=1;if(!this._r&&this.currentSrc.indexOf('no-image')>=0){this.src='" +
-        fb +
-        "';this._r=1;addRemoteGlobe(this);return;}}if(this._r&&!this._g){addRemoteGlobe(this);}\" onerror=\"if(!this._r){this._r=1;this.src='" +
+        "onerror=\"if(!this._r){this._r=1;this.src='" +
         fb +
         "';addRemoteGlobe(this);}else{this.src='/assets/no-image.png';}\""
     );

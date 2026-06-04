@@ -321,6 +321,6 @@ func serveImage(w http.ResponseWriter, r *http.Request, dd, kind, size string) {
 			}
 		}
 	}
-	// 回退 - 重定向到占位图
-	http.Redirect(w, r, "/assets/no-image.png", http.StatusFound)
+	// 返回 404 以触发前端 onerror 回退逻辑
+	http.NotFound(w, r)
 }
