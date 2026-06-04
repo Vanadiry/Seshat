@@ -49,13 +49,13 @@
                     (p.nsfw
                         ? '<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warn-bg text-warn shrink-0">NSFW</span>'
                         : "") +
-                    '<span class="text-xl font-bold truncate">' +
+                    '<span class="select-text text-xl font-bold truncate">' +
                     primaryName(p.name, cn) +
                     "</span>" +
                     (function () {
                         var s = subName(p.name, cn);
                         return s
-                            ? '<span class="text-sm text-sub truncate hidden sm:inline">' +
+                            ? '<span class="select-text text-sm text-sub truncate hidden sm:inline">' +
                                   s +
                                   "</span>"
                             : "";
@@ -68,7 +68,7 @@
                 var infoHtml = "";
                 for (var i = 0; i < items.length; i++) {
                     infoHtml +=
-                        '<div class="py-1 border-b border-bord-light text-[14px]' +
+                        '<div class="select-text py-1 border-b border-bord-light text-[14px]' +
                         (items[i][2] ? " ml-4" : "") +
                         '"><span class="text-sub">' +
                         (items[i][0] ? items[i][0] + ": " : "") +
@@ -120,7 +120,7 @@
                           (p.summary
                               ? '<div class="' +
                                 (careerHtml ? "mt-4" : "") +
-                                '"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">简介</span></div><p class="text-[14px] leading-relaxed text-sub">' +
+                                '"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">简介</span></div><p class="select-text text-[14px] leading-relaxed text-sub">' +
                                 formatSummary(p.summary) +
                                 "</p></div>"
                               : "") +
@@ -136,7 +136,7 @@
                             (p.summary
                                 ? '<div class="' +
                                   (careerHtml ? "mt-4" : "") +
-                                  '"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">简介</span></div><p class="text-[14px] leading-relaxed text-sub">' +
+                                  '"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">简介</span></div><p class="select-text text-[14px] leading-relaxed text-sub">' +
                                   formatSummary(p.summary) +
                                   "</p></div>"
                                 : "") +
