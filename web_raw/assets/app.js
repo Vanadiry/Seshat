@@ -828,6 +828,7 @@ function showLightbox(src) {
         img.style.transform = "scale(1)";
         bar.style.opacity = "1";
     });
+    setTimeout(function () { img.style.transition = ""; }, 300);
     function closeLightbox() {
         overlay.style.background = "rgba(0,0,0,0)";
         img.style.opacity = "0";
@@ -837,6 +838,32 @@ function showLightbox(src) {
     }
     document.addEventListener("keydown", function handler(e) {
         if (e.key === "Escape") { closeLightbox(); document.removeEventListener("keydown", handler); }
+    });
+    // Zoom + drag
+    var scale = 1, tx = 0, ty = 0, dragging = false, dx = 0, dy = 0;
+    function apply() { img.style.transform = "translate3d(" + Math.round(tx) + "px," + Math.round(ty) + "px,0) scale(" + scale + ")"; }
+    overlay.addEventListener("wheel", function (ew) {
+        ew.preventDefault();
+        scale = Math.min(5, Math.max(0.5, scale * (1 - ew.deltaY * 0.005)));
+        if (scale <= 1) { tx = 0; ty = 0; img.style.cursor = ""; }
+        else { img.style.cursor = "grab"; }
+        apply();
+    }, { passive: false });
+    img.addEventListener("mousedown", function (e) {
+        if (scale <= 1) return; e.preventDefault();
+        dragging = true; dx = e.clientX - tx; dy = e.clientY - ty;
+        img.style.cursor = "grabbing";
+    });
+    window.addEventListener("mousemove", function (e) {
+        if (!dragging) return;
+        tx = e.clientX - dx; ty = e.clientY - dy;
+        apply();
+    });
+    window.addEventListener("mouseup", function () {
+        dragging = false; img.style.cursor = scale > 1 ? "grab" : "";
+    });
+    overlay.addEventListener("dblclick", function () {
+        scale = 1; tx = 0; ty = 0; img.style.cursor = ""; apply();
     });
 }
 
