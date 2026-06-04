@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Seshat",
+  "productName": "Seshat Desktop",
   "version": "0.3.0",
   "identifier": "com.vanadiry.seshat",
   "build": {
