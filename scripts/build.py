@@ -2,6 +2,7 @@ import subprocess
 import os
 import sys
 import shutil
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -10,7 +11,8 @@ def build_frontend():
     subprocess.run(["pnpm", "run", "build"], check=True, cwd=ROOT)
 
 def get_version():
-    return subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"], text=True).strip()
+    conf = json.loads((ROOT / "src-tauri" / "tauri.conf.json").read_text())
+    return conf["version"]
 
 TARGETS = [
     ("macOS",   "darwin",  "arm64"),
@@ -43,8 +45,22 @@ def cmd_server_dev():
     subprocess.run([str(out)], check=True)
 
 def cmd_desktop():
-    """Build Tauri Desktop bundle"""
+    """Build Tauri Desktop bundle → build/desktop/"""
+    import glob as _glob
+    version = get_version()
     subprocess.run(["pnpm", "tauri", "build"], cwd=ROOT, check=True)
+    dst = ROOT / "build" / "desktop"
+    if dst.exists():
+        shutil.rmtree(dst)
+    dst.mkdir(parents=True, exist_ok=True)
+    bundle = ROOT / "src-tauri" / "target" / "release" / "bundle"
+    patterns = [("dmg/*.dmg", "macOS-arm64.dmg"), ("nsis/*.exe", "Windows-amd64.exe"), ("appimage/*.AppImage", "Linux-amd64.AppImage")]
+    for pat, ext in patterns:
+        matches = _glob.glob(str(bundle / pat))
+        if matches:
+            target = dst / f"Seshat-Desktop-{version}-{ext}"
+            shutil.copy(matches[0], target)
+            print(f"OK. {target}")
 
 def cmd_desktop_dev():
     """Build frontend and run Tauri dev"""
