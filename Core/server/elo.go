@@ -406,6 +406,7 @@ func handleELOHistory(dd string) http.HandlerFunc {
 
 func rebuildELO() {
 	scores := map[int]float64{}
+	counts := map[int]int{}
 	history := loadELOHistory()
 	for _, h := range history {
 		wa := scores[h.Winner]
@@ -416,8 +417,11 @@ func rebuildELO() {
 		eb := 1.0 / (1.0 + math.Pow(10, (wa-wb)/400))
 		scores[h.Winner] = wa + eloK*(1.0-ea)
 		scores[h.Loser] = wb + eloK*(0.0-eb)
+		counts[h.Winner]++
+		counts[h.Loser]++
 	}
 	saveELO(scores)
+	saveBattleCounts(counts)
 }
 
 func handleELORebuild(dd string) http.HandlerFunc {

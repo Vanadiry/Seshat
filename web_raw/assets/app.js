@@ -1023,7 +1023,7 @@ function initDialog() {
                         .then(function (d) {
                             showError(
                                 d.status === "ok"
-                                    ? "已重建 " + d.count + " 条 ELO 分数"
+                                    ? "已重建 " + d.count + " 条 ELO 分数和计数"
                                     : "重建失败"
                             );
                         });
