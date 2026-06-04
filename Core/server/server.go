@@ -77,10 +77,6 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		http.ServeFileFS(w, r, embedFS, "web/index.html")
 	})
 
-	// ── API 文档 ──
-	mux.HandleFunc("GET /doc/api", serveFile(embedFS, "web/api/index.html", "text/html"))
-	mux.HandleFunc("GET /api/v0/openapi.yaml", serveFile(embedFS, "web/api/openapi.yaml", "application/yaml"))
-
 	// ── SSE progress ──
 	mux.HandleFunc("GET /api/v0/task/{id}", handleProgress)
 	mux.HandleFunc("GET /api/v0/tasks", handleActiveTasks)
@@ -167,22 +163,6 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	return withLogging(withCORS(mux))
 }
 
-// fetchSubjectList 并发拉取多个动画的所有数据。
-func serveFile(fsys fs.FS, path, contentType string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if fsys == nil {
-			http.Error(w, "not available", http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", contentType)
-		data, err := fs.ReadFile(fsys, path)
-		if err != nil {
-			http.NotFound(w, r)
-			return
-		}
-		w.Write(data)
-	}
-}
 
 
 func writeJSON(w http.ResponseWriter, v any) {

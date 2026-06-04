@@ -736,7 +736,6 @@ document.addEventListener("DOMContentLoaded", () => {
             <div id="user-dropdown-name-sep" class="border-t border-bord-light my-1" style="display:none"></div>
             <a href="/settings" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">设置</a>
             <div class="border-t border-bord-light my-1"></div>
-            <a href="/doc/api" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">API 文档</a>
             <a href="https://github.com/Vanadiry/Seshat" target="_blank" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">项目 GitHub</a>
           </div>
         </div>
