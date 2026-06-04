@@ -62,6 +62,10 @@ func eloExcludePath() string {
 	return filepath.Join(config.Dir(), "user", "elo", "exclude.toml")
 }
 
+func eloBattleCountsPath() string {
+	return filepath.Join(config.Dir(), "user", "elo", "count.json")
+}
+
 const excludeTemplate = `# ELO 排除名单，此文件中的条目不会被列入评分配对
 ids = []
 `
@@ -129,37 +133,137 @@ func saveELOHistory(h []eloHistory) {
 	os.WriteFile(eloHistoryPath(), data, 0o644)
 }
 
-// getELOPair returns two random cached subjects for comparison, excluding IDs in exclude.toml.
+func loadBattleCounts() map[int]int {
+	data, err := os.ReadFile(eloBattleCountsPath())
+	if err != nil {
+		return map[int]int{}
+	}
+	var m map[int]int
+	json.Unmarshal(data, &m)
+	if m == nil {
+		m = map[int]int{}
+	}
+	return m
+}
+
+func saveBattleCounts(m map[int]int) {
+	os.MkdirAll(filepath.Join(config.Dir(), "user", "elo"), 0o755)
+	data, _ := json.Marshal(m)
+	os.WriteFile(eloBattleCountsPath(), data, 0o644)
+}
+
+// getELOPair returns two subjects for comparison using a mixed strategy:
+// 40% low-frequency priority, 30% similar-score, 30% random.
+// Once all subjects have ≥3 battles: 20% low-frequency, 50% similar-score, 30% random.
 func getELOPair(dd string) []eloPairEntry {
 	keys, err := cache.List(dd, "subjects")
 	if err != nil || len(keys) < 2 {
 		return nil
 	}
 	excluded := loadExcludeIDs()
-	// Filter out excluded IDs
-	var eligible []string
+	var eligible []int
 	for _, k := range keys {
 		id, _ := strconv.Atoi(k)
 		if !excluded[id] {
-			eligible = append(eligible, k)
+			eligible = append(eligible, id)
 		}
 	}
 	if len(eligible) < 2 {
 		return nil
 	}
-	i1 := rand.Intn(len(eligible))
-	i2 := rand.Intn(len(eligible))
-	for i2 == i1 {
-		i2 = rand.Intn(len(eligible))
+
+	counts := loadBattleCounts()
+
+	// Check if all subjects have ≥3 battles
+	allSeen := true
+	for _, id := range eligible {
+		if counts[id] < 3 {
+			allSeen = false
+			break
+		}
 	}
-	id1, _ := strconv.Atoi(eligible[i1])
-	id2, _ := strconv.Atoi(eligible[i2])
+
+	var lowPct, simPct float64
+	if allSeen {
+		lowPct, simPct = 0.2, 0.5
+	} else {
+		lowPct, simPct = 0.4, 0.3
+	}
+
+	r := rand.Float64()
+	var id1, id2 int
+	if r < lowPct {
+		id1, id2 = pickLowFreq(eligible, counts)
+	} else if r < lowPct+simPct {
+		id1, id2 = pickSimilarScore(eligible)
+	} else {
+		id1, id2 = pickRandomPair(eligible)
+	}
+
 	info1 := subjectSummary(dd, id1)
 	info2 := subjectSummary(dd, id2)
 	return []eloPairEntry{
 		{ID: id1, Name: info1.Name, NameCN: info1.NameCN},
 		{ID: id2, Name: info2.Name, NameCN: info2.NameCN},
 	}
+}
+
+// pickLowFreq picks two IDs from those with the lowest battle count (≤ min+1).
+func pickLowFreq(eligible []int, counts map[int]int) (int, int) {
+	minCount := -1
+	var pool []int
+	for _, id := range eligible {
+		c := counts[id]
+		if minCount < 0 || c < minCount {
+			minCount = c
+			pool = []int{id}
+		} else if c <= minCount+1 {
+			pool = append(pool, id)
+		}
+	}
+	i1 := rand.Intn(len(pool))
+	i2 := rand.Intn(len(pool))
+	for i2 == i1 {
+		i2 = rand.Intn(len(pool))
+	}
+	return pool[i1], pool[i2]
+}
+
+// pickSimilarScore picks one subject randomly, then another within ±200 ELO.
+func pickSimilarScore(eligible []int) (int, int) {
+	id1 := eligible[rand.Intn(len(eligible))]
+	scores := loadELO()
+	s1 := scores[id1]
+	if s1 == 0 {
+		s1 = eloDefault
+	}
+	var close []int
+	for _, id := range eligible {
+		if id == id1 {
+			continue
+		}
+		s := scores[id]
+		if s == 0 {
+			s = eloDefault
+		}
+		if math.Abs(s-s1) <= 200 {
+			close = append(close, id)
+		}
+	}
+	if len(close) == 0 {
+		return pickRandomPair(eligible)
+	}
+	return id1, close[rand.Intn(len(close))]
+}
+
+// pickRandomPair picks two distinct IDs uniformly at random.
+func pickRandomPair(eligible []int) (int, int) {
+	i1 := rand.Intn(len(eligible))
+	i2 := rand.Intn(len(eligible))
+	for i2 == i1 {
+		i2 = rand.Intn(len(eligible))
+	}
+	return eligible[i1], eligible[i2]
 }
 
 // updateELO updates ratings after a comparison and records the battle in history.
@@ -185,6 +289,12 @@ func updateELO(dd string, winnerID, loserID int) {
 	history := loadELOHistory()
 	history = append(history, eloHistory{Winner: winnerID, Loser: loserID, Time: time.Now().Format(time.RFC3339)})
 	saveELOHistory(history)
+
+	// Increment battle counts
+	counts := loadBattleCounts()
+	counts[winnerID]++
+	counts[loserID]++
+	saveBattleCounts(counts)
 }
 
 // loadSubjectIndex reads subjects.json index for fast lookup.
