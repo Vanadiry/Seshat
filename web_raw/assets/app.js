@@ -732,8 +732,8 @@ document.addEventListener("DOMContentLoaded", () => {
           <img id="user-avatar" src="" class="w-8 h-8 rounded-lg object-cover bg-surface cursor-pointer shrink-0" onclick="toggleUserMenu(event)" style="display:none">
           <div id="user-placeholder" class="w-8 h-8 rounded-lg cursor-pointer shrink-0" onclick="toggleUserMenu(event)" style="background:linear-gradient(135deg,#ff6b6b,#feca57,#48dbfb,#ff9ff3,#54a0ff);background-size:300% 300%;animation:rainbow 3s ease infinite"></div>
           <div id="user-dropdown" class="absolute right-0 top-full mt-2 bg-surface-raised border border-bord-strong rounded-xl shadow-2xl py-2 w-[180px] z-[300] overflow-hidden" style="opacity:0;pointer-events:none;transition:opacity .2s ease">
-            <div id="user-dropdown-name" class="px-4 pt-1 pb-2 text-sm font-bold text-center"></div>
-            <div class="border-t border-bord-light my-1"></div>
+            <div id="user-dropdown-name" class="px-4 pt-1 pb-2 text-sm font-bold text-center" style="display:none"></div>
+            <div id="user-dropdown-name-sep" class="border-t border-bord-light my-1" style="display:none"></div>
             <a href="/settings" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">设置</a>
             <div class="border-t border-bord-light my-1"></div>
             <a href="/doc/api" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">API 文档</a>
@@ -763,8 +763,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.USERNAME) {
         api("/v0/users/" + window.USERNAME).then(function (u) {
             if (u && u.id) {
-                document.getElementById("user-dropdown-name").textContent =
-                    u.nickname || u.username;
+                var nameEl = document.getElementById("user-dropdown-name");
+                nameEl.textContent = u.nickname || u.username;
+                nameEl.style.display = "";
+                document.getElementById("user-dropdown-name-sep").style.display = "";
                 var av = document.getElementById("user-avatar");
                 av.onerror = function () {
                     av.style.display = "none";
