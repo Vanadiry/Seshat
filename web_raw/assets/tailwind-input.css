@@ -165,6 +165,16 @@ html.light {
   100% { left: 100%; width: 30%; }
 }
 
+/* ── Custom scrollbar ── */
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-sub-dim) transparent;
+}
+.thin-scroll::-webkit-scrollbar { height: 4px !important; width: 4px !important; display: block !important; }
+.thin-scroll::-webkit-scrollbar-track { background: transparent !important; }
+.thin-scroll::-webkit-scrollbar-thumb { background: var(--c-sub-dim) !important; border-radius: 2px !important; }
+.thin-scroll::-webkit-scrollbar-thumb:hover { background: var(--c-sub) !important; }
+
 /* Select arrow — dark mode */
 select:where(.search-type, .custom-select) {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.52)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
