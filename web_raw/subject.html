@@ -36,6 +36,31 @@
                 -webkit-box-orient: vertical;
                 overflow: hidden;
             }
+            .ep-tip {
+                transition: opacity .15s ease;
+                pointer-events: auto;
+            }
+            .ep-close {
+                position: absolute;
+                top: 4px;
+                right: 4px;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                border: none;
+                background: rgba(128, 128, 128, 0.3);
+                color: rgba(128, 128, 128, 0.8);
+                font-size: 13px;
+                line-height: 1;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .ep-close:hover {
+                background: rgba(128, 128, 128, 0.5);
+                color: #fff;
+            }
         </style>
     </head>
     <body class="text-text font-[system-ui] min-h-screen">
@@ -275,14 +300,14 @@
                         var epName = primaryName(e.name, e.name_cn);
                         var epSub = subName(e.name, e.name_cn);
                         epGrid +=
-                            '<div class="relative group">' +
-                            '<span class="w-8 h-8 flex items-center justify-center rounded text-xs font-semibold cursor-default ' +
+                            '<div class="relative ep-cell">' +
+                            '<span class="ep-num w-8 h-8 flex items-center justify-center rounded text-xs font-semibold cursor-pointer ' +
                             cls +
                             '">' +
                             num +
                             "</span>" +
-                            '<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50">' +
-                            '<div class="bg-surface-raised border border-bord-strong rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-lg">' +
+                            '<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 ep-tip z-50" style="display:none">' +
+                            '<div class="bg-surface-raised border border-bord-strong rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-lg relative">' +
                             '<div class="text-sub">第 ' +
                             epNum +
                             " 话 · " +
@@ -610,6 +635,56 @@
                 html += "</div></div>";
 
                 document.getElementById("view").innerHTML = html;
+                initEpTooltips();
+            }
+
+            var _epPinned = null;
+            function initEpTooltips() {
+                var cells = document.querySelectorAll(".ep-cell");
+                for (var i = 0; i < cells.length; i++) {
+                    (function (cell) {
+                        var tip = cell.querySelector(".ep-tip");
+                        var num = cell.querySelector(".ep-num");
+                        if (!tip || !num) return;
+                        function show() {
+                            if (_epPinned && _epPinned !== cell) return;
+                            tip.style.display = "block";
+                            requestAnimationFrame(function () { tip.style.opacity = "1"; });
+                        }
+                        function hide() {
+                            if (_epPinned === cell) return;
+                            tip.style.opacity = "0";
+                            setTimeout(function () { if (_epPinned !== cell) tip.style.display = "none"; }, 150);
+                        }
+                        function unpin(c) {
+                            if (_epPinned === c) _epPinned = null;
+                            var n = c.querySelector(".ep-num");
+                            var t = c.querySelector(".ep-tip");
+                            if (n) n.classList.remove("ring-1", "ring-pink");
+                            if (t) { t.style.opacity = "0"; setTimeout(function () { t.style.display = "none"; }, 150); }
+                            var cb = t && t.querySelector(".ep-close");
+                            if (cb) cb.remove();
+                        }
+                        num.addEventListener("click", function (e) {
+                            e.stopPropagation();
+                            if (_epPinned === cell) { unpin(cell); return; }
+                            if (_epPinned) unpin(_epPinned);
+                            _epPinned = cell;
+                            num.classList.add("ring-1", "ring-pink");
+                            tip.style.display = "block";
+                            tip.style.opacity = "1";
+                            if (!tip.querySelector(".ep-close")) {
+                                var closeBtn = document.createElement("button");
+                                closeBtn.className = "ep-close";
+                                closeBtn.textContent = "×";
+                                closeBtn.onclick = function (ev) { ev.stopPropagation(); unpin(cell); };
+                                tip.firstElementChild.appendChild(closeBtn);
+                            }
+                        });
+                        cell.addEventListener("mouseenter", show);
+                        cell.addEventListener("mouseleave", hide);
+                    })(cells[i]);
+                }
             }
 
             async function episodes() {
@@ -703,6 +778,7 @@
                 document.getElementById("view").innerHTML =
                     epRows(main, "本篇 (" + main.length + ")") +
                     epRows(sp, "SP / 其他 (" + sp.length + ")");
+                initEpTooltips();
             }
 
             async function characters() {
