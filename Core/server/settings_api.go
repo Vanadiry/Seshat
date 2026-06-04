@@ -45,7 +45,6 @@ func handleSettingsPost(w http.ResponseWriter, r *http.Request) {
 	os.MkdirAll(config.PrefDir(), 0o755)
 	result, _ := json.MarshalIndent(existing, "", "  ")
 	os.WriteFile(config.PrefPath(), result, 0o644)
-	loadCachedToken() // refresh access token cache
 
 	resp := map[string]any{}
 	if len(okList) > 0 { resp["success"] = strings.Join(okList, ", ") }

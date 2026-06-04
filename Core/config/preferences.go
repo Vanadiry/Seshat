@@ -8,10 +8,9 @@ import (
 
 // Preferences is the flat runtime representation of user preferences.
 type Preferences struct {
-	Theme       string
-	PreferLang  string
-	Username    string
-	AccessToken string
+	Theme      string
+	PreferLang string
+	Username   string
 }
 
 type prefString struct {
@@ -20,11 +19,10 @@ type prefString struct {
 }
 
 type preferencesFile struct {
-	Comment     string     `json:"_comment"`
-	Theme       prefString `json:"theme"`
-	PreferLang  prefString `json:"prefer_lang"`
-	Username    prefString `json:"username"`
-	AccessToken prefString `json:"access_token"`
+	Comment    string     `json:"_comment"`
+	Theme      prefString `json:"theme"`
+	PreferLang prefString `json:"prefer_lang"`
+	Username   prefString `json:"username"`
 }
 
 var DefaultPreferences = Preferences{
@@ -71,9 +69,8 @@ func LoadPreferences() (*Preferences, error) {
 		return &DefaultPreferences, nil
 	}
 	return &Preferences{
-		Theme:       f.Theme.Value,
-		PreferLang:  f.PreferLang.Value,
-		Username:    f.Username.Value,
-		AccessToken: f.AccessToken.Value,
+		Theme:      f.Theme.Value,
+		PreferLang: f.PreferLang.Value,
+		Username:   f.Username.Value,
 	}, nil
 }

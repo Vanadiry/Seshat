@@ -27,10 +27,15 @@ type FrontendConfig struct {
 	FallbackURL string `toml:"fallback_url"`
 }
 
+type AccessConfig struct {
+	Token string `toml:"bangumi_access_token"`
+}
+
 type Config struct {
 	Server   ServerConfig   `toml:"server"`
 	Upstream UpstreamConfig `toml:"upstream"`
 	Frontend FrontendConfig `toml:"frontend"`
+	Access   AccessConfig   `toml:"access"`
 }
 
 var Defaults = Config{
