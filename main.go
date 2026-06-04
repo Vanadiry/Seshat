@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"time"
 
 	"github.com/vanadiry/seshat/Core/config"
 	"github.com/vanadiry/seshat/Core/log"
@@ -33,7 +32,9 @@ func openBrowser(url string) {
 	exec.Command(cmd, args...).Start()
 }
 
-func main() {
+// runSeshat initializes the server and starts listening.
+// Returns the http.Server for graceful shutdown.
+func runSeshat() (*http.Server, string) {
 	cfg, err := config.Load()
 	if err != nil {
 		stdlog.Fatalf("config: %v", err)
@@ -49,14 +50,13 @@ func main() {
 	router := server.New(cfg, webFS)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.BindAddr, cfg.Server.Port)
-	log.Info("Listening on http://%s", addr)
-
+	srv := &http.Server{Addr: addr, Handler: router}
 	go func() {
-		time.Sleep(200 * time.Millisecond)
-		openBrowser(fmt.Sprintf("http://%s", addr))
+		log.Info("Listening on http://%s", addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			stdlog.Fatal(err)
+		}
 	}()
 
-	if err := http.ListenAndServe(addr, router); err != nil {
-		stdlog.Fatal(err)
-	}
+	return srv, addr
 }

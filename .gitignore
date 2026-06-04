@@ -21,4 +21,6 @@ web/**.html
 /src-tauri/target/
 /src-tauri/gen/schemas
 
+# Temp
 /Dev/
+icons/

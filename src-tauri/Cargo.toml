@@ -1,0 +1,17 @@
+[package]
+name = "seshat"
+version = "0.3.0"
+description = "离线优先的 Bangumi 数据管理与浏览工具"
+authors = ["Vanadiry"]
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.2", features = [] }
+
+[dependencies]
+tauri = { version = "2.11.2", features = [] }
