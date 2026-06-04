@@ -695,6 +695,20 @@ paths:
                         id: { type: string, example: "ae8687f0" }
                         task: { type: string, example: "fetch_all" }
                         label: { type: string, example: "刷新全部" }
+  /api/v0/task/cancel:                  # 终止任务
+    post:
+      tags: [拉取]
+      summary: 终止任务
+      description: 终止所有正在运行的任务并退出后端进程。前端将失去连接，需重启后端。
+      responses:
+        "200":
+          description: 已发送终止信号，进程即将退出
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "cancelled" }
   # Tracker
   /api/v0/tracker:                      # 所有Tracker
     get:

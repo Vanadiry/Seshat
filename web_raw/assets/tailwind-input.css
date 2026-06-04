@@ -45,6 +45,8 @@
     --c-toast-success-bg: #243624;
     --c-toast-error: #dc2626;
     --c-toast-error-bg: #3a1a1a;
+    --c-toast-warning: #e8a040;
+    --c-toast-warning-bg: #451a03;
     color-scheme: dark;
 }
 
@@ -90,6 +92,8 @@ html.light {
     --c-toast-success-bg: #e6f5e6;
     --c-toast-error: #dc2626;
     --c-toast-error-bg: #fee2e2;
+    --c-toast-warning: #d88810;
+    --c-toast-warning-bg: #fef3c7;
     color-scheme: light;
 }
 
@@ -131,6 +135,8 @@ html.light {
     --color-toast-success-bg: var(--c-toast-success-bg);
     --color-toast-error: var(--c-toast-error);
     --color-toast-error-bg: var(--c-toast-error-bg);
+    --color-toast-warning: var(--c-toast-warning);
+    --color-toast-warning-bg: var(--c-toast-warning-bg);
 }
 
 /* Disable text selection globally — whitelist via .select-text */

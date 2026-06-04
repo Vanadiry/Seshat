@@ -79,6 +79,10 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 
 	// ── SSE progress ──
 	mux.HandleFunc("GET /api/v0/task/{id}", handleProgress)
+	mux.HandleFunc("POST /api/v0/task/cancel", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, map[string]string{"status": "cancelled"})
+		go func() { time.Sleep(100 * time.Millisecond); os.Exit(0) }()
+	})
 	mux.HandleFunc("GET /api/v0/tasks", handleActiveTasks)
 
 	// ── Cache API ──

@@ -1314,6 +1314,23 @@ function startProgress(taskId, label) {
         '<div class="h-1 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden"><div id="pb-fill" class="h-full rounded-full" style="width:0;background:var(--c-toast-progress);transition:width .3s"></div></div>';
     var t = _makeToast(label || MSG.progressConnecting, bodyHTML, "bg-toast-progress", "bg-toast-progress-bg text-text", 0, true, false);
 
+    // Add cancel button
+    var titleBar = t.el.querySelector("div:first-child");
+    var cancelBtn = document.createElement("span");
+    cancelBtn.className = "cursor-pointer opacity-60 hover:opacity-100 text-[12px] font-normal shrink-0 ml-3";
+    cancelBtn.textContent = "终止";
+    cancelBtn.onclick = function (e) { e.stopPropagation();
+        fetch(API + "/v0/task/cancel", { method: "POST" });
+        fill.style.transition = "none"; fill.style.width = "100%";
+        fill.style.background = "var(--c-toast-warning)";
+        if (detail) detail.textContent = "任务已终止，请重启后端";
+        t.update(taskLabel, null, "bg-toast-warning", "bg-toast-warning-bg");
+        t.addClose();
+        cancelBtn.remove();
+        evt.close();
+    };
+    titleBar.appendChild(cancelBtn);
+
     var fill = t.el.querySelector("#pb-fill");
     var detail = t.el.querySelector("#pb-detail");
     var taskLabel = label || "";
@@ -1322,11 +1339,24 @@ function startProgress(taskId, label) {
     evt.onmessage = function (e) {
         var d = JSON.parse(e.data);
         if (d.label && !taskLabel) { taskLabel = d.label; }
+        if (d.step === "cancelled") {
+            fill.style.transition = "none"; fill.style.width = "100%";
+            fill.style.background = "var(--c-toast-warning)";
+            if (detail) detail.textContent = "任务已终止";
+            t.update(taskLabel, null, "bg-toast-warning", "bg-toast-warning-bg");
+            t.addClose();
+            cancelBtn.remove();
+            setTimeout(function () { fill.style.transition = "width 5s linear"; fill.style.width = "0"; }, 50);
+            evt.close();
+            setTimeout(function () { t.close(); }, 5100);
+            return;
+        }
         if (d.step === "complete" || d.step === "done") {
             fill.style.transition = "none"; fill.style.width = "100%"; fill.style.background = "#22c55e";
             if (detail) detail.textContent = MSG.progressDone;
             t.update(taskLabel, null, "bg-toast-success", "bg-toast-success-bg");
             t.addClose();
+            cancelBtn.remove();
             setTimeout(function () { fill.style.transition = "width 5s linear"; fill.style.width = "0"; }, 50);
             evt.close();
             setTimeout(function () { t.close(); if (typeof onFetchDone === "function") onFetchDone(); }, 5100);
