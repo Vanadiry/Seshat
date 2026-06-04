@@ -10,6 +10,7 @@ config.yaml
 TODO.md
 node_modules/
 pnpm-workspace.yaml
+/Dev/
 
 # Build
 build/
@@ -20,7 +21,3 @@ web/**.html
 # Tauri
 /src-tauri/target/
 /src-tauri/gen/schemas
-
-# Temp
-/Dev/
-icons/
