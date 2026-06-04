@@ -1,4 +1,12 @@
 // Seshat shared JS — top bar, fetch dialog, SSE progress, API helpers
+
+// ── Theme: follow system when set to "auto" ──
+var _themeMedia = window.matchMedia("(prefers-color-scheme: light)");
+_themeMedia.addEventListener("change", function (e) {
+    if ((localStorage.getItem("theme") || "auto") !== "auto") return;
+    document.documentElement.classList.toggle("light", e.matches);
+});
+
 document.addEventListener("dragstart", function (e) {
     if (e.target.tagName === "IMG") e.preventDefault();
 });

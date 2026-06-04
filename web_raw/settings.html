@@ -141,13 +141,16 @@
                         // Sync theme to localStorage for anti-flash script
                         if (updates.theme) {
                             localStorage.setItem("theme", updates.theme);
-                            if (updates.theme === "light") {
-                                document.documentElement.classList.add("light");
-                            } else {
-                                document.documentElement.classList.remove(
-                                    "light"
-                                );
-                            }
+                            var isLight =
+                                updates.theme === "light" ||
+                                (updates.theme === "auto" &&
+                                    window.matchMedia(
+                                        "(prefers-color-scheme: light)"
+                                    ).matches);
+                            document.documentElement.classList.toggle(
+                                "light",
+                                isLight
+                            );
                         }
                         if (!d.error) loadSettings();
                     });

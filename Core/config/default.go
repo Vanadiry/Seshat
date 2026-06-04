@@ -25,11 +25,12 @@ const DefaultPreferencesJSON = `{
   "_comment": "修改后刷新页面即可生效，无需重启后端",
   "theme": {
     "_choice": [
+      {"auto": "同步系统"},
       {"dark": "深色"},
       {"light": "浅色"}
     ],
     "_comment": "界面主题",
-    "value": "dark"
+    "value": "auto"
   },
   "prefer_lang": {
     "_choice": [
