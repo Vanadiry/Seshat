@@ -878,7 +878,9 @@ function initDialog() {
     var dlg = document.createElement("div");
     dlg.id = "dlg-overlay";
     dlg.className =
-        "hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center";
+        "fixed inset-0 z-[100] bg-black/60 flex items-center justify-center transition-opacity duration-200";
+    dlg.style.opacity = "0";
+    dlg.style.pointerEvents = "none";
     dlg.innerHTML =
         '<div class="bg-surface-alt border border-bord rounded-xl p-6 w-[460px] max-w-[90vw] max-h-[90vh] overflow-y-auto">' +
         '<div class="flex items-center gap-3 mb-4">' +
@@ -944,7 +946,7 @@ function initDialog() {
         "</button>" +
         "</div>" +
         // Confirmation overlay
-        '<div id="confirm-overlay" class="hidden absolute inset-0 bg-black/70 rounded-xl flex items-center justify-center z-10">' +
+        '<div id="confirm-overlay" class="absolute inset-0 bg-black/70 rounded-xl flex items-center justify-center z-10 transition-opacity duration-200" style="display:none;opacity:0">' +
         '<div class="bg-surface-alt border border-bord rounded-lg p-5 w-[340px] max-w-[85vw]">' +
         '<p id="confirm-msg" class="text-sm mb-4 leading-relaxed"></p>' +
         '<button id="btn-confirm-exec" class="w-full px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 mb-2">' +
@@ -1104,7 +1106,9 @@ function initDialog() {
 
 function confirmAction(msg, cb) {
     document.getElementById("confirm-msg").textContent = msg;
-    document.getElementById("confirm-overlay").style.display = "flex";
+    var el = document.getElementById("confirm-overlay");
+    el.style.display = "flex";
+    requestAnimationFrame(function () { el.style.opacity = "1"; });
     confirmCb = cb;
     document.getElementById("btn-confirm-exec").style.display = "block";
     document.getElementById("btn-confirm-cancel").textContent = MSG.btnCancel;
@@ -1185,17 +1189,24 @@ function showSuccess(msg) {
     setTimeout(function () { t.el.querySelector(".h-full.rounded-full").style.width = "0"; }, 50);
 }
 function closeConfirm() {
-    document.getElementById("confirm-overlay").style.display = "none";
+    var el = document.getElementById("confirm-overlay");
+    el.style.opacity = "0";
+    setTimeout(function () { el.style.display = "none"; }, 200);
     confirmCb = null;
 }
 
 function openFetch() {
     initDialog();
-    document.getElementById("dlg-overlay").style.display = "flex";
+    var dlg = document.getElementById("dlg-overlay");
+    dlg.style.display = "flex";
+    requestAnimationFrame(function () { dlg.style.opacity = "1"; dlg.style.pointerEvents = "auto"; });
     document.getElementById("fetch-input").focus();
 }
 function closeFetch() {
-    document.getElementById("dlg-overlay").style.display = "none";
+    var dlg = document.getElementById("dlg-overlay");
+    dlg.style.opacity = "0";
+    dlg.style.pointerEvents = "none";
+    setTimeout(function () { dlg.style.display = "none"; }, 200);
     closeConfirm();
 }
 
