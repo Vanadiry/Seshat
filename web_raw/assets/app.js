@@ -812,18 +812,13 @@ function showLightbox(src) {
     img.style.cssText = "max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;opacity:0;transform:scale(.95);transition:opacity .25s ease,transform .25s ease";
     wrap.appendChild(img);
     var bar = document.createElement("div");
-    bar.style.cssText = "position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:6px;opacity:0;transition:opacity .25s ease";
+    bar.style.cssText = "position:fixed;top:16px;left:16px;z-index:10;opacity:0;transition:opacity .25s ease";
     var closeBtn = document.createElement("button");
     closeBtn.textContent = "关闭";
-    closeBtn.style.cssText = "padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.5);color:rgba(255,255,255,.85);font-size:13px;cursor:pointer;backdrop-filter:blur(4px)";
+    closeBtn.style.cssText = "padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.5);color:rgba(255,255,255,.85);font-size:13px;cursor:pointer";
     closeBtn.onclick = closeLightbox;
     bar.appendChild(closeBtn);
-    var saveBtn = document.createElement("button");
-    saveBtn.textContent = "保存";
-    saveBtn.style.cssText = "padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.5);color:rgba(255,255,255,.85);font-size:13px;cursor:pointer;backdrop-filter:blur(4px)";
-    saveBtn.onclick = function (e) { e.stopPropagation(); var m=src.match(/\/v0\/(subjects|characters|persons)\/(\d+)\/image/); var fn=m?m[1]+"_"+m[2]:src.split("/").pop().split("?")[0]; var a=document.createElement("a");a.href=src;a.download=fn;a.click(); };
-    bar.appendChild(saveBtn);
-    wrap.appendChild(bar);
+    overlay.appendChild(bar);
     overlay.appendChild(wrap);
     document.body.appendChild(overlay);
     // animate in
