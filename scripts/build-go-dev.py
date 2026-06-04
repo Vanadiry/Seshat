@@ -3,10 +3,10 @@ import os
 
 
 def main():
-    os.makedirs("./build", exist_ok=True)
+    os.makedirs("./build/server", exist_ok=True)
     subprocess.run(["pnpm", "run", "build"], check=True, cwd=".")
 
-    out = "./build/seshat_dev"
+    out = "./build/server/Seshat_dev"
     args = ["go", "build", "-o", out]
     subprocess.run(args + ["."], check=True)
     print(f"OK. {out}")
