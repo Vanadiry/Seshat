@@ -10,7 +10,7 @@
   "app": {
     "windows": [
       {
-        "title": "Seshat",
+        "title": "Seshat Desktop",
         "url": "http://127.0.0.1:12500",
         "width": 1200,
         "height": 800,
@@ -35,6 +35,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "macOS": {
+      "minimumSystemVersion": "10.15"
+    },
     "android": {
       "debugApplicationIdSuffix": ".debug"
     }
