@@ -502,7 +502,7 @@ function linkifyURL(text) {
         if (parts[i].indexOf("<a") === 0) continue;
         parts[i] = parts[i].replace(
             /(https?:\/\/[^\s<]+)/g,
-            '<a href="$1" target="_blank" rel="noopener" class="text-pink hover:underline"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">$1</a>'
+            '<a href="$1" target="_blank" rel="noopener" class="text-pink hover:underline break-all"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">$1</a>'
         );
     }
     return parts.join("");
