@@ -58,6 +58,39 @@ func eloHistoryPath() string {
 	return filepath.Join(config.Dir(), "user", "elo", "history.json")
 }
 
+func eloExcludePath() string {
+	return filepath.Join(config.Dir(), "user", "elo", "exclude.toml")
+}
+
+const excludeTemplate = `# ELO 排除名单，此文件中的条目不会被列入评分配对
+ids = []
+`
+
+// EnsureExcludeFile 确保排除文件存在，不存在则创建默认模板。
+func EnsureExcludeFile() {
+	path := eloExcludePath()
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.MkdirAll(filepath.Dir(path), 0o755)
+		os.WriteFile(path, []byte(excludeTemplate), 0o644)
+	}
+}
+
+func loadExcludeIDs() map[int]bool {
+	data, err := os.ReadFile(eloExcludePath())
+	if err != nil {
+		return nil
+	}
+	ids := parseTOMLIDArray(data)
+	if len(ids) == 0 {
+		return nil
+	}
+	m := make(map[int]bool, len(ids))
+	for _, id := range ids {
+		m[id] = true
+	}
+	return m
+}
+
 func loadELO() map[int]float64 {
 	data, err := os.ReadFile(eloRatingPath())
 	if err != nil {
@@ -96,19 +129,31 @@ func saveELOHistory(h []eloHistory) {
 	os.WriteFile(eloHistoryPath(), data, 0o644)
 }
 
-// getELOPair returns two random cached subjects for comparison.
+// getELOPair returns two random cached subjects for comparison, excluding IDs in exclude.toml.
 func getELOPair(dd string) []eloPairEntry {
 	keys, err := cache.List(dd, "subjects")
 	if err != nil || len(keys) < 2 {
 		return nil
 	}
-	i1 := rand.Intn(len(keys))
-	i2 := rand.Intn(len(keys))
-	for i2 == i1 {
-		i2 = rand.Intn(len(keys))
+	excluded := loadExcludeIDs()
+	// Filter out excluded IDs
+	var eligible []string
+	for _, k := range keys {
+		id, _ := strconv.Atoi(k)
+		if !excluded[id] {
+			eligible = append(eligible, k)
+		}
 	}
-	id1, _ := strconv.Atoi(keys[i1])
-	id2, _ := strconv.Atoi(keys[i2])
+	if len(eligible) < 2 {
+		return nil
+	}
+	i1 := rand.Intn(len(eligible))
+	i2 := rand.Intn(len(eligible))
+	for i2 == i1 {
+		i2 = rand.Intn(len(eligible))
+	}
+	id1, _ := strconv.Atoi(eligible[i1])
+	id2, _ := strconv.Atoi(eligible[i2])
 	info1 := subjectSummary(dd, id1)
 	info2 := subjectSummary(dd, id2)
 	return []eloPairEntry{

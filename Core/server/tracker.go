@@ -161,6 +161,11 @@ func loadTrackerIDs(path string) []int {
 		return nil
 	}
 	// TOML: ids = [1, 2, 3] 或 ids = [\n1,\n2\n]
+	return parseTOMLIDArray(data)
+}
+
+// parseTOMLIDArray 解析 TOML 格式的 ids = [...] 数组，支持多行逗号分隔。
+func parseTOMLIDArray(data []byte) []int {
 	var ids []int
 	inArray := false
 	for _, line := range strings.Split(string(data), "\n") {

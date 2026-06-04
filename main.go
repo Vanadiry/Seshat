@@ -42,6 +42,7 @@ func main() {
 	dd := cfg.DataDir()
 	os.MkdirAll(dd, 0o755)
 	os.MkdirAll(cfg.TrackerDir(), 0o755)
+	server.EnsureExcludeFile()
 	log.Init()
 	log.Info("Starting Seshat...")
 
