@@ -661,11 +661,11 @@ document.addEventListener("DOMContentLoaded", () => {
     var fallback = !!window.FALLBACK_URL;
     var both = custom && fallback;
     var topBg = both
-        ? "bg-[#7c3aed]"
+        ? "bg-warn-bar-purple"
         : custom
-          ? "bg-[#dc2626]"
+          ? "bg-warn-bar-red"
           : fallback
-            ? "bg-[#92400e]"
+            ? "bg-warn-bar-amber"
             : "bg-surface-raised";
     var topBord = custom || fallback ? "border-bord-strong" : "border-bord";
     var warnText = both
