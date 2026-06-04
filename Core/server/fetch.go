@@ -507,7 +507,8 @@ func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 			fetchSubjectList(ids, bg, dd, imgDir, p)
 			p.SetPhase(2, 5, "建立索引")
 			buildIndexes(dd, p)
-			downloadImages(dd, bg, p)
+			p.SetPhase(3, 5, "下载图像")
+			downloadImagesScoped(dd, bg, p, ids)
 			p.Send("complete", len(ids), len(ids), "")
 			p.Close()
 		}()
@@ -529,7 +530,7 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 			}
 			p.SetPhase(8, 11, "建立索引")
 			buildIndexes(dd, p)
-			downloadImagesWithPhase(dd, bg, p, 9, 11)
+			downloadImagesWithPhase(dd, bg, p, 9, 11, nil)
 			p.Send("complete", 11, 11, "")
 			p.Close()
 		}()

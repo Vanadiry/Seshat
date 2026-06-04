@@ -15,10 +15,15 @@ import (
 )
 
 func downloadImages(dd string, bg *bangumi.Client, p *Progress) {
-	downloadImagesWithPhase(dd, bg, p, 3, 5)
+	downloadImagesWithPhase(dd, bg, p, 3, 5, nil)
 }
 
-func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int) {
+// downloadImagesScoped 仅下载指定 subject 及其关联角色/人物的图像。
+func downloadImagesScoped(dd string, bg *bangumi.Client, p *Progress, subjectIDs []int) {
+	downloadImagesWithPhase(dd, bg, p, 3, 3, subjectIDs)
+}
+
+func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectFilter []int) {
 	log.Info("Downloading images...")
 	os.MkdirAll(cache.IndexDir(dd), 0o755)
 
@@ -27,20 +32,64 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 	persImg := loadImageIndex(dd, "persons_image.json")
 	imgBase := filepath.Join(dd, "images")
 
+	// Build filter sets from subject IDs (non-nil = scoped download)
+	var subjFilter map[int]bool
+	var charFilter map[int]bool
+	var persFilter map[int]bool
+	if subjectFilter != nil {
+		subjFilter = make(map[int]bool)
+		charFilter = make(map[int]bool)
+		persFilter = make(map[int]bool)
+		for _, sid := range subjectFilter {
+			subjFilter[sid] = true
+			// Read related characters
+			if data, err := os.ReadFile(filepath.Join(cache.Dir(dd), cache.Key("subjects", sid, "characters.json"))); err == nil {
+				var chars []struct {
+					ID     int `json:"id"`
+					Actors []struct{ ID int `json:"id"` } `json:"actors"`
+				}
+				if json.Unmarshal(data, &chars) == nil {
+					for _, c := range chars {
+						charFilter[c.ID] = true
+						for _, a := range c.Actors {
+							if a.ID > 0 { persFilter[a.ID] = true }
+						}
+					}
+				}
+			}
+			// Read related persons
+			if data, err := os.ReadFile(filepath.Join(cache.Dir(dd), cache.Key("subjects", sid, "persons.json"))); err == nil {
+				var persons []struct{ ID int `json:"id"` }
+				if json.Unmarshal(data, &persons) == nil {
+					for _, p := range persons { persFilter[p.ID] = true }
+				}
+			}
+		}
+	}
+
+	filterList := func(list []cache.NameEntry, filter map[int]bool) []cache.NameEntry {
+		if filter == nil { return list }
+		var out []cache.NameEntry
+		for _, e := range list {
+			if filter[e.ID] { out = append(out, e) }
+		}
+		return out
+	}
+
 	// Subjects
-	subjList := loadNameList(cache.IndexFile(dd, "subjects.json"))
+	subjList := filterList(loadNameList(cache.IndexFile(dd, "subjects.json")), subjFilter)
 	if p != nil { p.SetPhase(phaseBase, totalPhases, "下载Subject图像"); p.Send("images_subjects", 0, len(subjList), "downloading") }
 	dlImageList(subjList, "subject", subjImg, imgBase, bg, dd, p, "images_subjects")
 	saveJSON(cache.IndexFile(dd, "subjects_image.json"), subjImg)
 
 	// Characters
-	charList := loadNameList(cache.IndexFile(dd, "characters.json"))
+	charList := filterList(loadNameList(cache.IndexFile(dd, "characters.json")), charFilter)
 	if p != nil { p.SetPhase(phaseBase+1, totalPhases, "下载角色图像"); p.Send("images_characters", 0, len(charList), "downloading") }
 	dlImageList(charList, "character", charImg, imgBase, bg, dd, p, "images_characters")
 	saveJSON(cache.IndexFile(dd, "characters_image.json"), charImg)
 
 	// Persons
-	persList := loadNameList(cache.IndexFile(dd, "persons.json"))
+	persList := filterList(loadNameList(cache.IndexFile(dd, "persons.json")), persFilter)
 	if p != nil { p.SetPhase(phaseBase+2, totalPhases, "下载人物图像"); p.Send("images_persons", 0, len(persList), "downloading") }
 	dlImageList(persList, "person", persImg, imgBase, bg, dd, p, "images_persons")
 	saveJSON(cache.IndexFile(dd, "persons_image.json"), persImg)
