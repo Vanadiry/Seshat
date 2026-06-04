@@ -43,6 +43,27 @@ func LoadPreferences() (*Preferences, error) {
 		}
 		return nil, err
 	}
+
+	// Merge missing keys from defaults (seamless migration)
+	var existing map[string]any
+	var defaults map[string]any
+	if json.Unmarshal(data, &existing) == nil && json.Unmarshal([]byte(DefaultPreferencesJSON), &defaults) == nil {
+		changed := false
+		for k, dv := range defaults {
+			if _, ok := existing[k]; !ok {
+				existing[k] = dv
+				changed = true
+			}
+		}
+		if changed {
+			if merged, err := json.MarshalIndent(existing, "", "  "); err == nil {
+				os.WriteFile(PrefPath(), merged, 0o644)
+			}
+		}
+	}
+
+	// Re-read in case we wrote back
+	data, _ = os.ReadFile(PrefPath())
 	var f preferencesFile
 	if json.Unmarshal(data, &f) != nil {
 		return &DefaultPreferences, nil
