@@ -1,15 +1,16 @@
 <!doctype html>
-<html lang="zh-CN" class="bg-[#1d1d1d]">
+<html lang="zh-CN" class="bg-bg">
     <head>
         <meta charset="utf-8" />
         <meta name="view-transition" content="same-origin" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Seshat</title>
 
+        <script src="/assets/theme.min.js"></script>
         <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
         <link rel="stylesheet" href="/assets/style.css" />
     </head>
-    <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+    <body class="text-text font-[system-ui] min-h-screen">
         <div id="topbar"></div>
 
         <main class="max-w-[1200px] mx-auto p-6">
@@ -33,16 +34,16 @@
             // ── 卡片渲染：海报 + 标题 + 评分/平台/年份 ──
             var _collTypes = { 1: "想看", 2: "看过", 3: "抛弃" };
             var _collCls = {
-                1: "bg-[#332200] text-[#e8a040]",
-                2: "bg-[#1a2e1a] text-[#68a868]",
-                3: "bg-[#222] text-sub"
+                1: "bg-pink-bg text-tier-gold",
+                2: "bg-pink-bg text-tier-green",
+                3: "bg-surface-raised text-sub"
             };
             function renderItem(s) {
                 var sub = subName(s.name, s.name_cn);
                 var badges = "";
                 if (s._elo)
                     badges +=
-                        '<span class="bg-[#2a2a3a] text-[#8b9dc3] px-1.5 py-px rounded text-[10px] font-semibold">ELO ' +
+                        '<span class="bg-elo-bg text-elo-text px-1.5 py-px rounded text-[10px] font-semibold">ELO ' +
                         s._elo +
                         "</span>";
                 if (s._coll)
@@ -55,13 +56,13 @@
                 return (
                     "<div onclick=\"location.href='/subject?id=" +
                     s.id +
-                    '\'" class="bg-[#2a2a2a] rounded-xl overflow-hidden cursor-pointer border border-[rgba(255,255,255,.12)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">' +
+                    '\'" class="bg-surface rounded-xl overflow-hidden cursor-pointer border border-bord hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">' +
                     '<div class="relative">' +
                     '<img src="' +
                     img("subject", s.id, "small") +
                     '\" loading=\"lazy\" ' +
                     imgOnError("subject", s.id, "small") +
-                    ' class="w-full object-cover bg-[#202028]" style="aspect-ratio:1/1.414">' +
+                    ' class="w-full object-cover bg-surface" style="aspect-ratio:1/1.414">' +
                     (badges
                         ? '<div class="absolute top-1 right-1 flex flex-col items-end gap-0.5">' +
                           badges +
@@ -78,12 +79,12 @@
                     "</div>" +
                     '<div class="text-xs text-sub mt-1 flex gap-1.5 items-center truncate">' +
                     (s.score
-                        ? '<span class="bg-[#FE8A95] text-white px-1.5 py-px rounded-md text-[12px] font-bold shrink-0">★ ' +
+                        ? '<span class="bg-pink text-white px-1.5 py-px rounded-md text-[12px] font-bold shrink-0">★ ' +
                           s.score.toFixed(1) +
                           "</span>"
                         : "") +
                     (s.platform
-                        ? '<span class="bg-[#403638] text-[#FE8A95] px-1.5 py-px rounded-md text-[12px] shrink-0">' +
+                        ? '<span class="bg-pink-bg text-pink px-1.5 py-px rounded-md text-[12px] shrink-0">' +
                           s.platform +
                           "</span>"
                         : "") +
@@ -131,9 +132,9 @@
                     html +=
                         ' <button onclick="showMore(' +
                         pageSize +
-                        ')" class="ml-3 px-3 py-1 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-xs cursor-pointer hover:bg-[#30303b] hover:text-white">展开更多</button>';
+                        ')" class="ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开更多</button>';
                     html +=
-                        ' <button onclick="showAll()" class="ml-2 px-3 py-1 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-xs cursor-pointer hover:bg-[#30303b] hover:text-white">展开全部</button>';
+                        ' <button onclick="showAll()" class="ml-2 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开全部</button>';
                 }
                 pager.innerHTML = html;
             }

@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="zh-CN" class="bg-[#1d1d1d]">
+<html lang="zh-CN" class="bg-bg">
     <head>
         <meta charset="utf-8" />
         <meta name="view-transition" content="same-origin" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>评分 | Seshat</title>
 
+        <script src="/assets/theme.min.js"></script>
         <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
         <link rel="stylesheet" href="/assets/style.css" />
         <style>
@@ -20,7 +21,7 @@
                 content: "";
                 position: absolute;
                 inset: 0;
-                background: rgba(0, 0, 0, 0.85);
+                background: var(--c-pk-overlay);
                 z-index: 10;
                 opacity: 0;
                 transition: opacity 0.35s ease;
@@ -61,16 +62,16 @@
             }
         </style>
     </head>
-    <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+    <body class="text-text font-[system-ui] min-h-screen">
         <div id="topbar"></div>
         <main class="max-w-[900px] mx-auto p-6">
             <!-- PK区 -->
             <div class="flex items-center gap-3 mb-4">
-                <span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span>
+                <span class="w-[3px] h-[18px] bg-pink rounded-sm"></span>
                 <span class="font-bold">评分</span>
                 <button
                     onclick="loadPair()"
-                    class="ml-2 px-3 py-1 rounded-lg text-xs cursor-pointer border border-[rgba(255,255,255,.12)] bg-transparent text-sub hover:text-white"
+                    class="ml-2 px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text"
                 >
                     刷新
                 </button>
@@ -78,12 +79,12 @@
             <div id="pk-area" class="flex gap-2 mb-6" style="min-height: 280px">
                 <div
                     id="pk-left"
-                    class="flex-1 bg-[#202028] border border-[rgba(255,255,255,.08)] rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer relative"
+                    class="flex-1 bg-surface border border-bord-mid rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer relative"
                     onclick="handlePK('left')"
                 >
                     <div
                         id="pk-left-img"
-                        class="relative shrink-0 rounded-lg overflow-hidden bg-[#151518]"
+                        class="relative shrink-0 rounded-lg overflow-hidden bg-input"
                         style="width: 100px; aspect-ratio: 1"
                     >
                         <img
@@ -108,7 +109,7 @@
                         id="pk-left-confirm"
                         class="confirm-bar absolute bottom-0 left-0 right-0 flex justify-center pb-3"
                     >
-                        <span class="text-[#FE8A95] font-semibold text-sm"
+                        <span class="text-pink font-semibold text-sm"
                             >再次点击以确认该条目胜出</span
                         >
                     </div>
@@ -116,12 +117,12 @@
                 </div>
                 <div
                     id="pk-right"
-                    class="flex-1 bg-[#202028] border border-[rgba(255,255,255,.08)] rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer relative"
+                    class="flex-1 bg-surface border border-bord-mid rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer relative"
                     onclick="handlePK('right')"
                 >
                     <div
                         id="pk-right-img"
-                        class="relative shrink-0 rounded-lg overflow-hidden bg-[#151518]"
+                        class="relative shrink-0 rounded-lg overflow-hidden bg-input"
                         style="width: 100px; aspect-ratio: 1"
                     >
                         <img
@@ -146,7 +147,7 @@
                         id="pk-right-confirm"
                         class="confirm-bar absolute bottom-0 left-0 right-0 flex justify-center pb-3"
                     >
-                        <span class="text-[#FE8A95] font-semibold text-sm"
+                        <span class="text-pink font-semibold text-sm"
                             >再次点击以确认该条目胜出</span
                         >
                     </div>
@@ -159,7 +160,7 @@
 
             <!-- 历史 -->
             <div class="flex items-center gap-2 mb-3">
-                <span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span
+                <span class="w-[3px] h-[18px] bg-pink rounded-sm"></span
                 ><span class="font-bold">历史</span>
             </div>
             <div id="history-area">
@@ -336,7 +337,7 @@
                         img("subject", id, "grid") +
                         '" ' +
                         imgOnError("subject", id, "grid") +
-                        ' class="w-8 h-8 rounded object-cover bg-[#151518] shrink-0">' +
+                        ' class="w-8 h-8 rounded object-cover bg-input shrink-0">' +
                         '<div class="min-w-0 flex-1"><div class="text-sm font-semibold truncate">' +
                         primary +
                         "</div>" +
@@ -377,9 +378,9 @@
                 }
 
                 var html =
-                    '<div class="flex gap-7 text-xs text-sub font-semibold mb-1 border-b border-[rgba(255,255,255,.06)] pb-1"><div class="flex-1 text-center">胜</div><div class="flex-1 text-center">负</div><div class="w-[100px] shrink-0 text-center">时间</div></div>';
+                    '<div class="flex gap-7 text-xs text-sub font-semibold mb-1 border-b border-bord-light pb-1"><div class="flex-1 text-center">胜</div><div class="flex-1 text-center">负</div><div class="w-[100px] shrink-0 text-center">时间</div></div>';
                 for (var i = 0; i < items.length; i++) {
-                    var bg = i % 2 === 0 ? "bg-[#202028]" : "bg-[#1a1a1e]";
+                    var bg = i % 2 === 0 ? "bg-surface" : "bg-surface-raised";
                     html +=
                         '<div class="flex gap-7 border border-transparent ' +
                         bg +
@@ -402,7 +403,7 @@
                         _history.length +
                         " 条记录</span>" +
                         (remaining > 0
-                            ? ' <button onclick="showMoreHistory()" class="ml-3 px-3 py-1 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-xs cursor-pointer hover:bg-[#30303b] hover:text-white">展开更多 10 条</button>'
+                            ? ' <button onclick="showMoreHistory()" class="ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开更多 10 条</button>'
                             : "");
                 } else {
                     ph.innerHTML = _history.length

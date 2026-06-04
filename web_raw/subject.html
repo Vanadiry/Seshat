@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="zh-CN" class="bg-[#1d1d1d]">
+<html lang="zh-CN" class="bg-bg">
     <head>
         <meta charset="utf-8" />
         <meta name="view-transition" content="same-origin" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>动画详情 | Seshat</title>
 
+        <script src="/assets/theme.min.js"></script>
         <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
         <link rel="stylesheet" href="/assets/style.css" />
         <style>
@@ -37,11 +38,11 @@
             }
         </style>
     </head>
-    <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+    <body class="text-text font-[system-ui] min-h-screen">
         <div id="topbar"></div>
         <div
             id="subject-header"
-            class="sticky top-12 z-40 bg-[#1c1c22] border-b border-[rgba(255,255,255,.12)]"
+            class="sticky top-12 z-40 bg-surface-raised border-b border-bord"
         ></div>
         <main id="view" class="max-w-[1200px] mx-auto p-6"></main>
 
@@ -79,8 +80,8 @@
                             label += " (" + counts[i[0]] + ")";
                         var cls =
                             tab === i[0]
-                                ? "text-white border-b-2 border-[#FE8A95]"
-                                : "text-sub hover:text-white";
+                                ? "text-text border-b-2 border-pink"
+                                : "text-sub hover:text-text";
                         return (
                             "<a href=\"javascript:switchTab('" +
                             i[0] +
@@ -119,7 +120,7 @@
                     var hdr = document.getElementById("subject-header");
                     hdr.innerHTML =
                         '<div class="max-w-[1200px] mx-auto px-6 h-12 py-0 flex items-center gap-3">' +
-                        '<a href="javascript:history.back()" class="w-7 h-7 rounded-full border border-[rgba(255,255,255,.2)] flex items-center justify-center text-sub hover:text-white hover:border-[rgba(255,255,255,.4)] shrink-0 no-underline text-xs" title="返回">←</a>' +
+                        '<a href="javascript:history.back()" class="w-7 h-7 rounded-full border border-bord-strong flex items-center justify-center text-sub hover:text-text hover:border-bord-xstrong shrink-0 no-underline text-xs" title="返回">←</a>' +
                         (isRemote("/v0/subjects/" + SID)
                             ? globeIcon("w-6 h-6")
                             : "") +
@@ -218,20 +219,20 @@
                 });
                 if (allEps.length) {
                     var epCls = {
-                        0: "bg-[#252530] text-sub",
-                        1: "bg-[#33281a] text-[#d4a040]",
-                        2: "bg-[#1a2833] text-[#5c8eb0]",
-                        3: "bg-[#241a2e] text-[#8c74a8]",
-                        4: "bg-[#1a2e24] text-[#4c8c68]",
-                        5: "bg-[#2e1a22] text-[#b86474]",
-                        6: "bg-[#252530] text-sub"
+                        0: "bg-surface-alt text-sub",
+                        1: "bg-tier-gold-bg text-tier-gold",
+                        2: "bg-tier-blue-bg text-tier-blue",
+                        3: "bg-tier-purple-bg text-tier-purple",
+                        4: "bg-tier-green-bg text-tier-green",
+                        5: "bg-pink-bg text-pink",
+                        6: "bg-surface-alt text-sub"
                     };
                     var sepCls = {
-                        1: "text-[#d4a040]",
-                        2: "text-[#5c8eb0]",
-                        3: "text-[#8c74a8]",
-                        4: "text-[#4c8c68]",
-                        5: "text-[#b86474]",
+                        1: "text-tier-gold",
+                        2: "text-tier-blue",
+                        3: "text-tier-purple",
+                        4: "text-tier-green",
+                        5: "text-pink",
                         6: "text-sub"
                     };
                     var lastType = -1;
@@ -278,7 +279,7 @@
                             num +
                             "</span>" +
                             '<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50">' +
-                            '<div class="bg-[#1a1a22] border border-[rgba(255,255,255,.15)] rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-lg">' +
+                            '<div class="bg-surface-raised border border-bord-strong rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-lg">' +
                             '<div class="text-sub">第 ' +
                             epNum +
                             " 话 · " +
@@ -316,7 +317,7 @@
                         tagsHtml +=
                             '<a href="/tag?tag=' +
                             encodeURIComponent(shown[i].name) +
-                            '" class="no-underline bg-[#252530] rounded-full px-2.5 py-0.5 text-[14px] text-sub hover:text-[#FE8A95] hover:bg-[#2a2a3a] transition-colors">' +
+                            '" class="no-underline bg-surface-alt rounded-full px-2.5 py-0.5 text-[14px] text-sub hover:text-pink hover:bg-elo-bg transition-colors">' +
                             shown[i].name +
                             '<small class="text-xs text-sub ml-1">' +
                             shown[i].count +
@@ -348,11 +349,11 @@
                                 : "0.0";
                         histHtml +=
                             '<div class="flex-1 flex flex-col items-center justify-end group relative" style="height:100%">' +
-                            '<span class="block w-full bg-[#FE8A95] rounded-t-sm group-hover:bg-[#ff9aa5] transition-colors" style="height:' +
+                            '<span class="block w-full bg-pink rounded-t-sm group-hover:bg-pink transition-colors" style="height:' +
                             h +
                             '%"></span>' +
                             '<div class="absolute bottom-full mb-1 hidden group-hover:block z-50">' +
-                            '<div class="bg-[#1a1a22] border border-[rgba(255,255,255,.15)] rounded-lg px-2 py-1 text-xs whitespace-nowrap shadow-lg">' +
+                            '<div class="bg-surface-raised border border-bord-strong rounded-lg px-2 py-1 text-xs whitespace-nowrap shadow-lg">' +
                             pct +
                             "% · " +
                             v +
@@ -389,7 +390,7 @@
                 var infoHtml = "";
                 for (var i = 0; i < infoItems.length; i++) {
                     infoHtml +=
-                        '<div class="py-1 border-b border-[rgba(255,255,255,.06)] text-[14px]' +
+                        '<div class="py-1 border-b border-bord-light text-[14px]' +
                         (infoItems[i][2] ? " ml-4" : "") +
                         '"><span class="text-sub">' +
                         (infoItems[i][0] ? infoItems[i][0] + ": " : "") +
@@ -433,7 +434,7 @@
                 html += '<div class="flex-1 min-w-0">';
                 if (epGrid)
                     html +=
-                        '<div class="mb-4"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">剧集</span>' +
+                        '<div class="mb-4"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">剧集</span>' +
                         (isRemote("/v0/episodes?subject_id=" + SID)
                             ? globeIcon("w-4 h-4")
                             : "") +
@@ -443,25 +444,24 @@
                         epGrid +
                         "</div>";
                 html +=
-                    '<div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">简介</span></div>';
+                    '<div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">简介</span></div>';
                 html +=
                     '<p class="text-[14px] leading-relaxed text-sub mb-4">' +
                     formatSummary(s.summary || "暂无简介") +
                     "</p>";
                 if (tagsHtml)
                     html +=
-                        '<div class="mb-2"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">标签</span></div>' +
+                        '<div class="mb-2"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">标签</span></div>' +
                         tagsHtml +
                         "</div>";
                 html += "</div>";
                 // ── 右上右栏：评分面板 ──
                 html +=
-                    '<div class="w-full md:w-[230px] shrink-0 self-start bg-[#252528] border border-[rgba(255,255,255,.12)] rounded-xl">';
+                    '<div class="w-full md:w-[230px] shrink-0 self-start bg-surface-alt border border-bord rounded-xl">';
                 // Header strip
                 html +=
-                    '<div class="bg-[#2a2a30] px-4 py-2 rounded-t-xl"><span class="font-bold">评分</span></div>';
-                html +=
-                    '<div class="border-t border-[rgba(255,255,255,.1)]"></div>';
+                    '<div class="bg-surface-alt px-4 py-2 rounded-t-xl"><span class="font-bold">评分</span></div>';
+                html += '<div class="border-t border-bord-mid"></div>';
                 // Content
                 html += '<div class="px-4 pt-2 pb-2">';
                 if (eloInfo && eloInfo.rating) {
@@ -474,7 +474,7 @@
                         (eloInfo.rank_pct || 0).toFixed(1) +
                         "%</span></div>";
                     html +=
-                        '<div class="border-t border-[rgba(255,255,255,.12)] mt-2 mb-2"></div>';
+                        '<div class="border-t border-bord mt-2 mb-2"></div>';
                 }
                 html +=
                     '<div class="text-xs text-sub text-center">BGM Rank</div>';
@@ -490,7 +490,7 @@
                     "</div>";
                 if (histHtml)
                     html +=
-                        '<div class="border-t border-[rgba(255,255,255,.12)] mt-3 mb-1"></div>';
+                        '<div class="border-t border-bord mt-3 mb-1"></div>';
                 if (histHtml) html += "<div>" + histHtml + "</div>";
                 html += "</div>";
                 html += "</div>";
@@ -499,11 +499,11 @@
                 // ── 右下栏：主要角色 + 关联条目 ──
                 if (mainChars.length) {
                     html +=
-                        '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">主要角色</span>' +
+                        '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">主要角色</span>' +
                         (isRemote("/v0/subjects/" + SID + "/characters")
                             ? globeIcon("w-4 h-4")
                             : "") +
-                        '<a href="javascript:switchTab(\'chars\')" class="text-[#FE8A95] text-xs ml-auto no-underline">更多角色 &raquo;</a></div>';
+                        '<a href="javascript:switchTab(\'chars\')" class="text-pink text-xs ml-auto no-underline">更多角色 &raquo;</a></div>';
                     html +=
                         '<div class="flex gap-3 overflow-x-auto pb-2 thin-scroll" style="padding-top:4px">';
                     for (var i = 0; i < mainChars.length; i++) {
@@ -515,7 +515,7 @@
                             c.id +
                             '\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">' +
                             // Image with floating badge
-                            '<div class="relative rounded-lg overflow-hidden bg-[#202028]" style="aspect-ratio:1/1.414">' +
+                            '<div class="relative rounded-lg overflow-hidden bg-surface" style="aspect-ratio:1/1.414">' +
                             '<img src="' +
                             img("character", c.id, "small") +
                             '" ' +
@@ -561,7 +561,7 @@
                         return 0;
                     });
                     html +=
-                        '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">关联条目</span>' +
+                        '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">关联条目</span>' +
                         (isRemote("/v0/subjects/" + SID + "/subjects")
                             ? globeIcon("w-4 h-4")
                             : "") +
@@ -572,7 +572,7 @@
                         var rel = r.relation || "";
                         if (relLastRel !== "" && rel !== relLastRel) {
                             html +=
-                                '<div class="border-l border-[rgba(255,255,255,.12)] self-stretch shrink-0 -mx-1"></div>';
+                                '<div class="border-l border-bord self-stretch shrink-0 -mx-1"></div>';
                         }
                         relLastRel = rel;
                         html +=
@@ -580,7 +580,7 @@
                             r.id +
                             '\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">' +
                             // Image with floating badge
-                            '<div class="relative rounded-lg overflow-hidden bg-[#202028] aspect-square">' +
+                            '<div class="relative rounded-lg overflow-hidden bg-surface aspect-square">' +
                             '<img src="' +
                             img("subject", r.id, "small") +
                             '" ' +
@@ -631,8 +631,8 @@
                               )
                             : "";
                         cards.push(
-                            '<div class="border-t border-[rgba(255,255,255,.06)] py-3">' +
-                                '<div class="flex items-baseline gap-2"><span class="text-[#FE8A95] text-sm font-bold w-8 shrink-0">' +
+                            '<div class="border-t border-bord-light py-3">' +
+                                '<div class="flex items-baseline gap-2"><span class="text-pink text-sm font-bold w-8 shrink-0">' +
                                 (e.type === 0
                                     ? String(
                                           Math.floor(e.sort || e.ep || 0)
@@ -722,8 +722,8 @@
                     html +=
                         '<span onclick="window.filterChars(\'all\')" class="px-3 py-1 rounded-full text-xs cursor-pointer ' +
                         (active === "all"
-                            ? "bg-[#FE8A95] text-white"
-                            : "bg-[#252530] text-sub hover:text-white") +
+                            ? "bg-pink text-white"
+                            : "bg-surface-alt text-sub hover:text-text") +
                         '">全部 (' +
                         chars.length +
                         ")</span>";
@@ -734,8 +734,8 @@
                             rk +
                             '\')" class="px-3 py-1 rounded-full text-xs cursor-pointer ' +
                             (active === rk
-                                ? "bg-[#FE8A95] text-white"
-                                : "bg-[#252530] text-sub hover:text-white") +
+                                ? "bg-pink text-white"
+                                : "bg-surface-alt text-sub hover:text-text") +
                             '">' +
                             rk +
                             " (" +
@@ -764,8 +764,8 @@
                                     img("person", a.id, "grid") +
                                     '" ' +
                                     imgOnError("person", a.id, "grid") +
-                                    ' class="w-8 h-8 rounded-lg object-cover bg-[#202028] shrink-0">' +
-                                    '<div class="shrink-0"><div class="text-[13px] font-semibold hover:text-[#FE8A95]">' +
+                                    ' class="w-8 h-8 rounded-lg object-cover bg-surface shrink-0">' +
+                                    '<div class="shrink-0"><div class="text-[13px] font-semibold hover:text-pink">' +
                                     a.name +
                                     '</div><div class="text-[11px] text-sub">CV</div></div></div>';
                             }
@@ -793,22 +793,22 @@
                             } catch (e) {}
                         }
                         cards.push(
-                            '<div class="border-t border-[rgba(255,255,255,.06)]" style="height:128px">' +
+                            '<div class="border-t border-bord-light" style="height:128px">' +
                                 '<div class="flex items-center gap-3 h-full">' +
                                 '<img src="' +
                                 img("character", c.id, "small") +
                                 '" ' +
                                 imgOnError("character", c.id, "small") +
-                                ' class="shrink-0 rounded object-cover bg-[#202028] cursor-pointer" style="width:80px;aspect-ratio:1/1.414" onclick="location.href=\'/character?id=' +
+                                ' class="shrink-0 rounded object-cover bg-surface cursor-pointer" style="width:80px;aspect-ratio:1/1.414" onclick="location.href=\'/character?id=' +
                                 c.id +
                                 "'\">" +
                                 '<div class="flex-1 min-w-0 py-2 ml-1">' +
-                                '<div class="font-semibold text-[14px] cursor-pointer hover:text-[#FE8A95] inline-block truncate" onclick="location.href=\'/character?id=' +
+                                '<div class="font-semibold text-[14px] cursor-pointer hover:text-pink inline-block truncate" onclick="location.href=\'/character?id=' +
                                 c.id +
                                 "'\">" +
                                 c.name +
                                 "</div>" +
-                                '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5"><span class="bg-[#FE8A95] text-white px-1.5 py-px rounded text-[11px] font-semibold">' +
+                                '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5"><span class="bg-pink text-white px-1.5 py-px rounded text-[11px] font-semibold">' +
                                 c.relation +
                                 "</span>" +
                                 infoExtra +
@@ -868,12 +868,12 @@
                 var entries = Object.entries(groups);
 
                 var sideLinks =
-                    '<div class="bg-[#252530] rounded-lg overflow-hidden"><div class="p-3 max-h-[calc(100vh-14rem)] overflow-y-auto thin-scroll">';
+                    '<div class="bg-surface-alt rounded-lg overflow-hidden"><div class="p-3 max-h-[calc(100vh-14rem)] overflow-y-auto thin-scroll">';
                 for (var i = 0; i < entries.length; i++) {
                     sideLinks +=
                         '<a href="#g-' +
                         entries[i][0] +
-                        '" class="text-sub text-xs no-underline block py-0.5 hover:text-white">' +
+                        '" class="text-sub text-xs no-underline block py-0.5 hover:text-text">' +
                         entries[i][0] +
                         " (" +
                         entries[i][1].length +
@@ -893,7 +893,7 @@
                         nameHtml +=
                             "<div onclick=\"location.href='/person?id=" +
                             p.id +
-                            '\'" class="flex items-center gap-2 py-1 border-b border-[rgba(255,255,255,.04)] cursor-pointer hover:text-[#FE8A95] text-sm truncate">' +
+                            '\'" class="flex items-center gap-2 py-1 border-b border-bord-light cursor-pointer hover:text-pink text-sm truncate">' +
                             p.name +
                             (p.eps
                                 ? '<span class="text-xs text-sub ml-1 shrink-0">(' +
@@ -904,9 +904,9 @@
                     }
                     nameHtml += "</div>";
                     mainHtml +=
-                        '<div class="mb-4 bg-[#252530] rounded-lg p-3" id="g-' +
+                        '<div class="mb-4 bg-surface-alt rounded-lg p-3" id="g-' +
                         k +
-                        '" style="break-inside:avoid"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">' +
+                        '" style="break-inside:avoid"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">' +
                         k +
                         '</span><span class="text-xs text-sub">(' +
                         v.length +

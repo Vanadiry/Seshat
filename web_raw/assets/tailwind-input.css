@@ -3,12 +3,99 @@
 @source "../web/*.html";
 @source "../web/*/*.html";
 
+/* ── Dark mode (default) ── */
+:root {
+    --c-bg: #1d1d1d;
+    --c-surface: #202028;
+    --c-surface-alt: #252530;
+    --c-surface-raised: #1c1c22;
+    --c-input: #151518;
+    --c-active: #30303b;
+    --c-text: rgba(255, 255, 255, 0.88);
+    --c-sub: rgba(255, 255, 255, 0.52);
+    --c-sub-dim: rgba(255, 255, 255, 0.3);
+    --c-bord: rgba(255, 255, 255, 0.12);
+    --c-bord-light: rgba(255, 255, 255, 0.06);
+    --c-bord-mid: rgba(255, 255, 255, 0.08);
+    --c-bord-strong: rgba(255, 255, 255, 0.15);
+    --c-bord-xstrong: rgba(255, 255, 255, 0.4);
+    --c-pink: #fe8a95;
+    --c-pink-bg: #403638;
+    /* Tier colors (episode types, rating ranks) */
+    --c-tier-gold: #d4a040;
+    --c-tier-gold-bg: #33281a;
+    --c-tier-blue: #5c8eb0;
+    --c-tier-blue-bg: #1a2833;
+    --c-tier-purple: #8c74a8;
+    --c-tier-purple-bg: #241a2e;
+    --c-tier-green: #4c8c68;
+    --c-tier-green-bg: #1a2e24;
+    /* ELO badge + tag hover */
+    --c-elo-bg: #2a2a3a;
+    --c-elo-text: #8b9dc3;
+    --c-pk-overlay: rgba(0, 0, 0, 0.85);
+    color-scheme: dark;
+}
+
+/* ── Light mode ── */
+html.light {
+    --c-bg: #f5f5f5;
+    --c-surface: #ffffff;
+    --c-surface-alt: #f0f0f2;
+    --c-surface-raised: #eaeaee;
+    --c-input: #e5e5ea;
+    --c-active: #e0e0e5;
+    --c-text: rgba(0, 0, 0, 0.85);
+    --c-sub: rgba(0, 0, 0, 0.5);
+    --c-sub-dim: rgba(0, 0, 0, 0.3);
+    --c-bord: rgba(0, 0, 0, 0.1);
+    --c-bord-light: rgba(0, 0, 0, 0.05);
+    --c-bord-mid: rgba(0, 0, 0, 0.07);
+    --c-bord-strong: rgba(0, 0, 0, 0.13);
+    --c-bord-xstrong: rgba(0, 0, 0, 0.25);
+    --c-pink: #fe8a95;
+    --c-pink-bg: #fce4e8;
+    /* Tier colors — lighter backgrounds, darker text for contrast */
+    --c-tier-gold: #b8860b;
+    --c-tier-gold-bg: #fef3e0;
+    --c-tier-blue: #3a6d99;
+    --c-tier-blue-bg: #e8f0f8;
+    --c-tier-purple: #6b4d82;
+    --c-tier-purple-bg: #f0e8f5;
+    --c-tier-green: #3a7050;
+    --c-tier-green-bg: #e6f0ea;
+    /* ELO badge + tag hover */
+    --c-elo-bg: #e0e3ec;
+    --c-elo-text: #5a6d8a;
+    --c-pk-overlay: rgba(0, 0, 0, 0.5);
+    color-scheme: light;
+}
+
 @theme {
-  --color-bg: #1d1d1d;
-  --color-card: #2a2a2a;
-  --color-bord: rgba(255, 255, 255, .12);
-  --color-text: rgba(255, 255, 255, .88);
-  --color-sub: rgba(255, 255, 255, .52);
-  --color-pink: #FE8A95;
-  --color-pink-bg: #403638;
+    --color-bg: var(--c-bg);
+    --color-surface: var(--c-surface);
+    --color-surface-alt: var(--c-surface-alt);
+    --color-surface-raised: var(--c-surface-raised);
+    --color-input: var(--c-input);
+    --color-active: var(--c-active);
+    --color-text: var(--c-text);
+    --color-sub: var(--c-sub);
+    --color-sub-dim: var(--c-sub-dim);
+    --color-bord: var(--c-bord);
+    --color-bord-light: var(--c-bord-light);
+    --color-bord-mid: var(--c-bord-mid);
+    --color-bord-strong: var(--c-bord-strong);
+    --color-bord-xstrong: var(--c-bord-xstrong);
+    --color-pink: var(--c-pink);
+    --color-pink-bg: var(--c-pink-bg);
+    --color-tier-gold: var(--c-tier-gold);
+    --color-tier-gold-bg: var(--c-tier-gold-bg);
+    --color-tier-blue: var(--c-tier-blue);
+    --color-tier-blue-bg: var(--c-tier-blue-bg);
+    --color-tier-purple: var(--c-tier-purple);
+    --color-tier-purple-bg: var(--c-tier-purple-bg);
+    --color-tier-green: var(--c-tier-green);
+    --color-tier-green-bg: var(--c-tier-green-bg);
+    --color-elo-bg: var(--c-elo-bg);
+    --color-elo-text: var(--c-elo-text);
 }

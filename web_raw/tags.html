@@ -1,15 +1,16 @@
 <!doctype html>
-<html lang="zh-CN" class="bg-[#1d1d1d]">
+<html lang="zh-CN" class="bg-bg">
     <head>
         <meta charset="utf-8" />
         <meta name="view-transition" content="same-origin" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>标签 | Seshat</title>
 
+        <script src="/assets/theme.min.js"></script>
         <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
         <link rel="stylesheet" href="/assets/style.css" />
     </head>
-    <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+    <body class="text-text font-[system-ui] min-h-screen">
         <div id="topbar"></div>
 
         <main class="max-w-[1200px] mx-auto p-6">
@@ -27,7 +28,7 @@
                 return (
                     '<a href="/tag?tag=' +
                     encodeURIComponent(t.name) +
-                    '" class="no-underline bg-[#2a2a2a] border border-[rgba(255,255,255,.12)] rounded-lg px-3 py-1.5 text-sm hover:border-[#FE8A95] transition-colors"><span class="text-[rgba(255,255,255,.88)] hover:text-[#FE8A95]">' +
+                    '" class="no-underline bg-surface border border-bord rounded-lg px-3 py-1.5 text-sm hover:border-pink transition-colors"><span class="text-text hover:text-pink">' +
                     t.name +
                     '</span><small class="text-sub ml-1.5">' +
                     t.count +
@@ -70,9 +71,9 @@
                     html +=
                         ' <button onclick="showMore(' +
                         pageSize +
-                        ')" class="ml-3 px-3 py-1 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-xs cursor-pointer hover:bg-[#30303b] hover:text-white">展开更多</button>';
+                        ')" class="ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开更多</button>';
                     html +=
-                        ' <button onclick="showAll()" class="ml-2 px-3 py-1 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-xs cursor-pointer hover:bg-[#30303b] hover:text-white">展开全部</button>';
+                        ' <button onclick="showAll()" class="ml-2 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开全部</button>';
                 }
                 pager.innerHTML = html;
             }

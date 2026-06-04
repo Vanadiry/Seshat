@@ -248,7 +248,15 @@ function addRemoteGlobe(el) {
 }
 
 // ── Infobox key blacklist：这些字段只做 URL/BBCode，不做名字匹配 ──
-var INFOBOX_NO_MATCH_KEYS = ["放送开始", "播放开始", "放送结束", "播放结束", "放送星期", "播放星期", "话数"];
+var INFOBOX_NO_MATCH_KEYS = [
+    "放送开始",
+    "播放开始",
+    "放送结束",
+    "播放结束",
+    "放送星期",
+    "播放星期",
+    "话数"
+];
 
 // ── Name → ID lookup maps (subjects/characters/persons) ──
 var _subjectMap = null,
@@ -314,7 +322,9 @@ function matchSegmentCore(seg, merged) {
     if (!seg) return seg;
     var id = merged[seg];
     if (!id) return seg;
-    return '<a href="' + id + '" class="text-[#FE8A95] hover:underline">' + seg + "</a>";
+    return (
+        '<a href="' + id + '" class="text-pink hover:underline">' + seg + "</a>"
+    );
 }
 
 // ── Char+Person 自由匹配（仅 ≥3 字，最长优先）──
@@ -421,7 +431,7 @@ function linkifyByMap(text, map, hrefPrefix) {
                 '<a href="' +
                 hrefPrefix +
                 map[match] +
-                '" class="text-[#FE8A95] hover:underline">' +
+                '" class="text-pink hover:underline">' +
                 match +
                 "</a>"
             );
@@ -458,7 +468,7 @@ function linkifyURL(text) {
         if (parts[i].indexOf("<a") === 0) continue;
         parts[i] = parts[i].replace(
             /(https?:\/\/[^\s<]+)/g,
-            '<a href="$1" target="_blank" rel="noopener" class="text-[#FE8A95] hover:underline"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">$1</a>'
+            '<a href="$1" target="_blank" rel="noopener" class="text-pink hover:underline"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">$1</a>'
         );
     }
     return parts.join("");
@@ -475,14 +485,14 @@ function linkifyBBCode(text) {
                 return (
                     '<a href="' +
                     local +
-                    '" class="text-[#FE8A95] hover:underline">' +
+                    '" class="text-pink hover:underline">' +
                     inner +
                     "</a>"
                 );
             return (
                 '<a href="' +
                 url +
-                '" target="_blank" rel="noopener" class="text-[#FE8A95] hover:underline"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">' +
+                '" target="_blank" rel="noopener" class="text-pink hover:underline"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">' +
                 inner +
                 "</a>"
             );
@@ -530,11 +540,7 @@ function infoboxData(d) {
             if (!ib[i].key) continue;
             var v = ib[i].value;
             if (typeof v === "string") {
-                items.push([
-                    ib[i].key,
-                    processInfoboxValue(v, ib[i].key),
-                    0
-                ]);
+                items.push([ib[i].key, processInfoboxValue(v, ib[i].key), 0]);
             } else if (Array.isArray(v)) {
                 if (v.length > 0 && typeof v[0] === "object") {
                     if (v[0].k) {
@@ -544,7 +550,10 @@ function infoboxData(d) {
                             if (v[j].k)
                                 items.push([
                                     v[j].k,
-                                    processInfoboxValue(v[j].v || "", ib[i].key),
+                                    processInfoboxValue(
+                                        v[j].v || "",
+                                        ib[i].key
+                                    ),
                                     1
                                 ]);
                         }
@@ -633,10 +642,9 @@ document.addEventListener("DOMContentLoaded", () => {
         else if (p === "/character") p = "/characters";
         else if (p === "/person") p = "/persons";
         else if (p === "/tag") p = "/tags";
-        if (href === "/" && p === "/") return "bg-[#30303b] text-white";
-        if (href !== "/" && p.startsWith(href))
-            return "bg-[#30303b] text-white";
-        return "hover:bg-[#30303b] hover:text-white";
+        if (href === "/" && p === "/") return "bg-active text-text";
+        if (href !== "/" && p.startsWith(href)) return "bg-active text-text";
+        return "hover:bg-active hover:text-text";
     }
 
     tb.style.cssText = "position:sticky;top:0;z-index:50";
@@ -649,11 +657,8 @@ document.addEventListener("DOMContentLoaded", () => {
           ? "bg-[#dc2626]"
           : fallback
             ? "bg-[#92400e]"
-            : "bg-[#1c1c22]";
-    var topBord =
-        custom || fallback
-            ? "border-[rgba(255,255,255,.2)]"
-            : "border-[rgba(255,255,255,.12)]";
+            : "bg-surface-raised";
+    var topBord = custom || fallback ? "border-bord-strong" : "border-bord";
     var warnText = both
         ? MSG.bothWarn
         : custom
@@ -665,7 +670,7 @@ document.addEventListener("DOMContentLoaded", () => {
         var c = navCls(href);
         if (custom || fallback) {
             if (c.indexOf("bg-") >= 0) return c;
-            return "text-white hover:bg-[#ffffff22]";
+            return "text-text hover:bg-active";
         }
         return c;
     };
@@ -686,17 +691,17 @@ document.addEventListener("DOMContentLoaded", () => {
           <a href="/rating" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/rating")}">评分</a>
           <a href="/search" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/search")}">搜索</a>
         </nav>
-        <button id="btn-fetch" class="px-4 py-1.5 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">管理数据</button>
+        <button id="btn-fetch" class="px-4 py-1.5 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">管理数据</button>
         <div class="relative">
-          <img id="user-avatar" src="" class="w-8 h-8 rounded-lg object-cover bg-[#202028] cursor-pointer shrink-0" onclick="toggleUserMenu(event)" style="display:none">
+          <img id="user-avatar" src="" class="w-8 h-8 rounded-lg object-cover bg-surface cursor-pointer shrink-0" onclick="toggleUserMenu(event)" style="display:none">
           <div id="user-placeholder" class="w-8 h-8 rounded-lg cursor-pointer shrink-0" onclick="toggleUserMenu(event)" style="background:linear-gradient(135deg,#ff6b6b,#feca57,#48dbfb,#ff9ff3,#54a0ff);background-size:300% 300%;animation:rainbow 3s ease infinite"></div>
-          <div id="user-dropdown" class="absolute right-0 top-full mt-2 bg-[#1c1c22] border border-[rgba(255,255,255,.15)] rounded-xl shadow-2xl py-2 w-[180px] z-[300] overflow-hidden" style="opacity:0;pointer-events:none;transition:opacity .2s ease">
+          <div id="user-dropdown" class="absolute right-0 top-full mt-2 bg-surface-raised border border-bord-strong rounded-xl shadow-2xl py-2 w-[180px] z-[300] overflow-hidden" style="opacity:0;pointer-events:none;transition:opacity .2s ease">
             <div id="user-dropdown-name" class="px-4 pt-1 pb-2 text-sm font-bold text-center"></div>
-            <div class="border-t border-[rgba(255,255,255,.06)] my-1"></div>
-            <a href="/settings" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-[#30303b] hover:text-white">设置</a>
-            <div class="border-t border-[rgba(255,255,255,.06)] my-1"></div>
-            <a href="/doc/api" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-[#30303b] hover:text-white">API 文档</a>
-            <a href="https://github.com/Vanadiry/Seshat" target="_blank" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-[#30303b] hover:text-white">项目 GitHub</a>
+            <div class="border-t border-bord-light my-1"></div>
+            <a href="/settings" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">设置</a>
+            <div class="border-t border-bord-light my-1"></div>
+            <a href="/doc/api" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">API 文档</a>
+            <a href="https://github.com/Vanadiry/Seshat" target="_blank" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">项目 GitHub</a>
           </div>
         </div>
       </div>
@@ -765,9 +770,9 @@ function initDialog() {
     dlg.className =
         "hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center";
     dlg.innerHTML =
-        '<div class="bg-[#24242e] border border-[rgba(255,255,255,.12)] rounded-xl p-6 w-[460px] max-w-[90vw] max-h-[90vh] overflow-y-auto">' +
+        '<div class="bg-surface-alt border border-bord rounded-xl p-6 w-[460px] max-w-[90vw] max-h-[90vh] overflow-y-auto">' +
         '<div class="flex items-center gap-3 mb-4">' +
-        '<button id="btn-close-dlg" class="w-7 h-7 rounded-full border border-[rgba(255,255,255,.2)] flex items-center justify-center text-sub hover:text-white hover:border-[rgba(255,255,255,.4)] shrink-0 no-underline text-xs cursor-pointer bg-transparent" title="' +
+        '<button id="btn-close-dlg" class="w-7 h-7 rounded-full border border-bord-strong flex items-center justify-center text-sub hover:text-text hover:border-bord-xstrong shrink-0 no-underline text-xs cursor-pointer bg-transparent" title="' +
         MSG.btnClose +
         '">&times;</button>' +
         '<h3 class="text-base font-bold">' +
@@ -780,8 +785,8 @@ function initDialog() {
         '<div class="flex gap-2 mb-4">' +
         '<input id="fetch-input" placeholder="' +
         MSG.idPlaceholder +
-        '" pattern="[0-9, ]*" class="flex-1 px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-[#151518] text-sm">' +
-        '<button id="btn-do-fetch" class="w-9 h-9 rounded-lg bg-[#FE8A95] text-white font-bold cursor-pointer border-0 hover:opacity-90 flex items-center justify-center" title="拉取">&check;</button></div>' +
+        '" pattern="[0-9, ]*" class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm">' +
+        '<button id="btn-do-fetch" class="w-9 h-9 rounded-lg bg-pink text-white font-bold cursor-pointer border-0 hover:opacity-90 flex items-center justify-center" title="拉取">&check;</button></div>' +
         // Tracker input row
         '<label class="text-xs text-sub block mb-1">' +
         MSG.trackerLabel +
@@ -789,47 +794,47 @@ function initDialog() {
         '<div class="flex gap-2 mb-4">' +
         '<input id="tracker-input" placeholder="' +
         MSG.trackerPlaceholder +
-        '" pattern="[a-zA-Z0-9_\\-]*" class="flex-1 px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-[#151518] text-sm">' +
-        '<button id="btn-tracker-fetch" class="w-9 h-9 rounded-lg bg-[#FE8A95] text-white font-bold cursor-pointer border-0 hover:opacity-90 flex items-center justify-center" title="拉取或创建">&check;</button></div>' +
+        '" pattern="[a-zA-Z0-9_\\-]*" class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm">' +
+        '<button id="btn-tracker-fetch" class="w-9 h-9 rounded-lg bg-pink text-white font-bold cursor-pointer border-0 hover:opacity-90 flex items-center justify-center" title="拉取或创建">&check;</button></div>' +
         // Action buttons
         '<div class="flex flex-col gap-2 mb-2">' +
         '<div class="grid grid-cols-2 gap-2">' +
-        '<button id="btn-update" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">' +
+        '<button id="btn-update" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
         MSG.btnUpdate +
         "</button>" +
-        '<button id="btn-all" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">' +
+        '<button id="btn-all" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
         MSG.btnRefreshAll +
         "</button>" +
         "</div>" +
         '<div class="grid grid-cols-2 gap-2">' +
-        '<button id="btn-user" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">' +
+        '<button id="btn-user" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
         MSG.btnUserFetch +
         "</button>" +
-        '<button id="btn-import-coll" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">' +
+        '<button id="btn-import-coll" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
         MSG.btnImportColl +
         "</button>" +
         "</div></div>" +
         // Danger zone
-        '<button id="btn-danger-toggle" class="w-full px-3 py-2 rounded-lg border border-[rgba(255,0,0,.3)] bg-transparent text-[#dc2626] text-sm cursor-pointer hover:bg-[#3a1a1a]">' +
+        '<button id="btn-danger-toggle" class="w-full px-3 py-2 rounded-lg border border-[rgba(255,0,0,.3)] bg-transparent text-[#dc2626] text-sm cursor-pointer hover:bg-pink-bg">' +
         MSG.btnDangerZone +
         "</button>" +
         '<div id="danger-zone" class="hidden mt-2 grid grid-cols-3 gap-2">' +
-        '<button id="btn-index" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">' +
+        '<button id="btn-index" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
         MSG.btnRebuildIndex +
         "</button>" +
-        '<button id="btn-rebuild-elo" class="px-3 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b] hover:text-white">重建 ELO</button>' +
+        '<button id="btn-rebuild-elo" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">重建 ELO</button>' +
         '<button id="btn-deep" class="px-3 py-2 rounded-lg bg-[#dc2626] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">' +
         MSG.btnRebuildAll +
         "</button>" +
         "</div>" +
         // Confirmation overlay
         '<div id="confirm-overlay" class="hidden absolute inset-0 bg-black/70 rounded-xl flex items-center justify-center z-10">' +
-        '<div class="bg-[#2a2a30] border border-[rgba(255,255,255,.12)] rounded-lg p-5 w-[340px] max-w-[85vw]">' +
+        '<div class="bg-surface-alt border border-bord rounded-lg p-5 w-[340px] max-w-[85vw]">' +
         '<p id="confirm-msg" class="text-sm mb-4 leading-relaxed"></p>' +
-        '<button id="btn-confirm-exec" class="w-full px-4 py-2 rounded-lg bg-[#FE8A95] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 mb-2">' +
+        '<button id="btn-confirm-exec" class="w-full px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 mb-2">' +
         MSG.btnExecute +
         "</button>" +
-        '<button id="btn-confirm-cancel" class="w-full px-4 py-2 rounded-lg border border-[rgba(255,255,255,.12)] bg-transparent text-sub text-sm cursor-pointer hover:bg-[#30303b]">' +
+        '<button id="btn-confirm-cancel" class="w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active">' +
         MSG.btnCancel +
         "</button>" +
         "</div></div></div></div>";
@@ -1110,11 +1115,11 @@ function startProgress(taskId, label) {
         banner = document.createElement("div");
         banner.id = "progress-banner";
         banner.className =
-            "fixed bottom-4 right-4 z-[200] bg-[#1c1c22] border border-[rgba(255,255,255,.15)] rounded-xl shadow-2xl p-4 max-w-[320px] min-w-[260px]";
+            "fixed bottom-4 right-4 z-[200] bg-surface-raised border border-bord-strong rounded-xl shadow-2xl p-4 max-w-[320px] min-w-[260px]";
         banner.style.opacity = "0";
         banner.style.pointerEvents = "none";
         banner.innerHTML =
-            '<div class="flex items-center gap-2"><span id="pb-label" class="text-sm font-bold truncate"></span><span id="pb-phase" class="text-xs text-sub shrink-0"></span></div><div id="pb-detail" class="text-xs text-sub mt-1"></div><div id="pb-bar" class="mt-2 h-1 rounded-full bg-[#30303b] overflow-hidden"><div id="pb-fill" class="h-full bg-[#FE8A95] w-0 transition-[width] duration-300"></div></div>';
+            '<div class="flex items-center gap-2"><span id="pb-label" class="text-sm font-bold truncate"></span><span id="pb-phase" class="text-xs text-sub shrink-0"></span></div><div id="pb-detail" class="text-xs text-sub mt-1"></div><div id="pb-bar" class="mt-2 h-1 rounded-full bg-active overflow-hidden"><div id="pb-fill" class="h-full bg-pink w-0 transition-[width] duration-300"></div></div>';
         document.body.appendChild(banner);
     }
     banner.style.opacity = "1";

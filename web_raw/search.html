@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="zh-CN" class="bg-[#1d1d1d]">
+<html lang="zh-CN" class="bg-bg">
     <head>
         <meta charset="utf-8" />
         <meta name="view-transition" content="same-origin" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>搜索 | Seshat</title>
 
+        <script src="/assets/theme.min.js"></script>
         <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
         <link rel="stylesheet" href="/assets/style.css" />
         <style>
@@ -21,17 +22,17 @@
             }
         </style>
     </head>
-    <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+    <body class="text-text font-[system-ui] min-h-screen">
         <div id="topbar"></div>
 
         <main class="max-w-[640px] mx-auto p-6">
             <div id="search-area" class="mt-[25vh]">
                 <div
-                    class="flex items-stretch bg-[#151518] border border-[rgba(255,255,255,.15)] rounded-xl overflow-hidden focus-within:border-[#FE8A95] transition-colors"
+                    class="flex items-stretch bg-input border border-bord-strong rounded-xl overflow-hidden focus-within:border-pink transition-colors"
                 >
                     <select
                         id="search-type"
-                        class="search-type bg-[#202028] text-sub text-sm font-semibold pl-4 pr-6 rounded-l-xl border-0 outline-none cursor-pointer shrink-0 hover:text-white"
+                        class="search-type bg-surface text-sub text-sm font-semibold pl-4 pr-6 rounded-l-xl border-0 outline-none cursor-pointer shrink-0 hover:text-text"
                         style="
                             width: 72px;
                             text-align: center;
@@ -52,7 +53,7 @@
                     />
                     <button
                         onclick="doSearch()"
-                        class="bg-[#FE8A95] text-white font-semibold cursor-pointer border-0 hover:opacity-90 shrink-0 py-3"
+                        class="bg-pink text-white font-semibold cursor-pointer border-0 hover:opacity-90 shrink-0 py-3"
                         style="width: 72px"
                     >
                         搜索
@@ -128,7 +129,7 @@
                 var label = typeLabels[type] || type;
                 var link = typeLinks[type] || "";
                 var html =
-                    '<div class="mb-6"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span><span class="font-bold">' +
+                    '<div class="mb-6"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">' +
                     label +
                     '</span><span class="text-xs text-sub">(' +
                     data.length +
@@ -140,7 +141,7 @@
                         html +=
                             '<a href="/tag?tag=' +
                             encodeURIComponent(it.name) +
-                            '" class="no-underline flex gap-3 items-center bg-[#2a2a2a] border border-[rgba(255,255,255,.08)] rounded-lg py-1.5 px-2 cursor-pointer hover:border-[#FE8A95]"><div class="text-sm font-semibold">' +
+                            '" class="no-underline flex gap-3 items-center bg-surface border border-bord-mid rounded-lg py-1.5 px-2 cursor-pointer hover:border-pink"><div class="text-sm font-semibold">' +
                             it.name +
                             '</div><div class="text-xs text-sub">' +
                             it.count +
@@ -168,12 +169,12 @@
                             "<div onclick=\"location.href='" +
                             link +
                             it.id +
-                            '\'" class="flex gap-3 items-center bg-[#2a2a2a] border border-[rgba(255,255,255,.08)] rounded-lg py-1.5 px-2 cursor-pointer hover:border-[#FE8A95]">' +
+                            '\'" class="flex gap-3 items-center bg-surface border border-bord-mid rounded-lg py-1.5 px-2 cursor-pointer hover:border-pink">' +
                             '<img src="' +
                             imgSrc +
                             '" ' +
                             imgErr +
-                            ' class="w-10 h-10 rounded-lg object-cover bg-[#202028] shrink-0">' +
+                            ' class="w-10 h-10 rounded-lg object-cover bg-surface shrink-0">' +
                             '<div class="flex-1 min-w-0">' +
                             '<div class="text-sm font-semibold truncate">' +
                             it.name +

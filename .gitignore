@@ -14,4 +14,7 @@ pnpm-workspace.yaml
 # Build
 build/
 web/assets/app.min.js
+web/assets/theme.min.js
 web/**.html
+
+/Dev/

@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="zh-CN" class="bg-[#1d1d1d]">
+<html lang="zh-CN" class="bg-bg">
     <head>
         <meta charset="utf-8" />
         <meta name="view-transition" content="same-origin" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>统计 | Seshat</title>
 
+        <script src="/assets/theme.min.js"></script>
         <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
         <link rel="stylesheet" href="/assets/style.css" />
         <style>
@@ -14,11 +15,11 @@
             }
         </style>
     </head>
-    <body class="text-[rgba(255,255,255,.88)] font-[system-ui] min-h-screen">
+    <body class="text-text font-[system-ui] min-h-screen">
         <div id="topbar"></div>
         <main class="max-w-[900px] mx-auto p-6">
             <div class="flex items-center gap-2 mb-3">
-                <span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span
+                <span class="w-[3px] h-[18px] bg-pink rounded-sm"></span
                 ><span class="font-bold">条目统计</span>
             </div>
             <div
@@ -26,7 +27,7 @@
                 class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 text-xs text-sub"
             ></div>
             <div class="flex items-center gap-3 mb-4 flex-wrap">
-                <span class="w-[3px] h-[18px] bg-[#FE8A95] rounded-sm"></span>
+                <span class="w-[3px] h-[18px] bg-pink rounded-sm"></span>
                 <span class="font-bold">评分</span>
                 <span class="text-xs text-sub" style="margin-left: auto"
                     >排序</span
@@ -34,14 +35,14 @@
                 <div class="flex gap-1">
                     <button
                         id="btn-sort-elo"
-                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-[#FE8A95] bg-[#FE8A95] text-white font-semibold"
+                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-pink bg-pink text-white font-semibold"
                         onclick="sortBy('elo')"
                     >
                         ELO
                     </button>
                     <button
                         id="btn-sort-score"
-                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-[rgba(255,255,255,.12)] bg-transparent text-sub hover:text-white"
+                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text"
                         onclick="sortBy('score')"
                     >
                         评分
@@ -51,14 +52,14 @@
                 <div class="flex gap-1" id="toggles" style="display: none">
                     <button
                         id="btn-no-rating"
-                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-[rgba(255,255,255,.12)] bg-transparent text-sub hover:text-white"
+                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text"
                         onclick="toggleNoRating()"
                     >
                         无 ELO Rating
                     </button>
                     <button
                         id="btn-orphans"
-                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-[rgba(255,255,255,.12)] bg-transparent text-sub hover:text-white"
+                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text"
                         onclick="toggleOrphans()"
                     >
                         无本地数据
@@ -95,8 +96,8 @@
             function updateBtn(id, on) {
                 var b = document.getElementById(id);
                 b.className = on
-                    ? "px-3 py-1 rounded-lg text-xs cursor-pointer border border-[#FE8A95] bg-[#FE8A95] text-white font-semibold"
-                    : "px-3 py-1 rounded-lg text-xs cursor-pointer border border-[rgba(255,255,255,.12)] bg-transparent text-sub hover:text-white";
+                    ? "px-3 py-1 rounded-lg text-xs cursor-pointer border border-pink bg-pink text-white font-semibold"
+                    : "px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text";
                 b.innerHTML =
                     (on ? "✓ " : "") +
                     (id === "btn-no-rating" ? "无 ELO Rating" : "无本地数据");
@@ -151,7 +152,7 @@
                     var html = "";
                     for (var i = 0; i < cards.length; i++) {
                         html +=
-                            '<div class="bg-[#202028] border border-[rgba(255,255,255,.06)] rounded-xl p-3 flex items-center" style="max-width:260px;max-height:100px"><div class="min-w-0 flex-1"><div class="text-sub truncate">' +
+                            '<div class="bg-surface border border-bord-light rounded-xl p-3 flex items-center" style="max-width:260px;max-height:100px"><div class="min-w-0 flex-1"><div class="text-sub truncate">' +
                             cards[i].label +
                             '</div><div class="text-lg font-bold mt-1 truncate">' +
                             cards[i].value +
@@ -163,7 +164,7 @@
                                 : "") +
                             "</div>" +
                             (cards[i].total != null
-                                ? '<div class="text-2xl font-bold text-[#FE8A95] shrink-0 ml-3">' +
+                                ? '<div class="text-2xl font-bold text-pink shrink-0 ml-3">' +
                                   cards[i].total +
                                   "</div>"
                                 : "") +
@@ -190,12 +191,12 @@
                 sortKey = key;
                 document.getElementById("btn-sort-elo").className =
                     key === "elo"
-                        ? "px-3 py-1 rounded-lg text-xs cursor-pointer border border-[#FE8A95] bg-[#FE8A95] text-white font-semibold"
-                        : "px-3 py-1 rounded-lg text-xs cursor-pointer border border-[rgba(255,255,255,.12)] bg-transparent text-sub hover:text-white";
+                        ? "px-3 py-1 rounded-lg text-xs cursor-pointer border border-pink bg-pink text-white font-semibold"
+                        : "px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text";
                 document.getElementById("btn-sort-score").className =
                     key === "score"
-                        ? "px-3 py-1 rounded-lg text-xs cursor-pointer border border-[#FE8A95] bg-[#FE8A95] text-white font-semibold"
-                        : "px-3 py-1 rounded-lg text-xs cursor-pointer border border-[rgba(255,255,255,.12)] bg-transparent text-sub hover:text-white";
+                        ? "px-3 py-1 rounded-lg text-xs cursor-pointer border border-pink bg-pink text-white font-semibold"
+                        : "px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text";
                 render();
             }
 
@@ -265,10 +266,10 @@
                 });
 
                 var html =
-                    '<div class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-[rgba(255,255,255,.06)]"><div class="w-10 shrink-0 text-center">动画</div><div class="flex-1 min-w-0"></div><div class="w-[100px] text-center shrink-0">ELO Rating</div><div class="w-[100px] text-center shrink-0 font-mono">BGM Rank</div><div class="w-[60px] text-center shrink-0">ID</div></div>';
+                    '<div class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-bord-light"><div class="w-10 shrink-0 text-center">动画</div><div class="flex-1 min-w-0"></div><div class="w-[100px] text-center shrink-0">ELO Rating</div><div class="w-[100px] text-center shrink-0 font-mono">BGM Rank</div><div class="w-[60px] text-center shrink-0">ID</div></div>';
                 for (var i = 0; i < items.length; i++) {
                     var it = items[i];
-                    var bg = i % 2 === 0 ? "bg-[#202028]" : "bg-[#1a1a1e]";
+                    var bg = i % 2 === 0 ? "bg-surface" : "bg-surface-raised";
                     var eloCls = isElo
                         ? "text-sm font-semibold"
                         : "text-sm text-sub";
@@ -298,7 +299,7 @@
                             img("subject", it.id, "grid") +
                             '" ' +
                             imgOnError("subject", it.id, "grid") +
-                            ' class="w-10 h-10 rounded object-cover bg-[#151518] shrink-0">' +
+                            ' class="w-10 h-10 rounded object-cover bg-input shrink-0">' +
                             '<div class="flex-1 min-w-0"><div class="text-sm font-semibold truncate' +
                             (it.name ? "" : " text-sub") +
                             '">' +
@@ -338,14 +339,14 @@
                         html +=
                             "<div onclick=\"location.href='/subject?id=" +
                             it.id +
-                            '\'" class="flex items-center gap-4 px-3 py-1.5 cursor-pointer hover:border-[#FE8A95] border border-transparent ' +
+                            '\'" class="flex items-center gap-4 px-3 py-1.5 cursor-pointer hover:border-pink border border-transparent ' +
                             bg +
                             '">' +
                             '<img src="' +
                             img("subject", it.id, "grid") +
                             '" ' +
                             imgOnError("subject", it.id, "grid") +
-                            ' class="w-10 h-10 rounded object-cover bg-[#151518] shrink-0">' +
+                            ' class="w-10 h-10 rounded object-cover bg-input shrink-0">' +
                             '<div class="flex-1 min-w-0"><div class="text-sm font-semibold truncate">' +
                             primary +
                             "</div>" +
