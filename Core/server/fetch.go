@@ -550,3 +550,81 @@ func handleFetchIndex(dd string) http.HandlerFunc {
 		writeJSON(w, map[string]any{"status": "rebuilding", "task_id": p.ID})
 	}
 }
+
+func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
+		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
+		// Collect all subject IDs from index
+		allIDs := collectAllSubjectIDs(dd)
+		if len(allIDs) == 0 { writeJSON(w, map[string]any{"status": "done", "count": 0}); return }
+		p := newProgress(11, "fetch_gap", "补充数据")
+		go func() {
+			fillImageGaps(dd, bg, p)
+			p.SetPhase(7, 11, "拉取动画数据")
+			fetchSubjectList(allIDs, bg, dd, imgDir, p)
+			p.SetPhase(8, 11, "建立索引")
+			buildIndexes(dd, p)
+			downloadImagesWithPhase(dd, bg, p, 9, 11, nil)
+			p.Send("complete", 11, 11, "")
+			p.Close()
+		}()
+		writeJSON(w, map[string]any{"status": "fetching", "count": len(allIDs), "task_id": p.ID})
+	}
+}
+
+func handleFetchMeta(cfg *config.Config, bg *bangumi.Client, dd string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
+		if taskLocked() { http.Error(w, `{"error":"a task is already running"}`, 409); return }
+		allIDs := collectAllSubjectIDs(dd)
+		charIDs := collectNameIDs(cache.IndexFile(dd, "characters.json"))
+		persIDs := collectNameIDs(cache.IndexFile(dd, "persons.json"))
+		total := len(allIDs) + len(charIDs) + len(persIDs)
+		p := newProgress(total, "fetch_meta", "刷新元数据")
+		go func() {
+			var done int
+			var mu sync.Mutex
+			var wg sync.WaitGroup
+			sem := make(chan struct{}, maxConcurrency)
+
+			process := func(kind string, id int) {
+				defer wg.Done()
+				sem <- struct{}{}
+				defer func() { <-sem }()
+				url := fmt.Sprintf("v0/%ss/%d", kind, id)
+				data, err := bg.GetRaw(url)
+				if err == nil {
+					cache.Put(dd, cache.Key(kind+"s", id, "info.json"), cache.StripImages(data))
+					if cn := extractNameCN(data); cn != "" {
+						mergeListEntry(cache.IndexFile(dd, kind+"s.json"), id, "", cn)
+					}
+				}
+				mu.Lock()
+				done++
+				if done%10 == 0 || done == total { p.Send("meta", done, total, "") }
+				mu.Unlock()
+			}
+
+			for _, id := range allIDs { wg.Add(1); go process("subject", id) }
+			for _, id := range charIDs { wg.Add(1); go process("character", id) }
+			for _, id := range persIDs { wg.Add(1); go process("person", id) }
+			wg.Wait()
+
+			p.Send("complete", total, total, "")
+			p.Close()
+		}()
+		writeJSON(w, map[string]any{"status": "fetching", "count": total, "task_id": p.ID})
+	}
+}
+
+func collectAllSubjectIDs(dd string) []int {
+	return collectNameIDs(cache.IndexFile(dd, "subjects.json"))
+}
+
+func collectNameIDs(path string) []int {
+	list := loadNameList(path)
+	ids := make([]int, len(list))
+	for i, e := range list { ids[i] = e.ID }
+	return ids
+}

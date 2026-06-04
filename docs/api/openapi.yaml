@@ -572,11 +572,11 @@ paths:
                 properties:
                   status: { type: string }
                   task_id: { type: string, example: "ae8687f0" }
-  /api/v0/fetch/update:                 # 拉取缺失
+  /api/v0/fetch/update:                 # 增量更新
     post:
       tags: [拉取]
-      summary: 拉取缺失
-      description: 先请求本地缺少的数据，然后对比Tracker与本地subjects.json，拉取新增的ID。若无新增返回up-to-date。
+      summary: 增量更新
+      description: 对比所有Tracker中的ID与本地subjects.json，仅拉取本地不存在的新条目。
       responses:
         "200":
           description: 后台执行或无新增
@@ -587,6 +587,38 @@ paths:
                 properties:
                   status: { type: string, example: "fetching" }
                   count: { type: integer, example: 3 }
+                  task_id: { type: string, example: "ae8687f0" }
+  /api/v0/fetch/gap:                    # 补充数据
+    post:
+      tags: [拉取]
+      summary: 补充数据
+      description: 遍历本地所有已缓存的subject，重新请求API检查并拉取新增的人物/角色/剧集等数据。包含图片。
+      responses:
+        "200":
+          description: 后台执行
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "fetching" }
+                  count: { type: integer, example: 42 }
+                  task_id: { type: string, example: "ae8687f0" }
+  /api/v0/fetch/meta:                   # 刷新元数据
+    post:
+      tags: [拉取]
+      summary: 刷新元数据
+      description: 重新拉取所有subject/character/person的info.json，覆盖本地缓存。不下载图片。
+      responses:
+        "200":
+          description: 后台执行
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "fetching" }
+                  count: { type: integer, example: 156 }
                   task_id: { type: string, example: "ae8687f0" }
   /api/v0/fetch/index:                  # 重建索引
     post:
