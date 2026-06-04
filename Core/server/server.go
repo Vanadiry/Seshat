@@ -76,7 +76,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		w.Header().Set("Cache-Control", "no-cache")
 		pref, _ := config.LoadPreferences()
 		if pref == nil { pref = &config.DefaultPreferences }
-		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\n", cfg.Frontend.BackendURL, pref.PreferLang, pref.Username, cfg.Frontend.FallbackURL, config.Dir())
+		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\nwindow.ACCESS_TOKEN=%q;\n", cfg.Frontend.BackendURL, pref.PreferLang, pref.Username, cfg.Frontend.FallbackURL, config.Dir(), pref.AccessToken)
 		data, _ := fs.ReadFile(embedFS, "web/assets/app.min.js")
 		w.Write(data)
 	})

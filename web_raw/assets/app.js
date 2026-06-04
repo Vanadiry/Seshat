@@ -181,10 +181,15 @@ function markRemote(url) {
     _remoteURLs[url] = true;
 }
 
+function authOpts() {
+    var tok = window.ACCESS_TOKEN;
+    if (!tok) return {};
+    return { headers: { Authorization: "Bearer " + tok } };
+}
 async function api(url) {
-    var r = await fetch(API + url);
+    var r = await fetch(API + url, API !== "/api" ? authOpts() : {});
     if (!r.ok && window.FALLBACK_URL) {
-        var fr = await fetch(window.FALLBACK_URL + url);
+        var fr = await fetch(window.FALLBACK_URL + url, authOpts());
         if (fr.ok) {
             markRemote(url);
             return fr.json();
