@@ -4,6 +4,14 @@ fn main() {
     tauri_build::build();
 
     let go_root = std::env::current_dir().unwrap().parent().unwrap().to_path_buf();
+
+    // Rebuild Go when frontend or Go source changes
+    println!("cargo:rerun-if-changed={}", go_root.join("web").display());
+    println!("cargo:rerun-if-changed={}", go_root.join("Core").display());
+    println!("cargo:rerun-if-changed={}", go_root.join("main.go").display());
+    println!("cargo:rerun-if-changed={}", go_root.join("ffi.go").display());
+    println!("cargo:rerun-if-changed={}", go_root.join("embed.go").display());
+
     let out_dir = go_root.join("build");
     std::fs::create_dir_all(&out_dir).ok();
 
