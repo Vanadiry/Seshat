@@ -24,6 +24,22 @@ var maxConcurrency = 32
 // listMutex 保护 list 文件的并发读写。
 var listMutex sync.Mutex
 
+// cachedToken 缓存当前访问令牌，避免每次请求都读文件。
+var cachedToken string
+var tokenMu sync.RWMutex
+
+// loadCachedToken 从 preferences 刷新缓存的令牌。
+func loadCachedToken() {
+	pref, _ := config.LoadPreferences()
+	tokenMu.Lock()
+	defer tokenMu.Unlock()
+	if pref != nil {
+		cachedToken = pref.AccessToken
+	} else {
+		cachedToken = ""
+	}
+}
+
 // mergeListEntry 将一个条目合并到 list 文件中（按 ID 去重，若已存在则更新 name）。
 func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	maxConcurrency = cfg.Server.Concurrency
@@ -35,7 +51,12 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	config.LoadPreferences() // ensure settings dir and preferences.json exist at startup
 
 	id := imgDir
-	bg := bangumi.NewClient(cfg.Upstream.UserAgent, cfg.Upstream.BaseURL)
+	loadCachedToken()
+	bg := bangumi.NewClient(cfg.Upstream.UserAgent, cfg.Upstream.BaseURL, func() string {
+		tokenMu.RLock()
+		defer tokenMu.RUnlock()
+		return cachedToken
+	})
 
 	// ── Frontend ──
 	mux.HandleFunc("GET /{page}", func(w http.ResponseWriter, r *http.Request) {

@@ -16,19 +16,30 @@ var defaultTransport = &http.Transport{
 }
 
 type Client struct {
-	http    *http.Client
-	ua      string
-	baseURL string
+	http      *http.Client
+	ua        string
+	baseURL   string
+	tokenFunc func() string // returns the latest access token, may be empty
 }
 
-func NewClient(ua, baseURL string) *Client {
+func NewClient(ua, baseURL string, tokenFunc func() string) *Client {
 	if baseURL == "" {
 		baseURL = "https://api.bgm.tv"
 	}
 	return &Client{
-		http:    &http.Client{Timeout: 30 * time.Second, Transport: defaultTransport},
-		ua:      ua,
-		baseURL: baseURL,
+		http:      &http.Client{Timeout: 30 * time.Second, Transport: defaultTransport},
+		ua:        ua,
+		baseURL:   baseURL,
+		tokenFunc: tokenFunc,
+	}
+}
+
+// setAuth adds the Authorization header if a token is available.
+func (c *Client) setAuth(req *http.Request) {
+	if c.tokenFunc != nil {
+		if tok := c.tokenFunc(); tok != "" {
+			req.Header.Set("Authorization", "Bearer "+tok)
+		}
 	}
 }
 
@@ -38,6 +49,7 @@ func (c *Client) GetImage(urlPath string) ([]byte, error) {
 	url := fmt.Sprintf("%s/%s", c.baseURL, urlPath)
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", c.ua)
+	c.setAuth(req)
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return nil, err
@@ -59,6 +71,7 @@ func (c *Client) GetRaw(urlPath string) ([]byte, error) {
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", c.ua)
 	req.Header.Set("Accept", "application/json")
+	c.setAuth(req)
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return nil, err

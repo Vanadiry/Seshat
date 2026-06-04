@@ -43,6 +43,10 @@ const DefaultPreferencesJSON = `{
   "username": {
     "_comment": "在此处填写你的 Bangumi番组计划 ID，将能够拉取收藏和头像等信息",
     "value": ""
+  },
+  "access_token": {
+    "_comment": "个人访问令牌，用于拉取受限条目",
+    "value": ""
   }
 }
 `
