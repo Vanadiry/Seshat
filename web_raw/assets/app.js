@@ -186,17 +186,38 @@ function authOpts() {
     if (!tok) return {};
     return { headers: { Authorization: "Bearer " + tok } };
 }
-async function api(url) {
-    var r = await fetch(API + url, API !== "/api" ? authOpts() : {});
-    if (!r.ok && window.FALLBACK_URL) {
-        var fr = await fetch(window.FALLBACK_URL + url, authOpts());
-        if (fr.ok) {
-            markRemote(url);
-            return fr.json();
-        }
+
+// ── Loading bar ──
+var _ldCount = 0, _ldTimer = null;
+function _ldShow() {
+    clearTimeout(_ldTimer);
+    _ldTimer = setTimeout(function () {
+        var bar = document.getElementById("load-bar");
+        if (bar) bar.classList.add("active");
+    }, 200);
+}
+function _ldHide() {
+    _ldCount--;
+    if (_ldCount <= 0) { _ldCount = 0; clearTimeout(_ldTimer);
+        var bar = document.getElementById("load-bar");
+        if (bar) bar.classList.remove("active");
     }
-    if (!r.ok) return null;
-    return r.json();
+}
+
+async function api(url) {
+    _ldCount++; _ldShow();
+    try {
+        var r = await fetch(API + url, API !== "/api" ? authOpts() : {});
+        if (!r.ok && window.FALLBACK_URL) {
+            var fr = await fetch(window.FALLBACK_URL + url, authOpts());
+            if (fr.ok) {
+                markRemote(url);
+                return fr.json();
+            }
+        }
+        if (!r.ok) return null;
+        return r.json();
+    } finally { _ldHide(); }
 }
 // apiLocal always uses local backend for list/index data
 function apiLocal(url) {
@@ -639,7 +660,13 @@ function extractCN(d) {
     return "";
 }
 
-// ── Top bar injection ──
+// ── Loading bar + top bar ──
+(function () {
+    var bar = document.createElement("div");
+    bar.id = "load-bar";
+    document.body.appendChild(bar);
+})();
+
 document.addEventListener("DOMContentLoaded", () => {
     const tb = document.getElementById("topbar");
     if (!tb) return;
