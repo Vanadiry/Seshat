@@ -18,7 +18,7 @@ fn main() {
     let status = Command::new("go")
         .args([
             "build",
-            "-tags", "cgo",
+            "-tags", "ffi",
             "-buildmode=c-archive",
             "-o",
             out.to_str().unwrap(),
