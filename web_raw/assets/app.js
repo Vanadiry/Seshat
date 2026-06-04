@@ -74,15 +74,19 @@ var MSG = {
     trackerLabel: "拉取或创建 Tracker",
     trackerPlaceholder: "Tracker 名称",
     btnUserFetch: "刷新用户数据",
-    btnUpdate: "拉取缺失",
+    btnUpdate: "增量更新",
+    btnGap: "补充数据",
+    btnMeta: "刷新元数据",
     btnRefreshAll: "刷新全部",
+    confirmGap: "将遍历所有已缓存条目，检查并拉取有更新的人物/角色/剧集等数据。",
+    confirmMeta: "将重新拉取所有条目的基本信息（不包含图片）。",
     btnDangerZone: "危险区",
     btnRebuildIndex: "重建索引",
     btnRebuildAll: "重建全部",
     btnExecute: "执行",
     btnCancel: "取消",
     btnClose: "关闭",
-    btnImportColl: "导入收藏至 Tracker",
+    btnImportColl: "导入收藏",
     confirmImportColl:
         "将从用户收藏列表中读取数据，并存入 Tracker。\n之后拉取数据时将能够拉取你的收藏。",
     importCollDone: function (n) {
@@ -123,25 +127,25 @@ var MSG = {
         );
     },
     confirmUserFetch: function () {
-        return "将拉取 " + window.USERNAME + " 的用户数据与收藏列表";
+        return "将拉取 " + window.USERNAME + " 的用户数据与收藏列表。";
     },
     confirmUpdate: "将对比本地与上游数据，并添加缺失的数据。",
     confirmRefreshAll:
         "将从上游拉取全部 Tracker 数据，覆盖已有内容。本地多余数据不会删除。",
-    confirmRebuildIndex: "将从本地 JSON 中重建所有索引",
+    confirmRebuildIndex: "将从本地 JSON 中重建所有索引。",
     confirmRebuildAll: function () {
         var d = window.SESHAT_HOME || "~/.vSoft/Seshat";
         return "将删除 " + d + "/data 的全部数据，并完整重建。";
     },
 
     // Validation
-    errInvalidTrackerName: "Tracker 名称仅允许大小写字母、数字、短横线和下划线",
+    errInvalidTrackerName: "Tracker 名称仅允许大小写字母、数字、短横线和下划线。",
     errUserFetchFailed: "刷新用户数据失败: ",
     errNoUsername:
         "未在配置中设置用户名（[user] username），无法刷新用户数据。",
 
     // Progress
-    progressConnecting: "连接中…",
+    progressConnecting: "连接中...",
     progressDone: "完成",
 
     // Infobox
@@ -903,21 +907,27 @@ function initDialog() {
         '" pattern="[a-zA-Z0-9_\\-]*" class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm">' +
         '<button id="btn-tracker-fetch" class="w-9 h-9 rounded-lg bg-pink text-white font-bold cursor-pointer border-0 hover:opacity-90 flex items-center justify-center" title="拉取或创建">&check;</button></div>' +
         // Action buttons
-        '<div class="flex flex-col gap-2 mb-2">' +
-        '<div class="grid grid-cols-2 gap-2">' +
-        '<button id="btn-update" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
-        MSG.btnUpdate +
-        "</button>" +
-        '<button id="btn-all" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
-        MSG.btnRefreshAll +
-        "</button>" +
-        "</div>" +
-        '<div class="grid grid-cols-2 gap-2">' +
+        '<div class="flex flex-col gap-2 mt-3 mb-2">' +
+        '<div class="grid grid-cols-3 gap-2">' +
         '<button id="btn-user" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
         MSG.btnUserFetch +
         "</button>" +
         '<button id="btn-import-coll" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
         MSG.btnImportColl +
+        "</button>" +
+        '<button id="btn-update" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
+        MSG.btnUpdate +
+        "</button>" +
+        "</div>" +
+        '<div class="grid grid-cols-3 gap-2">' +
+        '<button id="btn-gap" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
+        MSG.btnGap +
+        "</button>" +
+        '<button id="btn-meta" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
+        MSG.btnMeta +
+        "</button>" +
+        '<button id="btn-all" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
+        MSG.btnRefreshAll +
         "</button>" +
         "</div></div>" +
         // Danger zone
@@ -1049,6 +1059,16 @@ function initDialog() {
         .getElementById("btn-update")
         .addEventListener("click", function () {
             confirmAction(MSG.confirmUpdate, doFetchUpdate);
+        });
+    document
+        .getElementById("btn-gap")
+        .addEventListener("click", function () {
+            confirmAction(MSG.confirmGap, doFetchGap);
+        });
+    document
+        .getElementById("btn-meta")
+        .addEventListener("click", function () {
+            confirmAction(MSG.confirmMeta, doFetchMeta);
         });
     document.getElementById("btn-all").addEventListener("click", function () {
         confirmAction(MSG.confirmRefreshAll, doRefreshAll);
@@ -1196,10 +1216,21 @@ async function doFetchUpdate() {
     closeFetch();
     var res = await fetch(API + "/v0/fetch/update", { method: "POST" });
     var d = await res.json();
-    if (d.error) {
-        showError(d.error);
-        return;
-    }
+    if (d.error) { showError(d.error); return; }
+    if (d.task_id) startProgress(d.task_id);
+}
+async function doFetchGap() {
+    closeFetch();
+    var res = await fetch(API + "/v0/fetch/gap", { method: "POST" });
+    var d = await res.json();
+    if (d.error) { showError(d.error); return; }
+    if (d.task_id) startProgress(d.task_id);
+}
+async function doFetchMeta() {
+    closeFetch();
+    var res = await fetch(API + "/v0/fetch/meta", { method: "POST" });
+    var d = await res.json();
+    if (d.error) { showError(d.error); return; }
     if (d.task_id) startProgress(d.task_id);
 }
 
