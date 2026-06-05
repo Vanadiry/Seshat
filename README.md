@@ -33,8 +33,7 @@ Go 后端 + Tauri 桌面壳 + Tailwind CSS 前端。所有数据存放在本地�
 打开程序时，可能会提示已损坏/无法打开/无法验证等，这是因为我没钱买一年 99 美元的苹果证书。
 
 1. 双击 `dmg` 镜像，将 Seshat 软件拖入“应用程序”文件夹。
-2. 打开终端，输入 `xattr -cr /Applications/Seshat`
-3. 在终端输入 `xattr -cr /Applications/Seshat\ Desktop.app`，回车即可。
+2. 在终端输入 `xattr -cr /Applications/Seshat\ Desktop.app`，回车即可。
 
 若依然无法启动，先双击一下 Seshat 软件，然后打开“设置→隐私与安全性”，滑动到底部，点击仍要运行即可。
 
