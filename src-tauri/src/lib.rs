@@ -2,8 +2,11 @@ use std::net::TcpStream;
 use std::process::{Child, Command};
 use std::sync::Mutex;
 use std::time::Duration;
+use tauri::Manager;
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
+
+mod error_page;
 
 static SIDECAR: Mutex<Option<Child>> = Mutex::new(None);
 
@@ -37,7 +40,9 @@ pub fn run() {
                             .parent()?.join("build").join(&name_long);
                         if dev.exists() { Some(dev) } else { None }
                     });
-                if let Some(path) = bin {
+                if TcpStream::connect("127.0.0.1:12500").is_ok() {
+                    error_page::show(&app.get_webview_window("main").unwrap(), "无法启动后端", "Seshat 后端使用的端口被占用，请检查");
+                } else if let Some(path) = bin {
                     let mut cmd = Command::new(&path);
                     cmd.env("SESHAT_SIDECAR", "1");
                     #[cfg(target_os = "windows")]
