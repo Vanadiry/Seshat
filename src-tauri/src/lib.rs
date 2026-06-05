@@ -53,7 +53,11 @@ pub fn run() {
                         let c = child.clone();
                         let handle = app.handle().clone();
                         std::thread::spawn(move || {
-                            let _ = c.lock().unwrap().wait();
+                            loop {
+                                let exited = c.lock().unwrap().try_wait().ok().flatten().is_some();
+                                if exited { break; }
+                                std::thread::sleep(Duration::from_millis(200));
+                            }
                             if let Some(window) = handle.get_webview_window("main") {
                                 error_page::show(&window, "后端已退出", "Seshat 后端进程已终止，请重启应用");
                             }
@@ -70,18 +74,39 @@ pub fn run() {
             setup_menu(app)?;
             Ok(())
         })
-        .on_window_event(|_window, event| {
-            if let tauri::WindowEvent::Destroyed = event {
-                #[cfg(not(mobile))]
-                if let Some(child) = SIDECAR.lock().unwrap().take() {
-                    let _ = child.lock().unwrap().kill();
-                }
-                #[cfg(mobile)]
-                unsafe { ffi::StopSeshat(); }
+        .on_window_event(|win, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                graceful_exit(win.app_handle().clone());
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|_handle, _event| {
+            if matches!(_event, tauri::RunEvent::Exit) { graceful_exit(_handle.clone()); }
+        });
+}
+
+fn graceful_exit(handle: tauri::AppHandle) {
+    if let Some(w) = handle.get_webview_window("main") {
+        error_page::show(&w, "正在退出", "等待后端进程结束...");
+    }
+    #[cfg(not(mobile))]
+    if let Some(child) = SIDECAR.lock().unwrap().take() {
+        let _ = child.lock().unwrap().kill();
+        // Wait in background, then exit
+        std::thread::spawn(move || {
+            let _ = child.lock().unwrap().wait();
+            handle.exit(0);
+        });
+    } else {
+        handle.exit(0);
+    }
+    #[cfg(mobile)]
+    {
+        unsafe { ffi::StopSeshat(); }
+        handle.exit(0);
+    }
 }
 
 fn setup_menu(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
