@@ -15,9 +15,11 @@ def get_version():
     return conf["version"]
 
 TARGETS = [
-    ("macOS",   "darwin",  "arm64"),
-    ("Linux",   "linux",   "amd64"),
-    ("Windows", "windows", "amd64"),
+    ("macos",   "darwin",  "arm64"),
+    ("macos",   "darwin",  "amd64"),
+    ("linux",   "linux",   "amd64"),
+    ("linux",   "linux",   "arm64"),
+    ("windows", "windows", "amd64"),
 ]
 
 def cmd_server():
@@ -28,7 +30,7 @@ def cmd_server():
     build_frontend()
     for label, goos, goarch in TARGETS:
         ext = ".exe" if goos == "windows" else ""
-        name = f"Seshat-Server-{version}-{label}-{goarch}{ext}"
+        name = f"seshat-server-{version}-{label}-{goarch}{ext}"
         out = out_dir / name
         env = {**os.environ, "GOOS": goos, "GOARCH": goarch}
         subprocess.run(["go", "build", "-ldflags=-s -w", "-o", str(out), "."], cwd=ROOT, env=env, check=True)
@@ -54,11 +56,11 @@ def cmd_desktop():
         shutil.rmtree(dst)
     dst.mkdir(parents=True, exist_ok=True)
     bundle = ROOT / "src-tauri" / "target" / "release" / "bundle"
-    patterns = [("dmg/*.dmg", "macOS-arm64.dmg"), ("nsis/*.exe", "Windows-amd64.exe"), ("appimage/*.AppImage", "Linux-amd64.AppImage")]
+    patterns = [("dmg/*.dmg", "macos-arm64.dmg"), ("nsis/*.exe", "windows-amd64.exe"), ("appimage/*.AppImage", "linux-amd64.AppImage")]
     for pat, ext in patterns:
         matches = _glob.glob(str(bundle / pat))
         if matches:
-            target = dst / f"Seshat-Desktop-{version}-{ext}"
+            target = dst / f"seshat-desktop-{version}-{ext}"
             shutil.copy(matches[0], target)
             print(f"OK. {target}")
 
