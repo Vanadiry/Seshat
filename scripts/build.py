@@ -89,20 +89,10 @@ def cmd_dev():
     print(f"OK. {go_out}")
     subprocess.run(["pnpm", "tauri", "dev"], cwd=ROOT, check=True)
 
-def cmd_clean():
-    """Remove all build artifacts"""
-    for d in ["build", "src-tauri/target", "src-tauri/gen/schemas"]:
-        p = ROOT / d
-        if p.exists():
-            shutil.rmtree(p)
-            print(f"OK. removed {p}")
-    print("Clean done.")
-
 COMMANDS = {
     "server":  cmd_server,
     "desktop": cmd_desktop,
     "dev":     cmd_dev,
-    "clean":   cmd_clean,
 }
 
 def main():
