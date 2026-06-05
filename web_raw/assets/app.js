@@ -1334,7 +1334,7 @@ function startProgress(taskId, label) {
         fetch(API + "/v0/task/cancel", { method: "POST" });
         fill.style.transition = "none"; fill.style.width = "100%";
         fill.style.background = "var(--c-toast-warning)";
-        if (detail) detail.textContent = "任务已终止，请重启后端";
+        if (detail) detail.textContent = "任务已终止，请重新启动 Seshat。";
         t.update(taskLabel, null, "bg-toast-warning", "bg-toast-warning-bg");
         t.addClose();
         cancelBtn.remove();
