@@ -71,7 +71,7 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			fetchAll(sid, bg, dd, imgDir, nil)
+			fetchAll(sid, bg, dd, imgDir, p)
 			if p != nil {
 				mu.Lock()
 				done++
@@ -95,6 +95,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d", sid))
 	if err != nil {
 		log.Warn("Subject #%d: %v", sid, err)
+		if p != nil && strings.Contains(err.Error(), "令牌") { p.SetError(err.Error()) }
 		if p != nil { p.Send("subject", 1, 1, "error") }
 		return
 	}
@@ -179,7 +180,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		fetchConcurrent(charIDs, func(c charRef) {
 			data, err := getRawWithRetry(bg, fmt.Sprintf("v0/characters/%d", c.ID), 3)
 			if err != nil {
-				if strings.Contains(err.Error(), "HTTP 404") { log.Warn("Character #%d: 404, removing from list", c.ID); removeListEntry(charListPath, c.ID) } else { log.Warn("Character #%d: %v", c.ID, err) }
+				if strings.Contains(err.Error(), "HTTP 404") { log.Warn("Character #%d: 404, removing from list", c.ID); removeListEntry(charListPath, c.ID) } else { log.Warn("Character #%d: %v", c.ID, err); if p != nil && strings.Contains(err.Error(), "令牌") { p.SetError(err.Error()) } }
 				return
 			}
 			cache.Put(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(data))
@@ -200,7 +201,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		fetchConcurrent(personIDs, func(pp personRef) {
 			data, err := getRawWithRetry(bg, fmt.Sprintf("v0/persons/%d", pp.ID), 3)
 			if err != nil {
-				if strings.Contains(err.Error(), "HTTP 404") { log.Warn("Person #%d: 404, removing from list", pp.ID); removeListEntry(persListPath, pp.ID) } else { log.Warn("Person #%d: %v", pp.ID, err) }
+				if strings.Contains(err.Error(), "HTTP 404") { log.Warn("Person #%d: 404, removing from list", pp.ID); removeListEntry(persListPath, pp.ID) } else { log.Warn("Person #%d: %v", pp.ID, err); if p != nil && strings.Contains(err.Error(), "令牌") { p.SetError(err.Error()) } }
 				return
 			}
 			cache.Put(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(data))

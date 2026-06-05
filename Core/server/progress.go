@@ -20,6 +20,7 @@ type Progress struct {
 	Phase     int    `json:"phase"`  // current phase number (1-based)
 	Phases    int    `json:"phases"` // total number of phases
 	PhaseName string `json:"name"`   // human-readable phase name, e.g. "下载角色图像"
+	Error     string // non-empty if a fatal error occurred
 	started   time.Time
 	mu        sync.Mutex
 }
@@ -29,7 +30,6 @@ var (
 	progressMu  sync.Mutex
 )
 
-// taskLocked returns true if any task is currently active (not yet completed).
 func taskLocked() bool {
 	progressMu.Lock()
 	defer progressMu.Unlock()
@@ -37,7 +37,7 @@ func taskLocked() bool {
 		select {
 		case <-p.Channel:
 		default:
-			return true // channel still open = task still running
+			return true
 		}
 	}
 	return false
@@ -63,18 +63,30 @@ func newProgress(total int, task, label string) *Progress {
 }
 
 func (p *Progress) Close() {
-	// Send final event before closing
-	select {
-	case p.Channel <- `{"step":"done","status":"closed"}`:
-	default:
+	p.mu.Lock()
+	err := p.Error
+	p.mu.Unlock()
+	if err != "" {
+		data, _ := json.Marshal(map[string]any{"step":"done","error":err})
+		p.Channel <- string(data)
+	} else {
+		select {
+		case p.Channel <- `{"step":"done","status":"closed"}`:
+		default:
+		}
 	}
 	close(p.Channel)
-	// Keep in map briefly so late SSE subscribers get the final event
 	time.AfterFunc(30*time.Second, func() {
 		progressMu.Lock()
 		delete(progressMap, p.ID)
 		progressMu.Unlock()
 	})
+}
+
+func (p *Progress) SetError(msg string) {
+	p.mu.Lock()
+	p.Error = msg
+	p.mu.Unlock()
 }
 
 func (p *Progress) SetPhase(phase int, phases int, name string) {
@@ -91,6 +103,7 @@ func (p *Progress) Send(step string, done, total int, status string) {
 	phase := p.Phase
 	phases := p.Phases
 	phaseName := p.PhaseName
+	err := p.Error
 	p.mu.Unlock()
 	elapsed := time.Since(p.started).Seconds()
 	speed := float64(0)
@@ -106,10 +119,11 @@ func (p *Progress) Send(step string, done, total int, status string) {
 		"phase":      phase,
 		"phases":     phases,
 		"phase_name": phaseName,
+		"error":      err,
 	})
 	select {
 	case p.Channel <- string(data):
-	default: // channel full, drop event to avoid blocking fetch
+	default:
 	}
 }
 
@@ -126,7 +140,7 @@ func activeTasks() []map[string]string {
 	for _, p := range progressMap {
 		select {
 		case <-p.Channel:
-			continue // closed channel = done, skip
+			continue
 		default:
 		}
 		tasks = append(tasks, map[string]string{"id": p.ID, "task": p.Task, "label": p.Label})
