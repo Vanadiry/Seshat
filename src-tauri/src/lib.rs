@@ -2,6 +2,8 @@ use std::net::TcpStream;
 use std::process::{Child, Command};
 use std::sync::Mutex;
 use std::time::Duration;
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 
 static SIDECAR: Mutex<Option<Child>> = Mutex::new(None);
 
@@ -38,6 +40,8 @@ pub fn run() {
                 if let Some(path) = bin {
                     let mut cmd = Command::new(&path);
                     cmd.env("SESHAT_SIDECAR", "1");
+                    #[cfg(target_os = "windows")]
+                    { cmd.creation_flags(0x08000000); } // CREATE_NO_WINDOW
                     if let Ok(child) = cmd.spawn() {
                         *SIDECAR.lock().unwrap() = Some(child);
                         for _ in 0..30 {
