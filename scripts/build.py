@@ -47,7 +47,7 @@ def cmd_server_dev():
     subprocess.run([str(out)], check=True)
 
 def cmd_desktop():
-    """Build Tauri Desktop bundle → build/desktop/"""
+    """Build Tauri Desktop bundle → build/desktop/（build.rs 自动编译 Go sidecar）"""
     import glob as _glob
     version = get_version()
     subprocess.run(["pnpm", "tauri", "build"], cwd=ROOT, check=True)
@@ -65,8 +65,17 @@ def cmd_desktop():
             print(f"OK. {target}")
 
 def cmd_desktop_dev():
-    """Build frontend and run Tauri dev"""
+    """Build frontend, compile Go sidecar, run Tauri dev"""
+    import platform as _platform
     build_frontend()
+    target = {
+        "Darwin": "aarch64-apple-darwin" if _platform.machine() == "arm64" else "x86_64-apple-darwin",
+        "Linux": "x86_64-unknown-linux-gnu",
+        "Windows": "x86_64-pc-windows-msvc",
+    }.get(_platform.system(), "unknown")
+    go_out = ROOT / "build" / f"seshat_server-{target}"
+    subprocess.run(["go", "build", "-ldflags=-s -w", "-o", str(go_out), "."], cwd=ROOT, check=True)
+    print(f"OK. {go_out}")
     subprocess.run(["pnpm", "tauri", "dev"], cwd=ROOT, check=True)
 
 def cmd_clean():

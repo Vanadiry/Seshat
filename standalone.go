@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -11,7 +12,9 @@ func main() {
 	srv, addr := runSeshat()
 	_ = srv
 	time.Sleep(200 * time.Millisecond)
-	openBrowser(fmt.Sprintf("http://%s", addr))
+	if os.Getenv("SESHAT_SIDECAR") != "1" {
+		openBrowser(fmt.Sprintf("http://%s", addr))
+	}
 
 	// Block forever
 	select {}
