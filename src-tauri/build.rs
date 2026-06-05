@@ -38,6 +38,7 @@ fn main() {
             "-o", out.to_str().unwrap(),
             ".",
         ])
+        .env("CGO_ENABLED", "1")
         .env("GOOS", goos)
         .env("GOARCH", goarch)
         .current_dir(&go_root)
