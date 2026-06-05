@@ -1,6 +1,6 @@
 use std::net::TcpStream;
 use std::process::{Child, Command};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::Manager;
 #[cfg(target_os = "windows")]
@@ -8,7 +8,7 @@ use std::os::windows::process::CommandExt;
 
 mod error_page;
 
-static SIDECAR: Mutex<Option<Child>> = Mutex::new(None);
+static SIDECAR: Mutex<Option<Arc<Mutex<Child>>>> = Mutex::new(None);
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -48,6 +48,16 @@ pub fn run() {
                     #[cfg(target_os = "windows")]
                     { cmd.creation_flags(0x08000000); } // CREATE_NO_WINDOW
                     if let Ok(child) = cmd.spawn() {
+                        let child = Arc::new(Mutex::new(child));
+                        // Monitor: detect unexpected sidecar exit
+                        let c = child.clone();
+                        let handle = app.handle().clone();
+                        std::thread::spawn(move || {
+                            let _ = c.lock().unwrap().wait();
+                            if let Some(window) = handle.get_webview_window("main") {
+                                error_page::show(&window, "后端已退出", "Seshat 后端进程已终止，请重启应用");
+                            }
+                        });
                         *SIDECAR.lock().unwrap() = Some(child);
                         for _ in 0..30 {
                             std::thread::sleep(Duration::from_millis(100));
@@ -63,8 +73,8 @@ pub fn run() {
         .on_window_event(|_window, event| {
             if let tauri::WindowEvent::Destroyed = event {
                 #[cfg(not(mobile))]
-                if let Some(mut child) = SIDECAR.lock().unwrap().take() {
-                    let _ = child.kill();
+                if let Some(child) = SIDECAR.lock().unwrap().take() {
+                    let _ = child.lock().unwrap().kill();
                 }
                 #[cfg(mobile)]
                 unsafe { ffi::StopSeshat(); }
