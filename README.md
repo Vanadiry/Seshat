@@ -23,60 +23,37 @@ Go 后端 + Tauri 桌面壳 + Tailwind CSS 前端。所有数据存放在本地�
 
 ## 使用
 
+请阅读 [docs/guide](/docs/guide.md) 来学习 Seshat 的使用方法。
+
+Seshat 提供 Desktop 和 Server 两种运行方式。  
+二者功能和行为完全一样，只是 Desktop 版本多了 Tauri 壳，可以作为桌面应用。  
+Server 使用浏览器显示前端。
+
+macOS 和 Windows 建议使用 Desktop。Linux 请使用 Server。
+（~~Linux 没有 Desktop，因为我懒了QvQ，对不起呜呜。~~）  
+
 ### Seshat Desktop
 
-这是推荐使用的版本，是单独的桌面应用。  
-只需要下载安装包，并按各个平台的安装方式，安装即可使用。
+只需要下载对应平台的安装包，安装后即可运行。
 
-<details><summary>对于 macOS</summary>
+对于 macOS，打开程序时可能会提示“未打开，无法验证...”，这是因为我没钱买一年 99 美元的苹果证书。  
+安装好后，请打开终端，输入 `xattr -cr ` 后，将 Seshat 程序拖入终端窗口，然后点击回车即可。
 
-打开程序时，可能会提示已损坏/无法打开/无法验证等，这是因为我没钱买一年 99 美元的苹果证书。
-
-1. 双击 `dmg` 镜像，将 Seshat 软件拖入“应用程序”文件夹。
-2. 在终端输入 `xattr -cr /Applications/Seshat\ Desktop.app`，回车即可。
-
-若依然无法启动，先双击一下 Seshat 软件，然后打开“设置→隐私与安全性”，滑动到底部，点击仍要运行即可。
-
-</details>
+对于 Windows，首次打开安装程序或 Server 程序时会弹出 Defender 蓝窗口，这是因为我也没钱买微软的证书...  
+只需要点击“更多信息”，然后点击“仍要运行”即可。
 
 ### Seshat Server
 
-Server 版本和 Desktop 版本行为一模一样，只是没有内置 Tauri 壳，可以作为后端使用。
-
-下载对应系统的二进制文件后运行，macOS/Linux 请先赋予可执行权限。  
+对于 macOS 和 Linux，运行之前需要执行 `chmod +x`，然后通过 `./seshat-server-xxx` 运行。  
 运行时，请保持终端窗口打开。
 
-<details><summary>macOS</summary>
+程序启动后，会自动拉起浏览器。  如果浏览器没有自动打开，请访问 `http://127.0.0.1:12500`。
 
-1. 打开终端，输入 `chmod +x`，然后将二进制文件拖入终端，点击回车。
-2. 再将二进制文件拖入终端，点击回车。（若提示“移动到废纸篓”，继续第三步）
-3. 在终端输入 `xattr -cr`，然后将二进制文件拖入终端，点击回车。
-4. 再执行一遍第二步，程序应当启动。
+## 构建
 
-</details>
+分发包已经转向 GitHub Action。
 
-<details><summary>Linux</summary>
-
-1. 打开终端，输入 `chmod +x`，然后将二进制文件拖入终端，点击回车。
-2. 再将二进制文件拖入终端，点击回车。
-
-</details>
-
-<details><summary>Windows</summary>
-
-直接运行 exe 即可。如果被 Defender 拦截，需要手动放行。
-
-</details>
-<br />
-
-程序会在本地启动 Go 后端，并自动拉起前端。  
-如果 WebUI 没有自动打开，请访问 `http://127.0.0.1:12500`。
-
-详细使用方法，请阅读 [docs/guide](/docs/guide.md).
-
-## 从源码构建
-
-需要 `go`、`rust` 环境，以及 `pnpm` 包管理器。
+从源码构建，需要 `go`、`rust`、`pnpm`。
 
 ```bash
 pnpm install
