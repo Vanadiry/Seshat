@@ -3,6 +3,8 @@ import os
 import sys
 import shutil
 import json
+import glob as _glob
+import platform as _platform
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -14,7 +16,20 @@ def get_version():
     conf = json.loads((ROOT / "src-tauri" / "tauri.conf.json").read_text())
     return conf["version"]
 
-TARGETS = [
+MACHINE = _platform.machine()
+SYSTEM = _platform.system()
+TARGET = {
+    "Darwin":  "aarch64-apple-darwin" if MACHINE == "arm64" else "x86_64-apple-darwin",
+    "Linux":   "x86_64-unknown-linux-gnu",
+    "Windows": "x86_64-pc-windows-msvc",
+}.get(SYSTEM, "unknown")
+
+PLATFORM = {"Darwin": "macos", "Linux": "linux", "Windows": "windows"}.get(SYSTEM, "unknown")
+ARCH = "arm64" if MACHINE == "arm64" else "amd64"
+EXT = ".exe" if SYSTEM == "Windows" else ""
+VERSION = get_version()
+
+SERVER_TARGETS = [
     ("macos",   "darwin",  "arm64"),
     ("macos",   "darwin",  "amd64"),
     ("linux",   "linux",   "amd64"),
@@ -23,57 +38,53 @@ TARGETS = [
 ]
 
 def cmd_server():
-    """Build Go standalone binaries → build/server/"""
-    version = get_version()
+    """Cross-compile Server for all platforms → build/server/"""
+    build_frontend()
     out_dir = ROOT / "build" / "server"
     out_dir.mkdir(parents=True, exist_ok=True)
-    build_frontend()
-    for label, goos, goarch in TARGETS:
+    for label, goos, goarch in SERVER_TARGETS:
         ext = ".exe" if goos == "windows" else ""
-        name = f"seshat-server-{version}-{label}-{goarch}{ext}"
+        name = f"seshat-server-{VERSION}-{label}-{goarch}{ext}"
         out = out_dir / name
         env = {**os.environ, "GOOS": goos, "GOARCH": goarch}
         subprocess.run(["go", "build", "-ldflags=-s -w", "-o", str(out), "."], cwd=ROOT, env=env, check=True)
         print(f"OK. {name}")
 
-def cmd_server_dev():
-    """Build and run Go binary locally"""
-    out_dir = ROOT / "build" / "server"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    build_frontend()
-    out = out_dir / "Seshat_dev"
-    subprocess.run(["go", "build", "-o", str(out), "."], cwd=ROOT, check=True)
-    print(f"OK. {out}")
-    subprocess.run([str(out)], check=True)
+def copy_current_server():
+    """Copy sidecar as current-platform Server → build/server/"""
+    sidecar = ROOT / "build" / f"seshat_server-{TARGET}{EXT}"
+    server_dir = ROOT / "build" / "server"
+    server_dir.mkdir(parents=True, exist_ok=True)
+    if sidecar.exists():
+        name = f"seshat-server-{VERSION}-{PLATFORM}-{ARCH}{EXT}"
+        shutil.copy(sidecar, server_dir / name)
+        print(f"OK. server → {name}")
 
-def cmd_desktop():
-    """Build Tauri Desktop bundle → build/desktop/（build.rs 自动编译 Go sidecar）"""
-    import glob as _glob
-    version = get_version()
-    subprocess.run(["pnpm", "tauri", "build"], cwd=ROOT, check=True)
-    dst = ROOT / "build" / "desktop"
-    if dst.exists():
-        shutil.rmtree(dst)
-    dst.mkdir(parents=True, exist_ok=True)
+def collect_desktop():
+    """Collect Desktop bundles → build/desktop/"""
+    desk_dir = ROOT / "build" / "desktop"
+    if desk_dir.exists():
+        shutil.rmtree(desk_dir)
+    desk_dir.mkdir(parents=True, exist_ok=True)
     bundle = ROOT / "src-tauri" / "target" / "release" / "bundle"
-    patterns = [("dmg/*.dmg", "macos-arm64.dmg"), ("nsis/*.exe", "windows-amd64.exe"), ("appimage/*.AppImage", "linux-amd64.AppImage")]
-    for pat, ext in patterns:
+    for pat, ext in [("dmg/*.dmg", "dmg"), ("nsis/*.exe", "exe"), ("appimage/*.AppImage", "AppImage")]:
         matches = _glob.glob(str(bundle / pat))
         if matches:
-            target = dst / f"seshat-desktop-{version}-{ext}"
+            target = desk_dir / f"seshat-desktop-{VERSION}-{PLATFORM}-{ARCH}.{ext}"
             shutil.copy(matches[0], target)
-            print(f"OK. {target}")
+            print(f"OK. desktop → {target.name}")
 
-def cmd_desktop_dev():
-    """Build frontend, compile Go sidecar, run Tauri dev"""
-    import platform as _platform
+def cmd_desktop():
+    """Build Desktop + current-platform Server"""
     build_frontend()
-    target = {
-        "Darwin": "aarch64-apple-darwin" if _platform.machine() == "arm64" else "x86_64-apple-darwin",
-        "Linux": "x86_64-unknown-linux-gnu",
-        "Windows": "x86_64-pc-windows-msvc",
-    }.get(_platform.system(), "unknown")
-    go_out = ROOT / "build" / f"seshat_server-{target}"
+    subprocess.run(["pnpm", "tauri", "build"], cwd=ROOT, check=True)
+    copy_current_server()
+    collect_desktop()
+
+def cmd_dev():
+    """Build frontend + Go sidecar, run Tauri dev"""
+    build_frontend()
+    go_out = ROOT / "build" / f"seshat_server-{TARGET}{EXT}"
     subprocess.run(["go", "build", "-ldflags=-s -w", "-o", str(go_out), "."], cwd=ROOT, check=True)
     print(f"OK. {go_out}")
     subprocess.run(["pnpm", "tauri", "dev"], cwd=ROOT, check=True)
@@ -88,11 +99,10 @@ def cmd_clean():
     print("Clean done.")
 
 COMMANDS = {
-    "server":     cmd_server,
-    "server-dev": cmd_server_dev,
-    "desktop":    cmd_desktop,
-    "desktop-dev": cmd_desktop_dev,
-    "clean":      cmd_clean,
+    "server":  cmd_server,
+    "desktop": cmd_desktop,
+    "dev":     cmd_dev,
+    "clean":   cmd_clean,
 }
 
 def main():
