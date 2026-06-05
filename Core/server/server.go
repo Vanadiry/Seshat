@@ -49,7 +49,8 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 			return
 		}
 		if embedFS == nil { http.NotFound(w, r); return }
-			http.ServeFileFS(w, r, embedFS, "web/"+page+".html")
+			w.Header().Set("Cache-Control", "no-store")
+		http.ServeFileFS(w, r, embedFS, "web/"+page+".html")
 	})
 	// app.min.js with config injection
 	mux.HandleFunc("GET /assets/app.min.js", func(w http.ResponseWriter, r *http.Request) {
@@ -63,6 +64,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 	// All other assets
 	mux.HandleFunc("GET /assets/{path...}", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
 		http.ServeFileFS(w, r, embedFS, "web/assets/"+r.PathValue("path"))
 	})
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -74,6 +76,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 			http.Error(w, "frontend not embedded", http.StatusInternalServerError)
 			return
 		}
+		w.Header().Set("Cache-Control", "no-store")
 		http.ServeFileFS(w, r, embedFS, "web/index.html")
 	})
 

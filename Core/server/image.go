@@ -315,6 +315,7 @@ func serveImage(w http.ResponseWriter, r *http.Request, dd, kind, size string) {
 			if path != "" {
 				fullPath := filepath.Join(dd, "images", path)
 				if _, err := os.Stat(fullPath); err == nil {
+					w.Header().Set("Cache-Control", "no-store")
 					http.ServeFile(w, r, fullPath)
 					return
 				}
