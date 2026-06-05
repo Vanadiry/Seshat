@@ -6,6 +6,7 @@ use tauri::Manager;
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 
+mod config;
 mod error_page;
 
 static SIDECAR: Mutex<Option<Arc<Mutex<Child>>>> = Mutex::new(None);
@@ -19,6 +20,8 @@ pub fn run() {
 
             #[cfg(not(mobile))]
             {
+                let port = config::get_port();
+                let addr = format!("127.0.0.1:{}", port);
                 let ext = if cfg!(target_os = "windows") { ".exe" } else { "" };
                 let target = std::env::var("TARGET").unwrap_or_default();
                 let name_long = format!("seshat_server-{}{}", target, ext);
@@ -40,7 +43,7 @@ pub fn run() {
                             .parent()?.join("build").join(&name_long);
                         if dev.exists() { Some(dev) } else { None }
                     });
-                if TcpStream::connect("127.0.0.1:12500").is_ok() {
+                if TcpStream::connect(&addr).is_ok() {
                     error_page::show(&app.get_webview_window("main").unwrap(), "无法启动后端", "Seshat 后端使用的端口被占用，请检查");
                 } else if let Some(path) = bin {
                     let mut cmd = Command::new(&path);
@@ -65,7 +68,12 @@ pub fn run() {
                         *SIDECAR.lock().unwrap() = Some(child);
                         for _ in 0..30 {
                             std::thread::sleep(Duration::from_millis(100));
-                            if TcpStream::connect("127.0.0.1:12500").is_ok() { break; }
+                            if TcpStream::connect(&addr).is_ok() { break; }
+                        }
+                        // Navigate to the possibly non-default port
+                        if let Some(w) = app.get_webview_window("main") {
+                            let url = format!("http://{}", addr);
+                            let _ = w.eval(&format!("location.replace('{}')", url));
                         }
                     }
                 }
