@@ -1,8 +1,6 @@
 # Seshat
 
-离线优先的 Bangumi 数据管理与浏览工具。  
-Go 后端 + Tauri 桌面壳 + Tailwind CSS 前端。所有数据存放在本地。
-
+离线优先的 Bangumi 数据管理与浏览工具。所有数据存放在本地。  
 特别感谢 [番组计划](https://bgm.tv/) 的数据源。
 
 <img src="/docs/image/readme-02.png" width="600"/>
