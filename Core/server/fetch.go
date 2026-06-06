@@ -190,7 +190,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 			}
 			cache.Put(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(data))
 			if cn := extractNameCN(data); cn != "" { mergeListEntry(charListPath, c.ID, "", cn) }
-		}, p, "characters", maxConcurrency)
+		}, nil, "", maxConcurrency)
 	}()
 
 	// Person details
@@ -211,7 +211,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 			}
 			cache.Put(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(data))
 			if cn := extractNameCN(data); cn != "" { mergeListEntry(persListPath, pp.ID, "", cn) }
-		}, p, "persons", maxConcurrency)
+		}, nil, "", maxConcurrency)
 	}()
 
 	// Character subjects

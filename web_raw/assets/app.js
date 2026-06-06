@@ -1322,7 +1322,7 @@ async function doFetchIndex() {
 // ── 进度通知横幅（右下角浮动）──
 function startProgress(taskId, label) {
     var bodyHTML = '<div id="pb-detail" class="text-[11px] mb-1.5"></div>' +
-        '<div class="h-1 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden"><div id="pb-fill" class="h-full rounded-full" style="width:0;background:var(--c-toast-progress);transition:width .3s"></div></div>';
+        '<div class="h-1 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden"><div id="pb-fill" class="h-full rounded-full" style="width:0;background:var(--c-toast-progress)"></div></div>';
     var t = _makeToast(label || MSG.progressConnecting, bodyHTML, "bg-toast-progress", "bg-toast-progress-bg text-text", 0, true, false);
 
     // Add cancel button
@@ -1380,14 +1380,14 @@ function startProgress(taskId, label) {
         if (d.phase && d.phases) title += " (" + d.phase + "/" + d.phases + ")";
         if (title !== taskLabel || (d.label && !label)) t.update(title);
 
-        if (typeof d.done === "number" && d.total) {
+        if (typeof d.done === "number" && d.total && d.step !== "subject") {
             fill.style.width = Math.round((d.done / d.total) * 100) + "%";
             var parts = [];
             if (d.phase_name) parts.push(d.phase_name);
             parts.push(d.done + "/" + d.total);
             if (d.speed) parts.push(d.speed);
             if (detail) detail.textContent = parts.join("，");
-        } else if (d.status) {
+        } else if (d.status && d.step !== "subject") {
             if (detail) detail.textContent = d.status;
         }
     };
