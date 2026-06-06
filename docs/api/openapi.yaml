@@ -75,7 +75,7 @@ paths:
         - { name: type, in: query, schema: { type: string, enum: [large, grid, small], default: grid } }
       responses:
         "200": { description: 图像文件 }
-        "302": { description: 未缓存，重定向到/assets/no-image.png }
+        "404": { description: 图片未缓存 }
   /api/v0/subjects/{id}/characters:     # 条目关联的角色
     get:
       tags: [条目]
@@ -205,7 +205,7 @@ paths:
         - { name: type, in: query, schema: { type: string, enum: [large, grid, small], default: grid } }
       responses:
         "200": { description: 图片文件 }
-        "302": { description: 未缓存，重定向到/assets/no-image.png }
+        "404": { description: 图片未缓存 }
   /api/v0/characters/{id}/persons:      # 角色关联的人物
     get:
       tags: [角色]
@@ -316,7 +316,7 @@ paths:
         - { name: type, in: query, schema: { type: string, enum: [large, grid, small], default: grid } }
       responses:
         "200": { description: 图片文件 }
-        "302": { description: 未缓存，重定向到/assets/no-image.png }
+        "404": { description: 图片未缓存 }
   /api/v0/persons/{id}/characters:      # 人物关联的角色
     get:
       tags: [人物]
@@ -592,7 +592,7 @@ paths:
     post:
       tags: [拉取]
       summary: 补充数据
-      description: 遍历本地所有已缓存的subject，重新请求API检查并拉取新增的人物/角色/剧集等数据。包含图片。
+      description: 遍历本地subject关联的角色和人物，仅拉取本地缺失的info.json，然后补全图片并重建索引。
       responses:
         "200":
           description: 后台执行
