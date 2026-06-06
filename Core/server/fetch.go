@@ -527,17 +527,19 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		newIDs := diffTrackerIDs(cfg, dd)
 		if taskLocked() { http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409); return }
-		p := newProgress(11, "fetch_update", "拉取缺失")
+		phases := 5
+		if len(newIDs) == 0 { phases = 1 }
+		p := newProgress(phases, "fetch_update", "增量更新")
 		go func() {
-			fillImageGaps(dd, bg, p)
 			if len(newIDs) > 0 {
-				p.SetPhase(7, 11, "拉取动画数据")
+				p.SetPhase(1, phases, "拉取动画数据")
 				fetchSubjectList(newIDs, bg, dd, imgDir, p)
+				p.SetPhase(2, phases, "建立索引")
+				buildIndexes(dd, p)
+				p.SetPhase(3, phases, "下载图像")
+				downloadImagesScoped(dd, bg, p, newIDs)
 			}
-			p.SetPhase(8, 11, "建立索引")
-			buildIndexes(dd, p)
-			downloadImagesWithPhase(dd, bg, p, 9, 11, nil)
-			p.Send("complete", 11, 11, "")
+			p.Send("complete", phases, phases, "")
 			p.Close()
 		}()
 		writeJSON(w, map[string]any{"status": "fetching", "count": len(newIDs), "task_id": p.ID})
