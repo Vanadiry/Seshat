@@ -1093,11 +1093,11 @@ function initDialog() {
                             return r.json();
                         })
                         .then(function (d) {
-                            showError(
-                                d.status === "ok"
-                                    ? "已重建 " + d.count + " 条 ELO 分数和计数"
-                                    : "重建失败"
-                            );
+                            if (d.status === "ok") {
+                                showSuccess("已重建 " + d.count + " 条 ELO 分数和计数");
+                            } else {
+                                showError("重建失败");
+                            }
                         });
                 }
             );
