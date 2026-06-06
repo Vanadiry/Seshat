@@ -563,18 +563,45 @@ func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		if taskLocked() { http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409); return }
-		// Collect all subject IDs from index
 		allIDs := collectAllSubjectIDs(dd)
 		if len(allIDs) == 0 { writeJSON(w, map[string]any{"status": "done", "count": 0}); return }
-		p := newProgress(11, "fetch_gap", "补充数据")
+		p := newProgress(len(allIDs), "fetch_gap", "补充数据")
 		go func() {
+			var done int
+			for _, sid := range allIDs {
+				// Check characters
+				if data, err := os.ReadFile(filepath.Join(cache.Dir(dd), cache.Key("subjects", sid, "characters.json"))); err == nil {
+					var chars []struct{ ID int `json:"id"` }
+					if json.Unmarshal(data, &chars) == nil {
+						for _, c := range chars {
+							if _, err := os.Stat(filepath.Join(cache.Dir(dd), cache.Key("characters", c.ID, "info.json"))); os.IsNotExist(err) {
+								if d, e := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID)); e == nil {
+									cache.Put(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(d))
+								}
+							}
+						}
+					}
+				}
+				// Check persons
+				if data, err := os.ReadFile(filepath.Join(cache.Dir(dd), cache.Key("subjects", sid, "persons.json"))); err == nil {
+					var persons []struct{ ID int `json:"id"` }
+					if json.Unmarshal(data, &persons) == nil {
+						for _, pp := range persons {
+							if _, err := os.Stat(filepath.Join(cache.Dir(dd), cache.Key("persons", pp.ID, "info.json"))); os.IsNotExist(err) {
+								if d, e := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID)); e == nil {
+									cache.Put(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(d))
+								}
+							}
+						}
+					}
+				}
+				done++
+				p.Send("gap", done, len(allIDs), "")
+			}
 			fillImageGaps(dd, bg, p)
-			p.SetPhase(7, 11, "拉取动画数据")
-			fetchSubjectList(allIDs, bg, dd, imgDir, p)
-			p.SetPhase(8, 11, "建立索引")
+			downloadImages(dd, bg, p)
 			buildIndexes(dd, p)
-			downloadImagesWithPhase(dd, bg, p, 9, 11, nil)
-			p.Send("complete", 11, 11, "")
+			p.Send("complete", len(allIDs), len(allIDs), "")
 			p.Close()
 		}()
 		writeJSON(w, map[string]any{"status": "fetching", "count": len(allIDs), "task_id": p.ID})
