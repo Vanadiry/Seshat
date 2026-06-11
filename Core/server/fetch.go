@@ -17,28 +17,6 @@ import (
 	"path/filepath"
 )
 
-func extractNameCN(data []byte) string {
-	var v struct {
-		Infobox []struct {
-			Key   string          `json:"key"`
-			Value json.RawMessage `json:"value"`
-		} `json:"infobox"`
-	}
-	if json.Unmarshal(data, &v) != nil {
-		return ""
-	}
-	for _, ib := range v.Infobox {
-		if ib.Key == "简体中文名" {
-			var s string
-			if json.Unmarshal(ib.Value, &s) == nil {
-				return s
-			}
-			break
-		}
-	}
-	return ""
-}
-
 func getRawWithRetry(bg *bangumi.Client, urlPath string, maxRetries int) ([]byte, error) {
 	var lastErr error
 	for i := 0; i < maxRetries; i++ {

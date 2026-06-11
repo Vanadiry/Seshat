@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/vanadiry/seshat/Core/bangumi"
@@ -21,10 +20,6 @@ import (
 
 var maxConcurrency = 32
 
-// listMutex 保护 list 文件的并发读写。
-var listMutex sync.Mutex
-
-// mergeListEntry 将一个条目合并到 list 文件中（按 ID 去重，若已存在则更新 name）。
 func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	maxConcurrency = cfg.Server.Concurrency
 	mux := http.NewServeMux()
