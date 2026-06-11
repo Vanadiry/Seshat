@@ -132,23 +132,43 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 	if hasAll && entry.Large != "" && entry.Grid != "" && entry.Small != "" {
 		return // already have all three sizes, skip
 	}
+
+	// 三个尺寸并发下载
+	type result struct {
+		size, path string
+	}
+	var wg sync.WaitGroup
+	results := make(chan result, 3)
+
 	for _, size := range []string{"large", "grid", "small"} {
-		data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
-		if err != nil {
-			continue
-		}
-		relPath := fmt.Sprintf("%ss_%s/%d/%d.jpg", kind, size, id%10, id)
-		fullPath := filepath.Join(imgBase, relPath)
-		os.MkdirAll(filepath.Dir(fullPath), 0o755)
-		os.WriteFile(fullPath, data, 0o644)
-		if size == "large" {
-			entry.Large = relPath
-		} else if size == "grid" {
-			entry.Grid = relPath
-		} else if size == "small" {
-			entry.Small = relPath
+		wg.Add(1)
+		go func(size string) {
+			defer wg.Done()
+			data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
+			if err != nil {
+				return
+			}
+			relPath := fmt.Sprintf("%ss_%s/%d/%d.jpg", kind, size, id%10, id)
+			fullPath := filepath.Join(imgBase, relPath)
+			os.MkdirAll(filepath.Dir(fullPath), 0o755)
+			os.WriteFile(fullPath, data, 0o644)
+			results <- result{size, relPath}
+		}(size)
+	}
+	wg.Wait()
+	close(results)
+
+	for r := range results {
+		switch r.size {
+		case "large":
+			entry.Large = r.path
+		case "grid":
+			entry.Grid = r.path
+		case "small":
+			entry.Small = r.path
 		}
 	}
+
 	if entry.Large != "" || entry.Grid != "" || entry.Small != "" {
 		mu.Lock()
 		imgMap[id] = entry
@@ -161,24 +181,42 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 	mu.Lock()
 	entry := imgMap[id]
 	mu.Unlock()
+
+	type result struct {
+		size, path string
+	}
+	var wg sync.WaitGroup
+	results := make(chan result, len(sizes))
+
 	for _, size := range sizes {
-		data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
-		if err != nil {
-			continue
-		}
-		relPath := fmt.Sprintf("%ss_%s/%d/%d.jpg", kind, size, id%10, id)
-		fullPath := filepath.Join(imgBase, relPath)
-		os.MkdirAll(filepath.Dir(fullPath), 0o755)
-		os.WriteFile(fullPath, data, 0o644)
-		switch size {
+		wg.Add(1)
+		go func(size string) {
+			defer wg.Done()
+			data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
+			if err != nil {
+				return
+			}
+			relPath := fmt.Sprintf("%ss_%s/%d/%d.jpg", kind, size, id%10, id)
+			fullPath := filepath.Join(imgBase, relPath)
+			os.MkdirAll(filepath.Dir(fullPath), 0o755)
+			os.WriteFile(fullPath, data, 0o644)
+			results <- result{size, relPath}
+		}(size)
+	}
+	wg.Wait()
+	close(results)
+
+	for r := range results {
+		switch r.size {
 		case "large":
-			entry.Large = relPath
+			entry.Large = r.path
 		case "grid":
-			entry.Grid = relPath
+			entry.Grid = r.path
 		case "small":
-			entry.Small = relPath
+			entry.Small = r.path
 		}
 	}
+
 	mu.Lock()
 	imgMap[id] = entry
 	mu.Unlock()
