@@ -115,9 +115,7 @@ func dlImageList(ids []int, kind string, imgMap map[int]cache.ImageEntry, imgBas
 			if p != nil {
 				mu.Lock()
 				done++
-				if done%10 == 0 || done == len(ids) {
-					p.Send(stage, done, len(ids), "")
-				}
+				p.Send(stage, done, len(ids), "")
 				mu.Unlock()
 			}
 		}(id)
@@ -290,9 +288,7 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress) {
 					if p != nil {
 						mu.Lock()
 						done++
-						if done%10 == 0 || done == len(partials) {
-							p.Send("fill_"+d.kind+"_sizes", done, len(partials), "")
-						}
+						p.Send("fill_"+d.kind+"_sizes", done, len(partials), "")
 						mu.Unlock()
 					}
 				}(pt.id, pt.sizes)
