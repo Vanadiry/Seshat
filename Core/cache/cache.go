@@ -21,7 +21,7 @@ func Get(dataDir, key string) ([]byte, error) { return os.ReadFile(filepath.Join
 func Put(dataDir, key string, data []byte) error {
 	p := filepath.Join(Dir(dataDir), key)
 	os.MkdirAll(filepath.Dir(p), 0o755)
-	return os.WriteFile(p, compress(data), 0o644)
+	return os.WriteFile(p, data, 0o644)
 }
 func Has(dataDir, key string) bool {
 	_, err := os.Stat(filepath.Join(Dir(dataDir), key))
@@ -58,14 +58,6 @@ func ListIDs(dataDir, domain string) ([]int, error) {
 		}
 	}
 	return ids, nil
-}
-func compress(data []byte) []byte {
-	var v any
-	if err := json.Unmarshal(data, &v); err != nil {
-		return data
-	}
-	r, _ := json.Marshal(v)
-	return r
 }
 
 // ── Index generation ──
