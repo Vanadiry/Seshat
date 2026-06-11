@@ -32,41 +32,7 @@ func scanAPIDir(dd, domain string, fn func(path string)) {
 	}
 }
 
-func buildIndexes(dd string, p *Progress) {
-	log.Info("Building indexes...")
-	os.MkdirAll(cache.IndexDir(dd), 0o755)
-	os.MkdirAll(filepath.Join(dd, "images"), 0o755)
 
-	tags := map[string]tagInfo{}
-
-	// Scan subjects for tags (new dir layout: subjects/{id%10}/{id}/info.json)
-	scanAPIDir(dd, "subjects", func(path string) {
-		if !strings.HasSuffix(path, "info.json") { return }
-		data, _ := os.ReadFile(path)
-		var s struct {
-			ID   int `json:"id"`
-			Tags []struct{
-				Name  string `json:"name"`
-				Count int    `json:"count"`
-			} `json:"tags"`
-		}
-		if json.Unmarshal(data, &s) == nil && s.ID > 0 {
-			for _, t := range s.Tags {
-				info := tags[t.Name]
-				info.Count++
-				info.Subjects = append(info.Subjects, s.ID)
-				tags[t.Name] = info
-			}
-		}
-	})
-
-	saveJSON(cache.IndexFile(dd, "tags.json"), tags)
-	buildNameIndex(dd, "subjects")
-		buildNameIndex(dd, "characters")
-		buildPersonNames(dd)
-
-	log.Info("Indexes built: %d tags", len(tags))
-}
 
 // Phase 3: Download images via official endpoints.
 func tagsPath(dd string) string {
@@ -148,8 +114,8 @@ func buildNameIndex(dd, domain string) {
 	log.Info("%s_name.json built: %d entries", domain, len(m))
 }
 
-// rebuildFromScan scans all cached API JSON files and rebuilds list files + tags.
-func rebuildFromScan(dd string, p *Progress) {
+// buildIndexes scans all cached API JSON files and rebuilds list files + tags + name indexes.
+func buildIndexes(dd string, p *Progress) {
 	log.Info("Rebuilding indexes from scan...")
 	os.MkdirAll(cache.IndexDir(dd), 0o755)
 

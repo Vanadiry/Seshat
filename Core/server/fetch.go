@@ -86,9 +86,6 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 // fetchAll 拉取动画的所有数据及关联角色/人物/图片。
 func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	log.Info("Fetching subject #%d", sid)
-	charListPath := cache.IndexFile(dd, "characters.json")
-	persListPath := cache.IndexFile(dd, "persons.json")
-	subjListPath := cache.IndexFile(dd, "subjects.json")
 
 	// Subject
 	if p != nil { p.Send("subject", 0, 1, "fetching") }
@@ -105,25 +102,9 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		return
 	}
 	cache.Put(dd, cache.Key("subjects", sid, "info.json"), cache.StripImages(data))
-
-	// 提取 subject 摘要写入全局 list
-	var ss struct {
-		ID       int     `json:"id"`
-		Name     string  `json:"name"`
-		NameCN   string  `json:"name_cn"`
-		Rating   struct{ Score float64 `json:"score"` } `json:"rating"`
-		Platform string  `json:"platform"`
-		Date     string  `json:"date"`
-	}
-	if json.Unmarshal(data, &ss) == nil && ss.ID > 0 {
-		mergeSubjectEntry(subjListPath, cache.SubjectSummary{
-			ID: ss.ID, Name: ss.Name, NameCN: ss.NameCN,
-			Score: ss.Rating.Score, Platform: ss.Platform, Date: ss.Date,
-		})
-	}
 	if p != nil { p.Send("subject", 1, 1, "done") }
 
-	// Characters & persons lists — 边拉取边写入全局 list
+	// Characters & persons lists
 	type fullChar struct {
 		ID      int    `json:"id"`
 		Name    string `json:"name"`
@@ -148,14 +129,6 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/characters", sid)); err == nil {
 			cache.Put(dd, cache.Key("subjects", sid, "characters.json"), cache.StripImages(data))
 			json.Unmarshal(data, &chars)
-			for _, c := range chars {
-				mergeListEntry(charListPath, c.ID, c.Name, "")
-				for _, a := range c.Actors {
-					if a.ID > 0 {
-						mergeListEntry(persListPath, a.ID, a.Name, "")
-					}
-				}
-			}
 		}
 	}()
 
@@ -165,9 +138,6 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/persons", sid)); err == nil {
 			cache.Put(dd, cache.Key("subjects", sid, "persons.json"), cache.StripImages(data))
 			json.Unmarshal(data, &persons)
-			for _, p := range persons {
-				mergeListEntry(persListPath, p.ID, p.Name, "")
-			}
 		}
 	}()
 	wg.Wait()
@@ -185,11 +155,10 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		fetchConcurrent(charIDs, func(c charRef) {
 			data, err := getRawWithRetry(bg, fmt.Sprintf("v0/characters/%d", c.ID), 3)
 			if err != nil {
-				if strings.Contains(err.Error(), "HTTP 404") { log.Warn("Character #%d: 404, removing from list", c.ID); removeListEntry(charListPath, c.ID) } else { log.Warn("Character #%d: %v", c.ID, err); if p != nil && (strings.Contains(err.Error(), "令牌") || strings.Contains(err.Error(), "HTTP 4")) { p.SetError(err.Error()) } }
+				log.Warn("Character #%d: %v", c.ID, err); if p != nil && (strings.Contains(err.Error(), "令牌") || strings.Contains(err.Error(), "HTTP 4")) { p.SetError(err.Error()) }
 				return
 			}
 			cache.Put(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(data))
-			if cn := extractNameCN(data); cn != "" { mergeListEntry(charListPath, c.ID, "", cn) }
 		}, nil, "", maxConcurrency)
 	}()
 
@@ -206,11 +175,10 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		fetchConcurrent(personIDs, func(pp personRef) {
 			data, err := getRawWithRetry(bg, fmt.Sprintf("v0/persons/%d", pp.ID), 3)
 			if err != nil {
-				if strings.Contains(err.Error(), "HTTP 404") { log.Warn("Person #%d: 404, removing from list", pp.ID); removeListEntry(persListPath, pp.ID) } else { log.Warn("Person #%d: %v", pp.ID, err); if p != nil && (strings.Contains(err.Error(), "令牌") || strings.Contains(err.Error(), "HTTP 4")) { p.SetError(err.Error()) } }
+				log.Warn("Person #%d: %v", pp.ID, err); if p != nil && (strings.Contains(err.Error(), "令牌") || strings.Contains(err.Error(), "HTTP 4")) { p.SetError(err.Error()) }
 				return
 			}
 			cache.Put(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(data))
-			if cn := extractNameCN(data); cn != "" { mergeListEntry(persListPath, pp.ID, "", cn) }
 		}, nil, "", maxConcurrency)
 	}()
 
@@ -551,7 +519,7 @@ func handleFetchIndex(dd string) http.HandlerFunc {
 		if taskLocked() { http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409); return }
 		p := newProgress(4, "rebuild_index", "重建索引")
 		go func() {
-			rebuildFromScan(dd, p)
+			buildIndexes(dd, p)
 			p.Send("complete", 4, 4, "")
 			p.Close()
 		}()
@@ -631,9 +599,6 @@ func handleFetchMeta(cfg *config.Config, bg *bangumi.Client, dd string) http.Han
 				data, err := bg.GetRaw(url)
 				if err == nil {
 					cache.Put(dd, cache.Key(kind+"s", id, "info.json"), cache.StripImages(data))
-					if cn := extractNameCN(data); cn != "" {
-						mergeListEntry(cache.IndexFile(dd, kind+"s.json"), id, "", cn)
-					}
 				}
 				mu.Lock()
 				done++
@@ -646,6 +611,7 @@ func handleFetchMeta(cfg *config.Config, bg *bangumi.Client, dd string) http.Han
 			for _, id := range persIDs { wg.Add(1); go process("person", id) }
 			wg.Wait()
 
+			buildIndexes(dd, p)
 			p.Send("complete", total, total, "")
 			p.Close()
 		}()
