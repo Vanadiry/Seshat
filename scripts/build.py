@@ -89,10 +89,20 @@ def cmd_dev():
     print(f"OK. {go_out}")
     subprocess.run(["pnpm", "tauri", "dev"], cwd=ROOT, check=True)
 
+def cmd_sdev():
+    """Build frontend + Server binary, then run"""
+    build_frontend()
+    go_out = ROOT / "build" / "seshat_dev"
+    go_out.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["go", "build", "-o", str(go_out), "."], cwd=ROOT, check=True)
+    print(f"OK. {go_out}")
+    subprocess.run([str(go_out)], cwd=ROOT)
+
 COMMANDS = {
     "server":  cmd_server,
     "desktop": cmd_desktop,
     "dev":     cmd_dev,
+    "sdev":    cmd_sdev,
 }
 
 def main():
