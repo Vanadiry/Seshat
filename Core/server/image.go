@@ -111,7 +111,7 @@ func dlImageList(ids []int, kind string, imgMap map[int]cache.ImageEntry, imgBas
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			dlImage(bg, kind, id, imgMap, imgBase, &mu)
+			dlImage(bg, kind, id, imgMap, imgBase, &mu, p)
 			if p != nil {
 				mu.Lock()
 				done++
@@ -123,7 +123,7 @@ func dlImageList(ids []int, kind string, imgMap map[int]cache.ImageEntry, imgBas
 	wg.Wait()
 }
 
-func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.ImageEntry, imgBase string, mu *sync.Mutex) {
+func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.ImageEntry, imgBase string, mu *sync.Mutex, p *Progress) {
 	// Dedup: check map (legacy path) or disk (new path)
 	if imgMap != nil {
 		mu.Lock()
@@ -151,6 +151,10 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 			defer wg.Done()
 			data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
 			if err != nil {
+				if !strings.Contains(err.Error(), "placeholder") {
+					log.Warn("Image %s #%d %s: %v", kind, id, size, err)
+					if p != nil { p.SetError(fmt.Sprintf("Image %s #%d %s: %v", kind, id, size, err)) }
+				}
 				return
 			}
 			relPath := fmt.Sprintf("%ss_%s/%d/%d.jpg", kind, size, id%10, id)
@@ -183,7 +187,7 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 }
 
 // dlMissingSizes downloads only the specified missing sizes for an image entry.
-func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, imgMap map[int]cache.ImageEntry, imgBase string, mu *sync.Mutex) {
+func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, imgMap map[int]cache.ImageEntry, imgBase string, mu *sync.Mutex, p *Progress) {
 	mu.Lock()
 	entry := imgMap[id]
 	mu.Unlock()
@@ -200,6 +204,10 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 			defer wg.Done()
 			data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
 			if err != nil {
+				if !strings.Contains(err.Error(), "placeholder") {
+					log.Warn("Image %s #%d %s: %v", kind, id, size, err)
+					if p != nil { p.SetError(fmt.Sprintf("Image %s #%d %s: %v", kind, id, size, err)) }
+				}
 				return
 			}
 			relPath := fmt.Sprintf("%ss_%s/%d/%d.jpg", kind, size, id%10, id)
@@ -284,7 +292,7 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress) {
 					defer wg.Done()
 					sem <- struct{}{}
 					defer func() { <-sem }()
-					dlMissingSizes(bg, d.kind, id, sizes, imgMap, imgBase, &mu)
+					dlMissingSizes(bg, d.kind, id, sizes, imgMap, imgBase, &mu, p)
 					if p != nil {
 						mu.Lock()
 						done++

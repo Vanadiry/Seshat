@@ -573,12 +573,14 @@ func handleFetchMeta(cfg *config.Config, bg *bangumi.Client, dd string) http.Han
 				defer func() { <-sem }()
 				url := fmt.Sprintf("v0/%ss/%d", kind, id)
 				data, err := bg.GetRaw(url)
-				if err == nil {
+				if err != nil {
+					log.Warn("Meta %s #%d: %v", kind, id, err)
+				} else {
 					cache.Put(dd, cache.Key(kind+"s", id, "info.json"), cache.StripImages(data))
 				}
 				mu.Lock()
 				done++
-				if done%10 == 0 || done == total { p.Send("meta", done, total, "") }
+				p.Send("meta", done, total, "")
 				mu.Unlock()
 			}
 
