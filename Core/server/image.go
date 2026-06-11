@@ -25,7 +25,7 @@ func downloadImagesScoped(dd string, bg *bangumi.Client, p *Progress, phaseBase,
 }
 
 func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectFilter []int) {
-	log.Info("Downloading images...")
+	log.Info("downloading images")
 	os.MkdirAll(cache.IndexDir(dd), 0o755)
 	imgBase := filepath.Join(dd, "images")
 
@@ -83,7 +83,7 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 	if p != nil { p.Send("images_persons", 0, len(persIDs), "downloading") }
 	dlImageList(persIDs, "person", nil, imgBase, bg, p, "images_persons")
 
-	log.Info("Images download complete")
+	log.Info("images download complete")
 }
 
 // imageExists checks if all three sizes of an image exist on disk.
@@ -152,7 +152,7 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 			data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
 			if err != nil {
 				if !strings.Contains(err.Error(), "placeholder") {
-					log.Warn("Image %s #%d %s: %v", kind, id, size, err)
+					log.Warn("image download failed", "kind", kind, "id", id, "size", size, "err", err)
 					if p != nil { p.SetError(fmt.Sprintf("Image %s #%d %s: %v", kind, id, size, err)) }
 				}
 				return
@@ -205,7 +205,7 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 			data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
 			if err != nil {
 				if !strings.Contains(err.Error(), "placeholder") {
-					log.Warn("Image %s #%d %s: %v", kind, id, size, err)
+					log.Warn("image download failed", "kind", kind, "id", id, "size", size, "err", err)
 					if p != nil { p.SetError(fmt.Sprintf("Image %s #%d %s: %v", kind, id, size, err)) }
 				}
 				return
@@ -364,7 +364,7 @@ func RebuildImageIndex(dd string) {
 			}
 		}
 		saveJSON(cache.IndexFile(dd, kind+"s_image.json"), m)
-		log.Info("Image index rebuilt: %s (%d entries)", kind+"s", len(m))
+		log.Info("image index rebuilt", "kind", kind+"s", "count", len(m))
 	}
 }
 

@@ -1,11 +1,10 @@
-// Package log 提供同时写入控制台和文件的日志系统。
-// 每次启动创建一个新的日志文件，最多保留 10 个文件。
+// Package log 提供基于 slog 的结构化分级日志系统。
+// 每次启动创建一个新的日志文件，最多保留 10 个。
 package log
 
 import (
-	"fmt"
 	"io"
-	stdlog "log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
@@ -15,10 +14,17 @@ import (
 	"github.com/vanadiry/seshat/Core/config"
 )
 
-var logger *stdlog.Logger
+var logger *slog.Logger
 
-// Init 初始化日志系统，同时输出到控制台和 SESHAT_HOME/logs/seshat_YYYYMMDD_HHMMSS.log。
-func Init() {
+var levelMap = map[string]slog.Level{
+	"debug": slog.LevelDebug,
+	"info":  slog.LevelInfo,
+	"warn":  slog.LevelWarn,
+	"error": slog.LevelError,
+}
+
+// Init 初始化日志系统。level 为 "debug" / "info" / "warn" / "error"。
+func Init(level string) {
 	logDir := filepath.Join(config.Dir(), "logs")
 	os.MkdirAll(logDir, 0o755)
 
@@ -27,20 +33,23 @@ func Init() {
 
 	f, err := os.Create(logPath)
 	if err != nil {
-		stdlog.Printf("无法创建日志文件 %s: %v", logPath, err)
-		logger = stdlog.New(os.Stdout, "", stdlog.LstdFlags)
+		slog.Error("无法创建日志文件", "path", logPath, "err", err)
+		logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 		return
 	}
 
-	writer := io.MultiWriter(os.Stdout, f)
-	logger = stdlog.New(writer, "", stdlog.LstdFlags)
+	lvl, ok := levelMap[strings.ToLower(level)]
+	if !ok {
+		lvl = slog.LevelInfo
+	}
+
+	handler := slog.NewTextHandler(io.MultiWriter(os.Stdout, f), &slog.HandlerOptions{Level: lvl})
+	logger = slog.New(handler)
 
 	rotateLogs(logDir, 10)
-
-	logger.Printf("Log file: %s", logPath)
+	logger.Info("Log file: "+logPath, "level", lvl.String())
 }
 
-// rotateLogs 清理多余的日志文件，只保留最新的 keep 个。
 func rotateLogs(dir string, keep int) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -61,40 +70,50 @@ func rotateLogs(dir string, keep int) {
 	}
 }
 
+// Debug 输出调试日志。
+func Debug(msg string, args ...any) {
+	log(slog.LevelDebug, msg, args...)
+}
+
 // Info 输出信息日志。
-func Info(format string, v ...any) {
-	if logger != nil {
-		logger.Printf("[INFO] "+format, v...)
-	} else {
-		stdlog.Printf("[INFO] "+format, v...)
-	}
+func Info(msg string, args ...any) {
+	log(slog.LevelInfo, msg, args...)
 }
 
 // Warn 输出警告日志。
-func Warn(format string, v ...any) {
-	if logger != nil {
-		logger.Printf("[WARN] "+format, v...)
-	} else {
-		stdlog.Printf("[WARN] "+format, v...)
-	}
+func Warn(msg string, args ...any) {
+	log(slog.LevelWarn, msg, args...)
 }
 
 // Error 输出错误日志。
-func Error(format string, v ...any) {
+func Error(msg string, args ...any) {
+	log(slog.LevelError, msg, args...)
+}
+
+func log(level slog.Level, msg string, args ...any) {
 	if logger != nil {
-		logger.Printf("[ERROR] "+format, v...)
+		logger.LogAttrs(nil, level, msg, toAttrs(args)...)
 	} else {
-		stdlog.Printf("[ERROR] "+format, v...)
+		slog.New(slog.NewTextHandler(os.Stdout, nil)).LogAttrs(nil, level, msg, toAttrs(args)...)
 	}
+}
+
+func toAttrs(args []any) []slog.Attr {
+	if len(args)%2 != 0 {
+		args = append(args, "!MISSING")
+	}
+	var attrs []slog.Attr
+	for i := 0; i < len(args); i += 2 {
+		key, ok := args[i].(string)
+		if !ok {
+			key = "!BADKEY"
+		}
+		attrs = append(attrs, slog.Any(key, args[i+1]))
+	}
+	return attrs
 }
 
 // HTTP 记录 HTTP 请求日志。
 func HTTP(method, path string, status int, duration time.Duration) {
-	if logger != nil {
-		logger.Printf("[HTTP] %s %s %d %s", method, path, status, duration)
-	} else {
-		stdlog.Printf("[HTTP] %s %s %d %s", method, path, status, duration)
-	}
+	Debug("http request", "method", method, "path", path, "status", status, "duration", duration)
 }
-
-var _ = fmt.Sprintf // keep fmt import

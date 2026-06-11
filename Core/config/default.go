@@ -8,6 +8,7 @@ bind_addr = "127.0.0.1"     # 监听地址，设为0.0.0.0将对局域网开放
 port = 12500                # 开放端口
 concurrency = 32            # 并发数，建议32即可
 data_home = ""              # 数据目录，留空则使用SESHAT_HOME/data
+log_level = "info"          # 日志级别: "debug" / "info" / "warn" / "error"
 
 [upstream]
 # 上游地址，控制后端拉取数据时的请求位置，建议不动。留空将不能拉取数据。

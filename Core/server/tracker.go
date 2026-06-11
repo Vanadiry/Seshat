@@ -50,9 +50,9 @@ func countTrackerNames(cfg *config.Config, names []string) int {
 
 // forceRefresh 删除所有缓存数据后完整重建。
 func forceRefresh(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, p *Progress) {
-	log.Info("Force refresh: clearing all cached data...")
+	log.Info("force refresh: clearing cache")
 	os.RemoveAll(dd)
-	log.Info("Force refresh: cache cleared, starting rebuild")
+	log.Info("force refresh: cache cleared, starting rebuild")
 	refreshAllTrackers(cfg, bg, dd, imgDir, p)
 }
 
@@ -73,7 +73,7 @@ func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 	}
 	p.SetPhase(1, 5, "拉取动画数据")
 	fetchSubjectList(allIDs, bg, dd, imgDir, p)
-	log.Info("All trackers refreshed: %d subjects", len(seen))
+	log.Info("all trackers refreshed", "subjects", len(seen))
 	downloadImages(dd, bg, p, 2, 5)
 	p.SetPhase(5, 5, "建立索引")
 	buildIndexes(dd, p)
@@ -101,12 +101,12 @@ func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, 
 		}
 	}
 	if len(allIDs) == 0 {
-		log.Warn("refreshTrackers: no IDs found for %v", names)
+		log.Warn("refreshTrackers: no IDs found", "names", names)
 		return
 	}
 	p.SetPhase(1, 5, "拉取动画数据")
 	fetchSubjectList(allIDs, bg, dd, imgDir, p)
-	log.Info("Trackers %v refreshed: %d subjects", names, len(seen))
+	log.Info("trackers refreshed", "names", names, "subjects", len(seen))
 	downloadImages(dd, bg, p, 2, 5)
 	p.SetPhase(5, 5, "建立索引")
 	buildIndexes(dd, p)

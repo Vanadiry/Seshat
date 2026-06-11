@@ -79,7 +79,7 @@ func rebuildTags(dd string) {
 	buildNameIndex(dd, "subjects")
 		buildNameIndex(dd, "characters")
 		buildPersonNames(dd)
-	log.Info("Tags index rebuilt: %d tags", len(tags))
+	log.Info("tags index rebuilt", "count", len(tags))
 }
 
 // buildPersonNames generates a name→id lookup from persons.json.
@@ -95,13 +95,13 @@ func buildPersonNames(dd string) {
 	}
 	result, _ := json.Marshal(m)
 	os.WriteFile(cache.IndexFile(dd, "persons_name.json"), result, 0o644)
-	log.Info("persons_name.json built: %d entries", len(m))
+	log.Info("persons_name.json built", "count", len(m))
 }
 
 // buildNameIndex generates a name→id lookup for a given domain (subjects/characters/persons).
 func buildNameIndex(dd, domain string) {
 	data, err := os.ReadFile(cache.IndexFile(dd, domain+".json"))
-	if err != nil { log.Warn("%s_name: %s.json not found", domain, domain); return }
+	if err != nil { log.Warn("name index file not found", "domain", domain); return }
 	var list []cache.NameEntry
 	json.Unmarshal(data, &list)
 	m := map[int][]string{}
@@ -111,12 +111,12 @@ func buildNameIndex(dd, domain string) {
 	}
 	result, _ := json.Marshal(m)
 	os.WriteFile(cache.IndexFile(dd, domain+"_name.json"), result, 0o644)
-	log.Info("%s_name.json built: %d entries", domain, len(m))
+	log.Info("name index built", "domain", domain, "count", len(m))
 }
 
 // buildIndexes scans all cached API JSON files and rebuilds list files + tags + name indexes.
 func buildIndexes(dd string, p *Progress) {
-	log.Info("Rebuilding indexes from scan...")
+	log.Info("rebuilding indexes from scan")
 	os.MkdirAll(cache.IndexDir(dd), 0o755)
 
 	var subjects []cache.SubjectSummary
@@ -192,8 +192,7 @@ saveJSON(cache.IndexFile(dd, "persons.json"), persons)
 	if p != nil { p.Send("phase", 4, 5, "rebuilding image index") }
 	RebuildImageIndex(dd)
 
-	log.Info("Rebuild complete: %d subjects, %d chars, %d persons, %d tags",
-		len(subjects), len(chars), len(persons), len(tags))
+	log.Info("rebuild complete", "subjects", len(subjects), "chars", len(chars), "persons", len(persons), "tags", len(tags))
 }
 
 func handleTags(dd string) http.HandlerFunc {

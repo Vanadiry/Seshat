@@ -44,7 +44,9 @@ func runSeshat() (*http.Server, string) {
 	os.MkdirAll(dd, 0o755)
 	os.MkdirAll(cfg.TrackerDir(), 0o755)
 	server.EnsureExcludeFile()
-	log.Init()
+	lvl := cfg.Server.LogLevel
+	if lvl == "" { lvl = "info" }
+	log.Init(lvl)
 	log.Info("Starting Seshat...")
 
 	router := server.New(cfg, webFS)
@@ -52,7 +54,7 @@ func runSeshat() (*http.Server, string) {
 	addr := fmt.Sprintf("%s:%d", cfg.Server.BindAddr, cfg.Server.Port)
 	srv := &http.Server{Addr: addr, Handler: router}
 	go func() {
-		log.Info("Listening on http://%s", addr)
+		log.Info("listening", "addr", addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			stdlog.Fatal(err)
 		}

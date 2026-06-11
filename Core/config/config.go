@@ -15,6 +15,7 @@ type ServerConfig struct {
 	Port        int    `toml:"port"`
 	Concurrency int    `toml:"concurrency"`
 	DataHome    string `toml:"data_home"`
+	LogLevel    string `toml:"log_level"`
 }
 
 type UpstreamConfig struct {

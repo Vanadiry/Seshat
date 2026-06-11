@@ -63,13 +63,13 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 
 // fetchAll 拉取动画的所有数据及关联角色/人物/图片。
 func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
-	log.Info("Fetching subject #%d", sid)
+	log.Info("fetching subject", "id", sid)
 
 	// Subject
 	if p != nil { p.Send("subject", 0, 1, "fetching") }
 	data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d", sid))
 	if err != nil {
-		log.Warn("Subject #%d: %v", sid, err)
+		log.Warn("subject fetch failed", "id", sid, "err", err)
 		if p != nil {
 			msg := err.Error()
 			if strings.Contains(msg, "令牌") || strings.Contains(msg, "HTTP 4") {
@@ -133,7 +133,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		fetchConcurrent(charIDs, func(c charRef) {
 			data, err := getRawWithRetry(bg, fmt.Sprintf("v0/characters/%d", c.ID), 3)
 			if err != nil {
-				log.Warn("Character #%d: %v", c.ID, err); if p != nil && (strings.Contains(err.Error(), "令牌") || strings.Contains(err.Error(), "HTTP 4")) { p.SetError(err.Error()) }
+				log.Warn("character fetch failed", "id", c.ID, "err", err); if p != nil && (strings.Contains(err.Error(), "令牌") || strings.Contains(err.Error(), "HTTP 4")) { p.SetError(err.Error()) }
 				return
 			}
 			cache.Put(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(data))
@@ -147,13 +147,16 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	for _, c := range chars { for _, a := range c.Actors { if a.ID > 0 { personSet[a.ID] = true } } }
 	var personIDs []personRef
 	for id := range personSet { personIDs = append(personIDs, personRef{ID: id}) }
+	log.Debug("subject details", "id", sid, "chars", len(charIDs), "persons_list", len(persons), "persons_total", len(personIDs))
+
+	var allEps []json.RawMessage
 	wg3.Add(1)
 	go func() {
 		defer wg3.Done()
 		fetchConcurrent(personIDs, func(pp personRef) {
 			data, err := getRawWithRetry(bg, fmt.Sprintf("v0/persons/%d", pp.ID), 3)
 			if err != nil {
-				log.Warn("Person #%d: %v", pp.ID, err); if p != nil && (strings.Contains(err.Error(), "令牌") || strings.Contains(err.Error(), "HTTP 4")) { p.SetError(err.Error()) }
+				log.Warn("person fetch failed", "id", pp.ID, "err", err); if p != nil && (strings.Contains(err.Error(), "令牌") || strings.Contains(err.Error(), "HTTP 4")) { p.SetError(err.Error()) }
 				return
 			}
 			cache.Put(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(data))
@@ -208,7 +211,6 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	wg3.Add(1)
 	go func() {
 		defer wg3.Done()
-		var allEps []json.RawMessage
 		offset := 0
 		for {
 			data, err := bg.GetRaw(fmt.Sprintf("v0/episodes?subject_id=%d&limit=100&offset=%d", sid, offset))
@@ -239,12 +241,12 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	}()
 	wg3.Wait()
 
-	log.Info("Subject #%d API fetch done", sid)
+	log.Info("subject fetch done", "id", sid, "chars", len(charIDs), "persons", len(personIDs), "episodes", len(allEps))
 }
 
 // Phase 2: Build index files from all cached API data.
 func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
-	log.Info("Fetching collections for %s", username)
+	log.Info("fetching collections", "user", username)
 
 	all := map[string]int{}
 	var ids []int
@@ -253,7 +255,7 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 	for {
 		data, err := bg.GetRawPaged(fmt.Sprintf("v0/users/%s/collections", username), offset, 50)
 		if err != nil {
-			log.Warn("user collections offset %d: %v", offset, err)
+			log.Warn("user collections fetch failed", "offset", offset, "err", err)
 			break
 		}
 		var resp struct {
@@ -281,16 +283,16 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 	collData, _ := json.Marshal(map[string]any{"subjects": all, "updated_at": time.Now().Format(time.RFC3339)})
 	os.WriteFile(filepath.Join(userDir, "collections.json"), collData, 0o644)
 
-	log.Info("User collections for %s saved (%d items)", username, len(all))
+	log.Info("user collections saved", "user", username, "count", len(all))
 }
 
 func fetchUserInfo(username string, bg *bangumi.Client, dd string) {
-	log.Info("Fetching user info for %s", username)
+	log.Info("fetching user info", "user", username)
 	userDir := filepath.Join(config.Dir(), "user", "info")
 	os.MkdirAll(userDir, 0o755)
 	data, err := bg.GetRaw(fmt.Sprintf("v0/users/%s", username))
 	if err != nil {
-		log.Warn("User info %s: %v", username, err)
+		log.Warn("user info fetch failed", "user", username, "err", err)
 		return
 	}
 	var userData map[string]any
@@ -301,12 +303,12 @@ func fetchUserInfo(username string, bg *bangumi.Client, dd string) {
 }
 
 func fetchUserAvatar(username string, bg *bangumi.Client, dd string) {
-	log.Info("Fetching user avatar for %s", username)
+	log.Info("fetching user avatar", "user", username)
 	userDir := filepath.Join(config.Dir(), "user", "info")
 	os.MkdirAll(userDir, 0o755)
 	imgData, err := bg.GetImage(fmt.Sprintf("v0/users/%s/avatar?type=large", username))
 	if err != nil {
-		log.Warn("User avatar %s: %v", username, err)
+		log.Warn("user avatar fetch failed", "user", username, "err", err)
 		return
 	}
 	ext := ".jpg"
@@ -314,7 +316,7 @@ func fetchUserAvatar(username string, bg *bangumi.Client, dd string) {
 		ext = ".png"
 	}
 	os.WriteFile(filepath.Join(userDir, "large"+ext), imgData, 0o644)
-	log.Info("User avatar for %s saved", username)
+	log.Info("user avatar saved", "user", username)
 }
 
 // countTrackerTotal 统计所有 tracker 中的 subject 总数。
@@ -454,12 +456,14 @@ func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 		for _, sid := range ids { idStrs = append(idStrs, strconv.Itoa(sid)) }
 		p := newProgress(len(ids), "fetch_subject", "拉取动画 #"+strings.Join(idStrs, ", "))
 		for _, sid := range ids { addToSeshatTracker(cfg, sid) }
+		log.Info("pulling subjects", "ids", ids)
 		go func() {
 			p.SetPhase(1, 5, "拉取动画数据")
 			fetchSubjectList(ids, bg, dd, imgDir, p)
 			downloadImagesScoped(dd, bg, p, 2, 5, ids)
 			p.SetPhase(5, 5, "建立索引")
 			buildIndexes(dd, p)
+			log.Info("pulling subjects done", "ids", ids)
 			p.Send("complete", len(ids), len(ids), "")
 			p.Close()
 		}()
@@ -475,6 +479,7 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 		phases := 5
 		if len(newIDs) == 0 { phases = 1 }
 		p := newProgress(phases, "fetch_update", "增量更新")
+		log.Info("incremental update", "new_ids", len(newIDs))
 		go func() {
 			if len(newIDs) > 0 {
 				p.SetPhase(1, phases, "拉取动画数据")
@@ -482,6 +487,7 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 				downloadImagesScoped(dd, bg, p, 2, phases, newIDs)
 				p.SetPhase(phases, phases, "建立索引")
 				buildIndexes(dd, p)
+				log.Info("incremental update done", "new_ids", len(newIDs))
 			}
 			p.Send("complete", phases, phases, "")
 			p.Close()
@@ -512,15 +518,19 @@ func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 		p := newProgress(len(allIDs), "fetch_gap", "补充数据")
 		go func() {
 			var done int
-			for _, sid := range allIDs {
+			log.Info("filling data gaps", "subjects", len(allIDs))
+		for _, sid := range allIDs {
 				// Check characters
 				if data, err := os.ReadFile(filepath.Join(cache.Dir(dd), cache.Key("subjects", sid, "characters.json"))); err == nil {
 					var chars []struct{ ID int `json:"id"` }
 					if json.Unmarshal(data, &chars) == nil {
 						for _, c := range chars {
-							if _, err := os.Stat(filepath.Join(cache.Dir(dd), cache.Key("characters", c.ID, "info.json"))); os.IsNotExist(err) {
+							if !cache.Has(dd, cache.Key("characters", c.ID, "info.json")) {
 								if d, e := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID)); e == nil {
 									cache.Put(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(d))
+								} else {
+									log.Warn("gap character fetch failed", "id", c.ID, "err", e)
+									if p != nil { p.SetError(fmt.Sprintf("Character #%d: %v", c.ID, e)) }
 								}
 							}
 						}
@@ -531,9 +541,12 @@ func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 					var persons []struct{ ID int `json:"id"` }
 					if json.Unmarshal(data, &persons) == nil {
 						for _, pp := range persons {
-							if _, err := os.Stat(filepath.Join(cache.Dir(dd), cache.Key("persons", pp.ID, "info.json"))); os.IsNotExist(err) {
+							if !cache.Has(dd, cache.Key("persons", pp.ID, "info.json")) {
 								if d, e := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID)); e == nil {
 									cache.Put(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(d))
+								} else {
+									log.Warn("gap person fetch failed", "id", pp.ID, "err", e)
+									if p != nil { p.SetError(fmt.Sprintf("Person #%d: %v", pp.ID, e)) }
 								}
 							}
 						}
@@ -542,6 +555,7 @@ func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 				done++
 				p.Send("gap", done, len(allIDs), "")
 			}
+			log.Info("data gaps filled", "subjects", len(allIDs))
 			fillImageGaps(dd, bg, p)
 			downloadImages(dd, bg, p, 0, 0)
 			buildIndexes(dd, p)
@@ -556,44 +570,33 @@ func handleFetchMeta(cfg *config.Config, bg *bangumi.Client, dd string) http.Han
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		if taskLocked() { http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409); return }
-		allIDs := collectAllSubjectIDs(dd)
-		charIDs := collectNameIDs(cache.IndexFile(dd, "characters.json"))
-		persIDs := collectNameIDs(cache.IndexFile(dd, "persons.json"))
-		total := len(allIDs) + len(charIDs) + len(persIDs)
-		p := newProgress(total, "fetch_meta", "刷新元数据")
-		go func() {
-			var done int
-			var mu sync.Mutex
-			var wg sync.WaitGroup
-			sem := make(chan struct{}, maxConcurrency)
 
-			process := func(kind string, id int) {
-				defer wg.Done()
-				sem <- struct{}{}
-				defer func() { <-sem }()
-				url := fmt.Sprintf("v0/%ss/%d", kind, id)
-				data, err := bg.GetRaw(url)
-				if err != nil {
-					log.Warn("Meta %s #%d: %v", kind, id, err)
-				} else {
-					cache.Put(dd, cache.Key(kind+"s", id, "info.json"), cache.StripImages(data))
-				}
-				mu.Lock()
-				done++
-				p.Send("meta", done, total, "")
-				mu.Unlock()
+		// Re-fetch all tracker subjects (same as refresh-all, without images)
+		files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
+		files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
+		files = append(files, files2...)
+		seen := map[int]bool{}
+		var allIDs []int
+		for _, f := range files {
+			for _, sid := range loadTrackerIDs(f) {
+				if !seen[sid] { seen[sid] = true; allIDs = append(allIDs, sid) }
 			}
-
-			for _, id := range allIDs { wg.Add(1); go process("subject", id) }
-			for _, id := range charIDs { wg.Add(1); go process("character", id) }
-			for _, id := range persIDs { wg.Add(1); go process("person", id) }
-			wg.Wait()
-
+		}
+		if len(allIDs) == 0 { writeJSON(w, map[string]any{"status": "done", "count": 0}); return }
+		log.Info("refreshing metadata", "subjects", len(allIDs))
+		imgDir := filepath.Join(dd, "images")
+		p := newProgress(len(allIDs), "fetch_meta", "刷新元数据")
+		go func() {
+			p.SetPhase(1, 3, "拉取动画数据")
+			fetchSubjectList(allIDs, bg, dd, imgDir, p)
+			p.SetPhase(2, 3, "建立索引")
 			buildIndexes(dd, p)
-			p.Send("complete", total, total, "")
+			log.Info("metadata refresh done", "subjects", len(allIDs))
+			p.SetPhase(3, 3, "完成")
+			p.Send("complete", len(allIDs), len(allIDs), "")
 			p.Close()
 		}()
-		writeJSON(w, map[string]any{"status": "fetching", "count": total, "task_id": p.ID})
+		writeJSON(w, map[string]any{"status": "fetching", "count": len(allIDs), "task_id": p.ID})
 	}
 }
 
