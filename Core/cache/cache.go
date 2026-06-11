@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 func Dir(dataDir string) string      { return filepath.Join(dataDir, "api") }
@@ -42,6 +43,21 @@ func List(dataDir, dir string) ([]string, error) {
 		}
 	}
 	return names, nil
+}
+
+// ListIDs returns all cached IDs for a domain by scanning the API data directory.
+func ListIDs(dataDir, domain string) ([]int, error) {
+	strs, err := List(dataDir, domain)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]int, 0, len(strs))
+	for _, s := range strs {
+		if id, err := strconv.Atoi(s); err == nil {
+			ids = append(ids, id)
+		}
+	}
+	return ids, nil
 }
 func compress(data []byte) []byte {
 	var v any

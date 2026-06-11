@@ -74,9 +74,9 @@ func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 	p.SetPhase(1, 5, "拉取动画数据")
 	fetchSubjectList(allIDs, bg, dd, imgDir, p)
 	log.Info("All trackers refreshed: %d subjects", len(seen))
-	p.SetPhase(2, 5, "建立索引")
+	downloadImages(dd, bg, p, 2, 5)
+	p.SetPhase(5, 5, "建立索引")
 	buildIndexes(dd, p)
-	downloadImages(dd, bg, p)
 }
 
 // refreshTrackers 刷新指定的 tracker 列表。
@@ -107,9 +107,9 @@ func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, 
 	p.SetPhase(1, 5, "拉取动画数据")
 	fetchSubjectList(allIDs, bg, dd, imgDir, p)
 	log.Info("Trackers %v refreshed: %d subjects", names, len(seen))
-	p.SetPhase(2, 5, "建立索引")
+	downloadImages(dd, bg, p, 2, 5)
+	p.SetPhase(5, 5, "建立索引")
 	buildIndexes(dd, p)
-	downloadImages(dd, bg, p)
 }
 
 // addToSeshatTracker 将用户手动添加的 subject ID 记录到 _seshat.json。

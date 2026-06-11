@@ -182,11 +182,15 @@ func buildIndexes(dd string, p *Progress) {
 saveJSON(cache.IndexFile(dd, "persons.json"), persons)
 
 	// Save tags
-	if p != nil { p.Send("phase", 3, 4, "saving tags") }
+	if p != nil { p.Send("phase", 3, 5, "saving tags") }
 	saveJSON(cache.IndexFile(dd, "tags.json"), tags)
 	buildNameIndex(dd, "subjects")
 		buildNameIndex(dd, "characters")
 		buildPersonNames(dd)
+
+	// Rebuild image index from disk
+	if p != nil { p.Send("phase", 4, 5, "rebuilding image index") }
+	RebuildImageIndex(dd)
 
 	log.Info("Rebuild complete: %d subjects, %d chars, %d persons, %d tags",
 		len(subjects), len(chars), len(persons), len(tags))

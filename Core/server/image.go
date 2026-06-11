@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/vanadiry/seshat/Core/bangumi"
@@ -14,35 +15,30 @@ import (
 	"github.com/vanadiry/seshat/Core/log"
 )
 
-func downloadImages(dd string, bg *bangumi.Client, p *Progress) {
-	downloadImagesWithPhase(dd, bg, p, 3, 5, nil)
+func downloadImages(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int) {
+	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, nil)
 }
 
 // downloadImagesScoped 仅下载指定 subject 及其关联角色/人物的图像。
-func downloadImagesScoped(dd string, bg *bangumi.Client, p *Progress, subjectIDs []int) {
-	downloadImagesWithPhase(dd, bg, p, 3, 3, subjectIDs)
+func downloadImagesScoped(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectIDs []int) {
+	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, subjectIDs)
 }
 
 func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectFilter []int) {
 	log.Info("Downloading images...")
 	os.MkdirAll(cache.IndexDir(dd), 0o755)
-
-	subjImg := loadImageIndex(dd, "subjects_image.json")
-	charImg := loadImageIndex(dd, "characters_image.json")
-	persImg := loadImageIndex(dd, "persons_image.json")
 	imgBase := filepath.Join(dd, "images")
 
-	// Build filter sets from subject IDs (non-nil = scoped download)
-	var subjFilter map[int]bool
-	var charFilter map[int]bool
-	var persFilter map[int]bool
+	// Build entity lists: scoped = filter by given subject IDs, full = scan API data dir
+	var subjIDs []int
+	var charIDs []int
+	var persIDs []int
+
 	if subjectFilter != nil {
-		subjFilter = make(map[int]bool)
-		charFilter = make(map[int]bool)
-		persFilter = make(map[int]bool)
+		subjIDs = subjectFilter
+		charSet := map[int]bool{}
+		persSet := map[int]bool{}
 		for _, sid := range subjectFilter {
-			subjFilter[sid] = true
-			// Read related characters
 			if data, err := os.ReadFile(filepath.Join(cache.Dir(dd), cache.Key("subjects", sid, "characters.json"))); err == nil {
 				var chars []struct {
 					ID     int `json:"id"`
@@ -50,62 +46,66 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 				}
 				if json.Unmarshal(data, &chars) == nil {
 					for _, c := range chars {
-						charFilter[c.ID] = true
+						charSet[c.ID] = true
 						for _, a := range c.Actors {
-							if a.ID > 0 { persFilter[a.ID] = true }
+							if a.ID > 0 { persSet[a.ID] = true }
 						}
 					}
 				}
 			}
-			// Read related persons
 			if data, err := os.ReadFile(filepath.Join(cache.Dir(dd), cache.Key("subjects", sid, "persons.json"))); err == nil {
 				var persons []struct{ ID int `json:"id"` }
 				if json.Unmarshal(data, &persons) == nil {
-					for _, p := range persons { persFilter[p.ID] = true }
+					for _, p := range persons { persSet[p.ID] = true }
 				}
 			}
 		}
-	}
-
-	filterList := func(list []cache.NameEntry, filter map[int]bool) []cache.NameEntry {
-		if filter == nil { return list }
-		var out []cache.NameEntry
-		for _, e := range list {
-			if filter[e.ID] { out = append(out, e) }
-		}
-		return out
+		for id := range charSet { charIDs = append(charIDs, id) }
+		for id := range persSet { persIDs = append(persIDs, id) }
+	} else {
+		subjIDs, _ = cache.ListIDs(dd, "subjects")
+		charIDs, _ = cache.ListIDs(dd, "characters")
+		persIDs, _ = cache.ListIDs(dd, "persons")
 	}
 
 	// Subjects
-	subjList := filterList(loadNameList(cache.IndexFile(dd, "subjects.json")), subjFilter)
-	if p != nil { p.SetPhase(phaseBase, totalPhases, "下载Subject图像"); p.Send("images_subjects", 0, len(subjList), "downloading") }
-	dlImageList(subjList, "subject", subjImg, imgBase, bg, dd, p, "images_subjects")
-	saveJSON(cache.IndexFile(dd, "subjects_image.json"), subjImg)
+	if p != nil && totalPhases > 0 { p.SetPhase(phaseBase, totalPhases, "下载条目图像") }
+	if p != nil { p.Send("images_subjects", 0, len(subjIDs), "downloading") }
+	dlImageList(subjIDs, "subject", nil, imgBase, bg, p, "images_subjects")
 
 	// Characters
-	charList := filterList(loadNameList(cache.IndexFile(dd, "characters.json")), charFilter)
-	if p != nil { p.SetPhase(phaseBase+1, totalPhases, "下载角色图像"); p.Send("images_characters", 0, len(charList), "downloading") }
-	dlImageList(charList, "character", charImg, imgBase, bg, dd, p, "images_characters")
-	saveJSON(cache.IndexFile(dd, "characters_image.json"), charImg)
+	if p != nil && totalPhases > 0 { p.SetPhase(phaseBase+1, totalPhases, "下载角色图像") }
+	if p != nil { p.Send("images_characters", 0, len(charIDs), "downloading") }
+	dlImageList(charIDs, "character", nil, imgBase, bg, p, "images_characters")
 
 	// Persons
-	persList := filterList(loadNameList(cache.IndexFile(dd, "persons.json")), persFilter)
-	if p != nil { p.SetPhase(phaseBase+2, totalPhases, "下载人物图像"); p.Send("images_persons", 0, len(persList), "downloading") }
-	dlImageList(persList, "person", persImg, imgBase, bg, dd, p, "images_persons")
-	saveJSON(cache.IndexFile(dd, "persons_image.json"), persImg)
+	if p != nil && totalPhases > 0 { p.SetPhase(phaseBase+2, totalPhases, "下载人物图像") }
+	if p != nil { p.Send("images_persons", 0, len(persIDs), "downloading") }
+	dlImageList(persIDs, "person", nil, imgBase, bg, p, "images_persons")
 
 	log.Info("Images download complete")
 }
 
-func dlImageList(list []cache.NameEntry, kind string, imgMap map[int]cache.ImageEntry, imgBase string, bg *bangumi.Client, dd string, p *Progress, stage string) {
-	if len(list) == 0 {
+// imageExists checks if all three sizes of an image exist on disk.
+func imageExists(imgBase, kind string, id int) bool {
+	for _, size := range []string{"large", "grid", "small"} {
+		path := filepath.Join(imgBase, fmt.Sprintf("%ss_%s/%d/%d.jpg", kind, size, id%10, id))
+		if _, err := os.Stat(path); err != nil {
+			return false
+		}
+	}
+	return true
+}
+
+func dlImageList(ids []int, kind string, imgMap map[int]cache.ImageEntry, imgBase string, bg *bangumi.Client, p *Progress, stage string) {
+	if len(ids) == 0 {
 		return
 	}
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, maxConcurrency)
 	var done int
 	var mu sync.Mutex
-	for _, entry := range list {
+	for _, id := range ids {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
@@ -115,22 +115,29 @@ func dlImageList(list []cache.NameEntry, kind string, imgMap map[int]cache.Image
 			if p != nil {
 				mu.Lock()
 				done++
-				if done%10 == 0 || done == len(list) {
-					p.Send(stage, done, len(list), "")
+				if done%10 == 0 || done == len(ids) {
+					p.Send(stage, done, len(ids), "")
 				}
 				mu.Unlock()
 			}
-		}(entry.ID)
+		}(id)
 	}
 	wg.Wait()
 }
 
 func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.ImageEntry, imgBase string, mu *sync.Mutex) {
-	mu.Lock()
-	entry, hasAll := imgMap[id]
-	mu.Unlock()
-	if hasAll && entry.Large != "" && entry.Grid != "" && entry.Small != "" {
-		return // already have all three sizes, skip
+	// Dedup: check map (legacy path) or disk (new path)
+	if imgMap != nil {
+		mu.Lock()
+		entry, hasAll := imgMap[id]
+		mu.Unlock()
+		if hasAll && entry.Large != "" && entry.Grid != "" && entry.Small != "" {
+			return
+		}
+	} else {
+		if imageExists(imgBase, kind, id) {
+			return
+		}
 	}
 
 	// 三个尺寸并发下载
@@ -158,6 +165,7 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 	wg.Wait()
 	close(results)
 
+	var entry cache.ImageEntry
 	for r := range results {
 		switch r.size {
 		case "large":
@@ -169,7 +177,7 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 		}
 	}
 
-	if entry.Large != "" || entry.Grid != "" || entry.Small != "" {
+	if imgMap != nil && (entry.Large != "" || entry.Grid != "" || entry.Small != "") {
 		mu.Lock()
 		imgMap[id] = entry
 		mu.Unlock()
@@ -239,10 +247,6 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress) {
 	for _, d := range domains {
 		imgMap := loadImageIndex(dd, d.kind+"s_image.json")
 		nameList := loadNameList(cache.IndexFile(dd, d.kind+"s.json"))
-		nameSet := make(map[int]bool)
-		for _, e := range nameList {
-			nameSet[e.ID] = true
-		}
 
 		// Phase 1: Fill missing sizes for existing entries
 		type partial struct {
@@ -298,10 +302,10 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress) {
 		phaseNum++
 
 		// Phase 2: Download all sizes for entries missing entirely from image index
-		var missingIDs []cache.NameEntry
+		var missingIDs []int
 		for _, e := range nameList {
 			if _, ok := imgMap[e.ID]; !ok {
-				missingIDs = append(missingIDs, e)
+				missingIDs = append(missingIDs, e.ID)
 			}
 		}
 		if p != nil {
@@ -311,7 +315,7 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress) {
 			if p != nil {
 				p.Send("fill_"+d.kind+"_miss", 0, len(missingIDs), "")
 			}
-			dlImageList(missingIDs, d.kind, imgMap, imgBase, bg, dd, p, "fill_"+d.kind+"_miss")
+			dlImageList(missingIDs, d.kind, imgMap, imgBase, bg, p, "fill_"+d.kind+"_miss")
 		}
 		phaseNum++
 
@@ -319,9 +323,49 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress) {
 	}
 }
 
-// ── Search ──
+// RebuildImageIndex scans the images/ directory and rebuilds *_image.json files.
+func RebuildImageIndex(dd string) {
+	imgBase := filepath.Join(dd, "images")
+	kinds := []string{"subject", "character", "person"}
+	for _, kind := range kinds {
+		m := map[int]cache.ImageEntry{}
+		for _, size := range []string{"large", "grid", "small"} {
+			dir := filepath.Join(imgBase, kind+"s_"+size)
+			digits, err := os.ReadDir(dir)
+			if err != nil {
+				continue
+			}
+			for _, d := range digits {
+				if !d.IsDir() { continue }
+				files, _ := os.ReadDir(filepath.Join(dir, d.Name()))
+				for _, f := range files {
+					name := f.Name()
+					if ext := filepath.Ext(name); ext != ".jpg" {
+						continue
+					}
+					id, err := strconv.Atoi(strings.TrimSuffix(name, ".jpg"))
+					if err != nil { continue }
+					entry := m[id]
+					relPath := fmt.Sprintf("%ss_%s/%s/%s", kind, size, d.Name(), name)
+					switch size {
+					case "large":
+						entry.Large = relPath
+					case "grid":
+						entry.Grid = relPath
+					case "small":
+						entry.Small = relPath
+					}
+					m[id] = entry
+				}
+			}
+		}
+		saveJSON(cache.IndexFile(dd, kind+"s_image.json"), m)
+		log.Info("Image index rebuilt: %s (%d entries)", kind+"s", len(m))
+	}
+}
 
-// quickSearch 使用 list 文件快速搜索。
+// ── Helpers ──
+
 func loadImageIndex(dd, name string) map[int]cache.ImageEntry {
 	data, err := os.ReadFile(cache.IndexFile(dd, name))
 	if err != nil {

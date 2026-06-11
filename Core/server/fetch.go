@@ -479,10 +479,9 @@ func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 		go func() {
 			p.SetPhase(1, 5, "拉取动画数据")
 			fetchSubjectList(ids, bg, dd, imgDir, p)
-			p.SetPhase(2, 5, "建立索引")
+			downloadImagesScoped(dd, bg, p, 2, 5, ids)
+			p.SetPhase(5, 5, "建立索引")
 			buildIndexes(dd, p)
-			p.SetPhase(3, 5, "下载图像")
-			downloadImagesScoped(dd, bg, p, ids)
 			p.Send("complete", len(ids), len(ids), "")
 			p.Close()
 		}()
@@ -502,10 +501,9 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 			if len(newIDs) > 0 {
 				p.SetPhase(1, phases, "拉取动画数据")
 				fetchSubjectList(newIDs, bg, dd, imgDir, p)
-				p.SetPhase(2, phases, "建立索引")
+				downloadImagesScoped(dd, bg, p, 2, phases, newIDs)
+				p.SetPhase(phases, phases, "建立索引")
 				buildIndexes(dd, p)
-				p.SetPhase(3, phases, "下载图像")
-				downloadImagesScoped(dd, bg, p, newIDs)
 			}
 			p.Send("complete", phases, phases, "")
 			p.Close()
@@ -517,10 +515,10 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 func handleFetchIndex(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if taskLocked() { http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409); return }
-		p := newProgress(4, "rebuild_index", "重建索引")
+		p := newProgress(5, "rebuild_index", "重建索引")
 		go func() {
 			buildIndexes(dd, p)
-			p.Send("complete", 4, 4, "")
+			p.Send("complete", 5, 5, "")
 			p.Close()
 		}()
 		writeJSON(w, map[string]any{"status": "rebuilding", "task_id": p.ID})
@@ -567,7 +565,7 @@ func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 				p.Send("gap", done, len(allIDs), "")
 			}
 			fillImageGaps(dd, bg, p)
-			downloadImages(dd, bg, p)
+			downloadImages(dd, bg, p, 0, 0)
 			buildIndexes(dd, p)
 			p.Send("complete", len(allIDs), len(allIDs), "")
 			p.Close()
