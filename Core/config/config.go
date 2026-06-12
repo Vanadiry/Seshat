@@ -47,6 +47,7 @@ var Defaults = Config{
 		ConcurrencyInfo:  4,
 		ConcurrencyImage: 16,
 		DataHome:         "",
+		LogLevel:         "warn",
 	},
 	Upstream: UpstreamConfig{
 		BaseURL:   "https://api.bgm.tv",
