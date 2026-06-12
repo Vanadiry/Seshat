@@ -89,7 +89,17 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/persons/list", handleListPersons(dd))
 		nameHandler := func(domain string) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, _ := loadCachedIndex[map[int][]string](cache.IndexFile(dd, domain+"_name.json"))
+				path := cache.IndexFile(dd, domain+"_name.json")
+				stat, err := os.Stat(path)
+				if err != nil { writeJSON(w, map[string]int{}); return }
+				etag := fmt.Sprintf(`"%d"`, stat.ModTime().Unix())
+				w.Header().Set("ETag", etag)
+				w.Header().Set("Cache-Control", "max-age=0, must-revalidate")
+				if r.Header.Get("If-None-Match") == etag {
+					w.WriteHeader(http.StatusNotModified)
+					return
+				}
+				m, _ := loadCachedIndex[map[int][]string](path)
 				writeJSON(w, m)
 			}
 		}
