@@ -49,11 +49,11 @@ var allSettings = []SettingDef{
 		Default: "original",
 	},
 	{
-		Key: "username", Comment: "Bangumi 用户 ID，用于拉取收藏和头像",
+		Key: "username", Comment: "Bangumi 用户 ID",
 		Default: "",
 	},
 	{
-		Key: "subject_sort", Comment: "首页条目排序方式",
+		Key: "subject_sort", Comment: "首页排序方式",
 		Choices: []SettingChoice{
 			{Value: "elo", Label: "ELO Rating"},
 			{Value: "bgm_rank", Label: "BGM Rank"},
@@ -63,7 +63,7 @@ var allSettings = []SettingDef{
 		Default: "elo",
 	},
 	{
-		Key: "auto_link_names", Comment: "详情页自动高亮角色和人物名称",
+		Key: "auto_link_names", Comment: "条目名称高亮",
 		Choices: []SettingChoice{
 			{Value: "true", Label: "开启"},
 			{Value: "false", Label: "关闭"},
