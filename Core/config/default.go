@@ -27,41 +27,6 @@ const DefaultConfigTOML = `# Seshat 配置
 # bangumi_access_token = ""
 `
 
-const DefaultPreferencesJSON = `{
-  "theme": {
-    "_choice": [
-      {"auto": "同步系统"},
-      {"dark": "深色"},
-      {"light": "浅色"}
-    ],
-    "_comment": "界面主题",
-    "value": "auto"
-  },
-  "prefer_lang": {
-    "_choice": [
-      {"original": "原文优先"},
-      {"chinese": "中文优先"}
-    ],
-    "_comment": "标题展示方式",
-    "value": "original"
-  },
-  "username": {
-    "_comment": "在此处填写你的 Bangumi番组计划 ID，将能够拉取收藏和头像等信息",
-    "value": ""
-  },
-  "subject_sort": {
-    "_choice": [
-      {"elo": "ELO Rating"},
-      {"bgm_rank": "BGM Rank"},
-      {"random": "随机"},
-      {"none": "不排序"}
-    ],
-    "_comment": "首页条目排序方式",
-    "value": "elo"
-  }
-}
-`
-
 const TrackerTemplate = `# Tracker: %s
 name = "%s"
 ids = []
