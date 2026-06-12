@@ -94,36 +94,8 @@ func saveOverrides(m map[string]string) error {
 	return os.WriteFile(PrefPath(), data, 0o644)
 }
 
-// migrateOldPrefs 将旧 settings/preferences.json 转为稀疏格式
-func migrateOldPrefs() {
-	oldPath := filepath.Join(Dir(), "settings", "preferences.json")
-	data, err := os.ReadFile(oldPath)
-	if err != nil {
-		return
-	}
-	var old map[string]any
-	if json.Unmarshal(data, &old) != nil {
-		return
-	}
-	m := map[string]string{}
-	for _, def := range allSettings {
-		if entry, ok := old[def.Key].(map[string]any); ok {
-			if v, ok := entry["value"].(string); ok && v != "" && v != def.Default {
-				m[def.Key] = v
-			}
-		}
-	}
-	if len(m) == 0 {
-		return
-	}
-	saveOverrides(m)
-	os.Remove(oldPath)
-}
-
 // LoadPreferences 读取偏好，缺失项使用默认值
 func LoadPreferences() (*Preferences, error) {
-	migrateOldPrefs()
-
 	m, err := loadOverrides()
 	if err != nil {
 		if os.IsNotExist(err) {

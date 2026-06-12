@@ -586,9 +586,3 @@ func collectAllSubjectIDs(dd string) []int {
 	return ids
 }
 
-func collectNameIDs(path string) []int {
-	list := loadNameList(path)
-	ids := make([]int, len(list))
-	for i, e := range list { ids[i] = e.ID }
-	return ids
-}
