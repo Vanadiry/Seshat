@@ -297,6 +297,7 @@ var _subjectMap = null,
     _charMap = null,
     _personMap = null;
 function loadPersonMap() {
+    if (window.AUTO_LINK_NAMES === "false") return Promise.resolve();
     if (_personMap && Object.keys(_personMap).length) return Promise.resolve();
     return Promise.all([
         api("/v0/subjects/name"),

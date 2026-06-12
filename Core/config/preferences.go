@@ -8,10 +8,11 @@ import (
 
 // Preferences 运行时的扁平偏好结构
 type Preferences struct {
-	Theme       string
-	PreferLang  string
-	Username    string
-	SubjectSort string
+	Theme         string
+	PreferLang    string
+	Username      string
+	SubjectSort   string
+	AutoLinkNames string
 }
 
 // SettingChoice 偏好选项
@@ -61,11 +62,20 @@ var allSettings = []SettingDef{
 		},
 		Default: "elo",
 	},
+	{
+		Key: "auto_link_names", Comment: "详情页自动高亮角色和人物名称",
+		Choices: []SettingChoice{
+			{Value: "true", Label: "开启"},
+			{Value: "false", Label: "关闭"},
+		},
+		Default: "true",
+	},
 }
 
 var DefaultPreferences = Preferences{
-	PreferLang:  "original",
-	SubjectSort: "elo",
+	PreferLang:    "original",
+	SubjectSort:   "elo",
+	AutoLinkNames: "true",
 }
 
 func PrefDir() string  { return filepath.Join(Dir(), "user", "settings") }
@@ -115,10 +125,11 @@ func LoadPreferences() (*Preferences, error) {
 	}
 
 	return &Preferences{
-		Theme:       defMap["theme"],
-		PreferLang:  defMap["prefer_lang"],
-		Username:    defMap["username"],
-		SubjectSort: defMap["subject_sort"],
+		Theme:         defMap["theme"],
+		PreferLang:    defMap["prefer_lang"],
+		Username:      defMap["username"],
+		SubjectSort:   defMap["subject_sort"],
+		AutoLinkNames: defMap["auto_link_names"],
 	}, nil
 }
 
