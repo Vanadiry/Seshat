@@ -212,6 +212,21 @@
                     document.getElementById("pager").innerHTML = "";
                     return;
                 }
+                var sort = window.SUBJECT_SORT || "elo";
+                if (sort === "elo") {
+                    allItems.sort(function (a, b) {
+                        var ae = a._elo || 0,
+                            be = b._elo || 0;
+                        if (ae !== be) return be - ae;
+                        return (b.score || 0) - (a.score || 0);
+                    });
+                } else if (sort === "bgm_rank") {
+                    allItems.sort(function (a, b) {
+                        return (b.score || 0) - (a.score || 0);
+                    });
+                } else if (sort === "random") {
+                    allItems.sort(function () { return Math.random() - 0.5; });
+                }
                 document.getElementById("grid").innerHTML = "";
                 showing = 0;
                 showMore(pageSize);
