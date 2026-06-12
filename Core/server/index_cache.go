@@ -2,7 +2,9 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -17,6 +19,10 @@ type indexCacheEntry struct {
 	data    any
 }
 
+func cacheKey[T any](path string) string {
+	return fmt.Sprintf("%s:%T", path, *new(T))
+}
+
 // loadCachedIndex reads and caches an index JSON file. Returns cached data if
 // the file's mtime hasn't changed since the last load.
 func loadCachedIndex[T any](path string) (T, error) {
@@ -27,8 +33,9 @@ func loadCachedIndex[T any](path string) (T, error) {
 		return zero, err
 	}
 
+	key := cacheKey[T](path)
 	indexCacheMu.RLock()
-	entry, ok := indexCache[path]
+	entry, ok := indexCache[key]
 	indexCacheMu.RUnlock()
 	if ok && entry.modTime.Equal(stat.ModTime()) {
 		return entry.data.(T), nil
@@ -44,15 +51,20 @@ func loadCachedIndex[T any](path string) (T, error) {
 	}
 
 	indexCacheMu.Lock()
-	indexCache[path] = indexCacheEntry{modTime: stat.ModTime(), data: result}
+	indexCache[key] = indexCacheEntry{modTime: stat.ModTime(), data: result}
 	indexCacheMu.Unlock()
 
 	return result, nil
 }
 
-// clearIndexCache removes a specific index file from the cache (call after writing).
+// clearIndexCache removes all cached entries for a given file path (all types).
 func clearIndexCache(path string) {
+	prefix := path + ":"
 	indexCacheMu.Lock()
-	delete(indexCache, path)
+	for k := range indexCache {
+		if strings.HasPrefix(k, prefix) {
+			delete(indexCache, k)
+		}
+	}
 	indexCacheMu.Unlock()
 }
