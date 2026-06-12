@@ -134,7 +134,7 @@
                         if (d.error)
                             text += (text ? "  " : "") + "✗ " + d.error;
                         msg.textContent = text || "保存成功";
-                        // Sync theme to localStorage for anti-flash script
+                        // 同步主题到 localStorage 供防闪屏脚本使用
                         if (updates.theme) {
                             localStorage.setItem("theme", updates.theme);
                             var isLight =

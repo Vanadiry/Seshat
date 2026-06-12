@@ -34,7 +34,7 @@ func scanAPIDir(dd, domain string, fn func(path string)) {
 
 
 
-// Phase 3: Download images via official endpoints.
+// 阶段三：通过官方端点下载图片
 func tagsPath(dd string) string {
 	return cache.IndexFile(dd, "tags.json")
 }
@@ -119,7 +119,7 @@ func buildIndexes(dd string, p *Progress) {
 	var persons []cache.NameEntry
 	tags := map[string]tagInfo{}
 
-	// Scan subjects
+	// 扫描条目
 	if p != nil { p.Send("phase", 0, 4, "scanning subjects") }
 	scanAPIDir(dd, "subjects", func(path string) {
 		if !strings.HasSuffix(path, "info.json") { return }
@@ -140,7 +140,7 @@ func buildIndexes(dd string, p *Progress) {
 	})
 	saveJSON(cache.IndexFile(dd, "subjects.json"), subjects)
 
-	// Scan characters
+	// 扫描角色
 	if p != nil { p.Send("phase", 1, 4, "scanning characters") }
 	scanAPIDir(dd, "characters", func(path string) {
 		if !strings.HasSuffix(path, "info.json") { return }
@@ -158,7 +158,7 @@ func buildIndexes(dd string, p *Progress) {
 	})
 	saveJSON(cache.IndexFile(dd, "characters.json"), chars)
 
-	// Scan persons
+	// 扫描人物
 	if p != nil { p.Send("phase", 2, 4, "scanning persons") }
 	scanAPIDir(dd, "persons", func(path string) {
 		if !strings.HasSuffix(path, "info.json") { return }
@@ -176,14 +176,14 @@ func buildIndexes(dd string, p *Progress) {
 	})
 saveJSON(cache.IndexFile(dd, "persons.json"), persons)
 
-	// Save tags
+	// 保存标签
 	if p != nil { p.Send("phase", 3, 5, "saving tags") }
 	saveJSON(cache.IndexFile(dd, "tags.json"), tags)
 	buildNameIndex(dd, "subjects")
 		buildNameIndex(dd, "characters")
 		buildPersonNames(dd)
 
-	// Rebuild image index from disk
+	// 从磁盘重建图片索引
 	if p != nil { p.Send("phase", 4, 5, "rebuilding image index") }
 	RebuildImageIndex(dd)
 

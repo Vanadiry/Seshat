@@ -19,12 +19,12 @@ type indexCacheEntry struct {
 	data    any
 }
 
+// cacheKey 生成带类型名的缓存键
 func cacheKey[T any](path string) string {
 	return fmt.Sprintf("%s:%T", path, *new(T))
 }
 
-// loadCachedIndex reads and caches an index JSON file. Returns cached data if
-// the file's mtime hasn't changed since the last load.
+// loadCachedIndex 读取并缓存索引 JSON 文件，mtime 未变则返回缓存
 func loadCachedIndex[T any](path string) (T, error) {
 	var zero T
 
@@ -57,7 +57,7 @@ func loadCachedIndex[T any](path string) (T, error) {
 	return result, nil
 }
 
-// clearIndexCache removes all cached entries for a given file path (all types).
+// clearIndexCache 清除指定文件路径的全部类型缓存
 func clearIndexCache(path string) {
 	prefix := path + ":"
 	indexCacheMu.Lock()

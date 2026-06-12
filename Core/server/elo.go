@@ -70,7 +70,7 @@ const excludeTemplate = `# ELO 排除名单，此文件中的条目不会被列�
 ids = []
 `
 
-// EnsureExcludeFile 确保排除文件存在，不存在则创建默认模板。
+// EnsureExcludeFile 确保 ELO 排除文件存在
 func EnsureExcludeFile() {
 	path := eloExcludePath()
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -152,9 +152,9 @@ func saveBattleCounts(m map[int]int) {
 	os.WriteFile(eloBattleCountsPath(), data, 0o644)
 }
 
-// getELOPair returns two subjects for comparison using a mixed strategy:
-// 40% low-frequency priority, 30% similar-score, 30% random.
-// Once all subjects have ≥3 battles: 20% low-frequency, 50% similar-score, 30% random.
+// getELOPair 混合策略返回两个评比条目：
+// 40% 低频优先，30% 相近分数，30% 随机
+// 全部条目 ≥3 场后：20% 低频优先，50% 相近分数，30% 随机
 func getELOPair(dd string) []eloPairEntry {
 	keys, err := cache.List(dd, "subjects")
 	if err != nil || len(keys) < 2 {
@@ -174,7 +174,7 @@ func getELOPair(dd string) []eloPairEntry {
 
 	counts := loadBattleCounts()
 
-	// Check if all subjects have ≥3 battles
+	// 检查是否全部条目 ≥3 场
 	allSeen := true
 	for _, id := range eligible {
 		if counts[id] < 3 {
@@ -208,7 +208,7 @@ func getELOPair(dd string) []eloPairEntry {
 	}
 }
 
-// pickLowFreq picks two IDs from those with the lowest battle count (≤ min+1).
+// pickLowFreq 从最低对战次数的条目中选两个
 func pickLowFreq(eligible []int, counts map[int]int) (int, int) {
 	minCount := -1
 	var pool []int
@@ -229,7 +229,7 @@ func pickLowFreq(eligible []int, counts map[int]int) (int, int) {
 	return pool[i1], pool[i2]
 }
 
-// pickSimilarScore picks one subject randomly, then another within ±200 ELO.
+// pickSimilarScore 随机选一个，再在 ±200 ELO 内选另一个
 func pickSimilarScore(eligible []int) (int, int) {
 	id1 := eligible[rand.Intn(len(eligible))]
 	scores := loadELO()
@@ -256,7 +256,7 @@ func pickSimilarScore(eligible []int) (int, int) {
 	return id1, close[rand.Intn(len(close))]
 }
 
-// pickRandomPair picks two distinct IDs uniformly at random.
+// pickRandomPair 随机选两个不同条目
 func pickRandomPair(eligible []int) (int, int) {
 	i1 := rand.Intn(len(eligible))
 	i2 := rand.Intn(len(eligible))
@@ -266,7 +266,7 @@ func pickRandomPair(eligible []int) (int, int) {
 	return eligible[i1], eligible[i2]
 }
 
-// updateELO updates ratings after a comparison and records the battle in history.
+// updateELO 更新 ELO 评分并记录对战历史
 func updateELO(dd string, winnerID, loserID int) {
 	scores := loadELO()
 	wa := scores[winnerID]
@@ -290,14 +290,14 @@ func updateELO(dd string, winnerID, loserID int) {
 	history = append(history, eloHistory{Winner: winnerID, Loser: loserID, Time: time.Now().Format(time.RFC3339)})
 	saveELOHistory(history)
 
-	// Increment battle counts
+	// 累加对战计数
 	counts := loadBattleCounts()
 	counts[winnerID]++
 	counts[loserID]++
 	saveBattleCounts(counts)
 }
 
-// loadSubjectIndex reads subjects.json index for fast lookup.
+// loadSubjectIndex 读取条目索引
 func loadSubjectIndex(dd string) []eloEntry {
 	list, _ := loadCachedIndex[[]cache.SubjectSummary](cache.IndexFile(dd, "subjects.json"))
 	var result []eloEntry
@@ -307,7 +307,7 @@ func loadSubjectIndex(dd string) []eloEntry {
 	return result
 }
 
-// getELORanking returns entries with ELO, entries without ELO, and orphan scores.
+// getELORanking 返回有 ELO、无 ELO 及孤立评分
 func getELORanking(dd string) eloRankingResult {
 	scores := loadELO()
 	all := loadSubjectIndex(dd)
@@ -344,7 +344,7 @@ func getELORanking(dd string) eloRankingResult {
 	return eloRankingResult{Entries: entries, NoRating: noRating, Orphans: orphans}
 }
 
-// subjectSummary returns a lightweight subject entry (only Score is used externally).
+// subjectSummary 返回轻量条目信息
 type subjectInfo struct {
 	Name   string
 	NameCN string
@@ -371,7 +371,7 @@ func handleELOPair(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pair := getELOPair(dd)
 		if pair == nil { writeJSON(w, map[string]string{"error": "need at least 2 cached subjects"}); return }
-		// pair is []eloPairEntry — ensure we handle it correctly
+		// pair 类型为 []eloPairEntry
 		writeJSON(w, pair)
 	}
 }

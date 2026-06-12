@@ -19,7 +19,7 @@ func downloadImages(dd string, bg *bangumi.Client, p *Progress, phaseBase, total
 	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, nil)
 }
 
-// downloadImagesScoped 仅下载指定 subject 及其关联角色/人物的图像。
+// downloadImagesScoped 仅下载指定条目及其关联角色/人物的图像
 func downloadImagesScoped(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectIDs []int) {
 	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, subjectIDs)
 }
@@ -29,7 +29,7 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 	os.MkdirAll(cache.IndexDir(dd), 0o755)
 	imgBase := filepath.Join(dd, "images")
 
-	// Build entity lists: scoped = filter by given subject IDs, full = scan API data dir
+	// 构建实体列表：scoped 按指定条目过滤，full 扫描 API 数据目录
 	var subjIDs []int
 	var charIDs []int
 	var persIDs []int
@@ -68,17 +68,17 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 		persIDs, _ = cache.ListIDs(dd, "persons")
 	}
 
-	// Subjects
+	// 条目
 	if p != nil && totalPhases > 0 { p.SetPhase(phaseBase, totalPhases, "下载条目图像") }
 	if p != nil { p.Send("images_subjects", 0, len(subjIDs), "downloading") }
 	dlImageList(subjIDs, "subject", nil, imgBase, bg, p, "images_subjects")
 
-	// Characters
+	// 角色
 	if p != nil && totalPhases > 0 { p.SetPhase(phaseBase+1, totalPhases, "下载角色图像") }
 	if p != nil { p.Send("images_characters", 0, len(charIDs), "downloading") }
 	dlImageList(charIDs, "character", nil, imgBase, bg, p, "images_characters")
 
-	// Persons
+	// 人物
 	if p != nil && totalPhases > 0 { p.SetPhase(phaseBase+2, totalPhases, "下载人物图像") }
 	if p != nil { p.Send("images_persons", 0, len(persIDs), "downloading") }
 	dlImageList(persIDs, "person", nil, imgBase, bg, p, "images_persons")
@@ -86,7 +86,7 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 	log.Info("images download complete")
 }
 
-// imageExists checks if all three sizes of an image exist on disk.
+// imageExists 检查图片三种尺寸是否都已存在于磁盘
 func imageExists(imgBase, kind string, id int) bool {
 	for _, size := range []string{"large", "grid", "small"} {
 		path := filepath.Join(imgBase, fmt.Sprintf("%ss_%s/%d/%d.jpg", kind, size, id%10, id))
@@ -124,7 +124,7 @@ func dlImageList(ids []int, kind string, imgMap map[int]cache.ImageEntry, imgBas
 }
 
 func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.ImageEntry, imgBase string, mu *sync.Mutex, p *Progress) {
-	// Dedup: check map (legacy path) or disk (new path)
+	// 去重：检查 map 或磁盘
 	if imgMap != nil {
 		mu.Lock()
 		entry, hasAll := imgMap[id]
@@ -186,7 +186,7 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 	}
 }
 
-// dlMissingSizes downloads only the specified missing sizes for an image entry.
+// dlMissingSizes 仅下载指定条目缺失的图片尺寸
 func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, imgMap map[int]cache.ImageEntry, imgBase string, mu *sync.Mutex, p *Progress) {
 	mu.Lock()
 	entry := imgMap[id]
@@ -236,7 +236,7 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 	mu.Unlock()
 }
 
-// fillImageGaps fills missing image sizes and downloads images for entities not yet in the image index.
+// fillImageGaps 补充缺失的图片尺寸及索引中不存在的图片
 func fillImageGaps(dd string, bg *bangumi.Client, p *Progress) {
 	imgBase := filepath.Join(dd, "images")
 	domains := []struct {
@@ -254,7 +254,7 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress) {
 		imgMap := loadImageIndex(dd, d.kind+"s_image.json")
 		nameList := loadNameList(cache.IndexFile(dd, d.kind+"s.json"))
 
-		// Phase 1: Fill missing sizes for existing entries
+		// 阶段一：补充已有条目缺失的图片尺寸
 		type partial struct {
 			id    int
 			sizes []string
@@ -305,7 +305,7 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress) {
 		}
 		phaseNum++
 
-		// Phase 2: Download all sizes for entries missing entirely from image index
+		// 阶段二：下载图片索引中完全缺失的条目
 		var missingIDs []int
 		for _, e := range nameList {
 			if _, ok := imgMap[e.ID]; !ok {
@@ -327,7 +327,7 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress) {
 	}
 }
 
-// RebuildImageIndex scans the images/ directory and rebuilds *_image.json files.
+// RebuildImageIndex 扫描 images/ 目录重建图片索引
 func RebuildImageIndex(dd string) {
 	imgBase := filepath.Join(dd, "images")
 	kinds := []string{"subject", "character", "person"}
@@ -368,7 +368,7 @@ func RebuildImageIndex(dd string) {
 	}
 }
 
-// ── Helpers ──
+// ── 辅助函数 ──
 
 func loadImageIndex(dd, name string) map[int]cache.ImageEntry {
 	m, err := loadCachedIndex[map[int]cache.ImageEntry](cache.IndexFile(dd, name))
@@ -400,6 +400,6 @@ func serveImage(w http.ResponseWriter, r *http.Request, dd, kind, size string) {
 			}
 		}
 	}
-	// 返回 404 以触发前端 onerror 回退逻辑
+	// 404 触发前端 onerror 回退
 	http.NotFound(w, r)
 }

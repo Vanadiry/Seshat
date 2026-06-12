@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-// Preferences is the flat runtime representation of user preferences.
+// Preferences 运行时的扁平偏好结构
 type Preferences struct {
 	Theme       string
 	PreferLang  string
@@ -14,13 +14,13 @@ type Preferences struct {
 	SubjectSort string
 }
 
-// SettingChoice represents an option in a preference dropdown.
+// SettingChoice 偏好选项
 type SettingChoice struct {
 	Value string `json:"-"`
 	Label string `json:"-"`
 }
 
-// SettingDef defines a single preference item.
+// SettingDef 单个偏好项定义
 type SettingDef struct {
 	Key     string
 	Comment string
@@ -28,7 +28,7 @@ type SettingDef struct {
 	Default string
 }
 
-// allSettings is the single source of truth for all preferences.
+// allSettings 全部偏好项的定义
 var allSettings = []SettingDef{
 	{
 		Key: "theme", Comment: "界面主题",
@@ -48,7 +48,7 @@ var allSettings = []SettingDef{
 		Default: "original",
 	},
 	{
-		Key: "username", Comment: "在此处填写你的 Bangumi番组计划 ID，将能够拉取收藏和头像等信息",
+		Key: "username", Comment: "Bangumi 用户 ID，用于拉取收藏和头像",
 		Default: "",
 	},
 	{
@@ -71,7 +71,7 @@ var DefaultPreferences = Preferences{
 func PrefDir() string  { return filepath.Join(Dir(), "user", "settings") }
 func PrefPath() string { return filepath.Join(PrefDir(), "preferences.json") }
 
-// loadOverrides reads the sparse overrides file (just {key: value}).
+// loadOverrides 读取稀疏覆盖文件 {key: value}
 func loadOverrides() (map[string]string, error) {
 	data, err := os.ReadFile(PrefPath())
 	if err != nil {
@@ -84,7 +84,7 @@ func loadOverrides() (map[string]string, error) {
 	return m, nil
 }
 
-// saveOverrides writes the sparse overrides file.
+// saveOverrides 写入稀疏覆盖文件
 func saveOverrides(m map[string]string) error {
 	os.MkdirAll(PrefDir(), 0o755)
 	data, err := json.MarshalIndent(m, "", "  ")
@@ -94,8 +94,7 @@ func saveOverrides(m map[string]string) error {
 	return os.WriteFile(PrefPath(), data, 0o644)
 }
 
-// migrateOldPrefs moves settings/preferences.json to user/settings/preferences.json
-// and converts from old structured format to sparse KV.
+// migrateOldPrefs 将旧 settings/preferences.json 转为稀疏格式
 func migrateOldPrefs() {
 	oldPath := filepath.Join(Dir(), "settings", "preferences.json")
 	data, err := os.ReadFile(oldPath)
@@ -121,7 +120,7 @@ func migrateOldPrefs() {
 	os.Remove(oldPath)
 }
 
-// LoadPreferences returns user preferences, filling defaults where no override exists.
+// LoadPreferences 读取偏好，缺失项使用默认值
 func LoadPreferences() (*Preferences, error) {
 	migrateOldPrefs()
 
@@ -133,12 +132,10 @@ func LoadPreferences() (*Preferences, error) {
 		return nil, err
 	}
 
-	// Fill defaults
 	defMap := map[string]string{}
 	for _, def := range allSettings {
 		defMap[def.Key] = def.Default
 	}
-	// Apply overrides
 	for k, v := range m {
 		if _, ok := defMap[k]; ok {
 			defMap[k] = v
@@ -153,7 +150,7 @@ func LoadPreferences() (*Preferences, error) {
 	}, nil
 }
 
-// BuildSettingsJSON generates the full settings JSON sent to the frontend.
+// BuildSettingsJSON 生成发往前端的完整设置 JSON
 func BuildSettingsJSON() map[string]any {
 	m, _ := loadOverrides()
 	if m == nil {
@@ -182,16 +179,13 @@ func BuildSettingsJSON() map[string]any {
 	return result
 }
 
-// ApplyOverrides merges the given key-value pairs into the overrides file.
-// Only keys defined in allSettings are accepted; blank/default values are removed.
+// ApplyOverrides 合并设置更新到覆盖文件，空白或默认值则删除该项
 func ApplyOverrides(updates map[string]any) (okList, failList []string) {
-	// Build lookup of valid keys
-	valid := map[string]string{} // key → default
+	valid := map[string]string{}
 	for _, def := range allSettings {
 		valid[def.Key] = def.Default
 	}
 
-	// Load existing overrides
 	m, _ := loadOverrides()
 	if m == nil {
 		m = map[string]string{}
@@ -209,7 +203,7 @@ func ApplyOverrides(updates map[string]any) (okList, failList []string) {
 			continue
 		}
 		if s == "" || s == def {
-			delete(m, k) // remove override, use default
+			delete(m, k)
 		} else {
 			m[k] = s
 		}

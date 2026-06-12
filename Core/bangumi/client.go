@@ -21,7 +21,7 @@ type Client struct {
 	http      *http.Client
 	ua        string
 	baseURL   string
-	tokenFunc func() string // returns the latest access token, may be empty
+	tokenFunc func() string // 访问令牌，可能为空
 }
 
 func NewClient(ua, baseURL string, tokenFunc func() string) *Client {
@@ -36,7 +36,7 @@ func NewClient(ua, baseURL string, tokenFunc func() string) *Client {
 	}
 }
 
-// setAuth adds the Authorization header if a token is available.
+// setAuth 添加认证头。
 func (c *Client) setAuth(req *http.Request) {
 	if c.tokenFunc != nil {
 		if tok := c.tokenFunc(); tok != "" {
@@ -45,8 +45,7 @@ func (c *Client) setAuth(req *http.Request) {
 	}
 }
 
-// GetImage downloads the actual image binary from an official image endpoint.
-// Retries up to 3 times on transient errors. 404 and placeholder are not retried.
+// GetImage 下载图片，瞬时错误自动重试 3 次，404 和占位图不重试。
 func (c *Client) GetImage(urlPath string) ([]byte, error) {
 	url := fmt.Sprintf("%s/%s", c.baseURL, urlPath)
 	var lastErr error
@@ -60,7 +59,7 @@ func (c *Client) GetImage(urlPath string) ([]byte, error) {
 			return data, nil
 		}
 		lastErr = err
-		// 404 and placeholder are not transient — don't retry
+		// 404 和占位图不重试
 		if strings.Contains(err.Error(), "HTTP 404") || strings.Contains(err.Error(), "placeholder") {
 			return nil, err
 		}
@@ -93,8 +92,7 @@ func (c *Client) doGetImage(url string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-// GetRaw fetches a raw API path and returns the response body.
-// Retries up to 3 times on transient errors. 404 is not retried.
+// GetRaw 请求 API 端点，瞬时错误自动重试 3 次，404/400 不重试
 func (c *Client) GetRaw(urlPath string) ([]byte, error) {
 	url := fmt.Sprintf("%s/%s", c.baseURL, urlPath)
 	var lastErr error
@@ -108,7 +106,7 @@ func (c *Client) GetRaw(urlPath string) ([]byte, error) {
 			return data, nil
 		}
 		lastErr = err
-		// 4xx errors are not transient — don't retry
+		// 4xx 错误不重试
 		if strings.Contains(err.Error(), "HTTP 404") || strings.Contains(err.Error(), "HTTP 400") {
 			return nil, err
 		}
@@ -140,7 +138,7 @@ func (c *Client) doGetRaw(url string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-// GetRawPaged fetches a paginated URL with offset and limit.
+// GetRawPaged 分页请求 API 端点
 func (c *Client) GetRawPaged(urlPath string, offset, limit int) ([]byte, error) {
 	return c.GetRaw(fmt.Sprintf("%s?limit=%d&offset=%d", urlPath, limit, offset))
 }

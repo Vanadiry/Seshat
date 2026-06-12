@@ -16,7 +16,7 @@ func saveJSON(path string, v any) {
 	clearIndexCache(path)
 }
 
-// ── Tags index ──
+// ── 标签索引 ──
 
 type tagInfo struct {
 	Count    int   `json:"count"`

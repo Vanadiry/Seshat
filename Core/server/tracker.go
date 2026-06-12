@@ -28,7 +28,7 @@ func countTrackerTotal(cfg *config.Config) int {
 	return len(seen)
 }
 
-// countTrackerNames 统计指定 tracker 列表中的 subject 总数。
+// countTrackerNames 统计指定 tracker 列表中的条目总数
 func countTrackerNames(cfg *config.Config, names []string) int {
 	td := cfg.TrackerDir()
 	seen := map[int]bool{}
@@ -48,7 +48,7 @@ func countTrackerNames(cfg *config.Config, names []string) int {
 	return len(seen)
 }
 
-// forceRefresh 删除所有缓存数据后完整重建。
+// forceRefresh 删除全部缓存后完整重建
 func forceRefresh(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	log.Info("force refresh: clearing cache")
 	os.RemoveAll(dd)
@@ -56,7 +56,7 @@ func forceRefresh(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, p *
 	refreshAllTrackers(cfg, bg, dd, imgDir, p)
 }
 
-// refreshAllTrackers 刷新 tracker 文件夹中的所有列表。
+// refreshAllTrackers 刷新全部 tracker 列表
 func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
 	files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
@@ -79,7 +79,7 @@ func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 	buildIndexes(dd, p)
 }
 
-// refreshTrackers 刷新指定的 tracker 列表。
+// refreshTrackers 刷新指定 tracker 列表
 func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, names []string, p *Progress) {
 	td := cfg.TrackerDir()
 	seen := map[int]bool{}
@@ -135,7 +135,7 @@ func addToSeshatTracker(cfg *config.Config, sid int) {
 	os.WriteFile(path, result, 0o644)
 }
 
-// loadTrackerIDs 从 tracker 文件（JSON 或 TOML）读取 subject ID 列表。
+// loadTrackerIDs 从 tracker 文件读取条目 ID 列表
 func loadTrackerIDs(path string) []int {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -204,7 +204,7 @@ func parseIDList(s string, ids *[]int) {
 }
 
 
-// diffTrackerIDs returns IDs in trackers but not yet in subjects.json.
+// diffTrackerIDs 返回 tracker 中有但本地没有的 ID
 func diffTrackerIDs(cfg *config.Config, dd string) []int {
 	seen := map[int]bool{}
 	var allIDs []int
@@ -215,7 +215,7 @@ func diffTrackerIDs(cfg *config.Config, dd string) []int {
 			if !seen[sid] { seen[sid] = true; allIDs = append(allIDs, sid) }
 		}
 	}
-	// Load existing subject IDs
+	// 读取已有条目 ID
 	existing := map[int]bool{}
 	if list, err := loadCachedIndex[[]cache.SubjectSummary](cache.IndexFile(dd, "subjects.json")); err == nil {
 		for _, s := range list { existing[s.ID] = true }
@@ -226,10 +226,10 @@ func diffTrackerIDs(cfg *config.Config, dd string) []int {
 	}
 	return newIDs
 }
-// fetchConcurrent 并发拉取，使用 semaphore 控制并发数。
+// fetchConcurrent 并发拉取
 
 
-// validTrackerName checks if a tracker name is valid (alphanumeric, dash, underscore).
+// validTrackerName 校验 tracker 名称合法性
 func validTrackerName(name string) bool {
 	if name == "" { return false }
 	for _, c := range name {

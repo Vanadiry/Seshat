@@ -149,7 +149,7 @@
                     '<div class="col-span-full text-center py-20 text-sub">加载中…</div>';
                 try {
                     var subjects = (await apiLocal("/v0/subjects/list")) || [];
-                    // Merge ELO ratings + collections
+                    // 合并 ELO 评分和收藏数据
                     Promise.all([
                         api("/v0/elo/ranking"),
                         window.USERNAME

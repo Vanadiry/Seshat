@@ -43,11 +43,11 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 	wg.Wait()
 }
 
-// fetchAll 拉取动画的所有数据及关联角色/人物/图片。
+// fetchAll 拉取条目全部数据及关联角色/人物/图片
 func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	log.Info("fetching subject", "id", sid)
 
-	// Subject
+	// 条目
 	if p != nil { p.Send("subject", 0, 1, "fetching") }
 	data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d", sid))
 	if err != nil {
@@ -61,7 +61,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	cache.Put(dd, cache.Key("subjects", sid, "info.json"), cache.StripImages(data))
 	if p != nil { p.Send("subject", 1, 1, "done") }
 
-	// Characters & persons lists
+	// 角色与人物列表
 	type fullChar struct {
 		ID      int    `json:"id"`
 		Name    string `json:"name"`
@@ -99,10 +99,10 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	}()
 	wg.Wait()
 
-	// Character details + Person details + Episodes + Relations — all in parallel
+	// 角色详情、人物详情、剧集、关联条目并行拉取
 	var wg3 sync.WaitGroup
 
-	// Character details
+	// 角色详情
 	type charRef struct{ ID int `json:"id"` }
 	var charIDs []charRef
 	for _, c := range chars { charIDs = append(charIDs, charRef{ID: c.ID}) }
@@ -119,7 +119,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		}, nil, "", maxInfoConcurrency)
 	}()
 
-	// Person details
+	// 人物详情
 	type personRef struct{ ID int `json:"id"` }
 	personSet := map[int]bool{}
 	for _, p := range persons { personSet[p.ID] = true }
@@ -142,7 +142,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		}, nil, "", maxInfoConcurrency)
 	}()
 
-	// Character subjects
+	// 角色出演条目
 	wg3.Add(1)
 	go func() {
 		defer wg3.Done()
@@ -153,7 +153,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		}, nil, "", maxInfoConcurrency)
 	}()
 
-	// Character persons
+	// 角色相关人员
 	wg3.Add(1)
 	go func() {
 		defer wg3.Done()
@@ -164,7 +164,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		}, nil, "", maxInfoConcurrency)
 	}()
 
-	// Person subjects
+	// 人物参与条目
 	wg3.Add(1)
 	go func() {
 		defer wg3.Done()
@@ -175,7 +175,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		}, nil, "", maxInfoConcurrency)
 	}()
 
-	// Person characters
+	// 人物出演角色
 	wg3.Add(1)
 	go func() {
 		defer wg3.Done()
@@ -186,7 +186,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		}, nil, "", maxInfoConcurrency)
 	}()
 
-	// Episodes
+	// 剧集
 	wg3.Add(1)
 	go func() {
 		defer wg3.Done()
@@ -210,7 +210,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		}
 	}()
 
-	// Relations
+	// 关联条目
 	wg3.Add(1)
 	go func() {
 		defer wg3.Done()
@@ -223,7 +223,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	log.Info("subject fetch done", "id", sid, "chars", len(charIDs), "persons", len(personIDs), "episodes", len(allEps))
 }
 
-// Phase 2: Build index files from all cached API data.
+// 阶段二：从缓存数据重建索引
 func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 	log.Info("fetching collections", "user", username)
 
@@ -256,7 +256,7 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 		offset += 50
 	}
 
-	// Save collections for frontend display
+	// 保存收藏供前端展示
 	userDir := filepath.Join(config.Dir(), "user", "info")
 	os.MkdirAll(userDir, 0o755)
 	collData, _ := json.Marshal(map[string]any{"subjects": all, "updated_at": time.Now().Format(time.RFC3339)})
@@ -298,7 +298,7 @@ func fetchUserAvatar(username string, bg *bangumi.Client, dd string) {
 	log.Info("user avatar saved", "user", username)
 }
 
-// countTrackerTotal 统计所有 tracker 中的 subject 总数。
+// countTrackerTotal 统计全部 tracker 中的条目总数
 func fetchConcurrent[T any](items []T, fn func(T), p *Progress, stage string, concurrency int) {
 	if len(items) == 0 {
 		return
@@ -331,7 +331,7 @@ func fetchConcurrent[T any](items []T, fn func(T), p *Progress, stage string, co
 	wg.Wait()
 }
 
-// ── Helpers ──
+// ── 辅助函数 ──
 
 func handleFetchAll(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -499,7 +499,7 @@ func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 			var done int
 			log.Info("filling data gaps", "subjects", len(allIDs))
 		for _, sid := range allIDs {
-				// Check characters
+				// 检查角色
 				if data, err := os.ReadFile(filepath.Join(cache.Dir(dd), cache.Key("subjects", sid, "characters.json"))); err == nil {
 					var chars []struct{ ID int `json:"id"` }
 					if json.Unmarshal(data, &chars) == nil {
@@ -515,7 +515,7 @@ func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 						}
 					}
 				}
-				// Check persons
+				// 检查人物
 				if data, err := os.ReadFile(filepath.Join(cache.Dir(dd), cache.Key("subjects", sid, "persons.json"))); err == nil {
 					var persons []struct{ ID int `json:"id"` }
 					if json.Unmarshal(data, &persons) == nil {
@@ -550,7 +550,7 @@ func handleFetchMeta(cfg *config.Config, bg *bangumi.Client, dd string) http.Han
 		if cfg.Upstream.BaseURL == "" { http.Error(w, `{"error":"base_url not configured"}`, 400); return }
 		if taskLocked() { http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409); return }
 
-		// Re-fetch all tracker subjects (same as refresh-all, without images)
+		// 重新拉取全部 tracker 条目，不含图片
 		files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
 		files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
 		files = append(files, files2...)
