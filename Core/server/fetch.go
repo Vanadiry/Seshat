@@ -17,24 +17,6 @@ import (
 	"path/filepath"
 )
 
-func getRawWithRetry(bg *bangumi.Client, urlPath string, maxRetries int) ([]byte, error) {
-	var lastErr error
-	for i := 0; i < maxRetries; i++ {
-		data, err := bg.GetRaw(urlPath)
-		if err == nil {
-			return data, nil
-		}
-		if strings.Contains(err.Error(), "HTTP 404") {
-			return nil, err
-		}
-		lastErr = err
-		if i < maxRetries-1 {
-			time.Sleep(time.Duration(i+1) * time.Second)
-		}
-	}
-	return nil, lastErr
-}
-
 func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	if len(ids) == 0 {
 		return
@@ -71,10 +53,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	if err != nil {
 		log.Warn("subject fetch failed", "id", sid, "err", err)
 		if p != nil {
-			msg := err.Error()
-			if strings.Contains(msg, "令牌") || strings.Contains(msg, "HTTP 4") {
-				p.SetError(msg)
-			}
+			p.SetError(err.Error())
 			p.Send("subject", 1, 1, "error")
 		}
 		return
@@ -131,9 +110,9 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	go func() {
 		defer wg3.Done()
 		fetchConcurrent(charIDs, func(c charRef) {
-			data, err := getRawWithRetry(bg, fmt.Sprintf("v0/characters/%d", c.ID), 3)
+			data, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID))
 			if err != nil {
-				log.Warn("character fetch failed", "id", c.ID, "err", err); if p != nil && (strings.Contains(err.Error(), "令牌") || strings.Contains(err.Error(), "HTTP 4")) { p.SetError(err.Error()) }
+				log.Warn("character fetch failed", "id", c.ID, "err", err); p.SetError(err.Error())
 				return
 			}
 			cache.Put(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(data))
@@ -154,9 +133,9 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	go func() {
 		defer wg3.Done()
 		fetchConcurrent(personIDs, func(pp personRef) {
-			data, err := getRawWithRetry(bg, fmt.Sprintf("v0/persons/%d", pp.ID), 3)
+			data, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID))
 			if err != nil {
-				log.Warn("person fetch failed", "id", pp.ID, "err", err); if p != nil && (strings.Contains(err.Error(), "令牌") || strings.Contains(err.Error(), "HTTP 4")) { p.SetError(err.Error()) }
+				log.Warn("person fetch failed", "id", pp.ID, "err", err); p.SetError(err.Error())
 				return
 			}
 			cache.Put(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(data))

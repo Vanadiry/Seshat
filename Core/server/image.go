@@ -151,7 +151,7 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 			defer wg.Done()
 			data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
 			if err != nil {
-				if !strings.Contains(err.Error(), "placeholder") {
+				if !strings.Contains(err.Error(), "placeholder") && !strings.Contains(err.Error(), "HTTP 404") {
 					log.Warn("image download failed", "kind", kind, "id", id, "size", size, "err", err)
 					if p != nil { p.SetError(fmt.Sprintf("Image %s #%d %s: %v", kind, id, size, err)) }
 				}
@@ -204,7 +204,7 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 			defer wg.Done()
 			data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
 			if err != nil {
-				if !strings.Contains(err.Error(), "placeholder") {
+				if !strings.Contains(err.Error(), "placeholder") && !strings.Contains(err.Error(), "HTTP 404") {
 					log.Warn("image download failed", "kind", kind, "id", id, "size", size, "err", err)
 					if p != nil { p.SetError(fmt.Sprintf("Image %s #%d %s: %v", kind, id, size, err)) }
 				}

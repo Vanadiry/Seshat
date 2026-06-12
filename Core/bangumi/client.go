@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/vanadiry/seshat/Core/log"
 )
 
 var defaultTransport = &http.Transport{
@@ -44,9 +46,29 @@ func (c *Client) setAuth(req *http.Request) {
 }
 
 // GetImage downloads the actual image binary from an official image endpoint.
-// Rejects Bangumi placeholder images by checking the final URL after redirects.
+// Retries up to 3 times on transient errors. 404 and placeholder are not retried.
 func (c *Client) GetImage(urlPath string) ([]byte, error) {
 	url := fmt.Sprintf("%s/%s", c.baseURL, urlPath)
+	var lastErr error
+	for attempt := 0; attempt < 4; attempt++ {
+		if attempt > 0 {
+			log.Debug("retrying image request", "path", urlPath, "attempt", attempt)
+			time.Sleep(time.Duration(attempt) * time.Second)
+		}
+		data, err := c.doGetImage(url)
+		if err == nil {
+			return data, nil
+		}
+		lastErr = err
+		// 404 and placeholder are not transient — don't retry
+		if strings.Contains(err.Error(), "HTTP 404") || strings.Contains(err.Error(), "placeholder") {
+			return nil, err
+		}
+	}
+	return nil, fmt.Errorf("%w (retried 3 times)", lastErr)
+}
+
+func (c *Client) doGetImage(url string) ([]byte, error) {
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", c.ua)
 	c.setAuth(req)
@@ -55,7 +77,6 @@ func (c *Client) GetImage(urlPath string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	// Check if we landed on a placeholder image
 	if resp.Request != nil && strings.Contains(resp.Request.URL.String(), "no_icon") {
 		return nil, fmt.Errorf("placeholder")
 	}
@@ -66,8 +87,32 @@ func (c *Client) GetImage(urlPath string) ([]byte, error) {
 }
 
 // GetRaw fetches a raw API path and returns the response body.
+// Retries up to 3 times on transient errors. 404 is not retried.
 func (c *Client) GetRaw(urlPath string) ([]byte, error) {
 	url := fmt.Sprintf("%s/%s", c.baseURL, urlPath)
+	var lastErr error
+	for attempt := 0; attempt < 4; attempt++ {
+		if attempt > 0 {
+			log.Debug("retrying API request", "path", urlPath, "attempt", attempt)
+			time.Sleep(time.Duration(attempt) * time.Second)
+		}
+		data, err := c.doGetRaw(url)
+		if err == nil {
+			return data, nil
+		}
+		lastErr = err
+		// 4xx errors are not transient — don't retry
+		if strings.Contains(err.Error(), "HTTP 404") || strings.Contains(err.Error(), "HTTP 400") {
+			return nil, err
+		}
+		if strings.Contains(err.Error(), "令牌") {
+			return nil, err
+		}
+	}
+	return nil, fmt.Errorf("%w (retried 3 times)", lastErr)
+}
+
+func (c *Client) doGetRaw(url string) ([]byte, error) {
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", c.ua)
 	req.Header.Set("Accept", "application/json")
