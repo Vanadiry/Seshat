@@ -828,22 +828,31 @@ paths:
                   count: { type: integer, example: 42 }
 
 # 其他
-  /api/v0/settings:                     # 所有设置和修改设置
+  /api/v0/settings:                     # 获取和修改设置
     get:
       tags: [其他]
-      summary: 所有设置
-      description: 返回preferences的完整内容。
+      summary: 获取全部设置
+      description: 返回偏好设置和服务端配置的纯 KV。
       responses:
         "200":
-          description: JSON 内容
+          description: prefs 和 config 两个 KV 对象
           content:
             application/json:
               schema:
                 type: object
+                properties:
+                  prefs:
+                    type: object
+                    description: 前端偏好设置，键为 preference key，值为当前值
+                    example: { "theme": "auto", "prefer_lang": "original", "username": "", "subject_sort": "elo", "auto_link_names": "true" }
+                  config:
+                    type: object
+                    description: config.toml 当前值，token 非空时掩码展示
+                    example: { "bind_addr": "127.0.0.1", "port": 12500, "concurrency_info": 4, "concurrency_image": 16, "data_home": "", "log_level": "warn", "base_url": "https://api.bgm.tv", "user_agent": "Vanadiry/Seshat/...", "backend_url": "", "fallback_url": "", "bangumi_access_token": "" }
     post:
       tags: [其他]
-      summary: 修改设置
-      description: 传入顶层键对应的新值，更新已知键的value字段。
+      summary: 修改偏好设置
+      description: 传入需修改的 KV，后端校验后写入覆盖文件。设为空或默认值则删除该项。
       requestBody:
         content:
           application/json:
@@ -854,7 +863,7 @@ paths:
                 username: "Vanadiry"
       responses:
         "200":
-          description: 返回success和/或error，成功/失败的键名。
+          description: 返回 success 和 error 列表
   /api/v0/stats:                        # 统计数据
     get:
       tags: [其他]
