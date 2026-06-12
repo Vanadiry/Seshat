@@ -18,10 +18,12 @@ import (
 	"github.com/vanadiry/seshat/Core/log"
 )
 
-var maxConcurrency = 32
+var maxInfoConcurrency int
+var maxImageConcurrency int
 
 func New(cfg *config.Config, embedFS fs.FS) http.Handler {
-	maxConcurrency = cfg.Server.Concurrency
+	maxInfoConcurrency = cfg.Server.ConcurrencyInfo
+	maxImageConcurrency = cfg.Server.ConcurrencyImage
 	mux := http.NewServeMux()
 	dd := cfg.DataDir()
 	os.MkdirAll(cache.IndexDir(dd), 0o755)

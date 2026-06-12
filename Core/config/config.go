@@ -11,11 +11,12 @@ import (
 )
 
 type ServerConfig struct {
-	BindAddr    string `toml:"bind_addr"`
-	Port        int    `toml:"port"`
-	Concurrency int    `toml:"concurrency"`
-	DataHome    string `toml:"data_home"`
-	LogLevel    string `toml:"log_level"`
+	BindAddr         string `toml:"bind_addr"`
+	Port             int    `toml:"port"`
+	ConcurrencyInfo  int    `toml:"concurrency_info"`
+	ConcurrencyImage int    `toml:"concurrency_image"`
+	DataHome         string `toml:"data_home"`
+	LogLevel         string `toml:"log_level"`
 }
 
 type UpstreamConfig struct {
@@ -41,10 +42,11 @@ type Config struct {
 
 var Defaults = Config{
 	Server: ServerConfig{
-		BindAddr:    "127.0.0.1",
-		Port:        12500,
-		Concurrency: 32,
-		DataHome:    "",
+		BindAddr:         "127.0.0.1",
+		Port:             12500,
+		ConcurrencyInfo:  4,
+		ConcurrencyImage: 16,
+		DataHome:         "",
 	},
 	Upstream: UpstreamConfig{
 		BaseURL:   "https://api.bgm.tv",
@@ -81,8 +83,11 @@ func Load() (*Config, error) {
 	if cfg.Server.Port < 1 || cfg.Server.Port > 65535 {
 		cfg.Server.Port = Defaults.Server.Port
 	}
-	if cfg.Server.Concurrency < 1 {
-		cfg.Server.Concurrency = Defaults.Server.Concurrency
+	if cfg.Server.ConcurrencyInfo < 1 {
+		cfg.Server.ConcurrencyInfo = Defaults.Server.ConcurrencyInfo
+	}
+	if cfg.Server.ConcurrencyImage < 1 {
+		cfg.Server.ConcurrencyImage = Defaults.Server.ConcurrencyImage
 	}
 	if cfg.Upstream.UserAgent == "" {
 		cfg.Upstream.UserAgent = Defaults.Upstream.UserAgent
@@ -107,8 +112,11 @@ func Validate(cfg *Config) error {
 	if cfg.Server.Port < 1 || cfg.Server.Port > 65535 {
 		return fmt.Errorf("port 必须在 1-65535 之间")
 	}
-	if cfg.Server.Concurrency < 1 {
-		return fmt.Errorf("concurrency 必须 >= 1")
+	if cfg.Server.ConcurrencyInfo < 1 {
+		return fmt.Errorf("concurrency_info 必须 >= 1")
+	}
+	if cfg.Server.ConcurrencyImage < 1 {
+		return fmt.Errorf("concurrency_image 必须 >= 1")
 	}
 	return nil
 }

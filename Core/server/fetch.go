@@ -22,7 +22,7 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 		return
 	}
 	var wg sync.WaitGroup
-	sem := make(chan struct{}, maxConcurrency)
+	sem := make(chan struct{}, maxInfoConcurrency)
 	var done int
 	var mu sync.Mutex
 	for _, sid := range ids {
@@ -116,7 +116,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 				return
 			}
 			cache.Put(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(data))
-		}, nil, "", maxConcurrency)
+		}, nil, "", maxInfoConcurrency)
 	}()
 
 	// Person details
@@ -139,7 +139,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 				return
 			}
 			cache.Put(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(data))
-		}, nil, "", maxConcurrency)
+		}, nil, "", maxInfoConcurrency)
 	}()
 
 	// Character subjects
@@ -150,7 +150,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 			data, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d/subjects", c.ID))
 			if err != nil { return }
 			cache.Put(dd, cache.Key("characters", c.ID, "subjects.json"), cache.StripImages(data))
-		}, nil, "", maxConcurrency)
+		}, nil, "", maxInfoConcurrency)
 	}()
 
 	// Character persons
@@ -161,7 +161,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 			data, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d/persons", c.ID))
 			if err != nil { return }
 			cache.Put(dd, cache.Key("characters", c.ID, "persons.json"), cache.StripImages(data))
-		}, nil, "", maxConcurrency)
+		}, nil, "", maxInfoConcurrency)
 	}()
 
 	// Person subjects
@@ -172,7 +172,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 			data, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d/subjects", pp.ID))
 			if err != nil { return }
 			cache.Put(dd, cache.Key("persons", pp.ID, "subjects.json"), cache.StripImages(data))
-		}, nil, "", maxConcurrency)
+		}, nil, "", maxInfoConcurrency)
 	}()
 
 	// Person characters
@@ -183,7 +183,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 			data, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d/characters", pp.ID))
 			if err != nil { return }
 			cache.Put(dd, cache.Key("persons", pp.ID, "characters.json"), cache.StripImages(data))
-		}, nil, "", maxConcurrency)
+		}, nil, "", maxInfoConcurrency)
 	}()
 
 	// Episodes

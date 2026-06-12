@@ -6,7 +6,8 @@ const DefaultConfigTOML = `# Seshat 配置
 [server]
 bind_addr = "127.0.0.1"     # 监听地址，设为0.0.0.0将对局域网开放
 port = 12500                # 开放端口
-concurrency = 4             # 并发任务，请勿设置过高，以免触发限流
+concurrency_info = 4        # 信息拉取并发
+concurrency_image = 16      # 图片下载并发
 data_home = ""              # 数据目录，留空则使用SESHAT_HOME/data
 log_level = "info"          # 日志级别: "debug" / "info" / "warn" / "error"
 

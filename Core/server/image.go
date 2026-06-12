@@ -102,7 +102,7 @@ func dlImageList(ids []int, kind string, imgMap map[int]cache.ImageEntry, imgBas
 		return
 	}
 	var wg sync.WaitGroup
-	sem := make(chan struct{}, maxConcurrency)
+	sem := make(chan struct{}, maxImageConcurrency)
 	var done int
 	var mu sync.Mutex
 	for _, id := range ids {
@@ -283,7 +283,7 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress) {
 				p.Send("fill_"+d.kind+"_sizes", 0, len(partials), "")
 			}
 			var wg sync.WaitGroup
-			sem := make(chan struct{}, maxConcurrency)
+			sem := make(chan struct{}, maxImageConcurrency)
 			var done int
 			var mu sync.Mutex
 			for _, pt := range partials {

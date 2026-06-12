@@ -24,8 +24,8 @@
 
 ## concurrency（并发任务）
 
-这控制任务的并发数，并非 HTTP 请求的并发数。  
-每个任务中会有 4 到 7 个 HTTP 请求，因此请勿设置过高。
+这包括 `concurrency_info` 和 `concurrency_image` 两个设置。  
+每个后台的任务会建立 4 到 12 个 HTTP 连接，因此请勿设置过高，以免触发限流。
 
 ## base_url（上游地址）
 
