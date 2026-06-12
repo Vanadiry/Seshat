@@ -137,7 +137,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("POST /api/v0/tracker/import-collections", handleImportCollections(dd))
 
 	// ── Settings ──
-	mux.HandleFunc("GET /api/v0/settings", handleSettingsGet)
+	mux.HandleFunc("GET /api/v0/settings", handleSettingsGet(cfg))
 	mux.HandleFunc("POST /api/v0/settings", handleSettingsPost)
 
 	// ── User ──

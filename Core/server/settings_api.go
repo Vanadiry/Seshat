@@ -8,8 +8,13 @@ import (
 	"github.com/vanadiry/seshat/Core/config"
 )
 
-func handleSettingsGet(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, config.BuildSettingsJSON())
+func handleSettingsGet(cfg *config.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, map[string]any{
+			"prefs":  config.BuildPrefsKV(),
+			"config": cfg.BuildConfigKV(),
+		})
+	}
 }
 
 func handleSettingsPost(w http.ResponseWriter, r *http.Request) {

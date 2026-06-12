@@ -31,7 +31,7 @@
                 load();
             }
 
-            // ── 卡片渲染：海报 + 标题 + 评分/平台/年份 ──
+            // 卡片渲染
             var _collTypes = { 1: "想看", 2: "看过", 3: "抛弃" };
             var _collCls = {
                 1: "bg-pink-bg text-tier-gold",
@@ -149,7 +149,7 @@
                     '<div class="col-span-full text-center py-20 text-sub">加载中…</div>';
                 try {
                     var subjects = (await apiLocal("/v0/subjects/list")) || [];
-                    // 合并 ELO 评分和收藏数据
+                    // 合并 ELO 与收藏数据
                     Promise.all([
                         api("/v0/elo/ranking"),
                         window.USERNAME

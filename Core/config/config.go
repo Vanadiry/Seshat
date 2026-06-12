@@ -1,5 +1,4 @@
-// Package config 管理 seshatd 的 TOML 配置文件读取、写入和默认值。
-// 配置文件默认位于 ~/.vSoft/Seshat/config.toml，可通过 SESHAT_HOME 环境变量覆盖。
+// Package config 管理 TOML 配置文件读取、写入和默认值
 package config
 
 import (
@@ -94,6 +93,29 @@ func Load() (*Config, error) {
 		cfg.Upstream.UserAgent = Defaults.Upstream.UserAgent
 	}
 	return &cfg, nil
+}
+
+// BuildConfigKV 返回 config.toml 当前值的纯 KV，token 非空显示 ***
+func (c *Config) BuildConfigKV() map[string]any {
+	token := c.Access.Token
+	if len(token) > 6 {
+		token = token[:3] + "***" + token[len(token)-3:]
+	} else if token != "" {
+		token = "***"
+	}
+	return map[string]any{
+		"bind_addr":            c.Server.BindAddr,
+		"port":                 c.Server.Port,
+		"concurrency_info":     c.Server.ConcurrencyInfo,
+		"concurrency_image":    c.Server.ConcurrencyImage,
+		"data_home":            c.Server.DataHome,
+		"log_level":            c.Server.LogLevel,
+		"base_url":             c.Upstream.BaseURL,
+		"user_agent":           c.Upstream.UserAgent,
+		"backend_url":          c.Frontend.BackendURL,
+		"fallback_url":         c.Frontend.FallbackURL,
+		"bangumi_access_token": token,
+	}
 }
 
 func Save(cfg *Config) error {

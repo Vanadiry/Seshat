@@ -12,19 +12,104 @@
     </head>
     <body class="text-text font-[system-ui] min-h-screen">
         <div id="topbar"></div>
-        <main class="max-w-[900px] mx-auto p-6 flex gap-8">
+        <main class="max-w-[1200px] mx-auto p-6 flex gap-8">
             <div class="flex-1 min-w-0">
                 <div id="settings-form">
                     <div class="text-center py-20 text-sub">加载中…</div>
                 </div>
             </div>
-            <div class="w-[260px] shrink-0 hidden lg:block">
+            <div class="hidden lg:block w-px bg-bord-light shrink-0"></div>
+            <div class="flex-1 min-w-0 hidden lg:block">
                 <div id="settings-sidebar" class="sticky top-6"></div>
             </div>
         </main>
         <script src="assets/app.min.js"></script>
         <script>
-            var _settingsData = {};
+            // 设置项定义
+            var _prefDefs = [
+                {
+                    key: "theme",
+                    label: "界面主题",
+                    choices: [
+                        { k: "auto", l: "同步系统" },
+                        { k: "dark", l: "深色" },
+                        { k: "light", l: "浅色" }
+                    ],
+                    section: "外观"
+                },
+                {
+                    key: "prefer_lang",
+                    label: "标题展示方式",
+                    choices: [
+                        { k: "original", l: "原文优先" },
+                        { k: "chinese", l: "中文优先" }
+                    ],
+                    section: "外观"
+                },
+                {
+                    key: "subject_sort",
+                    label: "首页排序方式",
+                    choices: [
+                        { k: "elo", l: "ELO Rating" },
+                        { k: "bgm_rank", l: "BGM Rank" },
+                        { k: "random", l: "随机" },
+                        { k: "none", l: "不排序" }
+                    ],
+                    section: "数据与浏览"
+                },
+                {
+                    key: "auto_link_names",
+                    label: "条目名称高亮",
+                    choices: [
+                        { k: "true", l: "开启" },
+                        { k: "false", l: "关闭" }
+                    ],
+                    section: "数据与浏览"
+                },
+                { key: "username", label: "Bangumi 用户 ID", section: "账号" }
+            ];
+
+            var _configSectionDefs = [
+                {
+                    title: "本地服务器",
+                    keys: [
+                        "bind_addr",
+                        "port",
+                        "concurrency_info",
+                        "concurrency_image",
+                        "data_home",
+                        "log_level"
+                    ],
+                    labels: {
+                        bind_addr: "监听地址",
+                        port: "端口",
+                        concurrency_info: "信息拉取并发",
+                        concurrency_image: "图片下载并发",
+                        data_home: "数据目录",
+                        log_level: "日志级别"
+                    }
+                },
+                {
+                    title: "上游",
+                    keys: ["base_url", "user_agent"],
+                    labels: { base_url: "上游地址", user_agent: "User Agent" }
+                },
+                {
+                    title: "前端",
+                    keys: ["backend_url", "fallback_url"],
+                    labels: {
+                        backend_url: "后端地址",
+                        fallback_url: "回退地址"
+                    }
+                },
+                {
+                    title: "身份认证",
+                    keys: ["bangumi_access_token"],
+                    labels: { bangumi_access_token: "Bangumi 访问令牌" }
+                }
+            ];
+
+            var _prefs = {};
 
             function loadSettings() {
                 fetch(API + "/v0/settings")
@@ -32,74 +117,130 @@
                         return r.json();
                     })
                     .then(function (data) {
-                        _settingsData = data || {};
-                        render();
+                        _prefs = data.prefs || {};
+                        renderLeft();
+                        renderRight(data.config || {});
                     });
             }
 
-            function render() {
-                var fields = [];
-                for (var k in _settingsData) {
-                    var v = _settingsData[k];
-                    if (typeof v === "object" && v.value !== undefined) {
-                        var choices = null;
-                        if (v._choice && Array.isArray(v._choice)) {
-                            choices = [];
-                            for (var c = 0; c < v._choice.length; c++) {
-                                var co = v._choice[c];
-                                choices.push({ key: Object.keys(co)[0], label: co[Object.keys(co)[0]] });
-                            }
-                        }
-                        fields.push({ key: k, comment: v._comment || "", value: v.value, choices: choices });
-                    }
-                }
+            function sectionTitle(title) {
+                return (
+                    '<div class="flex items-center gap-2 mt-6 mb-3 first:mt-0 ">' +
+                    '<span class="w-[3px] h-[18px] bg-pink rounded-sm"></span>' +
+                    '<span class="font-bold text-sm">' +
+                    title +
+                    "</span></div>"
+                );
+            }
 
+            function renderLeft() {
+                var sections = {};
+                for (var i = 0; i < _prefDefs.length; i++) {
+                    var d = _prefDefs[i];
+                    if (!sections[d.section]) sections[d.section] = [];
+                    sections[d.section].push(d);
+                }
                 var html =
                     '<h2 class="text-lg font-bold text-text mb-1">前端设置</h2>' +
-                    '<p class="text-xs text-sub mb-6">修改后刷新页面即可生效，无需重启后端</p>';
-
-                for (var i = 0; i < fields.length; i++) {
-                    var f = fields[i];
-                    html +=
-                        '<div class="flex items-center gap-3 py-3 border-b border-bord-light last:border-0">' +
-                        '<label class="flex-1 min-w-0 text-sm text-text truncate">' +
-                        f.comment +
-                        "</label>";
-                    if (f.choices) {
+                    '<p class="text-xs text-sub mb-4">修改后刷新页面即可生效，无需重启后端</p>';
+                var secNames = Object.keys(sections);
+                for (var s = 0; s < secNames.length; s++) {
+                    var sec = secNames[s];
+                    html += sectionTitle(sec);
+                    for (var i = 0; i < sections[sec].length; i++) {
+                        var d = sections[sec][i];
+                        var val =
+                            _prefs[d.key] !== undefined ? _prefs[d.key] : "";
                         html +=
-                            '<select id="f-' + f.key +
-                            '" class="custom-select w-[140px] shrink-0 px-3 py-2 rounded-lg border border-bord bg-input text-sm outline-none">';
-                        for (var j = 0; j < f.choices.length; j++) {
+                            '<div class="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg transition-colors duration-200 hover:bg-active">';
+                        html +=
+                            '<div class="flex-1 min-w-0"><div class="text-sm text-text truncate" title="' +
+                            d.label.replace(/"/g, "&quot;") +
+                            '">' +
+                            d.label +
+                            "</div>";
+                        html +=
+                            '<div class="text-[11px] text-sub truncate mt-0.5" title="' +
+                            d.key +
+                            '">' +
+                            d.key +
+                            "</div></div>";
+                        if (d.choices) {
                             html +=
-                                '<option value="' + f.choices[j].key + '"' +
-                                (f.value === f.choices[j].key ? " selected" : "") +
-                                ">" + f.choices[j].label + "</option>";
+                                '<select id="f-' +
+                                d.key +
+                                '" class="custom-select w-[140px] shrink-0 px-3 py-2 rounded-lg border border-bord bg-input text-sm outline-none">';
+                            for (var j = 0; j < d.choices.length; j++) {
+                                html +=
+                                    '<option value="' +
+                                    d.choices[j].k +
+                                    '"' +
+                                    (val === d.choices[j].k
+                                        ? " selected"
+                                        : "") +
+                                    ">" +
+                                    d.choices[j].l +
+                                    "</option>";
+                            }
+                            html += "</select>";
+                        } else {
+                            html +=
+                                '<input id="f-' +
+                                d.key +
+                                '" value="' +
+                                val +
+                                '" class="w-[200px] shrink-0 px-3 py-2 rounded-lg border border-bord bg-input text-sm outline-none">';
                         }
-                        html += "</select>";
-                    } else {
-                        html +=
-                            '<input id="f-' + f.key + '" value="' + f.value +
-                            '" class="flex-1 shrink-0 px-3 py-2 rounded-lg border border-bord bg-input text-sm outline-none">';
+                        html += "</div>";
                     }
-                    html += "</div>";
                 }
-
                 html +=
                     '<button onclick="saveSettings()" class="w-full mt-6 px-4 py-2.5 rounded-xl bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 transition-all active:scale-[0.98]">保存设置</button>' +
                     '<p id="save-msg" class="text-xs text-sub mt-3 text-center"></p>';
                 document.getElementById("settings-form").innerHTML = html;
             }
 
+            function renderRight(config) {
+                var html =
+                    '<h2 class="text-lg font-bold text-text mb-1">后端设置</h2>' +
+                    '<p class="text-xs text-sub mb-4">此处内容需修改 config.toml 并重启应用</p>';
+                for (var s = 0; s < _configSectionDefs.length; s++) {
+                    var sec = _configSectionDefs[s];
+                    html += sectionTitle(sec.title);
+                    for (var i = 0; i < sec.keys.length; i++) {
+                        var k = sec.keys[i];
+                        html +=
+                            '<div class="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg transition-colors duration-200 hover:bg-active">' +
+                            '<div class="flex-1 min-w-0"><div class="text-sm text-text truncate" title="' +
+                            (sec.labels[k] || k).replace(/"/g, "&quot;") +
+                            '">' +
+                            (sec.labels[k] || k) +
+                            "</div>" +
+                            '<div class="text-[11px] text-sub truncate mt-0.5" title="' +
+                            k +
+                            '">' +
+                            k +
+                            "</div></div>" +
+                            '<div class="text-sm text-text font-mono shrink-0 text-right max-w-[50%] truncate" title="' +
+                            String(config[k] || "").replace(/"/g, "&quot;") +
+                            '">' +
+                            (config[k]
+                                ? String(config[k])
+                                : '<span class="italic text-sub">未设置</span>') +
+                            "</div></div>";
+                    }
+                }
+                document.getElementById("settings-sidebar").innerHTML = html;
+            }
+
             function saveSettings() {
                 var updates = {};
-                for (var k in _settingsData) {
-                    if (k === "_comment") continue;
-                    var v = _settingsData[k];
-                    if (typeof v !== "object" || v.value === undefined)
-                        continue;
-                    var el = document.getElementById("f-" + k);
+                for (var i = 0; i < _prefDefs.length; i++) {
+                    var d = _prefDefs[i];
+                    var el = document.getElementById("f-" + d.key);
                     if (!el) continue;
-                    updates[k] = el.type === "checkbox" ? el.checked : el.value;
+                    updates[d.key] =
+                        el.type === "checkbox" ? el.checked : el.value;
                 }
                 var msg = document.getElementById("save-msg");
                 fetch(API + "/v0/settings", {
@@ -120,7 +261,6 @@
                         if (d.error)
                             text += (text ? "  " : "") + "✗ " + d.error;
                         msg.textContent = text || "保存成功";
-                        // 同步主题到 localStorage 供防闪屏脚本使用
                         if (updates.theme) {
                             localStorage.setItem("theme", updates.theme);
                             var isLight =
