@@ -217,11 +217,8 @@ func diffTrackerIDs(cfg *config.Config, dd string) []int {
 	}
 	// Load existing subject IDs
 	existing := map[int]bool{}
-	if data, err := os.ReadFile(cache.IndexFile(dd, "subjects.json")); err == nil {
-		var list []struct{ ID int `json:"id"` }
-		if json.Unmarshal(data, &list) == nil {
-			for _, s := range list { existing[s.ID] = true }
-		}
+	if list, err := loadCachedIndex[[]cache.SubjectSummary](cache.IndexFile(dd, "subjects.json")); err == nil {
+		for _, s := range list { existing[s.ID] = true }
 	}
 	var newIDs []int
 	for _, sid := range allIDs {

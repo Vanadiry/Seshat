@@ -89,10 +89,8 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/persons/list", handleListPersons(dd))
 		nameHandler := func(domain string) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				data, err := os.ReadFile(cache.IndexFile(dd, domain+"_name.json"))
-				if err != nil { writeJSON(w, map[string]int{}); return }
-				w.Header().Set("Content-Type", "application/json")
-				w.Write(data)
+				m, _ := loadCachedIndex[map[int][]string](cache.IndexFile(dd, domain+"_name.json"))
+				writeJSON(w, m)
 			}
 		}
 		mux.HandleFunc("GET /api/v0/subjects/name", nameHandler("subjects"))

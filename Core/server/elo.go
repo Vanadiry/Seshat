@@ -299,17 +299,7 @@ func updateELO(dd string, winnerID, loserID int) {
 
 // loadSubjectIndex reads subjects.json index for fast lookup.
 func loadSubjectIndex(dd string) []eloEntry {
-	data, err := os.ReadFile(cache.IndexFile(dd, "subjects.json"))
-	if err != nil {
-		return nil
-	}
-	var list []struct {
-		ID     int     `json:"id"`
-		Name   string  `json:"name"`
-		NameCN string  `json:"name_cn"`
-		Score  float64 `json:"score"`
-	}
-	json.Unmarshal(data, &list)
+	list, _ := loadCachedIndex[[]cache.SubjectSummary](cache.IndexFile(dd, "subjects.json"))
 	var result []eloEntry
 	for _, s := range list {
 		result = append(result, eloEntry{ID: s.ID, Name: s.Name, NameCN: s.NameCN, Score: s.Score})

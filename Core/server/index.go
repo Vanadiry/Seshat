@@ -40,12 +40,7 @@ func tagsPath(dd string) string {
 }
 
 func loadTags(dd string) map[string]tagInfo {
-	data, err := os.ReadFile(tagsPath(dd))
-	if err != nil {
-		return map[string]tagInfo{}
-	}
-	var tags map[string]tagInfo
-	json.Unmarshal(data, &tags)
+	tags, _ := loadCachedIndex[map[string]tagInfo](tagsPath(dd))
 	if tags == nil {
 		tags = map[string]tagInfo{}
 	}
@@ -84,33 +79,33 @@ func rebuildTags(dd string) {
 
 // buildPersonNames generates a name→id lookup from persons.json.
 func buildPersonNames(dd string) {
-	data, err := os.ReadFile(cache.IndexFile(dd, "persons.json"))
+	list, err := loadCachedIndex[[]cache.NameEntry](cache.IndexFile(dd, "persons.json"))
 	if err != nil { log.Warn("persons_name: persons.json not found"); return }
-	var list []cache.NameEntry
-	json.Unmarshal(data, &list)
 	m := map[int][]string{}
 	for _, p := range list {
 		if p.Name != "" { m[p.ID] = append(m[p.ID], p.Name) }
 		if p.NameCN != "" && p.NameCN != p.Name { m[p.ID] = append(m[p.ID], p.NameCN) }
 	}
 	result, _ := json.Marshal(m)
-	os.WriteFile(cache.IndexFile(dd, "persons_name.json"), result, 0o644)
+	namePath := cache.IndexFile(dd, "persons_name.json")
+	os.WriteFile(namePath, result, 0o644)
+	clearIndexCache(namePath)
 	log.Info("persons_name.json built", "count", len(m))
 }
 
 // buildNameIndex generates a name→id lookup for a given domain (subjects/characters/persons).
 func buildNameIndex(dd, domain string) {
-	data, err := os.ReadFile(cache.IndexFile(dd, domain+".json"))
+	list, err := loadCachedIndex[[]cache.NameEntry](cache.IndexFile(dd, domain+".json"))
 	if err != nil { log.Warn("name index file not found", "domain", domain); return }
-	var list []cache.NameEntry
-	json.Unmarshal(data, &list)
 	m := map[int][]string{}
 	for _, e := range list {
 		if e.Name != "" { m[e.ID] = append(m[e.ID], e.Name) }
 		if e.NameCN != "" && e.NameCN != e.Name { m[e.ID] = append(m[e.ID], e.NameCN) }
 	}
 	result, _ := json.Marshal(m)
-	os.WriteFile(cache.IndexFile(dd, domain+"_name.json"), result, 0o644)
+	namePath := cache.IndexFile(dd, domain+"_name.json")
+	os.WriteFile(namePath, result, 0o644)
+	clearIndexCache(namePath)
 	log.Info("name index built", "domain", domain, "count", len(m))
 }
 

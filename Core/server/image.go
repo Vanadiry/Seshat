@@ -371,40 +371,32 @@ func RebuildImageIndex(dd string) {
 // ── Helpers ──
 
 func loadImageIndex(dd, name string) map[int]cache.ImageEntry {
-	data, err := os.ReadFile(cache.IndexFile(dd, name))
-	if err != nil {
+	m, err := loadCachedIndex[map[int]cache.ImageEntry](cache.IndexFile(dd, name))
+	if err != nil || m == nil {
 		return map[int]cache.ImageEntry{}
 	}
-	var m map[int]cache.ImageEntry
-	json.Unmarshal(data, &m)
-	if m == nil { m = map[int]cache.ImageEntry{} }
 	return m
 }
 
 func serveImage(w http.ResponseWriter, r *http.Request, dd, kind, size string) {
 	if size == "" { size = "grid" }
 	idStr := r.PathValue("id")
-	imgFile := cache.IndexFile(dd, kind+"s_image.json")
-	data, err := os.ReadFile(imgFile)
-	if err == nil {
-		var images map[int]cache.ImageEntry
-		json.Unmarshal(data, &images)
-		id, _ := strconv.Atoi(idStr)
-		entry, ok := images[id]
-		if ok {
-			path := entry.Large
-			if size == "grid" {
-				path = entry.Grid
-			} else if size == "small" {
-				path = entry.Small
-			}
-			if path != "" {
-				fullPath := filepath.Join(dd, "images", path)
-				if _, err := os.Stat(fullPath); err == nil {
-					w.Header().Set("Cache-Control", "no-store")
-					http.ServeFile(w, r, fullPath)
-					return
-				}
+	id, _ := strconv.Atoi(idStr)
+	images := loadImageIndex(dd, kind+"s_image.json")
+	entry, ok := images[id]
+	if ok {
+		path := entry.Large
+		if size == "grid" {
+			path = entry.Grid
+		} else if size == "small" {
+			path = entry.Small
+		}
+		if path != "" {
+			fullPath := filepath.Join(dd, "images", path)
+			if _, err := os.Stat(fullPath); err == nil {
+				w.Header().Set("Cache-Control", "no-store")
+				http.ServeFile(w, r, fullPath)
+				return
 			}
 		}
 	}

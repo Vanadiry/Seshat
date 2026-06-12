@@ -13,6 +13,7 @@ import (
 func saveJSON(path string, v any) {
 	data, _ := json.Marshal(v)
 	os.WriteFile(path, data, 0o644)
+	clearIndexCache(path)
 }
 
 // ── Tags index ──
@@ -23,12 +24,7 @@ type tagInfo struct {
 }
 
 func loadNameList(path string) []cache.NameEntry {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil
-	}
-	var list []cache.NameEntry
-	json.Unmarshal(data, &list)
+	list, _ := loadCachedIndex[[]cache.NameEntry](path)
 	return list
 }
 
@@ -36,30 +32,21 @@ func loadNameList(path string) []cache.NameEntry {
 
 func handleListSubjects(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		data, err := os.ReadFile(cache.IndexFile(dd, "subjects.json"))
-		if err != nil { writeJSON(w, []any{}); return }
-		var list []cache.SubjectSummary
-		json.Unmarshal(data, &list)
+		list, _ := loadCachedIndex[[]cache.SubjectSummary](cache.IndexFile(dd, "subjects.json"))
 		writeJSON(w, list)
 	}
 }
 
 func handleListCharacters(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		data, err := os.ReadFile(cache.IndexFile(dd, "characters.json"))
-		if err != nil { writeJSON(w, []any{}); return }
-		var list []cache.NameEntry
-		json.Unmarshal(data, &list)
+		list, _ := loadCachedIndex[[]cache.NameEntry](cache.IndexFile(dd, "characters.json"))
 		writeJSON(w, list)
 	}
 }
 
 func handleListPersons(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		data, err := os.ReadFile(cache.IndexFile(dd, "persons.json"))
-		if err != nil { writeJSON(w, []any{}); return }
-		var list []cache.NameEntry
-		json.Unmarshal(data, &list)
+		list, _ := loadCachedIndex[[]cache.NameEntry](cache.IndexFile(dd, "persons.json"))
 		writeJSON(w, list)
 	}
 }
