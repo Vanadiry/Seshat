@@ -204,7 +204,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/subjects/{id}/image", imgHandler("subject"))
 	mux.HandleFunc("GET /api/v0/characters/{id}/image", imgHandler("character"))
 	mux.HandleFunc("GET /api/v0/persons/{id}/image", imgHandler("person"))
-	return withLogging(withCORS(mux))
+	return withLogging(withCORS(cfg)(mux))
 }
 
 type statusRecorder struct {
@@ -228,15 +228,18 @@ func withLogging(next http.Handler) http.Handler {
 	})
 }
 
-func withCORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
+func withCORS(cfg *config.Config) func(http.Handler) http.Handler {
+	origin := fmt.Sprintf("http://%s:%d", cfg.Server.BindAddr, cfg.Server.Port)
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }
