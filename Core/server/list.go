@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/vanadiry/seshat/Core/cache"
+	"github.com/vanadiry/seshat/Core/events"
 	"github.com/vanadiry/seshat/Core/log"
 )
 
@@ -15,6 +16,7 @@ func saveJSON(path string, v any) {
 	data, err := json.Marshal(v)
 	if err != nil {
 		log.Error("saveJSON marshal", "path", path, "err", err)
+		events.Bus.Error("索引文件保存失败")
 		return
 	}
 	os.WriteFile(path, data, 0o644)

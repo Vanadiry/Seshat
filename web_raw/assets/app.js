@@ -1375,15 +1375,12 @@ function startProgress(taskId, label) {
 
     var fill = t.el.querySelector("#pb-fill");
     var detail = t.el.querySelector("#pb-detail");
-    var taskLabel = label || "", _errShown = false;
+    var taskLabel = label || "";
 
     var evt = new EventSource(API + "/v0/task/" + taskId);
     evt.onmessage = function (e) {
         var d = JSON.parse(e.data);
         if (d.label && !taskLabel) { taskLabel = d.label; }
-        if (d.error && !_errShown) {
-            _errShown = true; showError(d.error);
-        }
         if (d.step === "cancelled") {
             fill.style.transition = "none"; fill.style.width = "100%";
             fill.style.background = "var(--c-toast-warning)";

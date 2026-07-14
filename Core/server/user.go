@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/vanadiry/seshat/Core/config"
+	"github.com/vanadiry/seshat/Core/events"
 	"github.com/vanadiry/seshat/Core/log"
 )
 
@@ -29,6 +30,7 @@ func handleUser(dd string) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(m); err != nil {
 			log.Error("user json encode", "err", err)
+			events.Bus.Error("用户数据响应失败")
 		}
 	}
 }

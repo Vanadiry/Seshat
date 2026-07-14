@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/vanadiry/seshat/Core/events"
 	"github.com/vanadiry/seshat/Core/log"
 )
 
@@ -22,7 +23,6 @@ type Progress struct {
 	Phase     int    `json:"phase"`  // current phase number (1-based)
 	Phases    int    `json:"phases"` // total number of phases
 	PhaseName string `json:"name"`   // human-readable phase name, e.g. "下载角色图像"
-	Error     string // non-empty if a fatal error occurred
 	started   time.Time
 	mu        sync.Mutex
 }
@@ -68,21 +68,9 @@ func newProgress(total int, task, label string) *Progress {
 }
 
 func (p *Progress) Close() {
-	p.mu.Lock()
-	err := p.Error
-	p.mu.Unlock()
-	if err != "" {
-		data, e := json.Marshal(map[string]any{"step": "done", "error": err})
-		if e != nil {
-			log.Error("progress close marshal", "err", e)
-			data = []byte(`{"step":"done","status":"closed"}`)
-		}
-		p.Channel <- string(data)
-	} else {
-		select {
-		case p.Channel <- `{"step":"done","status":"closed"}`:
-		default:
-		}
+	select {
+	case p.Channel <- `{"step":"done","status":"closed"}`:
+	default:
 	}
 	close(p.Channel)
 	time.AfterFunc(30*time.Second, func() {
@@ -93,9 +81,7 @@ func (p *Progress) Close() {
 }
 
 func (p *Progress) SetError(msg string) {
-	p.mu.Lock()
-	p.Error = msg
-	p.mu.Unlock()
+	events.Bus.Error(msg)
 }
 
 func (p *Progress) SetPhase(phase int, phases int, name string) {
@@ -112,7 +98,6 @@ func (p *Progress) Send(step string, done, total int, status string) {
 	phase := p.Phase
 	phases := p.Phases
 	phaseName := p.PhaseName
-	err := p.Error
 	p.mu.Unlock()
 	elapsed := time.Since(p.started).Seconds()
 	speed := float64(0)
@@ -128,10 +113,10 @@ func (p *Progress) Send(step string, done, total int, status string) {
 		"phase":      phase,
 		"phases":     phases,
 		"phase_name": phaseName,
-		"error":      err,
 	})
 	if e != nil {
 		log.Error("progress send marshal", "err", e)
+		events.Bus.Error("进度数据序列化失败")
 		return
 	}
 	select {
