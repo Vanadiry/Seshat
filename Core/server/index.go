@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/vanadiry/seshat/Core/cache"
+	"github.com/vanadiry/seshat/Core/events"
 	"github.com/vanadiry/seshat/Core/log"
 )
 
@@ -80,6 +81,7 @@ func rebuildTags(dd string) {
 	result, err := json.Marshal(tags)
 	if err != nil {
 		log.Error("tags index marshal", "err", err)
+		events.Bus.Error("标签索引生成失败")
 		return
 	}
 	os.WriteFile(tagsPath(dd), result, 0o644)
@@ -108,6 +110,7 @@ func buildPersonNames(dd string) {
 	result, err := json.Marshal(m)
 	if err != nil {
 		log.Error("persons name index marshal", "err", err)
+		events.Bus.Error("人物名称索引生成失败")
 		return
 	}
 	namePath := cache.IndexFile(dd, "persons_name.json")
@@ -135,6 +138,7 @@ func buildNameIndex(dd, domain string) {
 	result, err := json.Marshal(m)
 	if err != nil {
 		log.Error("name index marshal", "domain", domain, "err", err)
+		events.Bus.Error("名称索引生成失败")
 		return
 	}
 	namePath := cache.IndexFile(dd, domain+"_name.json")

@@ -91,6 +91,11 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 
 	// SSE
 	mux.HandleFunc("GET /api/v0/events", events.HandleSSE)
+	mux.HandleFunc("POST /api/v0/events/test", func(w http.ResponseWriter, r *http.Request) {
+		events.Bus.Error("总线测试：这是一条错误消息")
+		events.Bus.Warn("总线测试：这是一条警告消息")
+		writeJSON(w, map[string]string{"status": "ok"})
+	})
 	mux.HandleFunc("GET /api/v0/task/{id}", handleProgress)
 	mux.HandleFunc("POST /api/v0/task/cancel", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]string{"status": "cancelled"})

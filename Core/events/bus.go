@@ -59,6 +59,21 @@ func (b *EventBus) Publish(typ EventType, msg string) {
 	}
 }
 
-func (b *EventBus) Error(msg string) { b.Publish(Error, msg) }
-func (b *EventBus) Warn(msg string)  { b.Publish(Warn, msg) }
-func (b *EventBus) Info(msg string)  { b.Publish(Info, msg) }
+func (b *EventBus) Error(msg string) {
+	if b == nil {
+		return
+	}
+	b.Publish(Error, msg)
+}
+func (b *EventBus) Warn(msg string) {
+	if b == nil {
+		return
+	}
+	b.Publish(Warn, msg)
+}
+func (b *EventBus) Info(msg string) {
+	if b == nil {
+		return
+	}
+	b.Publish(Info, msg)
+}

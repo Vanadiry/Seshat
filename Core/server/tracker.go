@@ -12,6 +12,7 @@ import (
 	"github.com/vanadiry/seshat/Core/bangumi"
 	"github.com/vanadiry/seshat/Core/cache"
 	"github.com/vanadiry/seshat/Core/config"
+	"github.com/vanadiry/seshat/Core/events"
 	"github.com/vanadiry/seshat/Core/log"
 )
 
@@ -139,6 +140,7 @@ func addToSeshatTracker(cfg *config.Config, sid int) {
 	result, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		log.Error("tracker marshal indent", "sid", sid, "err", err)
+		events.Bus.Error("Tracker 写入失败")
 		return
 	}
 	os.WriteFile(path, result, 0o644)

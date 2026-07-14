@@ -12,6 +12,7 @@ import (
 	"github.com/vanadiry/seshat/Core/bangumi"
 	"github.com/vanadiry/seshat/Core/cache"
 	"github.com/vanadiry/seshat/Core/config"
+	"github.com/vanadiry/seshat/Core/events"
 	"github.com/vanadiry/seshat/Core/log"
 	"os"
 	"path/filepath"
@@ -248,6 +249,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 			result, err := json.Marshal(allEps)
 			if err != nil {
 				log.Error("marshal episodes failed", "subject", sid, "err", err)
+				events.Bus.Error(fmt.Sprintf("剧集数据序列化失败 #%d", sid))
 				return
 			}
 			cache.Put(dd, cache.Key("subjects", sid, "episodes.json"), cache.StripImages(result))
@@ -311,6 +313,7 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 	collData, err := json.Marshal(map[string]any{"subjects": all, "updated_at": time.Now().Format(time.RFC3339)})
 	if err != nil {
 		log.Error("marshal collections failed", "user", username, "err", err)
+		events.Bus.Error("收藏列表保存失败")
 		return
 	}
 	os.WriteFile(filepath.Join(userDir, "collections.json"), collData, 0o644)
@@ -336,6 +339,7 @@ func fetchUserInfo(username string, bg *bangumi.Client, dd string) {
 	clean, err := json.Marshal(userData)
 	if err != nil {
 		log.Error("marshal user info failed", "user", username, "err", err)
+		events.Bus.Error("用户信息保存失败")
 		return
 	}
 	os.WriteFile(filepath.Join(userDir, "info.json"), clean, 0o644)

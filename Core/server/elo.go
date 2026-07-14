@@ -13,6 +13,7 @@ import (
 
 	"github.com/vanadiry/seshat/Core/cache"
 	"github.com/vanadiry/seshat/Core/config"
+	"github.com/vanadiry/seshat/Core/events"
 	"github.com/vanadiry/seshat/Core/log"
 )
 
@@ -114,6 +115,7 @@ func saveELO(m map[int]float64) {
 	data, err := json.Marshal(m)
 	if err != nil {
 		log.Error("saveELO marshal", "err", err)
+		events.Bus.Error("ELO 评分保存失败")
 		return
 	}
 	os.WriteFile(eloRatingPath(), data, 0o644)
@@ -137,6 +139,7 @@ func saveELOHistory(h []eloHistory) {
 	data, err := json.Marshal(h)
 	if err != nil {
 		log.Error("saveELOHistory marshal", "err", err)
+		events.Bus.Error("ELO 历史保存失败")
 		return
 	}
 	os.WriteFile(eloHistoryPath(), data, 0o644)
@@ -160,6 +163,7 @@ func saveBattleCounts(m map[int]int) {
 	data, err := json.Marshal(m)
 	if err != nil {
 		log.Error("saveBattleCounts marshal", "err", err)
+		events.Bus.Error("ELO 对战计数保存失败")
 		return
 	}
 	os.WriteFile(eloBattleCountsPath(), data, 0o644)

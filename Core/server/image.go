@@ -12,6 +12,7 @@ import (
 
 	"github.com/vanadiry/seshat/Core/bangumi"
 	"github.com/vanadiry/seshat/Core/cache"
+	"github.com/vanadiry/seshat/Core/events"
 	"github.com/vanadiry/seshat/Core/log"
 )
 
@@ -188,6 +189,7 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 			os.MkdirAll(filepath.Dir(fullPath), 0o755)
 			if err := os.WriteFile(fullPath, data, 0o644); err != nil {
 				log.Error("image write failed", "kind", kind, "id", id, "size", size, "err", err)
+				events.Bus.Error(fmt.Sprintf("图片写入失败 %s #%d %s", kind, id, size))
 				return
 			}
 			results <- result{size, relPath}
@@ -246,6 +248,7 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 			os.MkdirAll(filepath.Dir(fullPath), 0o755)
 			if err := os.WriteFile(fullPath, data, 0o644); err != nil {
 				log.Error("image write failed", "kind", kind, "id", id, "size", size, "err", err)
+				events.Bus.Error(fmt.Sprintf("图片写入失败 %s #%d %s", kind, id, size))
 				return
 			}
 			results <- result{size, relPath}
