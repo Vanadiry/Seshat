@@ -26,7 +26,11 @@ func handleSettingsPost(w http.ResponseWriter, r *http.Request) {
 	okList, failList := config.ApplyOverrides(updates)
 
 	resp := map[string]any{}
-	if len(okList) > 0 { resp["success"] = strings.Join(okList, ", ") }
-	if len(failList) > 0 { resp["error"] = strings.Join(failList, ", ") }
+	if len(okList) > 0 {
+		resp["success"] = strings.Join(okList, ", ")
+	}
+	if len(failList) > 0 {
+		resp["error"] = strings.Join(failList, ", ")
+	}
 	writeJSON(w, resp)
 }

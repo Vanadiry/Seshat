@@ -41,12 +41,18 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		page := r.PathValue("page")
 		if strings.HasSuffix(page, ".html") {
 			p := strings.TrimSuffix(page, ".html")
-			if p == "index" { http.Redirect(w, r, "/", http.StatusMovedPermanently); return }
+			if p == "index" {
+				http.Redirect(w, r, "/", http.StatusMovedPermanently)
+				return
+			}
 			http.Redirect(w, r, "/"+p, http.StatusMovedPermanently)
 			return
 		}
-		if embedFS == nil { http.NotFound(w, r); return }
-			w.Header().Set("Cache-Control", "no-store")
+		if embedFS == nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
 		http.ServeFileFS(w, r, embedFS, "web/"+page+".html")
 	})
 	// app.min.js with config injection
@@ -54,7 +60,9 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		w.Header().Set("Content-Type", "application/javascript")
 		w.Header().Set("Cache-Control", "no-cache")
 		pref, _ := config.LoadPreferences()
-		if pref == nil { pref = &config.DefaultPreferences }
+		if pref == nil {
+			pref = &config.DefaultPreferences
+		}
 		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.SUBJECT_SORT=%q;\nwindow.AUTO_LINK_NAMES=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\nwindow.ACCESS_TOKEN=%q;\n", cfg.Frontend.BackendURL, pref.PreferLang, pref.Username, pref.SubjectSort, pref.AutoLinkNames, cfg.Frontend.FallbackURL, config.Dir(), cfg.Access.Token)
 		data, _ := fs.ReadFile(embedFS, "web/assets/app.min.js")
 		w.Write(data)
@@ -89,32 +97,44 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/subjects/list", handleListSubjects(dd))
 	mux.HandleFunc("GET /api/v0/characters/list", handleListCharacters(dd))
 	mux.HandleFunc("GET /api/v0/persons/list", handleListPersons(dd))
-		nameHandler := func(domain string) http.HandlerFunc {
-			return func(w http.ResponseWriter, r *http.Request) {
-				path := cache.IndexFile(dd, domain+"_name.json")
-				stat, err := os.Stat(path)
-				if err != nil { writeJSON(w, map[string]int{}); return }
-				etag := fmt.Sprintf(`"%d"`, stat.ModTime().Unix())
-				w.Header().Set("ETag", etag)
-				w.Header().Set("Cache-Control", "max-age=0, must-revalidate")
-				if r.Header.Get("If-None-Match") == etag {
-					w.WriteHeader(http.StatusNotModified)
-					return
-				}
-				m, _ := loadCachedIndex[map[int][]string](path)
-				writeJSON(w, m)
+	nameHandler := func(domain string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			path := cache.IndexFile(dd, domain+"_name.json")
+			stat, err := os.Stat(path)
+			if err != nil {
+				writeJSON(w, map[string]int{})
+				return
 			}
+			etag := fmt.Sprintf(`"%d"`, stat.ModTime().Unix())
+			w.Header().Set("ETag", etag)
+			w.Header().Set("Cache-Control", "max-age=0, must-revalidate")
+			if r.Header.Get("If-None-Match") == etag {
+				w.WriteHeader(http.StatusNotModified)
+				return
+			}
+			m, _ := loadCachedIndex[map[int][]string](path)
+			writeJSON(w, m)
 		}
-		mux.HandleFunc("GET /api/v0/subjects/name", nameHandler("subjects"))
-		mux.HandleFunc("GET /api/v0/characters/name", nameHandler("characters"))
-		mux.HandleFunc("GET /api/v0/persons/name", nameHandler("persons"))
+	}
+	mux.HandleFunc("GET /api/v0/subjects/name", nameHandler("subjects"))
+	mux.HandleFunc("GET /api/v0/characters/name", nameHandler("characters"))
+	mux.HandleFunc("GET /api/v0/persons/name", nameHandler("persons"))
 	mux.HandleFunc("GET /api/v0/episodes", func(w http.ResponseWriter, r *http.Request) {
 		sid := r.URL.Query().Get("subject_id")
-		if sid == "" { http.Error(w, `{"error":"subject_id required"}`, 400); return }
+		if sid == "" {
+			http.Error(w, `{"error":"subject_id required"}`, 400)
+			return
+		}
 		id, err := strconv.Atoi(sid)
-		if err != nil { writeJSON(w, []any{}); return }
+		if err != nil {
+			writeJSON(w, []any{})
+			return
+		}
 		data, err := cache.Get(dd, cache.Key("subjects", id, "episodes.json"))
-		if err != nil { writeJSON(w, []any{}); return }
+		if err != nil {
+			writeJSON(w, []any{})
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(data)
 	})
@@ -176,8 +196,6 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/persons/{id}/image", imgHandler("person"))
 	return withLogging(withCORS(mux))
 }
-
-
 
 func writeJSON(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json")

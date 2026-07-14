@@ -83,7 +83,9 @@ func handleSearchSubjects(dd string) http.HandlerFunc {
 
 func handleSearchCharacters(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req struct{ Keyword string `json:"keyword"` }
+		var req struct {
+			Keyword string `json:"keyword"`
+		}
 		if json.NewDecoder(r.Body).Decode(&req) != nil || req.Keyword == "" {
 			writeJSON(w, map[string]any{"data": []any{}})
 			return
@@ -94,7 +96,9 @@ func handleSearchCharacters(dd string) http.HandlerFunc {
 
 func handleSearchPersons(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req struct{ Keyword string `json:"keyword"` }
+		var req struct {
+			Keyword string `json:"keyword"`
+		}
 		if json.NewDecoder(r.Body).Decode(&req) != nil || req.Keyword == "" {
 			writeJSON(w, map[string]any{"data": []any{}})
 			return
@@ -105,7 +109,9 @@ func handleSearchPersons(dd string) http.HandlerFunc {
 
 func handleSearchTags(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req struct{ Keyword string `json:"keyword"` }
+		var req struct {
+			Keyword string `json:"keyword"`
+		}
 		if json.NewDecoder(r.Body).Decode(&req) != nil || req.Keyword == "" {
 			writeJSON(w, map[string]any{"data": []any{}})
 			return

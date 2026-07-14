@@ -1,10 +1,10 @@
 package server
 
 import (
-	"net/http"
 	"encoding/json"
 	"math"
 	"math/rand"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -45,9 +45,9 @@ type eloPairEntry struct {
 }
 
 type eloHistory struct {
-	Winner  int    `json:"winner"`
-	Loser   int    `json:"loser"`
-	Time    string `json:"time"`
+	Winner int    `json:"winner"`
+	Loser  int    `json:"loser"`
+	Time   string `json:"time"`
 }
 
 func eloRatingPath() string {
@@ -370,7 +370,10 @@ func subjectSummary(dd string, id int) subjectInfo {
 func handleELOPair(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pair := getELOPair(dd)
-		if pair == nil { writeJSON(w, map[string]string{"error": "need at least 2 cached subjects"}); return }
+		if pair == nil {
+			writeJSON(w, map[string]string{"error": "need at least 2 cached subjects"})
+			return
+		}
 		// pair 类型为 []eloPairEntry
 		writeJSON(w, pair)
 	}
@@ -378,9 +381,15 @@ func handleELOPair(dd string) http.HandlerFunc {
 
 func handleELOCompare(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req struct{ Winner int `json:"winner"`; Loser int `json:"loser"` }
+		var req struct {
+			Winner int `json:"winner"`
+			Loser  int `json:"loser"`
+		}
 		json.NewDecoder(r.Body).Decode(&req)
-		if req.Winner == 0 || req.Loser == 0 { http.Error(w, `{"error":"winner and loser required"}`, 400); return }
+		if req.Winner == 0 || req.Loser == 0 {
+			http.Error(w, `{"error":"winner and loser required"}`, 400)
+			return
+		}
 		updateELO(dd, req.Winner, req.Loser)
 		writeJSON(w, map[string]string{"status": "ok"})
 	}
@@ -400,9 +409,13 @@ func rebuildELO() {
 	history := loadELOHistory()
 	for _, h := range history {
 		wa := scores[h.Winner]
-		if wa == 0 { wa = eloDefault }
+		if wa == 0 {
+			wa = eloDefault
+		}
 		wb := scores[h.Loser]
-		if wb == 0 { wb = eloDefault }
+		if wb == 0 {
+			wb = eloDefault
+		}
 		ea := 1.0 / (1.0 + math.Pow(10, (wb-wa)/400))
 		eb := 1.0 / (1.0 + math.Pow(10, (wa-wb)/400))
 		scores[h.Winner] = wa + eloK*(1.0-ea)

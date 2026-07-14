@@ -1,11 +1,11 @@
 package server
 
 import (
-	"net/http"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 )
@@ -57,7 +57,7 @@ func newProgress(total int, task, label string) *Progress {
 	progressMu.Lock()
 	progressMap[p.ID] = p
 	progressMu.Unlock()
-	startMsg, _ := json.Marshal(map[string]any{"step":"start","done":0,"total":total,"task":task,"label":label,"phase":p.Phase,"phases":p.Phases,"phase_name":p.PhaseName})
+	startMsg, _ := json.Marshal(map[string]any{"step": "start", "done": 0, "total": total, "task": task, "label": label, "phase": p.Phase, "phases": p.Phases, "phase_name": p.PhaseName})
 	p.Channel <- string(startMsg)
 	return p
 }
@@ -67,7 +67,7 @@ func (p *Progress) Close() {
 	err := p.Error
 	p.mu.Unlock()
 	if err != "" {
-		data, _ := json.Marshal(map[string]any{"step":"done","error":err})
+		data, _ := json.Marshal(map[string]any{"step": "done", "error": err})
 		p.Channel <- string(data)
 	} else {
 		select {
@@ -154,12 +154,17 @@ func handleActiveTasks(w http.ResponseWriter, r *http.Request) {
 
 func handleProgress(w http.ResponseWriter, r *http.Request) {
 	p := getProgress(r.PathValue("id"))
-	if p == nil { writeJSON(w, map[string]string{"error": "task not found"}); return }
+	if p == nil {
+		writeJSON(w, map[string]string{"error": "task not found"})
+		return
+	}
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	flusher, ok := w.(http.Flusher)
-	if !ok { return }
+	if !ok {
+		return
+	}
 	for event := range p.Channel {
 		fmt.Fprintf(w, "data: %s\n\n", event)
 		flusher.Flush()

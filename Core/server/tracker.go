@@ -1,9 +1,9 @@
 package server
 
 import (
-	"net/http"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -143,7 +143,9 @@ func loadTrackerIDs(path string) []int {
 	}
 	// JSON: {"subjects": [1,2,3]} 或 {"subjects":[{"subject_id":1}]}
 	if strings.HasSuffix(path, ".json") {
-		var list struct{ Subjects []int `json:"subjects"` }
+		var list struct {
+			Subjects []int `json:"subjects"`
+		}
 		if json.Unmarshal(data, &list) == nil && len(list.Subjects) > 0 {
 			return list.Subjects
 		}
@@ -154,7 +156,9 @@ func loadTrackerIDs(path string) []int {
 			var ids []int
 			for k := range userMap.Subjects {
 				id, _ := strconv.Atoi(k)
-				if id > 0 { ids = append(ids, id) }
+				if id > 0 {
+					ids = append(ids, id)
+				}
 			}
 			return ids
 		}
@@ -203,7 +207,6 @@ func parseIDList(s string, ids *[]int) {
 	}
 }
 
-
 // diffTrackerIDs 返回 tracker 中有但本地没有的 ID
 func diffTrackerIDs(cfg *config.Config, dd string) []int {
 	seen := map[int]bool{}
@@ -212,42 +215,58 @@ func diffTrackerIDs(cfg *config.Config, dd string) []int {
 	files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
 	for _, f := range append(files, files2...) {
 		for _, sid := range loadTrackerIDs(f) {
-			if !seen[sid] { seen[sid] = true; allIDs = append(allIDs, sid) }
+			if !seen[sid] {
+				seen[sid] = true
+				allIDs = append(allIDs, sid)
+			}
 		}
 	}
 	// 读取已有条目 ID
 	existing := map[int]bool{}
 	if list, err := loadCachedIndex[[]cache.SubjectSummary](cache.IndexFile(dd, "subjects.json")); err == nil {
-		for _, s := range list { existing[s.ID] = true }
+		for _, s := range list {
+			existing[s.ID] = true
+		}
 	}
 	var newIDs []int
 	for _, sid := range allIDs {
-		if !existing[sid] { newIDs = append(newIDs, sid) }
+		if !existing[sid] {
+			newIDs = append(newIDs, sid)
+		}
 	}
 	return newIDs
 }
-// fetchConcurrent 并发拉取
 
+// fetchConcurrent 并发拉取
 
 // validTrackerName 校验 tracker 名称合法性
 func validTrackerName(name string) bool {
-	if name == "" { return false }
+	if name == "" {
+		return false
+	}
 	for _, c := range name {
-		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '-' && c != '_' { return false }
+		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '-' && c != '_' {
+			return false
+		}
 	}
 	return true
 }
 
 func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req struct{ Name string `json:"name"` }
+		var req struct {
+			Name string `json:"name"`
+		}
 		json.NewDecoder(r.Body).Decode(&req)
 		if req.Name == "" || !validTrackerName(req.Name) {
 			http.Error(w, `{"error":"tracker name must be alphanumeric, dash, or underscore"}`, 400)
 			return
 		}
 		path := filepath.Join(cfg.TrackerDir(), req.Name+".toml")
-		if _, err := os.Stat(path); err == nil { http.Error(w, `{"error":"tracker already exists"}`, 409); return }
+		if _, err := os.Stat(path); err == nil {
+			http.Error(w, `{"error":"tracker already exists"}`, 409)
+			return
+		}
 		tmpl := fmt.Sprintf(config.TrackerTemplate, req.Name, req.Name)
 		os.MkdirAll(cfg.TrackerDir(), 0o755)
 		os.WriteFile(path, []byte(tmpl), 0o644)
@@ -260,7 +279,10 @@ func handleTrackerList(cfg *config.Config) http.HandlerFunc {
 		files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
 		files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
 		files = append(files, files2...)
-		type tinfo struct{ Name string `json:"name"`; Count int `json:"count"` }
+		type tinfo struct {
+			Name  string `json:"name"`
+			Count int    `json:"count"`
+		}
 		var list []tinfo
 		for _, f := range files {
 			name := strings.TrimSuffix(filepath.Base(f), ".json")
@@ -274,15 +296,23 @@ func handleTrackerList(cfg *config.Config) http.HandlerFunc {
 func handleImportCollections(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := os.ReadFile(filepath.Join(config.Dir(), "user", "info", "collections.json"))
-		if err != nil { http.Error(w, `{"error":"collections not found"}`, 400); return }
+		if err != nil {
+			http.Error(w, `{"error":"collections not found"}`, 400)
+			return
+		}
 		var coll struct {
 			Subjects map[string]int `json:"subjects"`
 		}
-		if json.Unmarshal(data, &coll) != nil { http.Error(w, `{"error":"invalid collections data"}`, 400); return }
+		if json.Unmarshal(data, &coll) != nil {
+			http.Error(w, `{"error":"invalid collections data"}`, 400)
+			return
+		}
 		var ids []int
 		for sid := range coll.Subjects {
 			id, _ := strconv.Atoi(sid)
-			if id > 0 { ids = append(ids, id) }
+			if id > 0 {
+				ids = append(ids, id)
+			}
 		}
 		td := filepath.Join(config.Dir(), "tracker")
 		os.MkdirAll(td, 0o755)

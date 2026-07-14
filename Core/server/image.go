@@ -42,26 +42,38 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 			if data, err := os.ReadFile(filepath.Join(cache.Dir(dd), cache.Key("subjects", sid, "characters.json"))); err == nil {
 				var chars []struct {
 					ID     int `json:"id"`
-					Actors []struct{ ID int `json:"id"` } `json:"actors"`
+					Actors []struct {
+						ID int `json:"id"`
+					} `json:"actors"`
 				}
 				if json.Unmarshal(data, &chars) == nil {
 					for _, c := range chars {
 						charSet[c.ID] = true
 						for _, a := range c.Actors {
-							if a.ID > 0 { persSet[a.ID] = true }
+							if a.ID > 0 {
+								persSet[a.ID] = true
+							}
 						}
 					}
 				}
 			}
 			if data, err := os.ReadFile(filepath.Join(cache.Dir(dd), cache.Key("subjects", sid, "persons.json"))); err == nil {
-				var persons []struct{ ID int `json:"id"` }
+				var persons []struct {
+					ID int `json:"id"`
+				}
 				if json.Unmarshal(data, &persons) == nil {
-					for _, p := range persons { persSet[p.ID] = true }
+					for _, p := range persons {
+						persSet[p.ID] = true
+					}
 				}
 			}
 		}
-		for id := range charSet { charIDs = append(charIDs, id) }
-		for id := range persSet { persIDs = append(persIDs, id) }
+		for id := range charSet {
+			charIDs = append(charIDs, id)
+		}
+		for id := range persSet {
+			persIDs = append(persIDs, id)
+		}
 	} else {
 		subjIDs, _ = cache.ListIDs(dd, "subjects")
 		charIDs, _ = cache.ListIDs(dd, "characters")
@@ -69,18 +81,30 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 	}
 
 	// 条目
-	if p != nil && totalPhases > 0 { p.SetPhase(phaseBase, totalPhases, "下载条目图像") }
-	if p != nil { p.Send("images_subjects", 0, len(subjIDs), "downloading") }
+	if p != nil && totalPhases > 0 {
+		p.SetPhase(phaseBase, totalPhases, "下载条目图像")
+	}
+	if p != nil {
+		p.Send("images_subjects", 0, len(subjIDs), "downloading")
+	}
 	dlImageList(subjIDs, "subject", nil, imgBase, bg, p, "images_subjects")
 
 	// 角色
-	if p != nil && totalPhases > 0 { p.SetPhase(phaseBase+1, totalPhases, "下载角色图像") }
-	if p != nil { p.Send("images_characters", 0, len(charIDs), "downloading") }
+	if p != nil && totalPhases > 0 {
+		p.SetPhase(phaseBase+1, totalPhases, "下载角色图像")
+	}
+	if p != nil {
+		p.Send("images_characters", 0, len(charIDs), "downloading")
+	}
 	dlImageList(charIDs, "character", nil, imgBase, bg, p, "images_characters")
 
 	// 人物
-	if p != nil && totalPhases > 0 { p.SetPhase(phaseBase+2, totalPhases, "下载人物图像") }
-	if p != nil { p.Send("images_persons", 0, len(persIDs), "downloading") }
+	if p != nil && totalPhases > 0 {
+		p.SetPhase(phaseBase+2, totalPhases, "下载人物图像")
+	}
+	if p != nil {
+		p.Send("images_persons", 0, len(persIDs), "downloading")
+	}
 	dlImageList(persIDs, "person", nil, imgBase, bg, p, "images_persons")
 
 	log.Info("images download complete")
@@ -153,7 +177,9 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 			if err != nil {
 				if !strings.Contains(err.Error(), "placeholder") && !strings.Contains(err.Error(), "HTTP 404") {
 					log.Warn("image download failed", "kind", kind, "id", id, "size", size, "err", err)
-					if p != nil { p.SetError(fmt.Sprintf("Image %s #%d %s: %v", kind, id, size, err)) }
+					if p != nil {
+						p.SetError(fmt.Sprintf("Image %s #%d %s: %v", kind, id, size, err))
+					}
 				}
 				return
 			}
@@ -206,7 +232,9 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 			if err != nil {
 				if !strings.Contains(err.Error(), "placeholder") && !strings.Contains(err.Error(), "HTTP 404") {
 					log.Warn("image download failed", "kind", kind, "id", id, "size", size, "err", err)
-					if p != nil { p.SetError(fmt.Sprintf("Image %s #%d %s: %v", kind, id, size, err)) }
+					if p != nil {
+						p.SetError(fmt.Sprintf("Image %s #%d %s: %v", kind, id, size, err))
+					}
 				}
 				return
 			}
@@ -340,7 +368,9 @@ func RebuildImageIndex(dd string) {
 				continue
 			}
 			for _, d := range digits {
-				if !d.IsDir() { continue }
+				if !d.IsDir() {
+					continue
+				}
 				files, _ := os.ReadDir(filepath.Join(dir, d.Name()))
 				for _, f := range files {
 					name := f.Name()
@@ -348,7 +378,9 @@ func RebuildImageIndex(dd string) {
 						continue
 					}
 					id, err := strconv.Atoi(strings.TrimSuffix(name, ".jpg"))
-					if err != nil { continue }
+					if err != nil {
+						continue
+					}
 					entry := m[id]
 					relPath := fmt.Sprintf("%ss_%s/%s/%s", kind, size, d.Name(), name)
 					switch size {
@@ -379,7 +411,9 @@ func loadImageIndex(dd, name string) map[int]cache.ImageEntry {
 }
 
 func serveImage(w http.ResponseWriter, r *http.Request, dd, kind, size string) {
-	if size == "" { size = "grid" }
+	if size == "" {
+		size = "grid"
+	}
 	idStr := r.PathValue("id")
 	id, _ := strconv.Atoi(idStr)
 	images := loadImageIndex(dd, kind+"s_image.json")

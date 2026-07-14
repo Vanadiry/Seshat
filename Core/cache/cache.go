@@ -35,10 +35,14 @@ func List(dataDir, dir string) ([]string, error) {
 		return nil, err
 	}
 	for _, d := range digits {
-		if !d.IsDir() { continue }
+		if !d.IsDir() {
+			continue
+		}
 		ids, _ := os.ReadDir(filepath.Join(base, d.Name()))
 		for _, id := range ids {
-			if !id.IsDir() { continue }
+			if !id.IsDir() {
+				continue
+			}
 			names = append(names, id.Name())
 		}
 	}

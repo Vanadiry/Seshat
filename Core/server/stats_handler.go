@@ -14,14 +14,14 @@ func handleStats(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type sizeCount struct{ Large, Grid, Small int }
 		type imageStats struct {
-			Total      int `json:"total"`
+			Total      int       `json:"total"`
 			BySize     sizeCount `json:"by_size"`
-			Subjects   int `json:"subjects"`
-			Characters int `json:"characters"`
-			Persons    int `json:"persons"`
-			UniqueSubj int `json:"unique_subjects"`
-			UniqueChar int `json:"unique_characters"`
-			UniquePers int `json:"unique_persons"`
+			Subjects   int       `json:"subjects"`
+			Characters int       `json:"characters"`
+			Persons    int       `json:"persons"`
+			UniqueSubj int       `json:"unique_subjects"`
+			UniqueChar int       `json:"unique_characters"`
+			UniquePers int       `json:"unique_persons"`
 		}
 		type entryCount struct {
 			Subjects   int `json:"subjects"`
@@ -39,15 +39,35 @@ func handleStats(dd string) http.HandlerFunc {
 			m := loadImageIndex(dd, kind+"s_image.json")
 			var domainTotal, uniqueCount int
 			for _, e := range m {
-				if e.Large != "" { img.BySize.Large++; img.Total++; domainTotal++ }
-				if e.Grid != ""  { img.BySize.Grid++;  img.Total++; domainTotal++ }
-				if e.Small != "" { img.BySize.Small++; img.Total++; domainTotal++ }
-				if e.Large != "" || e.Grid != "" || e.Small != "" { uniqueCount++ }
+				if e.Large != "" {
+					img.BySize.Large++
+					img.Total++
+					domainTotal++
+				}
+				if e.Grid != "" {
+					img.BySize.Grid++
+					img.Total++
+					domainTotal++
+				}
+				if e.Small != "" {
+					img.BySize.Small++
+					img.Total++
+					domainTotal++
+				}
+				if e.Large != "" || e.Grid != "" || e.Small != "" {
+					uniqueCount++
+				}
 			}
 			switch kind {
-			case "subject": img.Subjects = domainTotal; img.UniqueSubj = uniqueCount
-			case "character": img.Characters = domainTotal; img.UniqueChar = uniqueCount
-			case "person": img.Persons = domainTotal; img.UniquePers = uniqueCount
+			case "subject":
+				img.Subjects = domainTotal
+				img.UniqueSubj = uniqueCount
+			case "character":
+				img.Characters = domainTotal
+				img.UniqueChar = uniqueCount
+			case "person":
+				img.Persons = domainTotal
+				img.UniquePers = uniqueCount
 			}
 		}
 
@@ -56,9 +76,12 @@ func handleStats(dd string) http.HandlerFunc {
 		for _, domain := range []string{"subjects", "characters", "persons"} {
 			list := loadNameList(cache.IndexFile(dd, domain+".json"))
 			switch domain {
-			case "subjects": entries.Subjects = len(list)
-			case "characters": entries.Characters = len(list)
-			case "persons": entries.Persons = len(list)
+			case "subjects":
+				entries.Subjects = len(list)
+			case "characters":
+				entries.Characters = len(list)
+			case "persons":
+				entries.Persons = len(list)
 			}
 		}
 

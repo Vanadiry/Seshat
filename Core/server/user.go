@@ -60,7 +60,9 @@ func handleUserCollections(dd string) http.HandlerFunc {
 		var list []map[string]any
 		for sid, t := range coll.Subjects {
 			id, _ := strconv.Atoi(sid)
-			if id > 0 { list = append(list, map[string]any{"subject_id": id, "type": t}) }
+			if id > 0 {
+				list = append(list, map[string]any{"subject_id": id, "type": t})
+			}
 		}
 		writeJSON(w, map[string]any{"data": list})
 	}
