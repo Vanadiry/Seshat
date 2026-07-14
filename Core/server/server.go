@@ -95,6 +95,11 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("POST /api/v0/task/cancel", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]string{"status": "cancelled"})
 		go func() { time.Sleep(100 * time.Millisecond); os.Exit(0) }()
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("goroutine panic", "panic", r)
+			}
+		}()
 	})
 	mux.HandleFunc("GET /api/v0/tasks", handleActiveTasks)
 

@@ -29,6 +29,11 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 	for _, sid := range ids {
 		wg.Add(1)
 		go func(sid int) {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("goroutine panic", "panic", r)
+				}
+			}()
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
@@ -87,6 +92,11 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 
 	wg.Add(1)
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("goroutine panic", "panic", r)
+			}
+		}()
 		defer wg.Done()
 		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/characters", sid)); err == nil {
 			cache.Put(dd, cache.Key("subjects", sid, "characters.json"), cache.StripImages(data))
@@ -98,6 +108,11 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 
 	wg.Add(1)
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("goroutine panic", "panic", r)
+			}
+		}()
 		defer wg.Done()
 		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/persons", sid)); err == nil {
 			cache.Put(dd, cache.Key("subjects", sid, "persons.json"), cache.StripImages(data))
@@ -121,6 +136,11 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	}
 	wg3.Add(1)
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("goroutine panic", "panic", r)
+			}
+		}()
 		defer wg3.Done()
 		fetchConcurrent(charIDs, func(c charRef) {
 			data, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID))
@@ -157,6 +177,11 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	var allEps []json.RawMessage
 	wg3.Add(1)
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("goroutine panic", "panic", r)
+			}
+		}()
 		defer wg3.Done()
 		fetchConcurrent(personIDs, func(pp personRef) {
 			data, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID))
@@ -172,6 +197,11 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	// 角色出演条目
 	wg3.Add(1)
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("goroutine panic", "panic", r)
+			}
+		}()
 		defer wg3.Done()
 		fetchConcurrent(charIDs, func(c charRef) {
 			data, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d/subjects", c.ID))
@@ -185,6 +215,11 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	// 角色相关人员
 	wg3.Add(1)
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("goroutine panic", "panic", r)
+			}
+		}()
 		defer wg3.Done()
 		fetchConcurrent(charIDs, func(c charRef) {
 			data, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d/persons", c.ID))
@@ -198,6 +233,11 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	// 人物参与条目
 	wg3.Add(1)
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("goroutine panic", "panic", r)
+			}
+		}()
 		defer wg3.Done()
 		fetchConcurrent(personIDs, func(pp personRef) {
 			data, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d/subjects", pp.ID))
@@ -211,6 +251,11 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	// 人物出演角色
 	wg3.Add(1)
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("goroutine panic", "panic", r)
+			}
+		}()
 		defer wg3.Done()
 		fetchConcurrent(personIDs, func(pp personRef) {
 			data, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d/characters", pp.ID))
@@ -224,6 +269,11 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	// 剧集
 	wg3.Add(1)
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("goroutine panic", "panic", r)
+			}
+		}()
 		defer wg3.Done()
 		offset := 0
 		for {
@@ -259,6 +309,11 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	// 关联条目
 	wg3.Add(1)
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("goroutine panic", "panic", r)
+			}
+		}()
 		defer wg3.Done()
 		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/subjects", sid)); err == nil {
 			cache.Put(dd, cache.Key("subjects", sid, "subjects.json"), cache.StripImages(data))
@@ -380,6 +435,11 @@ func fetchConcurrent[T any](items []T, fn func(T), p *Progress, stage string, co
 	for _, item := range items {
 		wg.Add(1)
 		go func(item T) {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("goroutine panic", "panic", r)
+				}
+			}()
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
@@ -409,6 +469,12 @@ func handleFetchAll(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 		}
 		p := newProgress(countTrackerTotal(cfg), "fetch_all", "刷新全部")
 		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("goroutine panic", "panic", r)
+					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
+				}
+			}()
 			refreshAllTrackers(cfg, bg, dd, imgDir, p)
 			p.Send("complete", p.Total, p.Total, "")
 			p.Close()
@@ -429,6 +495,12 @@ func handleFetchDeep(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 		}
 		p := newProgress(countTrackerTotal(cfg), "rebuild_all", "重建全部")
 		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("goroutine panic", "panic", r)
+					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
+				}
+			}()
 			forceRefresh(cfg, bg, dd, imgDir, p)
 			p.Send("complete", p.Total, p.Total, "")
 			p.Close()
@@ -466,6 +538,12 @@ func handleFetchTracker(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 		}
 		p := newProgress(countTrackerNames(cfg, req.Names), "fetch_tracker", "拉取 Tracker: "+strings.Join(req.Names, ", "))
 		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("goroutine panic", "panic", r)
+					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
+				}
+			}()
 			refreshTrackers(cfg, bg, dd, imgDir, req.Names, p)
 			p.Send("complete", p.Total, p.Total, "")
 			p.Close()
@@ -495,6 +573,12 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 		}
 		p := newProgress(3, "fetch_user", "拉取用户数据")
 		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("goroutine panic", "panic", r)
+					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
+				}
+			}()
 			p.SetPhase(1, 3, "拉取用户信息")
 			p.Send("user_info", 0, 1, "")
 			fetchUserInfo(uname, bg, dd)
@@ -553,6 +637,12 @@ func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 		}
 		log.Info("pulling subjects", "ids", ids)
 		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("goroutine panic", "panic", r)
+					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
+				}
+			}()
 			p.SetPhase(1, 5, "拉取动画数据")
 			fetchSubjectList(ids, bg, dd, imgDir, p)
 			downloadImagesScoped(dd, bg, p, 2, 5, ids)
@@ -584,6 +674,12 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 		p := newProgress(phases, "fetch_update", "增量更新")
 		log.Info("incremental update", "new_ids", len(newIDs))
 		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("goroutine panic", "panic", r)
+					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
+				}
+			}()
 			if len(newIDs) > 0 {
 				p.SetPhase(1, phases, "拉取动画数据")
 				fetchSubjectList(newIDs, bg, dd, imgDir, p)
@@ -607,6 +703,12 @@ func handleFetchIndex(dd string) http.HandlerFunc {
 		}
 		p := newProgress(5, "rebuild_index", "重建索引")
 		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("goroutine panic", "panic", r)
+					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
+				}
+			}()
 			buildIndexes(dd, p)
 			p.Send("complete", 5, 5, "")
 			p.Close()
@@ -632,6 +734,12 @@ func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 		}
 		p := newProgress(len(allIDs), "fetch_gap", "补充数据")
 		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("goroutine panic", "panic", r)
+					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
+				}
+			}()
 			var done int
 			log.Info("filling data gaps", "subjects", len(allIDs))
 			for _, sid := range allIDs {
@@ -722,6 +830,12 @@ func handleFetchMeta(cfg *config.Config, bg *bangumi.Client, dd string) http.Han
 		imgDir := filepath.Join(dd, "images")
 		p := newProgress(len(allIDs), "fetch_meta", "刷新元数据")
 		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("goroutine panic", "panic", r)
+					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
+				}
+			}()
 			p.SetPhase(1, 3, "拉取动画数据")
 			fetchSubjectList(allIDs, bg, dd, imgDir, p)
 			p.SetPhase(2, 3, "建立索引")

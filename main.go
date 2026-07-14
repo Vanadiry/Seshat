@@ -58,6 +58,11 @@ func runSeshat() (*http.Server, string) {
 	addr := fmt.Sprintf("%s:%d", cfg.Server.BindAddr, cfg.Server.Port)
 	srv := &http.Server{Addr: addr, Handler: router}
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				stdlog.Printf("server goroutine panic: %v", r)
+			}
+		}()
 		log.Info("listening", "addr", addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			stdlog.Fatal(err)

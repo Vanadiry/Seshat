@@ -133,6 +133,11 @@ func dlImageList(ids []int, kind string, imgMap map[int]cache.ImageEntry, imgBas
 	for _, id := range ids {
 		wg.Add(1)
 		go func(id int) {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("goroutine panic", "panic", r)
+				}
+			}()
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
@@ -173,6 +178,11 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 	for _, size := range []string{"large", "grid", "small"} {
 		wg.Add(1)
 		go func(size string) {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("goroutine panic", "panic", r)
+				}
+			}()
 			defer wg.Done()
 			data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
 			if err != nil {
@@ -232,6 +242,11 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 	for _, size := range sizes {
 		wg.Add(1)
 		go func(size string) {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("goroutine panic", "panic", r)
+				}
+			}()
 			defer wg.Done()
 			data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
 			if err != nil {
@@ -326,6 +341,11 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress) {
 			for _, pt := range partials {
 				wg.Add(1)
 				go func(id int, sizes []string) {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Error("goroutine panic", "panic", r)
+						}
+					}()
 					defer wg.Done()
 					sem <- struct{}{}
 					defer func() { <-sem }()
