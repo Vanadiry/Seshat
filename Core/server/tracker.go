@@ -267,16 +267,16 @@ func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 			Name string `json:"name"`
 		}
 		if json.NewDecoder(r.Body).Decode(&req) != nil {
-			http.Error(w, `{"error":"invalid request body"}`, 400)
+			writeError(w, 400, "invalid request body")
 			return
 		}
 		if req.Name == "" || !validTrackerName(req.Name) {
-			http.Error(w, `{"error":"tracker name must be alphanumeric, dash, or underscore"}`, 400)
+			writeError(w, 400, "tracker name must be alphanumeric, dash, or underscore")
 			return
 		}
 		path := filepath.Join(cfg.TrackerDir(), req.Name+".toml")
 		if _, err := os.Stat(path); err == nil {
-			http.Error(w, `{"error":"tracker already exists"}`, 409)
+			writeError(w, 409, "tracker already exists")
 			return
 		}
 		tmpl := fmt.Sprintf(config.TrackerTemplate, req.Name, req.Name)
@@ -309,14 +309,14 @@ func handleImportCollections(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := os.ReadFile(filepath.Join(config.Dir(), "user", "info", "collections.json"))
 		if err != nil {
-			http.Error(w, `{"error":"collections not found"}`, 400)
+			writeError(w, 400, "collections not found")
 			return
 		}
 		var coll struct {
 			Subjects map[string]int `json:"subjects"`
 		}
 		if json.Unmarshal(data, &coll) != nil {
-			http.Error(w, `{"error":"invalid collections data"}`, 400)
+			writeError(w, 400, "invalid collections data")
 			return
 		}
 		var ids []int
@@ -331,7 +331,7 @@ func handleImportCollections(dd string) http.HandlerFunc {
 		trackerData, err := json.Marshal(map[string]any{"name": "user", "subjects": ids})
 		if err != nil {
 			log.Error("import collections marshal", "err", err)
-			http.Error(w, `{"error":"internal error"}`, 500)
+			writeError(w, 500, "internal error")
 			return
 		}
 		os.WriteFile(filepath.Join(td, "user.json"), trackerData, 0o644)

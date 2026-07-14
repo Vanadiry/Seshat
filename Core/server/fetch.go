@@ -396,11 +396,11 @@ func fetchConcurrent[T any](items []T, fn func(T), p *Progress, stage string, co
 func handleFetchAll(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" {
-			http.Error(w, `{"error":"base_url not configured"}`, 400)
+			writeError(w, 400, "base_url not configured")
 			return
 		}
 		if taskLocked() {
-			http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409)
+			writeError(w, 409, "已有任务正在运行，请等待完成")
 			return
 		}
 		p := newProgress(countTrackerTotal(cfg), "fetch_all", "刷新全部")
@@ -416,11 +416,11 @@ func handleFetchAll(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 func handleFetchDeep(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" {
-			http.Error(w, `{"error":"base_url not configured"}`, 400)
+			writeError(w, 400, "base_url not configured")
 			return
 		}
 		if taskLocked() {
-			http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409)
+			writeError(w, 409, "已有任务正在运行，请等待完成")
 			return
 		}
 		p := newProgress(countTrackerTotal(cfg), "rebuild_all", "重建全部")
@@ -436,28 +436,28 @@ func handleFetchDeep(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 func handleFetchTracker(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" {
-			http.Error(w, `{"error":"base_url not configured"}`, 400)
+			writeError(w, 400, "base_url not configured")
 			return
 		}
 		if taskLocked() {
-			http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409)
+			writeError(w, 409, "已有任务正在运行，请等待完成")
 			return
 		}
 		var req struct {
 			Names []string `json:"names"`
 		}
 		if json.NewDecoder(r.Body).Decode(&req) != nil {
-			writeJSON(w, map[string]any{"error": "invalid request body"})
+			writeError(w, http.StatusBadRequest, "invalid request body")
 			return
 		}
 		for _, n := range req.Names {
 			if !validTrackerName(n) {
-				writeJSON(w, map[string]any{"error": "invalid tracker name: " + n})
+				writeError(w, http.StatusBadRequest, "invalid tracker name: "+n)
 				return
 			}
 		}
 		if countTrackerNames(cfg, req.Names) == 0 {
-			writeJSON(w, map[string]any{"error": "tracker not found or empty: " + strings.Join(req.Names, ", ")})
+			writeError(w, http.StatusNotFound, "tracker not found or empty: "+strings.Join(req.Names, ", "))
 			return
 		}
 		p := newProgress(countTrackerNames(cfg, req.Names), "fetch_tracker", "拉取 Tracker: "+strings.Join(req.Names, ", "))
@@ -473,7 +473,7 @@ func handleFetchTracker(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" {
-			http.Error(w, `{"error":"base_url not configured"}`, 400)
+			writeError(w, 400, "base_url not configured")
 			return
 		}
 		pref, _ := config.LoadPreferences()
@@ -482,11 +482,11 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 		}
 		uname := pref.Username
 		if uname == "" {
-			http.Error(w, `{"error":"username not configured"}`, 400)
+			writeError(w, 400, "username not configured")
 			return
 		}
 		if taskLocked() {
-			http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409)
+			writeError(w, 409, "已有任务正在运行，请等待完成")
 			return
 		}
 		p := newProgress(3, "fetch_user", "拉取用户数据")
@@ -516,7 +516,7 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" {
-			http.Error(w, `{"error":"base_url not configured"}`, 400)
+			writeError(w, 400, "base_url not configured")
 			return
 		}
 		var req struct {
@@ -524,7 +524,7 @@ func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 			IDs []int `json:"ids"`
 		}
 		if json.NewDecoder(r.Body).Decode(&req) != nil {
-			http.Error(w, `{"error":"invalid request body"}`, 400)
+			writeError(w, 400, "invalid request body")
 			return
 		}
 		ids := req.IDs
@@ -532,11 +532,11 @@ func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 			ids = []int{req.ID}
 		}
 		if len(ids) == 0 {
-			http.Error(w, `{"error":"id or ids required"}`, 400)
+			writeError(w, 400, "id or ids required")
 			return
 		}
 		if taskLocked() {
-			http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409)
+			writeError(w, 409, "已有任务正在运行，请等待完成")
 			return
 		}
 		var idStrs []string
@@ -565,12 +565,12 @@ func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" {
-			http.Error(w, `{"error":"base_url not configured"}`, 400)
+			writeError(w, 400, "base_url not configured")
 			return
 		}
 		newIDs := diffTrackerIDs(cfg, dd)
 		if taskLocked() {
-			http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409)
+			writeError(w, 409, "已有任务正在运行，请等待完成")
 			return
 		}
 		phases := 5
@@ -598,7 +598,7 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 func handleFetchIndex(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if taskLocked() {
-			http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409)
+			writeError(w, 409, "已有任务正在运行，请等待完成")
 			return
 		}
 		p := newProgress(5, "rebuild_index", "重建索引")
@@ -614,11 +614,11 @@ func handleFetchIndex(dd string) http.HandlerFunc {
 func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" {
-			http.Error(w, `{"error":"base_url not configured"}`, 400)
+			writeError(w, 400, "base_url not configured")
 			return
 		}
 		if taskLocked() {
-			http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409)
+			writeError(w, 409, "已有任务正在运行，请等待完成")
 			return
 		}
 		allIDs := collectAllSubjectIDs(dd)
@@ -688,11 +688,11 @@ func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 func handleFetchMeta(cfg *config.Config, bg *bangumi.Client, dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" {
-			http.Error(w, `{"error":"base_url not configured"}`, 400)
+			writeError(w, 400, "base_url not configured")
 			return
 		}
 		if taskLocked() {
-			http.Error(w, `{"error":"已有任务正在运行，请等待完成"}`, 409)
+			writeError(w, 409, "已有任务正在运行，请等待完成")
 			return
 		}
 
