@@ -2,7 +2,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -15,6 +14,7 @@ import (
 	"github.com/vanadiry/seshat/Core/bangumi"
 	"github.com/vanadiry/seshat/Core/cache"
 	"github.com/vanadiry/seshat/Core/config"
+	"github.com/vanadiry/seshat/Core/events"
 	"github.com/vanadiry/seshat/Core/log"
 )
 
@@ -36,7 +36,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		return cfg.Access.Token
 	})
 
-	// ── Frontend ──
+	// Frontend
 	mux.HandleFunc("GET /{page}", func(w http.ResponseWriter, r *http.Request) {
 		page := r.PathValue("page")
 		if strings.HasSuffix(page, ".html") {
@@ -85,7 +85,8 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		http.ServeFileFS(w, r, embedFS, "web/index.html")
 	})
 
-	// ── SSE progress ──
+	// SSE
+	mux.HandleFunc("GET /api/v0/events", events.HandleSSE)
 	mux.HandleFunc("GET /api/v0/task/{id}", handleProgress)
 	mux.HandleFunc("POST /api/v0/task/cancel", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]string{"status": "cancelled"})
@@ -93,7 +94,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 	mux.HandleFunc("GET /api/v0/tasks", handleActiveTasks)
 
-	// ── Cache API ──
+	// Cache API
 	mux.HandleFunc("GET /api/v0/subjects/list", handleListSubjects(dd))
 	mux.HandleFunc("GET /api/v0/characters/list", handleListCharacters(dd))
 	mux.HandleFunc("GET /api/v0/persons/list", handleListPersons(dd))
@@ -140,7 +141,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 	mux.HandleFunc("GET /api/v0/", handleCacheReader(dd))
 
-	// ── Fetch ──
+	// Fetch
 	mux.HandleFunc("POST /api/v0/fetch/all", handleFetchAll(cfg, bg, dd, id))
 	mux.HandleFunc("POST /api/v0/fetch/deep", handleFetchDeep(cfg, bg, dd, id))
 	mux.HandleFunc("POST /api/v0/fetch/tracker", handleFetchTracker(cfg, bg, dd, id))
@@ -151,41 +152,41 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("POST /api/v0/fetch/meta", handleFetchMeta(cfg, bg, dd))
 	mux.HandleFunc("POST /api/v0/fetch/index", handleFetchIndex(dd))
 
-	// ── Tracker ──
+	// Tracker
 	mux.HandleFunc("POST /api/v0/tracker/create", handleTrackerCreate(cfg))
 	mux.HandleFunc("GET /api/v0/tracker", handleTrackerList(cfg))
 	mux.HandleFunc("POST /api/v0/tracker/import-collections", handleImportCollections(dd))
 
-	// ── Settings ──
+	// Settings
 	mux.HandleFunc("GET /api/v0/settings", handleSettingsGet(cfg))
 	mux.HandleFunc("POST /api/v0/settings", handleSettingsPost)
 
-	// ── User ──
+	// User
 	mux.HandleFunc("GET /api/v0/users/{username}", handleUser(dd))
 	mux.HandleFunc("GET /api/v0/users/{username}/avatar", serveUserAvatar(dd))
 	mux.HandleFunc("GET /api/v0/users/{username}/collections", handleUserCollections(dd))
 
-	// ── Tags ──
+	// Tags
 	mux.HandleFunc("GET /api/v0/tags", handleTags(dd))
 	mux.HandleFunc("GET /api/v0/tags/{name}/subjects", handleTagSubjects(dd))
 
-	// ── Stats ──
+	// Stats
 	mux.HandleFunc("GET /api/v0/stats", handleStats(dd))
 
-	// ── ELO ──
+	// ELO
 	mux.HandleFunc("GET /api/v0/elo/pair", handleELOPair(dd))
 	mux.HandleFunc("POST /api/v0/elo/compare", handleELOCompare(dd))
 	mux.HandleFunc("GET /api/v0/elo/ranking", handleELORanking(dd))
 	mux.HandleFunc("GET /api/v0/elo/history", handleELOHistory(dd))
 	mux.HandleFunc("POST /api/v0/elo/rebuild", handleELORebuild(dd))
 
-	// ── Search ──
+	// Search
 	mux.HandleFunc("POST /api/v0/search/subjects", handleSearchSubjects(dd))
 	mux.HandleFunc("POST /api/v0/search/characters", handleSearchCharacters(dd))
 	mux.HandleFunc("POST /api/v0/search/persons", handleSearchPersons(dd))
 	mux.HandleFunc("POST /api/v0/search/tags", handleSearchTags(dd))
 
-	// ── Image API (official-style: /v0/subjects/{id}/image?type=large|grid) ──
+	// Image API (official-style: /v0/subjects/{id}/image?type=large|grid)
 	imgHandler := func(kind string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			serveImage(w, r, dd, kind, r.URL.Query().Get("type"))
@@ -195,11 +196,6 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/characters/{id}/image", imgHandler("character"))
 	mux.HandleFunc("GET /api/v0/persons/{id}/image", imgHandler("person"))
 	return withLogging(withCORS(mux))
-}
-
-func writeJSON(w http.ResponseWriter, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(v)
 }
 
 type statusRecorder struct {

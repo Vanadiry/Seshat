@@ -9,6 +9,7 @@ import (
 	"runtime"
 
 	"github.com/vanadiry/seshat/Core/config"
+	"github.com/vanadiry/seshat/Core/events"
 	"github.com/vanadiry/seshat/Core/log"
 	"github.com/vanadiry/seshat/Core/server"
 )
@@ -50,6 +51,7 @@ func runSeshat() (*http.Server, string) {
 	}
 	log.Init(lvl)
 	log.Info("Starting Seshat...")
+	events.InitBus()
 
 	router := server.New(cfg, webFS)
 

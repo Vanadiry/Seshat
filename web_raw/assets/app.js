@@ -1,6 +1,6 @@
 // Seshat shared JS — top bar, fetch dialog, SSE progress, API helpers
 
-// ── Theme: follow system when set to "auto" ──
+// Theme: follow system when set to "auto" 
 var _themeMedia = window.matchMedia("(prefers-color-scheme: light)");
 _themeMedia.addEventListener("change", function (e) {
     if ((localStorage.getItem("theme") || "auto") !== "auto") return;
@@ -61,7 +61,7 @@ document.addEventListener("dragstart", function (e) {
 
 const API = window.BACKEND_URL || "/api";
 
-// ── UI text (edit here to customize dialog messages) ──
+// UI text (edit here to customize dialog messages) 
 var MSG = {
     // Top bar
     customBackendWarn: "自定义后端模式，所有数据将从远程获取",
@@ -191,7 +191,7 @@ function authOpts() {
     return { headers: { Authorization: "Bearer " + tok } };
 }
 
-// ── Loading bar ──
+// Loading bar 
 var _ldCount = 0, _ldTimer = null;
 function _ldShow() {
     clearTimeout(_ldTimer);
@@ -251,7 +251,7 @@ function imgOnError(kind, id, size) {
     );
 }
 
-// ── Remote globe marker helpers ──
+// Remote globe marker helpers 
 // globeIcon returns an <img> tag for the globe marker. Use in headers and section titles.
 function globeIcon(cls) {
     return (
@@ -281,7 +281,7 @@ function addRemoteGlobe(el) {
     wrap.appendChild(globe);
 }
 
-// ── Infobox key blacklist：这些字段只做 URL/BBCode，不做名字匹配 ──
+// Infobox key blacklist：这些字段只做 URL/BBCode，不做名字匹配 
 var INFOBOX_NO_MATCH_KEYS = [
     "放送开始",
     "播放开始",
@@ -292,7 +292,7 @@ var INFOBOX_NO_MATCH_KEYS = [
     "话数"
 ];
 
-// ── Name → ID lookup maps (subjects/characters/persons) ──
+// Name → ID lookup maps (subjects/characters/persons) 
 var _subjectMap = null,
     _charMap = null,
     _personMap = null;
@@ -312,7 +312,7 @@ function loadPersonMap() {
     });
 }
 
-// ── 反转 name map：{id: [names]} → {name: id}，后者覆盖 ──
+// 反转 name map：{id: [names]} → {name: id}，后者覆盖 
 function invertNameMap(raw) {
     var m = {};
     if (!raw) return m;
@@ -326,7 +326,7 @@ function invertNameMap(raw) {
     return m;
 }
 
-// ── Merged char + person map（person 优先）──
+// Merged char + person map（person 优先）
 var _charPersonMerged = null;
 function getCharPersonMergedMap() {
     if (_charPersonMerged) return _charPersonMerged;
@@ -346,12 +346,12 @@ function getCharPersonMergedMap() {
     return _charPersonMerged;
 }
 
-// ── Subject 自由匹配（最长优先，不限制边界）──
+// Subject 自由匹配（最长优先，不限制边界）
 function linkifySubjectFree(text) {
     return linkifyByMap(text, _subjectMap, "/subject?id=");
 }
 
-// ── 分段匹配：直接查合并 map，集数已在顶层保护 ──
+// 分段匹配：直接查合并 map，集数已在顶层保护 
 function matchSegmentCore(seg, merged) {
     seg = seg.trim();
     if (!seg) return seg;
@@ -362,7 +362,7 @@ function matchSegmentCore(seg, merged) {
     );
 }
 
-// ── Char+Person 自由匹配（仅 ≥3 字，最长优先）──
+// Char+Person 自由匹配（仅 ≥3 字，最长优先）
 function linkifyCharPersonFree3Plus(text) {
     if (!text) return text;
     var merged = getCharPersonMergedMap();
@@ -374,10 +374,10 @@ function linkifyCharPersonFree3Plus(text) {
     return linkifyByMap(text, subMap, "");
 }
 
-// ── 分隔符集合 ──
+// 分隔符集合 
 var _SEPARATOR_RE = /([、,，\/\(\)（）\[\]])/;
 
-// ── Char+Person 分段匹配：按分隔符拆段，每段整体匹配 ──
+// Char+Person 分段匹配：按分隔符拆段，每段整体匹配 
 function linkifyCharPersonSegments(text) {
     if (!text) return text;
     var merged = getCharPersonMergedMap();
@@ -398,7 +398,7 @@ function linkifyCharPersonSegments(text) {
     return parts.join("");
 }
 
-// ── Infobox value 处理：BBCode → URL → 黑名单判定 → 保护集数 → 1a subject 自由匹配 → 1b ≥3 字自由匹配 → 2 分段匹配 → 还原集数 ──
+// Infobox value 处理：BBCode → URL → 黑名单判定 → 保护集数 → 1a subject 自由匹配 → 1b ≥3 字自由匹配 → 2 分段匹配 → 还原集数 
 function processInfoboxValue(v, key) {
     var t = linkifyBBCode(v);
     t = linkifyURL(t);
@@ -425,7 +425,7 @@ function lookupLocalName(name) {
     return null;
 }
 
-// ── Regex building for name matching ──
+// Regex building for name matching 
 var _personRegex = null;
 function buildPersonRegex() {
     if (_personRegex) return _personRegex;
@@ -495,7 +495,7 @@ function linkifyAllNames(text) {
     return parts.join("");
 }
 
-// ── linkifyURL：检测 URL 并转为可点击链接 ──
+// linkifyURL：检测 URL 并转为可点击链接 
 function linkifyURL(text) {
     if (!text) return text;
     var parts = text.split(/(<a\b[^>]*>.*?<\/a>)/);
@@ -509,7 +509,7 @@ function linkifyURL(text) {
     return parts.join("");
 }
 
-// ── linkifyBBCode：转换 [url=...]...[/url]，优先匹配本地 name ──
+// linkifyBBCode：转换 [url=...]...[/url]，优先匹配本地 name 
 function linkifyBBCode(text) {
     if (!text) return text;
     return text.replace(
@@ -535,7 +535,7 @@ function linkifyBBCode(text) {
     );
 }
 
-// ── formatSummary：BBCode → name 匹配 → 换行 ──
+// formatSummary：BBCode → name 匹配 → 换行 
 function formatSummary(text) {
     if (!text) return text;
     return linkifyAllNames(linkifyBBCode(text)).replace(
@@ -544,7 +544,7 @@ function formatSummary(text) {
     );
 }
 
-// ── infoboxData：提取侧栏信息（infobox + 顶层字段）──
+// infoboxData：提取侧栏信息（infobox + 顶层字段）
 function infoboxData(d) {
     var items = [];
     // Top-level fields
@@ -635,7 +635,7 @@ function infoboxData(d) {
     return items;
 }
 
-// ── primaryName / subName：根据 display_lang 配置决定主副标题顺序 ──
+// primaryName / subName：根据 display_lang 配置决定主副标题顺序 
 function primaryName(name, nameCN) {
     if (window.PREFER_LANG === "chinese") return nameCN || name;
     return name || nameCN;
@@ -647,7 +647,7 @@ function subName(name, nameCN) {
     return nameCN && name !== nameCN ? nameCN : "";
 }
 
-// ── extractCN：从 infobox 提取简体中文名 ──
+// extractCN：从 infobox 提取简体中文名 
 function extractCN(d) {
     var ib = d.infobox;
     if (typeof ib === "string") {
@@ -665,7 +665,7 @@ function extractCN(d) {
     return "";
 }
 
-// ── Loading bar + top bar ──
+// Loading bar + top bar 
 (function () {
     var bar = document.createElement("div");
     bar.id = "load-bar";
@@ -785,6 +785,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
+
+    // 全局事件总线（SSE）
+    initEventBus();
 });
 
 function toggleUserMenu(e) {
@@ -800,7 +803,7 @@ document.addEventListener("click", function () {
     dd.style.pointerEvents = "none";
 });
 
-// ── 拉取弹窗：输入行 + 操作按钮 + 危险区 + 二次确认 ──
+// 拉取弹窗：输入行 + 操作按钮 + 危险区 + 二次确认 
 var dlgInited = false,
     confirmCb = null;
 
@@ -1118,7 +1121,7 @@ function confirmAction(msg, cb) {
         cb();
     };
 }
-// ── 通知组件（统一右下角）──
+// 通知组件（统一右下角）
 var _currentToast = null;
 function _makeToast(title, body, titleBg, bodyBg, autoCloseSec, replace, closable) {
     if (replace !== false && _currentToast) { _currentToast.remove(); _currentToast = null; }
@@ -1182,6 +1185,10 @@ function _makeToast(title, body, titleBg, bodyBg, autoCloseSec, replace, closabl
 
 function showError(msg) {
     _makeToast("错误", msg, "bg-toast-error", "bg-toast-error-bg", 0, false);
+}
+
+function showWarn(msg) {
+    _makeToast("警告", msg, "bg-toast-warning", "bg-toast-warning-bg", 8, false);
 }
 
 function showSuccess(msg) {
@@ -1320,7 +1327,7 @@ async function doFetchIndex() {
     if (d.task_id) startProgress(d.task_id);
 }
 
-// ── 进度通知横幅（右下角浮动）──
+// 进度通知横幅（右下角浮动）
 function startProgress(taskId, label) {
     var bodyHTML = '<div id="pb-detail" class="text-[11px] mb-1.5"></div>' +
         '<div class="h-1 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden"><div id="pb-fill" class="h-full rounded-full" style="width:0;background:var(--c-toast-progress)"></div></div>';
@@ -1393,4 +1400,20 @@ function startProgress(taskId, label) {
         }
     };
     evt.onerror = function () { evt.close(); };
+}
+
+// 全局事件总线 
+function initEventBus() {
+    var es = new EventSource("/api/v0/events");
+    es.onmessage = function (e) {
+        try {
+            var d = JSON.parse(e.data);
+        } catch (_) { return; }
+        if (d.type === "error") showError(d.message);
+        if (d.type === "warn") showWarn(d.message);
+    };
+    es.onerror = function () {
+        es.close();
+        setTimeout(initEventBus, 5000);
+    };
 }
