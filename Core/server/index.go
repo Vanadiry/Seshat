@@ -77,7 +77,11 @@ func rebuildTags(dd string) {
 			tags[t.Name] = info
 		}
 	})
-	result, _ := json.Marshal(tags)
+	result, err := json.Marshal(tags)
+	if err != nil {
+		log.Error("tags index marshal", "err", err)
+		return
+	}
 	os.WriteFile(tagsPath(dd), result, 0o644)
 	buildNameIndex(dd, "subjects")
 	buildNameIndex(dd, "characters")
@@ -101,7 +105,11 @@ func buildPersonNames(dd string) {
 			m[p.ID] = append(m[p.ID], p.NameCN)
 		}
 	}
-	result, _ := json.Marshal(m)
+	result, err := json.Marshal(m)
+	if err != nil {
+		log.Error("persons name index marshal", "err", err)
+		return
+	}
 	namePath := cache.IndexFile(dd, "persons_name.json")
 	os.WriteFile(namePath, result, 0o644)
 	clearIndexCache(namePath)
@@ -124,7 +132,11 @@ func buildNameIndex(dd, domain string) {
 			m[e.ID] = append(m[e.ID], e.NameCN)
 		}
 	}
-	result, _ := json.Marshal(m)
+	result, err := json.Marshal(m)
+	if err != nil {
+		log.Error("name index marshal", "domain", domain, "err", err)
+		return
+	}
 	namePath := cache.IndexFile(dd, domain+"_name.json")
 	os.WriteFile(namePath, result, 0o644)
 	clearIndexCache(namePath)

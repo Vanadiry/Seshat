@@ -186,7 +186,10 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 			relPath := fmt.Sprintf("%ss_%s/%d/%d.jpg", kind, size, id%10, id)
 			fullPath := filepath.Join(imgBase, relPath)
 			os.MkdirAll(filepath.Dir(fullPath), 0o755)
-			os.WriteFile(fullPath, data, 0o644)
+			if err := os.WriteFile(fullPath, data, 0o644); err != nil {
+				log.Error("image write failed", "kind", kind, "id", id, "size", size, "err", err)
+				return
+			}
 			results <- result{size, relPath}
 		}(size)
 	}
@@ -241,7 +244,10 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 			relPath := fmt.Sprintf("%ss_%s/%d/%d.jpg", kind, size, id%10, id)
 			fullPath := filepath.Join(imgBase, relPath)
 			os.MkdirAll(filepath.Dir(fullPath), 0o755)
-			os.WriteFile(fullPath, data, 0o644)
+			if err := os.WriteFile(fullPath, data, 0o644); err != nil {
+				log.Error("image write failed", "kind", kind, "id", id, "size", size, "err", err)
+				return
+			}
 			results <- result{size, relPath}
 		}(size)
 	}

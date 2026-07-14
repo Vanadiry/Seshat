@@ -38,7 +38,10 @@ func List(dataDir, dir string) ([]string, error) {
 		if !d.IsDir() {
 			continue
 		}
-		ids, _ := os.ReadDir(filepath.Join(base, d.Name()))
+		ids, err := os.ReadDir(filepath.Join(base, d.Name()))
+		if err != nil {
+			continue
+		}
 		for _, id := range ids {
 			if !id.IsDir() {
 				continue
@@ -72,7 +75,10 @@ func StripImages(data []byte) []byte {
 	var obj map[string]any
 	if json.Unmarshal(data, &obj) == nil {
 		stripImagesRecursive(obj)
-		r, _ := json.Marshal(obj)
+		r, err := json.Marshal(obj)
+		if err != nil {
+			return data
+		}
 		return r
 	}
 	// Try as array
@@ -83,7 +89,10 @@ func StripImages(data []byte) []byte {
 				stripImagesRecursive(m)
 			}
 		}
-		r, _ := json.Marshal(arr)
+		r, err := json.Marshal(arr)
+		if err != nil {
+			return data
+		}
 		return r
 	}
 	return data

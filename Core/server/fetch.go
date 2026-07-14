@@ -89,7 +89,9 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		defer wg.Done()
 		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/characters", sid)); err == nil {
 			cache.Put(dd, cache.Key("subjects", sid, "characters.json"), cache.StripImages(data))
-			json.Unmarshal(data, &chars)
+			if err := json.Unmarshal(data, &chars); err != nil {
+				log.Warn("unmarshal chars failed", "subject", sid, "err", err)
+			}
 		}
 	}()
 
@@ -98,7 +100,9 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 		defer wg.Done()
 		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/persons", sid)); err == nil {
 			cache.Put(dd, cache.Key("subjects", sid, "persons.json"), cache.StripImages(data))
-			json.Unmarshal(data, &persons)
+			if err := json.Unmarshal(data, &persons); err != nil {
+				log.Warn("unmarshal persons failed", "subject", sid, "err", err)
+			}
 		}
 	}()
 	wg.Wait()
@@ -241,7 +245,11 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 			}
 		}
 		if len(allEps) > 0 {
-			result, _ := json.Marshal(allEps)
+			result, err := json.Marshal(allEps)
+			if err != nil {
+				log.Error("marshal episodes failed", "subject", sid, "err", err)
+				return
+			}
 			cache.Put(dd, cache.Key("subjects", sid, "episodes.json"), cache.StripImages(result))
 		}
 	}()
@@ -281,7 +289,10 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 			} `json:"data"`
 			Total int `json:"total"`
 		}
-		json.Unmarshal(data, &resp)
+		if err := json.Unmarshal(data, &resp); err != nil {
+			log.Warn("unmarshal collections failed", "user", username, "err", err)
+			break
+		}
 		for _, d := range resp.Data {
 			if d.SubjectType == 2 {
 				all[strconv.Itoa(d.SubjectID)] = d.Type
@@ -297,7 +308,11 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 	// 保存收藏供前端展示
 	userDir := filepath.Join(config.Dir(), "user", "info")
 	os.MkdirAll(userDir, 0o755)
-	collData, _ := json.Marshal(map[string]any{"subjects": all, "updated_at": time.Now().Format(time.RFC3339)})
+	collData, err := json.Marshal(map[string]any{"subjects": all, "updated_at": time.Now().Format(time.RFC3339)})
+	if err != nil {
+		log.Error("marshal collections failed", "user", username, "err", err)
+		return
+	}
 	os.WriteFile(filepath.Join(userDir, "collections.json"), collData, 0o644)
 
 	log.Info("user collections saved", "user", username, "count", len(all))
@@ -313,9 +328,16 @@ func fetchUserInfo(username string, bg *bangumi.Client, dd string) {
 		return
 	}
 	var userData map[string]any
-	json.Unmarshal(data, &userData)
+	if err := json.Unmarshal(data, &userData); err != nil {
+		log.Warn("unmarshal user info failed", "user", username, "err", err)
+		return
+	}
 	delete(userData, "avatar")
-	clean, _ := json.Marshal(userData)
+	clean, err := json.Marshal(userData)
+	if err != nil {
+		log.Error("marshal user info failed", "user", username, "err", err)
+		return
+	}
 	os.WriteFile(filepath.Join(userDir, "info.json"), clean, 0o644)
 }
 
@@ -424,7 +446,10 @@ func handleFetchTracker(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 		var req struct {
 			Names []string `json:"names"`
 		}
-		json.NewDecoder(r.Body).Decode(&req)
+		if json.NewDecoder(r.Body).Decode(&req) != nil {
+			writeJSON(w, map[string]any{"error": "invalid request body"})
+			return
+		}
 		for _, n := range req.Names {
 			if !validTrackerName(n) {
 				writeJSON(w, map[string]any{"error": "invalid tracker name: " + n})
@@ -498,7 +523,10 @@ func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 			ID  int   `json:"id"`
 			IDs []int `json:"ids"`
 		}
-		json.NewDecoder(r.Body).Decode(&req)
+		if json.NewDecoder(r.Body).Decode(&req) != nil {
+			http.Error(w, `{"error":"invalid request body"}`, 400)
+			return
+		}
 		ids := req.IDs
 		if req.ID != 0 {
 			ids = []int{req.ID}

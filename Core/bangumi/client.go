@@ -78,7 +78,10 @@ func (c *Client) doGetImage(url string) ([]byte, error) {
 			return nil
 		},
 	}
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
 	req.Header.Set("User-Agent", c.ua)
 	c.setAuth(req)
 	resp, err := client.Do(req)
@@ -118,7 +121,10 @@ func (c *Client) GetRaw(urlPath string) ([]byte, error) {
 }
 
 func (c *Client) doGetRaw(url string) ([]byte, error) {
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
 	req.Header.Set("User-Agent", c.ua)
 	req.Header.Set("Accept", "application/json")
 	c.setAuth(req)
@@ -128,7 +134,10 @@ func (c *Client) doGetRaw(url string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		body, readErr := io.ReadAll(io.LimitReader(resp.Body, 512))
+		if readErr != nil {
+			body = []byte(fmt.Sprintf("(read body: %v)", readErr))
+		}
 		err := fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 		if resp.StatusCode == http.StatusUnauthorized && c.tokenFunc != nil && c.tokenFunc() != "" {
 			err = fmt.Errorf("你设置了令牌，但已失效。请终止任务并退出程序，检查令牌后重试。")

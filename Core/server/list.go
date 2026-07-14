@@ -8,10 +8,15 @@ import (
 	"strings"
 
 	"github.com/vanadiry/seshat/Core/cache"
+	"github.com/vanadiry/seshat/Core/log"
 )
 
 func saveJSON(path string, v any) {
-	data, _ := json.Marshal(v)
+	data, err := json.Marshal(v)
+	if err != nil {
+		log.Error("saveJSON marshal", "path", path, "err", err)
+		return
+	}
 	os.WriteFile(path, data, 0o644)
 	clearIndexCache(path)
 }

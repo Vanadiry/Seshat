@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/vanadiry/seshat/Core/log"
 )
 
 type Progress struct {
@@ -57,7 +59,10 @@ func newProgress(total int, task, label string) *Progress {
 	progressMu.Lock()
 	progressMap[p.ID] = p
 	progressMu.Unlock()
-	startMsg, _ := json.Marshal(map[string]any{"step": "start", "done": 0, "total": total, "task": task, "label": label, "phase": p.Phase, "phases": p.Phases, "phase_name": p.PhaseName})
+	startMsg, err := json.Marshal(map[string]any{"step": "start", "done": 0, "total": total, "task": task, "label": label, "phase": p.Phase, "phases": p.Phases, "phase_name": p.PhaseName})
+	if err != nil {
+		startMsg = []byte(`{"step":"start","error":"marshal failed"}`)
+	}
 	p.Channel <- string(startMsg)
 	return p
 }
@@ -67,7 +72,11 @@ func (p *Progress) Close() {
 	err := p.Error
 	p.mu.Unlock()
 	if err != "" {
-		data, _ := json.Marshal(map[string]any{"step": "done", "error": err})
+		data, e := json.Marshal(map[string]any{"step": "done", "error": err})
+		if e != nil {
+			log.Error("progress close marshal", "err", e)
+			data = []byte(`{"step":"done","status":"closed"}`)
+		}
 		p.Channel <- string(data)
 	} else {
 		select {
@@ -110,7 +119,7 @@ func (p *Progress) Send(step string, done, total int, status string) {
 	if elapsed > 0 {
 		speed = float64(done) / elapsed
 	}
-	data, _ := json.Marshal(map[string]any{
+	data, e := json.Marshal(map[string]any{
 		"step":       step,
 		"done":       done,
 		"total":      total,
@@ -121,6 +130,10 @@ func (p *Progress) Send(step string, done, total int, status string) {
 		"phase_name": phaseName,
 		"error":      err,
 	})
+	if e != nil {
+		log.Error("progress send marshal", "err", e)
+		return
+	}
 	select {
 	case p.Channel <- string(data):
 	default:

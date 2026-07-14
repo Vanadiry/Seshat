@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/vanadiry/seshat/Core/config"
+	"github.com/vanadiry/seshat/Core/log"
 )
 
 func userDir() string { return filepath.Join(config.Dir(), "user", "info") }
@@ -26,7 +27,9 @@ func handleUser(dd string) http.HandlerFunc {
 		}
 		delete(m, "avatar")
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(m)
+		if err := json.NewEncoder(w).Encode(m); err != nil {
+			log.Error("user json encode", "err", err)
+		}
 	}
 }
 

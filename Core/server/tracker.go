@@ -120,8 +120,13 @@ func addToSeshatTracker(cfg *config.Config, sid int) {
 		Name     string `json:"name"`
 		Subjects []int  `json:"subjects"`
 	}
-	raw, _ := os.ReadFile(path)
-	json.Unmarshal(raw, &data)
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	if json.Unmarshal(raw, &data) != nil {
+		return
+	}
 	if data.Name == "" {
 		data.Name = "seshat"
 	}
@@ -131,7 +136,11 @@ func addToSeshatTracker(cfg *config.Config, sid int) {
 		}
 	}
 	data.Subjects = append(data.Subjects, sid)
-	result, _ := json.MarshalIndent(data, "", "  ")
+	result, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		log.Error("tracker marshal indent", "sid", sid, "err", err)
+		return
+	}
 	os.WriteFile(path, result, 0o644)
 }
 
@@ -257,7 +266,10 @@ func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 		var req struct {
 			Name string `json:"name"`
 		}
-		json.NewDecoder(r.Body).Decode(&req)
+		if json.NewDecoder(r.Body).Decode(&req) != nil {
+			http.Error(w, `{"error":"invalid request body"}`, 400)
+			return
+		}
 		if req.Name == "" || !validTrackerName(req.Name) {
 			http.Error(w, `{"error":"tracker name must be alphanumeric, dash, or underscore"}`, 400)
 			return
@@ -316,7 +328,12 @@ func handleImportCollections(dd string) http.HandlerFunc {
 		}
 		td := filepath.Join(config.Dir(), "tracker")
 		os.MkdirAll(td, 0o755)
-		trackerData, _ := json.Marshal(map[string]any{"name": "user", "subjects": ids})
+		trackerData, err := json.Marshal(map[string]any{"name": "user", "subjects": ids})
+		if err != nil {
+			log.Error("import collections marshal", "err", err)
+			http.Error(w, `{"error":"internal error"}`, 500)
+			return
+		}
 		os.WriteFile(filepath.Join(td, "user.json"), trackerData, 0o644)
 		writeJSON(w, map[string]any{"status": "ok", "count": len(ids)})
 	}

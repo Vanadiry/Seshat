@@ -13,6 +13,7 @@ import (
 
 	"github.com/vanadiry/seshat/Core/cache"
 	"github.com/vanadiry/seshat/Core/config"
+	"github.com/vanadiry/seshat/Core/log"
 )
 
 const eloK = 32
@@ -110,7 +111,11 @@ func loadELO() map[int]float64 {
 
 func saveELO(m map[int]float64) {
 	os.MkdirAll(filepath.Join(config.Dir(), "user", "elo"), 0o755)
-	data, _ := json.Marshal(m)
+	data, err := json.Marshal(m)
+	if err != nil {
+		log.Error("saveELO marshal", "err", err)
+		return
+	}
 	os.WriteFile(eloRatingPath(), data, 0o644)
 }
 
@@ -129,7 +134,11 @@ func loadELOHistory() []eloHistory {
 
 func saveELOHistory(h []eloHistory) {
 	os.MkdirAll(filepath.Join(config.Dir(), "user", "elo"), 0o755)
-	data, _ := json.Marshal(h)
+	data, err := json.Marshal(h)
+	if err != nil {
+		log.Error("saveELOHistory marshal", "err", err)
+		return
+	}
 	os.WriteFile(eloHistoryPath(), data, 0o644)
 }
 
@@ -148,7 +157,11 @@ func loadBattleCounts() map[int]int {
 
 func saveBattleCounts(m map[int]int) {
 	os.MkdirAll(filepath.Join(config.Dir(), "user", "elo"), 0o755)
-	data, _ := json.Marshal(m)
+	data, err := json.Marshal(m)
+	if err != nil {
+		log.Error("saveBattleCounts marshal", "err", err)
+		return
+	}
 	os.WriteFile(eloBattleCountsPath(), data, 0o644)
 }
 
@@ -385,7 +398,10 @@ func handleELOCompare(dd string) http.HandlerFunc {
 			Winner int `json:"winner"`
 			Loser  int `json:"loser"`
 		}
-		json.NewDecoder(r.Body).Decode(&req)
+		if json.NewDecoder(r.Body).Decode(&req) != nil {
+			http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+			return
+		}
 		if req.Winner == 0 || req.Loser == 0 {
 			http.Error(w, `{"error":"winner and loser required"}`, 400)
 			return
