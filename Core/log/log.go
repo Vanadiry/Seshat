@@ -1,5 +1,5 @@
 // Package log 提供基于 slog 的结构化分级日志系统。
-// 每次启动创建一个新的日志文件，最多保留 10 个。
+// 日志同时输出到 stdout 和文件，文件超过 10MB 自动轮转，最多保留 10 个。
 package log
 
 import (
@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/vanadiry/seshat/Core/config"
@@ -23,17 +24,61 @@ var levelMap = map[string]slog.Level{
 	"error": slog.LevelError,
 }
 
+const maxLogSize = 10 << 20
+
+type rotatingWriter struct {
+	mu      sync.Mutex
+	dir     string
+	file    *os.File
+	written int64
+}
+
+func (w *rotatingWriter) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if w.file != nil && w.written >= maxLogSize {
+		w.file.Close()
+		w.file = nil
+		w.written = 0
+		ts := time.Now().Format("20060102_150405")
+		path := filepath.Join(w.dir, "seshat_"+ts+".log")
+		f, err := os.Create(path)
+		if err == nil {
+			w.file = f
+		}
+		go rotateLogs(w.dir, 10)
+	}
+
+	if w.file == nil {
+		return len(p), nil
+	}
+
+	n, err := w.file.Write(p)
+	w.written += int64(n)
+	return n, err
+}
+
+func (w *rotatingWriter) openFirst() error {
+	ts := time.Now().Format("20060102_150405")
+	path := filepath.Join(w.dir, "seshat_"+ts+".log")
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	w.file = f
+	w.written = 0
+	return nil
+}
+
 // Init 初始化日志系统。level 为 "debug" / "info" / "warn" / "error"。
 func Init(level string) {
 	logDir := filepath.Join(config.Dir(), "logs")
 	os.MkdirAll(logDir, 0o755)
 
-	ts := time.Now().Format("20060102_150405")
-	logPath := filepath.Join(logDir, "seshat_"+ts+".log")
-
-	f, err := os.Create(logPath)
-	if err != nil {
-		slog.Error("无法创建日志文件", "path", logPath, "err", err)
+	rw := &rotatingWriter{dir: logDir}
+	if err := rw.openFirst(); err != nil {
+		slog.Error("无法创建日志文件", "dir", logDir, "err", err)
 		logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 		return
 	}
@@ -43,11 +88,11 @@ func Init(level string) {
 		lvl = slog.LevelInfo
 	}
 
-	handler := slog.NewTextHandler(io.MultiWriter(os.Stdout, f), &slog.HandlerOptions{Level: lvl})
+	handler := slog.NewTextHandler(io.MultiWriter(os.Stdout, rw), &slog.HandlerOptions{Level: lvl})
 	logger = slog.New(handler)
 
 	rotateLogs(logDir, 10)
-	logger.Info("Log file: "+logPath, "level", lvl.String())
+	logger.Info("Log file: "+rw.file.Name(), "level", lvl.String())
 }
 
 func rotateLogs(dir string, keep int) {
