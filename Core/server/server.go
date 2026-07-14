@@ -63,7 +63,11 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		if err != nil || pref == nil {
 			pref = &config.DefaultPreferences
 		}
-		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.SUBJECT_SORT=%q;\nwindow.AUTO_LINK_NAMES=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\nwindow.ACCESS_TOKEN=%q;\n", cfg.Frontend.BackendURL, pref.PreferLang, pref.Username, pref.SubjectSort, pref.AutoLinkNames, cfg.Frontend.FallbackURL, config.Dir(), cfg.Access.Token)
+		token := ""
+		if cfg.Frontend.BackendURL != "" || cfg.Frontend.FallbackURL != "" {
+			token = cfg.Access.Token
+		}
+		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.SUBJECT_SORT=%q;\nwindow.AUTO_LINK_NAMES=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\nwindow.ACCESS_TOKEN=%q;\n", cfg.Frontend.BackendURL, pref.PreferLang, pref.Username, pref.SubjectSort, pref.AutoLinkNames, cfg.Frontend.FallbackURL, config.Dir(), token)
 		data, err := fs.ReadFile(embedFS, "web/assets/app.min.js")
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "app bundle not found")
