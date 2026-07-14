@@ -1122,17 +1122,26 @@ function confirmAction(msg, cb) {
     };
 }
 // 通知组件（统一右下角）
+var _toastStack = [];
 var _currentToast = null;
+function _repositionToasts() {
+    _toastStack = _toastStack.filter(function (t) { return !t.closed(); });
+    var bottom = 16;
+    for (var i = _toastStack.length - 1; i >= 0; i--) {
+        _toastStack[i].el.style.bottom = bottom + "px";
+        bottom += _toastStack[i].el.getBoundingClientRect().height + 12;
+    }
+}
 function _makeToast(title, body, titleBg, bodyBg, autoCloseSec, replace, closable) {
-    if (replace !== false && _currentToast) { _currentToast.remove(); _currentToast = null; }
+    if (replace !== false && _currentToast) {
+        _currentToast.close();
+        _currentToast = null;
+    }
     var el = document.createElement("div");
-    el.className = "fixed bottom-4 right-4 z-[300] rounded-lg shadow-2xl transition-all duration-300 max-w-[380px] min-w-[300px]";
+    el.className = "fixed right-4 z-[300] rounded-lg shadow-2xl transition-all duration-300 max-w-[380px] min-w-[300px]";
+    el.style.bottom = "16px";
     el.style.opacity = "0";
     el.style.transform = "translateY(8px)";
-    if (replace === false && _currentToast) {
-        var curRect = _currentToast.getBoundingClientRect();
-        el.style.bottom = (window.innerHeight - curRect.top + 12) + "px";
-    }
     el.innerHTML =
         '<div class="' + titleBg + ' text-white font-semibold px-4 py-2 rounded-t-lg flex items-center justify-between text-[14px]">' +
         '<span class="truncate">' + title + '</span>' +
@@ -1143,21 +1152,31 @@ function _makeToast(title, body, titleBg, bodyBg, autoCloseSec, replace, closabl
     requestAnimationFrame(function () { el.style.opacity = "1"; el.style.transform = "translateY(0)"; });
 
     var timer = null, closed = false;
-    var fill = el.querySelector("#t-fill");
-    function close() { if (closed) return; closed = true;
+    function close() {
+        if (closed) return; closed = true;
         if (timer) clearTimeout(timer);
         el.style.opacity = "0"; el.style.transform = "translateY(8px)";
-        setTimeout(function () { el.remove(); if (_currentToast === el) _currentToast = null; }, 300);
+        _repositionToasts();
+        setTimeout(function () {
+            el.remove();
+            if (_currentToast === el) _currentToast = null;
+            _repositionToasts();
+        }, 300);
     }
     var closeBtn = el.querySelector("span[class*='cursor-pointer']");
     if (closeBtn) closeBtn.onclick = close;
     if (autoCloseSec > 0) {
-        fill.style.width = "100%";
-        fill.style.background = "#68a868";
-        setTimeout(function () { fill.style.transition = "width " + autoCloseSec + "s linear"; fill.style.width = "0"; }, 50);
+        var bar = document.createElement("div");
+        bar.className = "h-1 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden mt-1.5";
+        bar.innerHTML = '<div class="h-full rounded-full" style="width:100%;background:var(--c-toast-success);transition:width ' + autoCloseSec + 's linear"></div>';
+        var bodyEl = el.querySelector("div:last-child");
+        if (bodyEl) bodyEl.appendChild(bar);
+        setTimeout(function () { bar.querySelector("div").style.width = "0"; }, 50);
         timer = setTimeout(close, autoCloseSec * 1000 + 100);
     }
-    if (replace !== false) _currentToast = el;
+    _toastStack.push({ el: el, closed: function () { return closed; } });
+    _currentToast = el;
+    _repositionToasts();
 
     return {
         el: el,
@@ -1193,8 +1212,12 @@ function showWarn(msg) {
 
 function showSuccess(msg) {
     var bodyHTML = msg + '<div class="h-1 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden mt-1.5"><div class="h-full rounded-full" style="width:100%;background:var(--c-toast-success);transition:width 5s linear"></div></div>';
-    var t = _makeToast("完成", bodyHTML, "bg-toast-success", "bg-toast-success-bg", 5);
-    setTimeout(function () { t.el.querySelector(".h-full.rounded-full").style.width = "0"; }, 50);
+    var t = _makeToast("完成", bodyHTML, "bg-toast-success", "bg-toast-success-bg", 0);
+    setTimeout(function () {
+        var bar = t.el.querySelector(".h-full.rounded-full");
+        if (bar) bar.style.width = "0";
+        t.close();
+    }, 5100);
 }
 function closeConfirm() {
     var el = document.getElementById("confirm-overlay");
