@@ -400,7 +400,7 @@ func RebuildImageIndex(dd string) {
 	}
 }
 
-// ── 辅助函数 ──
+// 辅助函数
 
 func loadImageIndex(dd, name string) map[int]cache.ImageEntry {
 	m, err := loadCachedIndex[map[int]cache.ImageEntry](cache.IndexFile(dd, name))

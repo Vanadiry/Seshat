@@ -369,7 +369,7 @@ func fetchConcurrent[T any](items []T, fn func(T), p *Progress, stage string, co
 	wg.Wait()
 }
 
-// ── 辅助函数 ──
+// 辅助函数
 
 func handleFetchAll(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

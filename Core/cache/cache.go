@@ -64,7 +64,7 @@ func ListIDs(dataDir, domain string) ([]int, error) {
 	return ids, nil
 }
 
-// ── Index generation ──
+// Index generation
 
 // StripImages returns JSON data with all "images" fields removed recursively.
 func StripImages(data []byte) []byte {
