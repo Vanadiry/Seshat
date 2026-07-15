@@ -1,5 +1,31 @@
 # Changelog
 
+## [v1.3.0] - 2026-07-15
+
+### Added
+
+- 全局事件总线
+- open-url 端点
+- 所有 goroutine 添加 panic recovery，任务级 panic 推送事件总线
+- CORS 策略限制为服务器绑定地址
+- POST 端点添加 1MB 请求体大小限制
+- 日志文件自动轮转
+- 加载状态动画
+- 首屏空数据页添加用户指南链接
+
+### Changed
+
+- Task SSE 移除 error 字段，错误统一走事件总线
+- 前端 toast 改为数组栈模式，关闭时剩余 toast 平滑下移
+- 本地模式下不再注入 `window.ACCESS_TOKEN`，仅远程/回退模式注入
+- 任务取消后 Tauri 桌面端自动重启后端
+
+### Fixed
+
+- 修复多处被静默忽略的错误处理
+- 统一错误响应格式
+- 前端 innerHTML 添加 HTML 转义防护
+
 ## [v1.2.0] - 2026-06-12
 
 ### Added
