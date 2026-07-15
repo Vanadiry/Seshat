@@ -214,8 +214,10 @@
                         var cached = _orphanNames[_orphans[i].id];
                         items.push({
                             id: _orphans[i].id,
-                            name: cached ? cached.name : undefined,
-                            name_cn: cached ? cached.name_cn : undefined,
+                            name: cached ? escapeHtml(cached.name) : undefined,
+                            name_cn: cached
+                                ? escapeHtml(cached.name_cn)
+                                : undefined,
                             score: cached ? cached.score : undefined,
                             rating: _orphans[i].rating,
                             _orphan: true
@@ -230,8 +232,11 @@
                                     _orphanNames[id] =
                                         s && s.id
                                             ? {
-                                                  name: s.name || "",
-                                                  name_cn: s.name_cn || "",
+                                                  name:
+                                                      escapeHtml(s.name) || "",
+                                                  name_cn:
+                                                      escapeHtml(s.name_cn) ||
+                                                      "",
                                                   score: score
                                               }
                                             : {
@@ -279,10 +284,16 @@
                     if (it._orphan) {
                         var oTitle = "加载中…",
                             oSub = "";
-                        if (it.name !== undefined) {
-                            if (it.name) {
-                                oTitle = primaryName(it.name, it.name_cn);
-                                oSub = subName(it.name, it.name_cn);
+                        if (escapeHtml(it.name) !== undefined) {
+                            if (escapeHtml(it.name)) {
+                                oTitle = primaryName(
+                                    escapeHtml(it.name),
+                                    escapeHtml(it.name_cn)
+                                );
+                                oSub = subName(
+                                    escapeHtml(it.name),
+                                    escapeHtml(it.name_cn)
+                                );
                             } else {
                                 oTitle = "无标题";
                                 oSub =
@@ -301,7 +312,7 @@
                             imgOnError("subject", it.id, "grid") +
                             ' class="w-10 h-10 rounded object-cover bg-input shrink-0">' +
                             '<div class="flex-1 min-w-0"><div class="text-sm font-semibold truncate' +
-                            (it.name ? "" : " text-sub") +
+                            (escapeHtml(it.name) ? "" : " text-sub") +
                             '">' +
                             oTitle +
                             "</div>" +
@@ -329,8 +340,14 @@
                             it.id +
                             "</span></div>";
                     } else {
-                        var primary = primaryName(it.name, it.name_cn);
-                        var sub = subName(it.name, it.name_cn);
+                        var primary = primaryName(
+                            escapeHtml(it.name),
+                            escapeHtml(it.name_cn)
+                        );
+                        var sub = subName(
+                            escapeHtml(it.name),
+                            escapeHtml(it.name_cn)
+                        );
                         var ratingVal = it.rating
                             ? typeof it.rating === "number"
                                 ? it.rating.toFixed(0)

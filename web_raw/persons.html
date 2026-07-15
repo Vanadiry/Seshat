@@ -40,10 +40,13 @@
                     ' class="w-[72px] h-[72px] object-cover bg-surface shrink-0">' +
                     '<div class="flex-1 min-w-0 pr-3 py-1">' +
                     '<div class="text-sm font-semibold truncate">' +
-                    primaryName(p.name, p.name_cn) +
+                    primaryName(escapeHtml(p.name), escapeHtml(p.name_cn)) +
                     "</div>" +
                     (function () {
-                        var sub = subName(p.name, p.name_cn);
+                        var sub = subName(
+                            escapeHtml(p.name),
+                            escapeHtml(p.name_cn)
+                        );
                         return sub
                             ? '<div class="text-xs text-sub truncate mt-0.5">' +
                                   sub +

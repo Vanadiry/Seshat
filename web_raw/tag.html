@@ -42,7 +42,7 @@
                     imgOnError("subject", s.id, "small") +
                     ' class="w-full aspect-[3/4] object-cover bg-surface">' +
                     '<div class="p-2.5"><div class="text-sm font-semibold truncate">' +
-                    primaryName(s.name, s.name_cn) +
+                    primaryName(escapeHtml(s.name), escapeHtml(s.name_cn)) +
                     "</div>" +
                     '<div class="text-xs text-sub mt-1 flex gap-1.5 items-center">' +
                     (s.rating && s.rating.score
@@ -50,9 +50,9 @@
                           s.rating.score.toFixed(1) +
                           "</span>"
                         : "") +
-                    (s.platform
+                    (escapeHtml(s.platform)
                         ? '<span class="bg-pink-bg text-pink px-1.5 py-px rounded-md text-[12px]">' +
-                          s.platform +
+                          escapeHtml(s.platform) +
                           "</span>"
                         : "") +
                     "</div></div></div>"

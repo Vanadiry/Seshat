@@ -39,7 +39,7 @@
                 3: "bg-surface-raised text-sub"
             };
             function renderItem(s) {
-                var sub = subName(s.name, s.name_cn);
+                var sub = subName(escapeHtml(s.name), escapeHtml(s.name_cn));
                 var badges = "";
                 if (s._elo)
                     badges +=
@@ -70,7 +70,7 @@
                         : "") +
                     "</div>" +
                     '<div class="p-2.5"><div class="text-sm font-semibold truncate">' +
-                    primaryName(s.name, s.name_cn) +
+                    primaryName(escapeHtml(s.name), escapeHtml(s.name_cn)) +
                     "</div>" +
                     '<div class="text-xs text-sub truncate mt-0.5' +
                     (sub ? "" : " invisible") +
@@ -83,9 +83,9 @@
                           s.score.toFixed(1) +
                           "</span>"
                         : "") +
-                    (s.platform
+                    (escapeHtml(s.platform)
                         ? '<span class="bg-pink-bg text-pink px-1.5 py-px rounded-md text-[12px] shrink-0">' +
-                          s.platform +
+                          escapeHtml(s.platform) +
                           "</span>"
                         : "") +
                     (s.date
@@ -225,7 +225,9 @@
                         return (b.score || 0) - (a.score || 0);
                     });
                 } else if (sort === "random") {
-                    allItems.sort(function () { return Math.random() - 0.5; });
+                    allItems.sort(function () {
+                        return Math.random() - 0.5;
+                    });
                 }
                 document.getElementById("grid").innerHTML = "";
                 showing = 0;

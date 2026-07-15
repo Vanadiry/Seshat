@@ -17,7 +17,7 @@
                 overflow: hidden;
             }
             .ep-tip {
-                transition: opacity .15s ease;
+                transition: opacity 0.15s ease;
                 pointer-events: auto;
             }
             .ep-close {
@@ -118,7 +118,8 @@
                 try {
                     var s = await api("/v0/subjects/" + SID);
                     if (!s) {
-                        document.getElementById("view").innerHTML = '<div class="select-text">' +
+                        document.getElementById("view").innerHTML =
+                            '<div class="select-text">' +
                             '<p class="text-sub text-center py-20">未找到</p>';
                         return;
                     }
@@ -135,19 +136,22 @@
                             ? '<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warn-bg text-warn shrink-0">NSFW</span>'
                             : "") +
                         '<span class="select-text text-xl font-bold truncate">' +
-                        primaryName(s.name, s.name_cn) +
+                        primaryName(escapeHtml(s.name), escapeHtml(s.name_cn)) +
                         "</span>" +
                         (function () {
-                            var sub = subName(s.name, s.name_cn);
+                            var sub = subName(
+                                escapeHtml(s.name),
+                                escapeHtml(s.name_cn)
+                            );
                             return sub
                                 ? '<span class="select-text text-sm text-sub truncate hidden sm:inline">' +
                                       sub +
                                       "</span>"
                                 : "";
                         })() +
-                        (s.platform
+                        (escapeHtml(s.platform)
                             ? '<span class="text-sub text-xs shrink-0">｜</span><span class="text-xs text-sub shrink-0">' +
-                              s.platform +
+                              escapeHtml(s.platform) +
                               "</span>"
                             : "") +
                         '<span class="text-sub text-xs shrink-0">｜</span><span class="select-text text-xs text-sub shrink-0">ID: ' +
@@ -162,7 +166,8 @@
                     else if (tab === "chars") await characters();
                     else if (tab === "persons") await personsList();
                 } catch (e) {
-                    document.getElementById("view").innerHTML = '<div class="select-text">' +
+                    document.getElementById("view").innerHTML =
+                        '<div class="select-text">' +
                         '<p class="text-sub text-center py-20">渲染出错: ' +
                         e.message +
                         "</p>";
@@ -279,8 +284,14 @@
                         var epNum = String(Math.floor(e.sort || e.ep || 0));
                         var num = epNum.padStart(2, "0");
                         var cls = epCls[t];
-                        var epName = primaryName(e.name, e.name_cn);
-                        var epSub = subName(e.name, e.name_cn);
+                        var epName = primaryName(
+                            escapeHtml(e.name),
+                            escapeHtml(e.name_cn)
+                        );
+                        var epSub = subName(
+                            escapeHtml(e.name),
+                            escapeHtml(e.name_cn)
+                        );
                         epGrid +=
                             '<div class="relative ep-cell">' +
                             '<span class="ep-num w-8 h-8 flex items-center justify-center rounded text-xs font-semibold cursor-pointer ' +
@@ -459,7 +470,7 @@
                     '<div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">简介</span></div>';
                 html +=
                     '<p class="select-text text-[14px] leading-relaxed text-sub mb-4">' +
-                    formatSummary(s.summary || "暂无简介") +
+                    formatSummary(escapeHtml(s.summary) || "暂无简介") +
                     "</p>";
                 if (tagsHtml)
                     html +=
@@ -540,7 +551,7 @@
                             // Name + CV
                             '<div class="mt-1.5 px-0.5">' +
                             '<div class="text-[13px] font-semibold truncate">' +
-                            primaryName(c.name, "") +
+                            primaryName(escapeHtml(c.name), "") +
                             "</div>" +
                             (actorName
                                 ? '<div class="text-[11px] text-sub truncate">CV: ' +
@@ -607,7 +618,9 @@
                             // Title
                             '<div class="mt-1.5 px-0.5">' +
                             '<div class="text-[13px] font-semibold line-clamp-3">' +
-                            (r.name_cn || r.name || "#" + r.id) +
+                            (escapeHtml(r.name_cn) ||
+                                escapeHtml(r.name) ||
+                                "#" + r.id) +
                             "</div>" +
                             "</div></div>";
                     }
@@ -631,25 +644,38 @@
                         function show() {
                             if (_epPinned && _epPinned !== cell) return;
                             tip.style.display = "block";
-                            requestAnimationFrame(function () { tip.style.opacity = "1"; });
+                            requestAnimationFrame(function () {
+                                tip.style.opacity = "1";
+                            });
                         }
                         function hide() {
                             if (_epPinned === cell) return;
                             tip.style.opacity = "0";
-                            setTimeout(function () { if (_epPinned !== cell) tip.style.display = "none"; }, 150);
+                            setTimeout(function () {
+                                if (_epPinned !== cell)
+                                    tip.style.display = "none";
+                            }, 150);
                         }
                         function unpin(c) {
                             if (_epPinned === c) _epPinned = null;
                             var n = c.querySelector(".ep-num");
                             var t = c.querySelector(".ep-tip");
                             if (n) n.classList.remove("ring-1", "ring-pink");
-                            if (t) { t.style.opacity = "0"; setTimeout(function () { t.style.display = "none"; }, 150); }
+                            if (t) {
+                                t.style.opacity = "0";
+                                setTimeout(function () {
+                                    t.style.display = "none";
+                                }, 150);
+                            }
                             var cb = t && t.querySelector(".ep-close");
                             if (cb) cb.remove();
                         }
                         num.addEventListener("click", function (e) {
                             e.stopPropagation();
-                            if (_epPinned === cell) { unpin(cell); return; }
+                            if (_epPinned === cell) {
+                                unpin(cell);
+                                return;
+                            }
                             if (_epPinned) unpin(_epPinned);
                             _epPinned = cell;
                             num.classList.add("ring-1", "ring-pink");
@@ -659,7 +685,10 @@
                                 var closeBtn = document.createElement("button");
                                 closeBtn.className = "ep-close";
                                 closeBtn.textContent = "×";
-                                closeBtn.onclick = function (ev) { ev.stopPropagation(); unpin(cell); };
+                                closeBtn.onclick = function (ev) {
+                                    ev.stopPropagation();
+                                    unpin(cell);
+                                };
                                 tip.firstElementChild.appendChild(closeBtn);
                             }
                         });
@@ -684,8 +713,14 @@
                     var cards = [];
                     for (var i = 0; i < list.length; i++) {
                         var e = list[i];
-                        var epName = primaryName(e.name, e.name_cn);
-                        var epSub = subName(e.name, e.name_cn);
+                        var epName = primaryName(
+                            escapeHtml(e.name),
+                            escapeHtml(e.name_cn)
+                        );
+                        var epSub = subName(
+                            escapeHtml(e.name),
+                            escapeHtml(e.name_cn)
+                        );
                         var desc = e.desc
                             ? linkifyPerson(e.desc).replace(
                                   /\r\n|\n|\\n|\\r\\n/g,
@@ -757,7 +792,8 @@
                     return e.type !== 0;
                 });
 
-                document.getElementById("view").innerHTML = '<div class="select-text">' +
+                document.getElementById("view").innerHTML =
+                    '<div class="select-text">' +
                     epRows(main, "本篇 (" + main.length + ")") +
                     epRows(sp, "SP / 其他 (" + sp.length + ")");
                 initEpTooltips();
@@ -829,7 +865,7 @@
                                     imgOnError("person", a.id, "grid") +
                                     ' class="w-8 h-8 rounded-lg object-cover bg-surface shrink-0">' +
                                     '<div class="shrink-0"><div class="text-[13px] font-semibold hover:text-pink">' +
-                                    a.name +
+                                    escapeHtml(a.name) +
                                     '</div><div class="text-[11px] text-sub">CV</div></div></div>';
                             }
                             actorsHtml += "</div>";
@@ -869,7 +905,7 @@
                                 '<div class="font-semibold text-[14px] cursor-pointer hover:text-pink inline-block truncate" onclick="location.href=\'/character?id=' +
                                 c.id +
                                 "'\">" +
-                                c.name +
+                                escapeHtml(c.name) +
                                 "</div>" +
                                 '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5"><span class="bg-pink text-white px-1.5 py-px rounded text-[11px] font-semibold">' +
                                 c.relation +
@@ -896,7 +932,8 @@
                     return html;
                 }
 
-                document.getElementById("view").innerHTML = '<div class="select-text">' +
+                document.getElementById("view").innerHTML =
+                    '<div class="select-text">' +
                     filterBar("all") +
                     '<div id="char-list">' +
                     renderCharList(chars) +
@@ -909,7 +946,8 @@
                             : window._chars.filter(function (c) {
                                   return c.relation === rel;
                               });
-                    document.getElementById("view").innerHTML = '<div class="select-text">' +
+                    document.getElementById("view").innerHTML =
+                        '<div class="select-text">' +
                         filterBar(rel) +
                         '<div id="char-list">' +
                         renderCharList(list) +
@@ -957,7 +995,7 @@
                             "<div onclick=\"location.href='/person?id=" +
                             p.id +
                             '\'" class="flex items-center gap-2 py-1 border-b border-bord-light cursor-pointer hover:text-pink text-sm truncate">' +
-                            p.name +
+                            escapeHtml(p.name) +
                             (p.eps
                                 ? '<span class="text-xs text-sub ml-1 shrink-0">(' +
                                   p.eps +
@@ -978,7 +1016,8 @@
                         "</div>";
                 }
 
-                document.getElementById("view").innerHTML = '<div class="select-text">' +
+                document.getElementById("view").innerHTML =
+                    '<div class="select-text">' +
                     '<div class="flex gap-6"><div class="flex-1" style="column-count:2;column-gap:1.5rem">' +
                     mainHtml +
                     '</div><div class="w-[140px] shrink-0 hidden md:block sticky top-44 self-start">' +

@@ -50,10 +50,10 @@
                         ? '<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warn-bg text-warn shrink-0">NSFW</span>'
                         : "") +
                     '<span class="select-text text-xl font-bold truncate">' +
-                    primaryName(p.name, cn) +
+                    primaryName(escapeHtml(p.name), cn) +
                     "</span>" +
                     (function () {
-                        var s = subName(p.name, cn);
+                        var s = subName(escapeHtml(p.name), cn);
                         return s
                             ? '<span class="select-text text-sm text-sub truncate hidden sm:inline">' +
                                   s +
@@ -111,33 +111,33 @@
                     "</div>" +
                     '<div class="flex-1 min-w-0 flex flex-col gap-5">' +
                     // Career + summary left, collects right
-                    ((careerHtml || p.summary) && p.stat && p.stat.collects
+                    ((careerHtml || escapeHtml(p.summary)) && p.stat && p.stat.collects
                         ? '<div class="flex flex-col md:flex-row gap-4"><div class="flex-1 min-w-0">' +
                           (careerHtml
                               ? '<div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">职业</span></div>' +
                                 careerHtml
                               : "") +
-                          (p.summary
+                          (escapeHtml(p.summary)
                               ? '<div class="' +
                                 (careerHtml ? "mt-4" : "") +
                                 '"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">简介</span></div><p class="select-text text-[14px] leading-relaxed text-sub">' +
-                                formatSummary(p.summary) +
+                                formatSummary(escapeHtml(p.summary)) +
                                 "</p></div>"
                               : "") +
                           '</div><div class="w-full md:w-[230px] shrink-0 self-start bg-surface-alt border border-bord rounded-xl overflow-hidden"><div class="bg-surface-alt px-4 py-2"><span class="font-bold text-sm">收藏</span></div><div class="border-t border-bord-mid"></div><div class="px-4 pt-3 pb-3"><div class="flex items-baseline justify-center"><span class="text-2xl font-bold">' +
                           p.stat.collects +
                           '</span><span class="text-xs text-sub ml-1">人</span></div></div></div></div>'
-                        : careerHtml || p.summary
+                        : careerHtml || escapeHtml(p.summary)
                           ? "<div>" +
                             (careerHtml
                                 ? '<div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">职业</span></div>' +
                                   careerHtml
                                 : "") +
-                            (p.summary
+                            (escapeHtml(p.summary)
                                 ? '<div class="' +
                                   (careerHtml ? "mt-4" : "") +
                                   '"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">简介</span></div><p class="select-text text-[14px] leading-relaxed text-sub">' +
-                                  formatSummary(p.summary) +
+                                  formatSummary(escapeHtml(p.summary)) +
                                   "</p></div>"
                                 : "") +
                             "</div>"
@@ -242,7 +242,7 @@
                             item.id +
                             "'\">" +
                             '<span class="text-[14px] font-semibold hover:text-pink">' +
-                            item.name +
+                            escapeHtml(item.name) +
                             "</span>" +
                             '<img src="' +
                             img("character", item.id, "grid") +
@@ -362,12 +362,12 @@
                             '<div class="font-semibold text-[14px] cursor-pointer hover:text-pink truncate" onclick="location.href=\'/subject?id=' +
                             item.id +
                             "'\">" +
-                            primaryName(item.name, item.name_cn || "") +
+                            primaryName(escapeHtml(item.name), escapeHtml(item.name_cn) || "") +
                             "</div>" +
                             (function () {
                                 var sub = subName(
-                                    item.name,
-                                    item.name_cn || ""
+                                    escapeHtml(item.name),
+                                    escapeHtml(item.name_cn) || ""
                                 );
                                 return sub
                                     ? '<div class="text-xs text-sub truncate mt-0.5">' +

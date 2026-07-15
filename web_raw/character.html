@@ -50,10 +50,10 @@
                         ? '<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warn-bg text-warn shrink-0">NSFW</span>'
                         : "") +
                     '<span class="select-text text-xl font-bold truncate">' +
-                    primaryName(c.name, cn) +
+                    primaryName(escapeHtml(c.name), cn) +
                     "</span>" +
                     (function () {
-                        var s = subName(c.name, cn);
+                        var s = subName(escapeHtml(c.name), cn);
                         return s
                             ? '<span class="select-text text-sm text-sub truncate hidden sm:inline">' +
                                   s +
@@ -93,11 +93,11 @@
                         : "") +
                     "</div>" +
                     '<div class="flex-1 min-w-0 flex flex-col gap-5">' +
-                    (c.summary || (c.stat && c.stat.collects)
+                    (escapeHtml(c.summary) || (c.stat && c.stat.collects)
                         ? '<div class="flex flex-col md:flex-row gap-4"><div class="flex-1 min-w-0">' +
-                          (c.summary
+                          (escapeHtml(c.summary)
                               ? '<div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">简介</span></div><p class="select-text text-[14px] leading-relaxed text-sub">' +
-                                formatSummary(c.summary) +
+                                formatSummary(escapeHtml(c.summary)) +
                                 "</p>"
                               : "") +
                           "</div>" +
@@ -121,7 +121,7 @@
                                       "<span onclick=\"location.href='/person?id=" +
                                       a.id +
                                       '\'" class="bg-surface border border-bord rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-pink">' +
-                                      a.name +
+                                      escapeHtml(a.name) +
                                       "</span>"
                                   );
                               })
@@ -155,8 +155,8 @@
                             var s = subjects[i];
                             map[s.id] = {
                                 id: s.id,
-                                name: s.name || "",
-                                name_cn: s.name_cn || "",
+                                name: escapeHtml(s.name) || "",
+                                name_cn: escapeHtml(s.name_cn) || "",
                                 staff: s.staff || "",
                                 type: s.type || 0,
                                 person_id: 0,
@@ -172,7 +172,7 @@
                                 staff: p.staff || "",
                                 type: p.subject_type || 0,
                                 person_id: p.id || 0,
-                                person_name: p.name || ""
+                                person_name: escapeHtml(p.name) || ""
                             };
                         }
                         _appearAll = [];
@@ -241,10 +241,10 @@
                             '<div class="font-semibold text-[14px] cursor-pointer hover:text-pink truncate" onclick="location.href=\'/subject?id=' +
                             item.id +
                             "'\">" +
-                            primaryName(item.name, item.name_cn) +
+                            primaryName(escapeHtml(item.name), escapeHtml(item.name_cn)) +
                             "</div>" +
                             (function () {
-                                var sub = subName(item.name, item.name_cn);
+                                var sub = subName(escapeHtml(item.name), escapeHtml(item.name_cn));
                                 return sub
                                     ? '<div class="text-xs text-sub truncate mt-0.5">' +
                                           sub +

@@ -133,9 +133,9 @@
                     if (type === "tags") {
                         html +=
                             '<a href="/tag?tag=' +
-                            encodeURIComponent(it.name) +
+                            encodeURIComponent(escapeHtml(it.name)) +
                             '" class="no-underline flex gap-3 items-center bg-surface border border-bord-mid rounded-lg py-1.5 px-2 cursor-pointer hover:border-pink"><div class="text-sm font-semibold">' +
-                            it.name +
+                            escapeHtml(it.name) +
                             '</div><div class="text-xs text-sub">' +
                             it.count +
                             " 个条目</div></a>";
@@ -170,11 +170,11 @@
                             ' class="w-10 h-10 rounded-lg object-cover bg-surface shrink-0">' +
                             '<div class="flex-1 min-w-0">' +
                             '<div class="text-sm font-semibold truncate">' +
-                            it.name +
+                            escapeHtml(it.name) +
                             "</div>" +
-                            (it.name_cn
+                            (escapeHtml(it.name_cn)
                                 ? '<div class="text-xs text-sub truncate mt-0.5">' +
-                                  it.name_cn +
+                                  escapeHtml(it.name_cn) +
                                   "</div>"
                                 : "") +
                             "</div>" +

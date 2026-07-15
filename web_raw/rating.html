@@ -211,8 +211,14 @@
                         "#" + it.id;
                     document.getElementById(
                         "pk-" + side + "-name"
-                    ).textContent = primaryName(it.name, it.name_cn);
-                    var sub = subName(it.name, it.name_cn);
+                    ).textContent = primaryName(
+                        escapeHtml(it.name),
+                        escapeHtml(it.name_cn)
+                    );
+                    var sub = subName(
+                        escapeHtml(it.name),
+                        escapeHtml(it.name_cn)
+                    );
                     document.getElementById("pk-" + side + "-sub").textContent =
                         sub || "";
                     document.getElementById(
@@ -300,8 +306,8 @@
                             api("/v0/subjects/" + id).then(function (s) {
                                 if (s && s.id)
                                     _names[id] = {
-                                        name: s.name || "",
-                                        name_cn: s.name_cn || "",
+                                        name: escapeHtml(s.name) || "",
+                                        name_cn: escapeHtml(s.name_cn) || "",
                                         _fetched: true
                                     };
                                 else
@@ -318,18 +324,18 @@
 
                 function sideHTML(id) {
                     var no = _names[id] || { name: "加载中…", name_cn: "" };
-                    var n = no.name;
+                    var n = escapeHtml(no.name);
                     var primary =
                         n === "加载中…"
                             ? "加载中…"
                             : n
-                              ? primaryName(n, no.name_cn || "")
+                              ? primaryName(n, escapeHtml(no.name_cn) || "")
                               : "无标题";
                     var sub =
                         n === "加载中…"
                             ? ""
                             : n
-                              ? subName(n, no.name_cn || "")
+                              ? subName(n, escapeHtml(no.name_cn) || "")
                               : "";
                     return (
                         '<div style="flex:1 1 50%;max-width:50%;overflow:hidden" class="flex items-center gap-3 py-1.5 pl-2">' +

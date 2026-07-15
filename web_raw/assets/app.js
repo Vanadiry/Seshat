@@ -1,5 +1,11 @@
 // Seshat shared JS — top bar, fetch dialog, SSE progress, API helpers
 
+// HTML escape for safe innerHTML
+function escapeHtml(str) {
+    if (!str) return "";
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 // Theme: follow system when set to "auto" 
 var _themeMedia = window.matchMedia("(prefers-color-scheme: light)");
 _themeMedia.addEventListener("change", function (e) {
