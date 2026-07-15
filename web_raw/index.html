@@ -146,7 +146,7 @@
                     return;
                 }
                 document.getElementById("grid").innerHTML =
-                    '<div class="col-span-full text-center py-20 text-sub">加载中…</div>';
+                    '<div class="col-span-full text-center py-20 text-sub"><span class="spin"></span>加载中…</div>';
                 try {
                     var subjects = (await apiLocal("/v0/subjects/list")) || [];
                     // 合并 ELO 与收藏数据
@@ -236,7 +236,7 @@
 
             async function searchLoad(q) {
                 document.getElementById("grid").innerHTML =
-                    '<div class="col-span-full text-center py-20 text-sub">搜索中…</div>';
+                    '<div class="col-span-full text-center py-20 text-sub"><span class="spin"></span>搜索中…</div>';
                 try {
                     var d = await api(
                         "/v0/search?q=" +

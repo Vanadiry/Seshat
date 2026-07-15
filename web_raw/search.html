@@ -76,7 +76,7 @@
                 document.getElementById("search-area").style.marginTop = "0";
                 var res = document.getElementById("results");
                 res.innerHTML =
-                    '<div class="text-center py-10 text-sub">搜索中…</div>';
+                    '<div class="text-center py-10 text-sub"><span class="spin"></span>搜索中…</div>';
 
                 var body = { keyword: q };
                 if (type === "subjects") body.filter = { type: [2] };
