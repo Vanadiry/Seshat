@@ -208,7 +208,7 @@
                 allItems = items;
                 if (!allItems.length) {
                     document.getElementById("grid").innerHTML =
-                        '<div class="col-span-full text-center py-20 text-sub">暂无数据。点击「管理数据」添加。<br><br>首次使用请阅读用户指南：<br><span class="select-text">github.com/Vanadiry/Seshat/blob/main/docs/guide.md</span></div>';
+                        '<div class="col-span-full text-center py-20 text-sub">暂无数据。点击「管理数据」添加。<br><br>首次使用请阅读<a href="#" onclick="openUrl(\'https://github.com/Vanadiry/Seshat/blob/main/docs/guide.md\');return false" class="text-pink hover:underline ml-1 select-text">用户指南</a></div>';
                     document.getElementById("pager").innerHTML = "";
                     return;
                 }
