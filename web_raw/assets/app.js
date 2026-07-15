@@ -3,10 +3,14 @@
 // HTML escape for safe innerHTML
 function escapeHtml(str) {
     if (!str) return "";
-    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
 }
 
-// Theme: follow system when set to "auto" 
+// Theme: follow system when set to "auto"
 var _themeMedia = window.matchMedia("(prefers-color-scheme: light)");
 _themeMedia.addEventListener("change", function (e) {
     if ((localStorage.getItem("theme") || "auto") !== "auto") return;
@@ -67,7 +71,7 @@ document.addEventListener("dragstart", function (e) {
 
 const API = window.BACKEND_URL || "/api";
 
-// UI text (edit here to customize dialog messages) 
+// UI text (edit here to customize dialog messages)
 var MSG = {
     // Top bar
     customBackendWarn: "自定义后端模式，所有数据将从远程获取",
@@ -84,7 +88,8 @@ var MSG = {
     btnGap: "补充数据",
     btnMeta: "刷新元数据",
     btnRefreshAll: "刷新全部",
-    confirmGap: "将遍历所有已缓存条目，检查并拉取有更新的人物/角色/剧集等数据。",
+    confirmGap:
+        "将遍历所有已缓存条目，检查并拉取有更新的人物/角色/剧集等数据。",
     confirmMeta: "将重新拉取所有条目的基本信息（不包含图片）。",
     btnDangerZone: "危险区",
     btnRebuildIndex: "重建索引",
@@ -145,7 +150,8 @@ var MSG = {
     },
 
     // Validation
-    errInvalidTrackerName: "Tracker 名称仅允许大小写字母、数字、短横线和下划线。",
+    errInvalidTrackerName:
+        "Tracker 名称仅允许大小写字母、数字、短横线和下划线。",
     errUserFetchFailed: "刷新用户数据失败: ",
     errNoUsername:
         "未在配置中设置用户名（[user] username），无法刷新用户数据。",
@@ -197,8 +203,9 @@ function authOpts() {
     return { headers: { Authorization: "Bearer " + tok } };
 }
 
-// Loading bar 
-var _ldCount = 0, _ldTimer = null;
+// Loading bar
+var _ldCount = 0,
+    _ldTimer = null;
 function _ldShow() {
     clearTimeout(_ldTimer);
     _ldTimer = setTimeout(function () {
@@ -208,14 +215,17 @@ function _ldShow() {
 }
 function _ldHide() {
     _ldCount--;
-    if (_ldCount <= 0) { _ldCount = 0; clearTimeout(_ldTimer);
+    if (_ldCount <= 0) {
+        _ldCount = 0;
+        clearTimeout(_ldTimer);
         var bar = document.getElementById("load-bar");
         if (bar) bar.classList.remove("active");
     }
 }
 
 async function api(url) {
-    _ldCount++; _ldShow();
+    _ldCount++;
+    _ldShow();
     try {
         var r = await fetch(API + url, API !== "/api" ? authOpts() : {});
         if (!r.ok && window.FALLBACK_URL) {
@@ -227,7 +237,9 @@ async function api(url) {
         }
         if (!r.ok) return null;
         return r.json();
-    } finally { _ldHide(); }
+    } finally {
+        _ldHide();
+    }
 }
 // apiLocal always uses local backend for list/index data
 function apiLocal(url) {
@@ -241,7 +253,8 @@ function img(kind, id, size) {
 // imgOnError returns onerror attribute. If fallback is configured, first error retries via
 // FALLBACK_URL; second error shows local placeholder. Without fallback, shows placeholder directly.
 function imgOnError(kind, id, size) {
-    if (!window.FALLBACK_URL) return "onerror=\"this.src='/assets/no-image.png'\"";
+    if (!window.FALLBACK_URL)
+        return "onerror=\"this.src='/assets/no-image.png'\"";
     var fb =
         window.FALLBACK_URL +
         "/v0/" +
@@ -257,7 +270,7 @@ function imgOnError(kind, id, size) {
     );
 }
 
-// Remote globe marker helpers 
+// Remote globe marker helpers
 // globeIcon returns an <img> tag for the globe marker. Use in headers and section titles.
 function globeIcon(cls) {
     return (
@@ -287,7 +300,7 @@ function addRemoteGlobe(el) {
     wrap.appendChild(globe);
 }
 
-// Infobox key blacklist：这些字段只做 URL/BBCode，不做名字匹配 
+// Infobox key blacklist：这些字段只做 URL/BBCode，不做名字匹配
 var INFOBOX_NO_MATCH_KEYS = [
     "放送开始",
     "播放开始",
@@ -298,7 +311,7 @@ var INFOBOX_NO_MATCH_KEYS = [
     "话数"
 ];
 
-// Name → ID lookup maps (subjects/characters/persons) 
+// Name → ID lookup maps (subjects/characters/persons)
 var _subjectMap = null,
     _charMap = null,
     _personMap = null;
@@ -318,7 +331,7 @@ function loadPersonMap() {
     });
 }
 
-// 反转 name map：{id: [names]} → {name: id}，后者覆盖 
+// 反转 name map：{id: [names]} → {name: id}，后者覆盖
 function invertNameMap(raw) {
     var m = {};
     if (!raw) return m;
@@ -357,7 +370,7 @@ function linkifySubjectFree(text) {
     return linkifyByMap(text, _subjectMap, "/subject?id=");
 }
 
-// 分段匹配：直接查合并 map，集数已在顶层保护 
+// 分段匹配：直接查合并 map，集数已在顶层保护
 function matchSegmentCore(seg, merged) {
     seg = seg.trim();
     if (!seg) return seg;
@@ -380,10 +393,10 @@ function linkifyCharPersonFree3Plus(text) {
     return linkifyByMap(text, subMap, "");
 }
 
-// 分隔符集合 
+// 分隔符集合
 var _SEPARATOR_RE = /([、,，\/\(\)（）\[\]])/;
 
-// Char+Person 分段匹配：按分隔符拆段，每段整体匹配 
+// Char+Person 分段匹配：按分隔符拆段，每段整体匹配
 function linkifyCharPersonSegments(text) {
     if (!text) return text;
     var merged = getCharPersonMergedMap();
@@ -404,7 +417,7 @@ function linkifyCharPersonSegments(text) {
     return parts.join("");
 }
 
-// Infobox value 处理：BBCode → URL → 黑名单判定 → 保护集数 → 1a subject 自由匹配 → 1b ≥3 字自由匹配 → 2 分段匹配 → 还原集数 
+// Infobox value 处理：BBCode → URL → 黑名单判定 → 保护集数 → 1a subject 自由匹配 → 1b ≥3 字自由匹配 → 2 分段匹配 → 还原集数
 function processInfoboxValue(v, key) {
     var t = linkifyBBCode(v);
     t = linkifyURL(t);
@@ -431,7 +444,7 @@ function lookupLocalName(name) {
     return null;
 }
 
-// Regex building for name matching 
+// Regex building for name matching
 var _personRegex = null;
 function buildPersonRegex() {
     if (_personRegex) return _personRegex;
@@ -501,7 +514,7 @@ function linkifyAllNames(text) {
     return parts.join("");
 }
 
-// linkifyURL：检测 URL 并转为可点击链接 
+// linkifyURL：检测 URL 并转为可点击链接
 function linkifyURL(text) {
     if (!text) return text;
     var parts = text.split(/(<a\b[^>]*>.*?<\/a>)/);
@@ -515,7 +528,7 @@ function linkifyURL(text) {
     return parts.join("");
 }
 
-// linkifyBBCode：转换 [url=...]...[/url]，优先匹配本地 name 
+// linkifyBBCode：转换 [url=...]...[/url]，优先匹配本地 name
 function linkifyBBCode(text) {
     if (!text) return text;
     return text.replace(
@@ -541,7 +554,7 @@ function linkifyBBCode(text) {
     );
 }
 
-// formatSummary：BBCode → name 匹配 → 换行 
+// formatSummary：BBCode → name 匹配 → 换行
 function formatSummary(text) {
     if (!text) return text;
     return linkifyAllNames(linkifyBBCode(text)).replace(
@@ -641,7 +654,7 @@ function infoboxData(d) {
     return items;
 }
 
-// primaryName / subName：根据 display_lang 配置决定主副标题顺序 
+// primaryName / subName：根据 display_lang 配置决定主副标题顺序
 function primaryName(name, nameCN) {
     if (window.PREFER_LANG === "chinese") return nameCN || name;
     return name || nameCN;
@@ -653,7 +666,7 @@ function subName(name, nameCN) {
     return nameCN && name !== nameCN ? nameCN : "";
 }
 
-// extractCN：从 infobox 提取简体中文名 
+// extractCN：从 infobox 提取简体中文名
 function extractCN(d) {
     var ib = d.infobox;
     if (typeof ib === "string") {
@@ -671,7 +684,7 @@ function extractCN(d) {
     return "";
 }
 
-// Loading bar + top bar 
+// Loading bar + top bar
 (function () {
     var bar = document.createElement("div");
     bar.id = "load-bar";
@@ -776,7 +789,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 var nameEl = document.getElementById("user-dropdown-name");
                 nameEl.textContent = u.nickname || u.username;
                 nameEl.style.display = "";
-                document.getElementById("user-dropdown-name-sep").style.display = "";
+                document.getElementById(
+                    "user-dropdown-name-sep"
+                ).style.display = "";
                 var av = document.getElementById("user-avatar");
                 av.onerror = function () {
                     av.style.display = "none";
@@ -809,7 +824,7 @@ document.addEventListener("click", function () {
     dd.style.pointerEvents = "none";
 });
 
-// 拉取弹窗：输入行 + 操作按钮 + 危险区 + 二次确认 
+// 拉取弹窗：输入行 + 操作按钮 + 危险区 + 二次确认
 var dlgInited = false,
     confirmCb = null;
 
@@ -818,19 +833,26 @@ function showLightbox(src) {
     if (el) el.remove();
     var overlay = document.createElement("div");
     overlay.id = "lightbox";
-    overlay.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;transition:background .25s ease";
-    overlay.onclick = function (e) { if (e.target === overlay) closeLightbox(); };
+    overlay.style.cssText =
+        "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;transition:background .25s ease";
+    overlay.onclick = function (e) {
+        if (e.target === overlay) closeLightbox();
+    };
     var wrap = document.createElement("div");
-    wrap.style.cssText = "position:relative;display:inline-block;max-width:90vw;max-height:90vh";
+    wrap.style.cssText =
+        "position:relative;display:inline-block;max-width:90vw;max-height:90vh";
     var img = document.createElement("img");
     img.src = src;
-    img.style.cssText = "max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;opacity:0;transform:scale(.95);transition:opacity .25s ease,transform .25s ease";
+    img.style.cssText =
+        "max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;opacity:0;transform:scale(.95);transition:opacity .25s ease,transform .25s ease";
     wrap.appendChild(img);
     var bar = document.createElement("div");
-    bar.style.cssText = "position:fixed;top:16px;left:16px;z-index:10;opacity:0;transition:opacity .25s ease";
+    bar.style.cssText =
+        "position:fixed;top:16px;left:16px;z-index:10;opacity:0;transition:opacity .25s ease";
     var closeBtn = document.createElement("button");
     closeBtn.textContent = "关闭";
-    closeBtn.style.cssText = "padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.5);color:rgba(255,255,255,.85);font-size:13px;cursor:pointer";
+    closeBtn.style.cssText =
+        "padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.5);color:rgba(255,255,255,.85);font-size:13px;cursor:pointer";
     closeBtn.onclick = closeLightbox;
     bar.appendChild(closeBtn);
     overlay.appendChild(bar);
@@ -843,42 +865,81 @@ function showLightbox(src) {
         img.style.transform = "scale(1)";
         bar.style.opacity = "1";
     });
-    setTimeout(function () { img.style.transition = ""; }, 300);
+    setTimeout(function () {
+        img.style.transition = "";
+    }, 300);
     function closeLightbox() {
         overlay.style.background = "rgba(0,0,0,0)";
         img.style.opacity = "0";
         img.style.transform = "scale(.95)";
         bar.style.opacity = "0";
-        setTimeout(function () { overlay.remove(); }, 250);
+        setTimeout(function () {
+            overlay.remove();
+        }, 250);
     }
     document.addEventListener("keydown", function handler(e) {
-        if (e.key === "Escape") { closeLightbox(); document.removeEventListener("keydown", handler); }
+        if (e.key === "Escape") {
+            closeLightbox();
+            document.removeEventListener("keydown", handler);
+        }
     });
     // Zoom + drag
-    var scale = 1, tx = 0, ty = 0, dragging = false, dx = 0, dy = 0;
-    function apply() { img.style.transform = "translate3d(" + Math.round(tx) + "px," + Math.round(ty) + "px,0) scale(" + scale + ")"; }
-    overlay.addEventListener("wheel", function (ew) {
-        ew.preventDefault();
-        scale = Math.min(5, Math.max(0.5, scale * (1 - ew.deltaY * 0.005)));
-        if (scale <= 1) { tx = 0; ty = 0; img.style.cursor = ""; }
-        else { img.style.cursor = "grab"; }
-        apply();
-    }, { passive: false });
+    var scale = 1,
+        tx = 0,
+        ty = 0,
+        dragging = false,
+        dx = 0,
+        dy = 0;
+    function apply() {
+        img.style.transform =
+            "translate3d(" +
+            Math.round(tx) +
+            "px," +
+            Math.round(ty) +
+            "px,0) scale(" +
+            scale +
+            ")";
+    }
+    overlay.addEventListener(
+        "wheel",
+        function (ew) {
+            ew.preventDefault();
+            scale = Math.min(5, Math.max(0.5, scale * (1 - ew.deltaY * 0.005)));
+            if (scale <= 1) {
+                tx = 0;
+                ty = 0;
+                img.style.cursor = "";
+            } else {
+                img.style.cursor = "grab";
+            }
+            apply();
+        },
+        { passive: false }
+    );
     img.addEventListener("mousedown", function (e) {
-        if (scale <= 1) return; e.preventDefault();
-        dragging = true; dx = e.clientX - tx; dy = e.clientY - ty;
+        if (scale <= 1) return;
+        e.preventDefault();
+        dragging = true;
+        dx = e.clientX - tx;
+        dy = e.clientY - ty;
         img.style.cursor = "grabbing";
     });
     window.addEventListener("mousemove", function (e) {
         if (!dragging) return;
-        tx = e.clientX - dx; ty = e.clientY - dy;
+        tx = e.clientX - dx;
+        ty = e.clientY - dy;
         apply();
     });
     window.addEventListener("mouseup", function () {
-        dragging = false; img.style.cursor = scale > 1 ? "grab" : "";
+        dragging = false;
+        img.style.cursor = scale > 1 ? "grab" : "";
     });
     overlay.addEventListener("dblclick", function () {
-        scale = 1; tx = 0; ty = 0; img.style.cursor = ""; apply();
+        scale = 1;
+        tx = 0;
+        ty = 0;
+        img.style.cursor = "";
+        apply();
     });
 }
 
@@ -1072,16 +1133,12 @@ function initDialog() {
         .addEventListener("click", function () {
             confirmAction(MSG.confirmUpdate, doFetchUpdate);
         });
-    document
-        .getElementById("btn-gap")
-        .addEventListener("click", function () {
-            confirmAction(MSG.confirmGap, doFetchGap);
-        });
-    document
-        .getElementById("btn-meta")
-        .addEventListener("click", function () {
-            confirmAction(MSG.confirmMeta, doFetchMeta);
-        });
+    document.getElementById("btn-gap").addEventListener("click", function () {
+        confirmAction(MSG.confirmGap, doFetchGap);
+    });
+    document.getElementById("btn-meta").addEventListener("click", function () {
+        confirmAction(MSG.confirmMeta, doFetchMeta);
+    });
     document.getElementById("btn-all").addEventListener("click", function () {
         confirmAction(MSG.confirmRefreshAll, doRefreshAll);
     });
@@ -1104,7 +1161,9 @@ function initDialog() {
                         })
                         .then(function (d) {
                             if (d.status === "ok") {
-                                showSuccess("已重建 " + d.count + " 条 ELO 分数和计数");
+                                showSuccess(
+                                    "已重建 " + d.count + " 条 ELO 分数和计数"
+                                );
                             } else {
                                 showError("重建失败");
                             }
@@ -1118,7 +1177,9 @@ function confirmAction(msg, cb) {
     document.getElementById("confirm-msg").textContent = msg;
     var el = document.getElementById("confirm-overlay");
     el.style.display = "flex";
-    requestAnimationFrame(function () { el.style.opacity = "1"; });
+    requestAnimationFrame(function () {
+        el.style.opacity = "1";
+    });
     confirmCb = cb;
     document.getElementById("btn-confirm-exec").style.display = "block";
     document.getElementById("btn-confirm-cancel").textContent = MSG.btnCancel;
@@ -1131,37 +1192,66 @@ function confirmAction(msg, cb) {
 var _toastStack = [];
 var _currentToast = null;
 function _repositionToasts() {
-    _toastStack = _toastStack.filter(function (t) { return !t.closed(); });
+    _toastStack = _toastStack.filter(function (t) {
+        return !t.closed();
+    });
     var bottom = 16;
     for (var i = _toastStack.length - 1; i >= 0; i--) {
         _toastStack[i].el.style.bottom = bottom + "px";
         bottom += _toastStack[i].el.getBoundingClientRect().height + 12;
     }
 }
-function _makeToast(title, body, titleBg, bodyBg, autoCloseSec, replace, closable) {
+function _makeToast(
+    title,
+    body,
+    titleBg,
+    bodyBg,
+    autoCloseSec,
+    replace,
+    closable
+) {
     if (replace !== false && _currentToast) {
         _currentToast.close();
         _currentToast = null;
     }
     var el = document.createElement("div");
-    el.className = "fixed right-4 z-[300] rounded-lg shadow-2xl transition-all duration-300 max-w-[380px] min-w-[300px]";
+    el.className =
+        "fixed right-4 z-[300] rounded-lg shadow-2xl transition-all duration-300 max-w-[380px] min-w-[300px]";
     el.style.bottom = "16px";
     el.style.opacity = "0";
     el.style.transform = "translateY(8px)";
     el.innerHTML =
-        '<div class="' + titleBg + ' text-white font-semibold px-4 py-2 rounded-t-lg flex items-center justify-between text-[14px]">' +
-        '<span class="truncate">' + title + '</span>' +
-        (closable !== false ? '<span class="cursor-pointer opacity-60 hover:opacity-100 text-lg leading-none shrink-0 ml-3">✕</span>' : "") +
-        '</div>' +
-        (body ? '<div class="' + bodyBg + ' px-4 py-2.5 rounded-b-lg text-[13px] leading-relaxed">' + body + '</div>' : "");
+        '<div class="' +
+        titleBg +
+        ' text-white font-semibold px-4 py-2 rounded-t-lg flex items-center justify-between text-[14px]">' +
+        '<span class="truncate">' +
+        title +
+        "</span>" +
+        (closable !== false
+            ? '<span class="cursor-pointer opacity-60 hover:opacity-100 text-lg leading-none shrink-0 ml-3">✕</span>'
+            : "") +
+        "</div>" +
+        (body
+            ? '<div class="' +
+              bodyBg +
+              ' px-4 py-2.5 rounded-b-lg text-[13px] leading-relaxed">' +
+              body +
+              "</div>"
+            : "");
     document.body.appendChild(el);
-    requestAnimationFrame(function () { el.style.opacity = "1"; el.style.transform = "translateY(0)"; });
+    requestAnimationFrame(function () {
+        el.style.opacity = "1";
+        el.style.transform = "translateY(0)";
+    });
 
-    var timer = null, closed = false;
+    var timer = null,
+        closed = false;
     function close() {
-        if (closed) return; closed = true;
+        if (closed) return;
+        closed = true;
         if (timer) clearTimeout(timer);
-        el.style.opacity = "0"; el.style.transform = "translateY(8px)";
+        el.style.opacity = "0";
+        el.style.transform = "translateY(8px)";
         _repositionToasts();
         setTimeout(function () {
             el.remove();
@@ -1173,14 +1263,25 @@ function _makeToast(title, body, titleBg, bodyBg, autoCloseSec, replace, closabl
     if (closeBtn) closeBtn.onclick = close;
     if (autoCloseSec > 0) {
         var bar = document.createElement("div");
-        bar.className = "h-1 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden mt-1.5";
-        bar.innerHTML = '<div class="h-full rounded-full" style="width:100%;background:var(--c-toast-success);transition:width ' + autoCloseSec + 's linear"></div>';
+        bar.className =
+            "h-1 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden mt-1.5";
+        bar.innerHTML =
+            '<div class="h-full rounded-full" style="width:100%;background:var(--c-toast-success);transition:width ' +
+            autoCloseSec +
+            's linear"></div>';
         var bodyEl = el.querySelector("div:last-child");
         if (bodyEl) bodyEl.appendChild(bar);
-        setTimeout(function () { bar.querySelector("div").style.width = "0"; }, 50);
+        setTimeout(function () {
+            bar.querySelector("div").style.width = "0";
+        }, 50);
         timer = setTimeout(close, autoCloseSec * 1000 + 100);
     }
-    _toastStack.push({ el: el, closed: function () { return closed; } });
+    _toastStack.push({
+        el: el,
+        closed: function () {
+            return closed;
+        }
+    });
     _currentToast = el;
     _repositionToasts();
 
@@ -1188,23 +1289,34 @@ function _makeToast(title, body, titleBg, bodyBg, autoCloseSec, replace, closabl
         el: el,
         update: function (newTitle, newBody, newTitleBg, newBodyBg) {
             if (closed) return;
-            if (newTitleBg) el.querySelector("div:first-child").className = newTitleBg + " text-white font-semibold px-4 py-2 rounded-t-lg flex items-center justify-between text-[14px]";
-            if (newBodyBg && body) el.querySelector("div:last-child").className = newBodyBg + " px-4 py-2.5 rounded-b-lg text-[13px] leading-relaxed";
-            if (newTitle) el.querySelector("div:first-child span").textContent = newTitle;
-            if (newBody && body) el.querySelector("div:last-child").innerHTML = newBody;
+            if (newTitleBg)
+                el.querySelector("div:first-child").className =
+                    newTitleBg +
+                    " text-white font-semibold px-4 py-2 rounded-t-lg flex items-center justify-between text-[14px]";
+            if (newBodyBg && body)
+                el.querySelector("div:last-child").className =
+                    newBodyBg +
+                    " px-4 py-2.5 rounded-b-lg text-[13px] leading-relaxed";
+            if (newTitle)
+                el.querySelector("div:first-child span").textContent = newTitle;
+            if (newBody && body)
+                el.querySelector("div:last-child").innerHTML = newBody;
         },
         addClose: function () {
             var titleBar = el.querySelector("div:first-child");
             if (!titleBar.querySelector("span[class*='cursor-pointer']")) {
                 var xBtn = document.createElement("span");
-                xBtn.className = "cursor-pointer opacity-60 hover:opacity-100 text-lg leading-none shrink-0 ml-3";
+                xBtn.className =
+                    "cursor-pointer opacity-60 hover:opacity-100 text-lg leading-none shrink-0 ml-3";
                 xBtn.textContent = "✕";
                 xBtn.onclick = close;
                 titleBar.appendChild(xBtn);
             }
         },
         close: close,
-        closed: function () { return closed; }
+        closed: function () {
+            return closed;
+        }
     };
 }
 
@@ -1213,12 +1325,27 @@ function showError(msg) {
 }
 
 function showWarn(msg) {
-    _makeToast("警告", msg, "bg-toast-warning", "bg-toast-warning-bg", 8, false);
+    _makeToast(
+        "警告",
+        msg,
+        "bg-toast-warning",
+        "bg-toast-warning-bg",
+        8,
+        false
+    );
 }
 
 function showSuccess(msg) {
-    var bodyHTML = msg + '<div class="h-1 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden mt-1.5"><div class="h-full rounded-full" style="width:100%;background:var(--c-toast-success);transition:width 5s linear"></div></div>';
-    var t = _makeToast("完成", bodyHTML, "bg-toast-success", "bg-toast-success-bg", 0);
+    var bodyHTML =
+        msg +
+        '<div class="h-1 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden mt-1.5"><div class="h-full rounded-full" style="width:100%;background:var(--c-toast-success);transition:width 5s linear"></div></div>';
+    var t = _makeToast(
+        "完成",
+        bodyHTML,
+        "bg-toast-success",
+        "bg-toast-success-bg",
+        0
+    );
     setTimeout(function () {
         var bar = t.el.querySelector(".h-full.rounded-full");
         if (bar) bar.style.width = "0";
@@ -1228,7 +1355,9 @@ function showSuccess(msg) {
 function closeConfirm() {
     var el = document.getElementById("confirm-overlay");
     el.style.opacity = "0";
-    setTimeout(function () { el.style.display = "none"; }, 200);
+    setTimeout(function () {
+        el.style.display = "none";
+    }, 200);
     confirmCb = null;
 }
 
@@ -1236,14 +1365,19 @@ function openFetch() {
     initDialog();
     var dlg = document.getElementById("dlg-overlay");
     dlg.style.display = "flex";
-    requestAnimationFrame(function () { dlg.style.opacity = "1"; dlg.style.pointerEvents = "auto"; });
+    requestAnimationFrame(function () {
+        dlg.style.opacity = "1";
+        dlg.style.pointerEvents = "auto";
+    });
     document.getElementById("fetch-input").focus();
 }
 function closeFetch() {
     var dlg = document.getElementById("dlg-overlay");
     dlg.style.opacity = "0";
     dlg.style.pointerEvents = "none";
-    setTimeout(function () { dlg.style.display = "none"; }, 200);
+    setTimeout(function () {
+        dlg.style.display = "none";
+    }, 200);
     closeConfirm();
 }
 
@@ -1327,21 +1461,30 @@ async function doFetchUpdate() {
     closeFetch();
     var res = await fetch(API + "/v0/fetch/update", { method: "POST" });
     var d = await res.json();
-    if (d.error) { showError(d.error); return; }
+    if (d.error) {
+        showError(d.error);
+        return;
+    }
     if (d.task_id) startProgress(d.task_id);
 }
 async function doFetchGap() {
     closeFetch();
     var res = await fetch(API + "/v0/fetch/gap", { method: "POST" });
     var d = await res.json();
-    if (d.error) { showError(d.error); return; }
+    if (d.error) {
+        showError(d.error);
+        return;
+    }
     if (d.task_id) startProgress(d.task_id);
 }
 async function doFetchMeta() {
     closeFetch();
     var res = await fetch(API + "/v0/fetch/meta", { method: "POST" });
     var d = await res.json();
-    if (d.error) { showError(d.error); return; }
+    if (d.error) {
+        showError(d.error);
+        return;
+    }
     if (d.task_id) startProgress(d.task_id);
 }
 
@@ -1358,18 +1501,30 @@ async function doFetchIndex() {
 
 // 进度通知横幅（右下角浮动）
 function startProgress(taskId, label) {
-    var bodyHTML = '<div id="pb-detail" class="text-[11px] mb-1.5"></div>' +
+    var bodyHTML =
+        '<div id="pb-detail" class="text-[11px] mb-1.5"></div>' +
         '<div class="h-1 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden"><div id="pb-fill" class="h-full rounded-full" style="width:0;background:var(--c-toast-progress)"></div></div>';
-    var t = _makeToast(label || MSG.progressConnecting, bodyHTML, "bg-toast-progress", "bg-toast-progress-bg text-text", 0, true, false);
+    var t = _makeToast(
+        label || MSG.progressConnecting,
+        bodyHTML,
+        "bg-toast-progress",
+        "bg-toast-progress-bg text-text",
+        0,
+        true,
+        false
+    );
 
     // Add cancel button
     var titleBar = t.el.querySelector("div:first-child");
     var cancelBtn = document.createElement("span");
-    cancelBtn.className = "cursor-pointer opacity-60 hover:opacity-100 text-[12px] font-normal shrink-0 ml-3";
+    cancelBtn.className =
+        "cursor-pointer opacity-60 hover:opacity-100 text-[12px] font-normal shrink-0 ml-3";
     cancelBtn.textContent = "终止";
-    cancelBtn.onclick = function (e) { e.stopPropagation();
+    cancelBtn.onclick = function (e) {
+        e.stopPropagation();
         fetch(API + "/v0/task/cancel", { method: "POST" });
-        fill.style.transition = "none"; fill.style.width = "100%";
+        fill.style.transition = "none";
+        fill.style.width = "100%";
         fill.style.background = "var(--c-toast-warning)";
         if (detail) detail.textContent = "任务已终止，请重新启动 Seshat。";
         t.update(taskLabel, null, "bg-toast-warning", "bg-toast-warning-bg");
@@ -1386,28 +1541,54 @@ function startProgress(taskId, label) {
     var evt = new EventSource(API + "/v0/task/" + taskId);
     evt.onmessage = function (e) {
         var d = JSON.parse(e.data);
-        if (d.label && !taskLabel) { taskLabel = d.label; }
+        if (d.label && !taskLabel) {
+            taskLabel = d.label;
+        }
         if (d.step === "cancelled") {
-            fill.style.transition = "none"; fill.style.width = "100%";
+            fill.style.transition = "none";
+            fill.style.width = "100%";
             fill.style.background = "var(--c-toast-warning)";
             if (detail) detail.textContent = "任务已终止";
-            t.update(taskLabel, null, "bg-toast-warning", "bg-toast-warning-bg");
+            t.update(
+                taskLabel,
+                null,
+                "bg-toast-warning",
+                "bg-toast-warning-bg"
+            );
             t.addClose();
             cancelBtn.remove();
-            setTimeout(function () { fill.style.transition = "width 5s linear"; fill.style.width = "0"; }, 50);
+            setTimeout(function () {
+                fill.style.transition = "width 5s linear";
+                fill.style.width = "0";
+            }, 50);
             evt.close();
-            setTimeout(function () { t.close(); }, 5100);
+            setTimeout(function () {
+                t.close();
+            }, 5100);
             return;
         }
         if (d.step === "complete" || d.step === "done") {
-            fill.style.transition = "none"; fill.style.width = "100%"; fill.style.background = "#22c55e";
+            fill.style.transition = "none";
+            fill.style.width = "100%";
+            fill.style.background = "#22c55e";
             if (detail) detail.textContent = MSG.progressDone;
-            t.update(taskLabel, null, "bg-toast-success", "bg-toast-success-bg");
+            t.update(
+                taskLabel,
+                null,
+                "bg-toast-success",
+                "bg-toast-success-bg"
+            );
             t.addClose();
             cancelBtn.remove();
-            setTimeout(function () { fill.style.transition = "width 5s linear"; fill.style.width = "0"; }, 50);
+            setTimeout(function () {
+                fill.style.transition = "width 5s linear";
+                fill.style.width = "0";
+            }, 50);
             evt.close();
-            setTimeout(function () { t.close(); if (typeof onFetchDone === "function") onFetchDone(); }, 5100);
+            setTimeout(function () {
+                t.close();
+                if (typeof onFetchDone === "function") onFetchDone();
+            }, 5100);
             return;
         }
         var title = taskLabel;
@@ -1425,16 +1606,20 @@ function startProgress(taskId, label) {
             if (detail) detail.textContent = d.status;
         }
     };
-    evt.onerror = function () { evt.close(); };
+    evt.onerror = function () {
+        evt.close();
+    };
 }
 
-// 全局事件总线 
+// 全局事件总线
 function initEventBus() {
     var es = new EventSource("/api/v0/events");
     es.onmessage = function (e) {
         try {
             var d = JSON.parse(e.data);
-        } catch (_) { return; }
+        } catch (_) {
+            return;
+        }
         if (d.type === "error") showError(d.message);
         if (d.type === "warn") showWarn(d.message);
     };
