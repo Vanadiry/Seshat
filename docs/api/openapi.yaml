@@ -15,6 +15,7 @@ tags:
   - name: 拉取
   - name: Tracker
   - name: ELO
+  - name: 事件
   - name: 其他
 
 paths:
@@ -651,29 +652,29 @@ paths:
                   status: { type: string }
                   task_id: { type: string, example: "ae8687f0" }
   /api/v0/task/{task_id}:               # 任务状态｜SSE
-    get:
-      tags: [拉取]
-      summary: 任务状态｜SSE
-      description: 实时推送任务进度。同时只允许一个任务运行，新任务在已有任务完成前返回409。
-      parameters:
-        - name: task_id
-          in: path
-          required: true
-          schema: { type: string }
-          example: "ae8687f0"
-      responses:
-        "200":
-          description: text/event-stream流式进度，首条消息含task类型和label描述
-          content:
-            text/event-stream:
-              schema:
-                type: string
-                example: |
-                  data: {"step":"start","done":0,"total":326,"task":"fetch_all","label":"刷新全部"}
-                  data: {"step":"subjects","done":15,"total":326,"speed":"3.2/s","status":""}
-                  data: {"step":"complete","done":326,"total":326}
-        "409":
-          description: 已有任务在运行
+     get:
+       tags: [拉取]
+       summary: 任务状态｜SSE
+       description: 实时推送任务进度。仅含进度信息，错误统一走 GET /api/v0/events。同时只允许一个任务运行。
+       parameters:
+         - name: task_id
+           in: path
+           required: true
+           schema: { type: string }
+           example: "ae8687f0"
+       responses:
+         "200":
+           description: text/event-stream流式进度
+           content:
+             text/event-stream:
+               schema:
+                 type: string
+                 example: |
+                   data: {"step":"start","done":0,"total":326,"task":"fetch_all","label":"刷新全部"}
+                   data: {"step":"subjects","done":15,"total":326,"speed":"3.2/s","phase":1,"phases":5,"phase_name":"拉取条目","status":""}
+                   data: {"step":"complete","done":326,"total":326}
+         "409":
+           description: 已有任务在运行
   /api/v0/tasks:                        # 当前任务
     get:
       tags: [拉取]
@@ -696,19 +697,19 @@ paths:
                         task: { type: string, example: "fetch_all" }
                         label: { type: string, example: "刷新全部" }
   /api/v0/task/cancel:                  # 终止任务
-    post:
-      tags: [拉取]
-      summary: 终止任务
-      description: 终止所有正在运行的任务并退出后端进程。前端将失去连接，需重启后端。
-      responses:
-        "200":
-          description: 已发送终止信号，进程即将退出
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: string, example: "cancelled" }
+     post:
+       tags: [拉取]
+       summary: 终止任务
+       description: 终止所有正在运行的任务并退出后端进程。Tauri 桌面端会自动重启后端，Server 模式下需手动重启。
+       responses:
+         "200":
+           description: 已发送终止信号
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   status: { type: string, example: "cancelled" }
   # Tracker
   /api/v0/tracker:                      # 所有Tracker
     get:
@@ -826,6 +827,46 @@ paths:
                 properties:
                   status: { type: string, example: "ok" }
                   count: { type: integer, example: 42 }
+
+# 事件
+  /api/v0/events:                       # 全局事件总线
+    get:
+      tags: [事件]
+      summary: 全局事件总线
+      description: SSE 流，实时推送后端错误和警告。error 类型为持久 toast，warn 类型 8 秒自动消失。
+      responses:
+        "200":
+          description: text/event-stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: |
+                  data: {"type":"error","message":"图片写入失败 subject #51 large","time":1721000000}
+                  data: {"type":"warn","message":"图片下载失败","time":1721000000}
+  /api/v0/open-url:                     # 唤起浏览器
+    post:
+      tags: [其他]
+      summary: 唤起系统浏览器
+      description: 在系统默认浏览器中打开指定 URL。适用于 Tauri webview 无法打开外部链接的场景。
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url: { type: string, example: "https://github.com/Vanadiry/Seshat" }
+      responses:
+        "200":
+          description: 浏览器已唤起
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "ok" }
+        "400":
+          description: 缺少 url 参数
 
 # 其他
   /api/v0/settings:                     # 获取和修改设置
