@@ -7,6 +7,12 @@ import (
 	"github.com/vanadiry/seshat/Core/log"
 )
 
+const maxBodySize = 1 << 20
+
+func limitBody(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
+}
+
 func writeError(w http.ResponseWriter, code int, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)

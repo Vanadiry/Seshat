@@ -522,7 +522,7 @@ func handleFetchTracker(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 		var req struct {
 			Names []string `json:"names"`
 		}
-		if json.NewDecoder(r.Body).Decode(&req) != nil {
+		if limitBody(w, r); json.NewDecoder(r.Body).Decode(&req) != nil {
 			writeError(w, http.StatusBadRequest, "invalid request body")
 			return
 		}
@@ -611,7 +611,7 @@ func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 			ID  int   `json:"id"`
 			IDs []int `json:"ids"`
 		}
-		if json.NewDecoder(r.Body).Decode(&req) != nil {
+		if limitBody(w, r); json.NewDecoder(r.Body).Decode(&req) != nil {
 			writeError(w, 400, "invalid request body")
 			return
 		}

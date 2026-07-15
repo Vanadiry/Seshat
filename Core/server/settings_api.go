@@ -19,7 +19,7 @@ func handleSettingsGet(cfg *config.Config) http.HandlerFunc {
 
 func handleSettingsPost(w http.ResponseWriter, r *http.Request) {
 	var updates map[string]any
-	if json.NewDecoder(r.Body).Decode(&updates) != nil {
+	if limitBody(w, r); json.NewDecoder(r.Body).Decode(&updates) != nil {
 		writeError(w, 400, "invalid JSON")
 		return
 	}

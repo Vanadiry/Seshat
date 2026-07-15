@@ -402,7 +402,7 @@ func handleELOCompare(dd string) http.HandlerFunc {
 			Winner int `json:"winner"`
 			Loser  int `json:"loser"`
 		}
-		if json.NewDecoder(r.Body).Decode(&req) != nil {
+		if limitBody(w, r); json.NewDecoder(r.Body).Decode(&req) != nil {
 			writeError(w, http.StatusBadRequest, "invalid request body")
 			return
 		}
