@@ -317,12 +317,12 @@ func updateELO(dd string, winnerID, loserID int) {
 	eb := 1.0 / (1.0 + math.Pow(10, (wa-wbRating)/400))
 
 	data.Subjects[winnerID] = eloSubjectData{
-		Rating:        wa + k*(1.0-ea),
+		Rating:        math.Round((wa+k*(1.0-ea))*10) / 10,
 		Count:         wb + 1,
 		LastCompareAt: data.GlobalCompareCount,
 	}
 	data.Subjects[loserID] = eloSubjectData{
-		Rating:        wbRating + k*(0.0-eb),
+		Rating:        math.Round((wbRating+k*(0.0-eb))*10) / 10,
 		Count:         lb + 1,
 		LastCompareAt: data.GlobalCompareCount,
 	}
@@ -463,12 +463,12 @@ func rebuildELO() {
 		eb := 1.0 / (1.0 + math.Pow(10, (wa-wbRating)/400))
 
 		data.Subjects[h.Winner] = eloSubjectData{
-			Rating:        wa + k*(1.0-ea),
+			Rating:        math.Round((wa+k*(1.0-ea))*10) / 10,
 			Count:         wb + 1,
 			LastCompareAt: data.GlobalCompareCount,
 		}
 		data.Subjects[h.Loser] = eloSubjectData{
-			Rating:        wbRating + k*(0.0-eb),
+			Rating:        math.Round((wbRating+k*(0.0-eb))*10) / 10,
 			Count:         lb + 1,
 			LastCompareAt: data.GlobalCompareCount,
 		}
