@@ -296,6 +296,7 @@
 
             function renderHistory() {
                 var items = _history.slice(0, _histShowing);
+                var _promises = [];
 
                 for (var i = 0; i < items.length; i++) {
                     var w = items[i].winner,
@@ -305,23 +306,40 @@
                     [w, l].forEach(function (id) {
                         if (!_names[id]._fetched) {
                             _names[id]._fetched = true;
-                            api("/v0/subjects/" + id).then(function (s) {
-                                if (s && s.id)
-                                    _names[id] = {
-                                        name: escapeHtml(s.name) || "",
-                                        name_cn: escapeHtml(s.name_cn) || "",
-                                        _fetched: true
-                                    };
-                                else
-                                    _names[id] = {
-                                        name: null,
-                                        name_cn: null,
-                                        _fetched: true
-                                    };
-                                renderHistory();
-                            });
+                            _promises.push(
+                                api("/v0/subjects/" + id)
+                                    .then(function (s) {
+                                        if (s && s.id)
+                                            _names[id] = {
+                                                name: escapeHtml(s.name) || "",
+                                                name_cn:
+                                                    escapeHtml(s.name_cn) || "",
+                                                _fetched: true
+                                            };
+                                        else
+                                            _names[id] = {
+                                                name: null,
+                                                name_cn: null,
+                                                _fetched: true
+                                            };
+                                    })
+                                    .catch(function () {
+                                        _names[id] = {
+                                            name: null,
+                                            name_cn: null,
+                                            _fetched: true
+                                        };
+                                    })
+                            );
                         }
                     });
+                }
+
+                if (_promises.length > 0) {
+                    Promise.all(_promises).then(function () {
+                        renderHistory();
+                    });
+                    return;
                 }
 
                 function sideHTML(id) {

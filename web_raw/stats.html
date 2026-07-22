@@ -212,6 +212,7 @@
                         items.push(_noRating[i]);
                 }
                 if (_showOrphans) {
+                    var _orphanPromises = [];
                     for (var i = 0; i < _orphans.length; i++) {
                         var cached = _orphanNames[_orphans[i].id];
                         items.push({
@@ -226,30 +227,47 @@
                         });
                         if (!cached) {
                             (function (id) {
-                                api("/v0/subjects/" + id).then(function (s) {
-                                    var score =
-                                        s && s.rating && s.rating.score
-                                            ? s.rating.score
-                                            : null;
-                                    _orphanNames[id] =
-                                        s && s.id
-                                            ? {
-                                                  name:
-                                                      escapeHtml(s.name) || "",
-                                                  name_cn:
-                                                      escapeHtml(s.name_cn) ||
-                                                      "",
-                                                  score: score
-                                              }
-                                            : {
-                                                  name: null,
-                                                  name_cn: null,
-                                                  score: null
-                                              };
-                                    if (_showOrphans) render();
-                                });
+                                _orphanPromises.push(
+                                    api("/v0/subjects/" + id)
+                                        .then(function (s) {
+                                            var score =
+                                                s && s.rating && s.rating.score
+                                                    ? s.rating.score
+                                                    : null;
+                                            _orphanNames[id] =
+                                                s && s.id
+                                                    ? {
+                                                          name:
+                                                              escapeHtml(
+                                                                  s.name
+                                                              ) || "",
+                                                          name_cn:
+                                                              escapeHtml(
+                                                                  s.name_cn
+                                                              ) || "",
+                                                          score: score
+                                                      }
+                                                    : {
+                                                          name: null,
+                                                          name_cn: null,
+                                                          score: null
+                                                      };
+                                        })
+                                        .catch(function () {
+                                            _orphanNames[id] = {
+                                                name: null,
+                                                name_cn: null,
+                                                score: null
+                                            };
+                                        })
+                                );
                             })(_orphans[i].id);
                         }
+                    }
+                    if (_orphanPromises.length > 0) {
+                        Promise.all(_orphanPromises).then(function () {
+                            if (_showOrphans) render();
+                        });
                     }
                 }
                 items.sort(function (a, b) {

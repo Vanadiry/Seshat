@@ -238,6 +238,9 @@ func pickLowFreq(eligible []int, counts map[int]int) (int, int) {
 			pool = append(pool, id)
 		}
 	}
+	if len(pool) < 2 {
+		return pickRandomPair(eligible)
+	}
 	i1 := rand.Intn(len(pool))
 	i2 := rand.Intn(len(pool))
 	for i2 == i1 {
@@ -275,6 +278,9 @@ func pickSimilarScore(eligible []int) (int, int) {
 
 // pickRandomPair 随机选两个不同条目
 func pickRandomPair(eligible []int) (int, int) {
+	if len(eligible) < 2 {
+		return 0, 0
+	}
 	i1 := rand.Intn(len(eligible))
 	i2 := rand.Intn(len(eligible))
 	for i2 == i1 {
