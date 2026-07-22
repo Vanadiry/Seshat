@@ -17,8 +17,33 @@ import (
 	"github.com/vanadiry/seshat/Core/log"
 )
 
-const eloK = 32
 const eloDefault = 1500
+
+type eloSubjectData struct {
+	Rating        float64 `json:"r"`
+	Count         int     `json:"c"`
+	LastCompareAt int     `json:"t"`
+}
+
+type eloData struct {
+	GlobalCompareCount int                    `json:"n"`
+	Subjects           map[int]eloSubjectData `json:"s"`
+}
+
+func (d *eloData) rating(id int) float64 {
+	if s, ok := d.Subjects[id]; ok && s.Rating != 0 {
+		return s.Rating
+	}
+	return eloDefault
+}
+
+func kFactor(battles int) float64 {
+	k := 32.0 / (1.0 + math.Sqrt(float64(battles)/8.0))
+	if k < 6.0 {
+		k = 6.0
+	}
+	return k
+}
 
 type eloEntry struct {
 	ID      int      `json:"id"`
@@ -35,9 +60,10 @@ type eloOrphan struct {
 }
 
 type eloRankingResult struct {
-	Entries  []eloEntry  `json:"entries"`
-	NoRating []eloEntry  `json:"no_rating"`
-	Orphans  []eloOrphan `json:"orphans"`
+	Entries       []eloEntry  `json:"entries"`
+	NoRating      []eloEntry  `json:"no_rating"`
+	Orphans       []eloOrphan `json:"orphans"`
+	TotalCompares int         `json:"total_compares"`
 }
 
 type eloPairEntry struct {
@@ -52,8 +78,8 @@ type eloHistory struct {
 	Time   string `json:"time"`
 }
 
-func eloRatingPath() string {
-	return filepath.Join(config.Dir(), "user", "elo", "rating.json")
+func eloDataPath() string {
+	return filepath.Join(config.Dir(), "user", "elo", "elo_data.json")
 }
 
 func eloHistoryPath() string {
@@ -62,10 +88,6 @@ func eloHistoryPath() string {
 
 func eloExcludePath() string {
 	return filepath.Join(config.Dir(), "user", "elo", "exclude.toml")
-}
-
-func eloBattleCountsPath() string {
-	return filepath.Join(config.Dir(), "user", "elo", "count.json")
 }
 
 const excludeTemplate = `# ELO 排除名单，此文件中的条目不会被列入评分配对
@@ -97,28 +119,28 @@ func loadExcludeIDs() map[int]bool {
 	return m
 }
 
-func loadELO() map[int]float64 {
-	data, err := os.ReadFile(eloRatingPath())
+func loadEloData() eloData {
+	data, err := os.ReadFile(eloDataPath())
 	if err != nil {
-		return map[int]float64{}
+		return eloData{Subjects: map[int]eloSubjectData{}}
 	}
-	var m map[int]float64
-	json.Unmarshal(data, &m)
-	if m == nil {
-		m = map[int]float64{}
+	var d eloData
+	json.Unmarshal(data, &d)
+	if d.Subjects == nil {
+		d.Subjects = map[int]eloSubjectData{}
 	}
-	return m
+	return d
 }
 
-func saveELO(m map[int]float64) {
+func saveEloData(d eloData) {
 	os.MkdirAll(filepath.Join(config.Dir(), "user", "elo"), 0o755)
-	data, err := json.Marshal(m)
+	data, err := json.Marshal(d)
 	if err != nil {
-		log.Error("saveELO marshal", "err", err)
-		events.Bus.Error("ELO 评分保存失败")
+		log.Error("saveEloData marshal", "err", err)
+		events.Bus.Error("ELO 数据保存失败")
 		return
 	}
-	os.WriteFile(eloRatingPath(), data, 0o644)
+	os.WriteFile(eloDataPath(), data, 0o644)
 }
 
 func loadELOHistory() []eloHistory {
@@ -145,33 +167,10 @@ func saveELOHistory(h []eloHistory) {
 	os.WriteFile(eloHistoryPath(), data, 0o644)
 }
 
-func loadBattleCounts() map[int]int {
-	data, err := os.ReadFile(eloBattleCountsPath())
-	if err != nil {
-		return map[int]int{}
-	}
-	var m map[int]int
-	json.Unmarshal(data, &m)
-	if m == nil {
-		m = map[int]int{}
-	}
-	return m
-}
-
-func saveBattleCounts(m map[int]int) {
-	os.MkdirAll(filepath.Join(config.Dir(), "user", "elo"), 0o755)
-	data, err := json.Marshal(m)
-	if err != nil {
-		log.Error("saveBattleCounts marshal", "err", err)
-		events.Bus.Error("ELO 对战计数保存失败")
-		return
-	}
-	os.WriteFile(eloBattleCountsPath(), data, 0o644)
-}
-
 // getELOPair 混合策略返回两个评比条目：
-// 40% 低频优先，30% 相近分数，30% 随机
-// 全部条目 ≥3 场后：20% 低频优先，50% 相近分数，30% 随机
+// 有人 <10 场：40% 低频优先，30% 相近分数，30% 随机
+// 全员 ≥10 场：10% 低频优先，60% 相近分数，30% 随机
+// Staleness 劫持：staleness > 2N 强制配对
 func getELOPair(dd string) []eloPairEntry {
 	keys, err := cache.List(dd, "subjects")
 	if err != nil || len(keys) < 2 {
@@ -189,12 +188,33 @@ func getELOPair(dd string) []eloPairEntry {
 		return nil
 	}
 
-	counts := loadBattleCounts()
+	data := loadEloData()
 
-	// 检查是否全部条目 ≥3 场
+	// Staleness 兜底：超过 2N 次全局比较未出场的条目强制配对
+	staleThreshold := len(eligible) * 2
+	for _, id := range eligible {
+		lastAt := data.Subjects[id].LastCompareAt
+		if data.GlobalCompareCount > 0 && data.GlobalCompareCount-lastAt > staleThreshold {
+			var opponent int
+			for {
+				opponent = eligible[rand.Intn(len(eligible))]
+				if opponent != id {
+					break
+				}
+			}
+			s1 := subjectSummary(dd, id)
+			s2 := subjectSummary(dd, opponent)
+			return []eloPairEntry{
+				{ID: id, Name: s1.Name, NameCN: s1.NameCN},
+				{ID: opponent, Name: s2.Name, NameCN: s2.NameCN},
+			}
+		}
+	}
+
+	// Phase: 全部条目 ≥10 场
 	allSeen := true
 	for _, id := range eligible {
-		if counts[id] < 3 {
+		if data.Subjects[id].Count < 10 {
 			allSeen = false
 			break
 		}
@@ -202,7 +222,7 @@ func getELOPair(dd string) []eloPairEntry {
 
 	var lowPct, simPct float64
 	if allSeen {
-		lowPct, simPct = 0.2, 0.5
+		lowPct, simPct = 0.1, 0.6
 	} else {
 		lowPct, simPct = 0.4, 0.3
 	}
@@ -210,9 +230,9 @@ func getELOPair(dd string) []eloPairEntry {
 	r := rand.Float64()
 	var id1, id2 int
 	if r < lowPct {
-		id1, id2 = pickLowFreq(eligible, counts)
+		id1, id2 = pickLowFreq(eligible, &data)
 	} else if r < lowPct+simPct {
-		id1, id2 = pickSimilarScore(eligible)
+		id1, id2 = pickSimilarScore(eligible, &data)
 	} else {
 		id1, id2 = pickRandomPair(eligible)
 	}
@@ -226,11 +246,11 @@ func getELOPair(dd string) []eloPairEntry {
 }
 
 // pickLowFreq 从最低对战次数的条目中选两个
-func pickLowFreq(eligible []int, counts map[int]int) (int, int) {
+func pickLowFreq(eligible []int, data *eloData) (int, int) {
 	minCount := -1
 	var pool []int
 	for _, id := range eligible {
-		c := counts[id]
+		c := data.Subjects[id].Count
 		if minCount < 0 || c < minCount {
 			minCount = c
 			pool = []int{id}
@@ -249,24 +269,18 @@ func pickLowFreq(eligible []int, counts map[int]int) (int, int) {
 	return pool[i1], pool[i2]
 }
 
-// pickSimilarScore 随机选一个，再在 ±200 ELO 内选另一个
-func pickSimilarScore(eligible []int) (int, int) {
+// pickSimilarScore 随机选一个，再在相对阈值 ±15%（至少 ±100）内选另一个
+func pickSimilarScore(eligible []int, data *eloData) (int, int) {
 	id1 := eligible[rand.Intn(len(eligible))]
-	scores := loadELO()
-	s1 := scores[id1]
-	if s1 == 0 {
-		s1 = eloDefault
-	}
+	s1 := data.rating(id1)
+	threshold := math.Max(s1*0.15, 100.0)
 	var close []int
 	for _, id := range eligible {
 		if id == id1 {
 			continue
 		}
-		s := scores[id]
-		if s == 0 {
-			s = eloDefault
-		}
-		if math.Abs(s-s1) <= 200 {
+		s := data.rating(id)
+		if math.Abs(s-s1) <= threshold {
 			close = append(close, id)
 		}
 	}
@@ -291,33 +305,34 @@ func pickRandomPair(eligible []int) (int, int) {
 
 // updateELO 更新 ELO 评分并记录对战历史
 func updateELO(dd string, winnerID, loserID int) {
-	scores := loadELO()
-	wa := scores[winnerID]
-	if wa == 0 {
-		wa = eloDefault
+	data := loadEloData()
+	wb := data.Subjects[winnerID].Count
+	lb := data.Subjects[loserID].Count
+	k := (kFactor(wb) + kFactor(lb)) / 2.0
+
+	wa := data.rating(winnerID)
+	wbRating := data.rating(loserID)
+
+	ea := 1.0 / (1.0 + math.Pow(10, (wbRating-wa)/400))
+	eb := 1.0 / (1.0 + math.Pow(10, (wa-wbRating)/400))
+
+	data.Subjects[winnerID] = eloSubjectData{
+		Rating:        wa + k*(1.0-ea),
+		Count:         wb + 1,
+		LastCompareAt: data.GlobalCompareCount,
 	}
-	wb := scores[loserID]
-	if wb == 0 {
-		wb = eloDefault
+	data.Subjects[loserID] = eloSubjectData{
+		Rating:        wbRating + k*(0.0-eb),
+		Count:         lb + 1,
+		LastCompareAt: data.GlobalCompareCount,
 	}
+	data.GlobalCompareCount++
 
-	ea := 1.0 / (1.0 + math.Pow(10, (wb-wa)/400))
-	eb := 1.0 / (1.0 + math.Pow(10, (wa-wb)/400))
-
-	scores[winnerID] = wa + eloK*(1.0-ea)
-	scores[loserID] = wb + eloK*(0.0-eb)
-
-	saveELO(scores)
+	saveEloData(data)
 
 	history := loadELOHistory()
 	history = append(history, eloHistory{Winner: winnerID, Loser: loserID, Time: time.Now().Format(time.RFC3339)})
 	saveELOHistory(history)
-
-	// 累加对战计数
-	counts := loadBattleCounts()
-	counts[winnerID]++
-	counts[loserID]++
-	saveBattleCounts(counts)
 }
 
 // loadSubjectIndex 读取条目索引
@@ -332,15 +347,15 @@ func loadSubjectIndex(dd string) []eloEntry {
 
 // getELORanking 返回有 ELO、无 ELO 及孤立评分
 func getELORanking(dd string) eloRankingResult {
-	scores := loadELO()
+	data := loadEloData()
 	all := loadSubjectIndex(dd)
 	seen := map[int]bool{}
 
 	var entries []eloEntry
 	var noRating []eloEntry
 	for i := range all {
-		if v, ok := scores[all[i].ID]; ok {
-			r := v
+		if v, ok := data.Subjects[all[i].ID]; ok && v.Rating != 0 {
+			r := v.Rating
 			all[i].Rating = &r
 			entries = append(entries, all[i])
 		} else {
@@ -357,14 +372,19 @@ func getELORanking(dd string) eloRankingResult {
 	sort.Slice(noRating, func(i, j int) bool { return noRating[i].Score > noRating[j].Score })
 
 	var orphans []eloOrphan
-	for id, rating := range scores {
-		if !seen[id] && rating != 0 {
-			orphans = append(orphans, eloOrphan{ID: id, Rating: rating})
+	for id, v := range data.Subjects {
+		if !seen[id] && v.Rating != 0 {
+			orphans = append(orphans, eloOrphan{ID: id, Rating: v.Rating})
 		}
 	}
 	sort.Slice(orphans, func(i, j int) bool { return orphans[i].Rating > orphans[j].Rating })
 
-	return eloRankingResult{Entries: entries, NoRating: noRating, Orphans: orphans}
+	return eloRankingResult{
+		Entries:       entries,
+		NoRating:      noRating,
+		Orphans:       orphans,
+		TotalCompares: data.GlobalCompareCount,
+	}
 }
 
 // subjectSummary 返回轻量条目信息
@@ -430,32 +450,36 @@ func handleELOHistory(dd string) http.HandlerFunc {
 }
 
 func rebuildELO() {
-	scores := map[int]float64{}
-	counts := map[int]int{}
+	data := eloData{Subjects: map[int]eloSubjectData{}}
 	history := loadELOHistory()
 	for _, h := range history {
-		wa := scores[h.Winner]
-		if wa == 0 {
-			wa = eloDefault
+		wa := data.rating(h.Winner)
+		wbRating := data.rating(h.Loser)
+		wb := data.Subjects[h.Winner].Count
+		lb := data.Subjects[h.Loser].Count
+		k := (kFactor(wb) + kFactor(lb)) / 2.0
+
+		ea := 1.0 / (1.0 + math.Pow(10, (wbRating-wa)/400))
+		eb := 1.0 / (1.0 + math.Pow(10, (wa-wbRating)/400))
+
+		data.Subjects[h.Winner] = eloSubjectData{
+			Rating:        wa + k*(1.0-ea),
+			Count:         wb + 1,
+			LastCompareAt: data.GlobalCompareCount,
 		}
-		wb := scores[h.Loser]
-		if wb == 0 {
-			wb = eloDefault
+		data.Subjects[h.Loser] = eloSubjectData{
+			Rating:        wbRating + k*(0.0-eb),
+			Count:         lb + 1,
+			LastCompareAt: data.GlobalCompareCount,
 		}
-		ea := 1.0 / (1.0 + math.Pow(10, (wb-wa)/400))
-		eb := 1.0 / (1.0 + math.Pow(10, (wa-wb)/400))
-		scores[h.Winner] = wa + eloK*(1.0-ea)
-		scores[h.Loser] = wb + eloK*(0.0-eb)
-		counts[h.Winner]++
-		counts[h.Loser]++
+		data.GlobalCompareCount++
 	}
-	saveELO(scores)
-	saveBattleCounts(counts)
+	saveEloData(data)
 }
 
 func handleELORebuild(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rebuildELO()
-		writeJSON(w, map[string]any{"status": "ok", "count": len(loadELO())})
+		writeJSON(w, map[string]any{"status": "ok", "count": len(loadEloData().Subjects)})
 	}
 }
