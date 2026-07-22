@@ -14,7 +14,7 @@ const DefaultConfigTOML = `# Seshat 配置
 [upstream]
 # 上游地址，控制后端拉取数据时的请求位置，建议不动。留空将不能拉取数据。
 # base_url = "https://api.bgm.tv"
-# user_agent = "Vanadiry/Seshat/v1.3.0 (https://github.com/Vanadiry/Seshat)"
+# user_agent = "Vanadiry/Seshat/v1.3.1 (https://github.com/Vanadiry/Seshat)"
 
 [frontend]
 # 后端地址。留空则请求本地/api/v0。设为https://api.bgm.tv则前端直连番组计划。
