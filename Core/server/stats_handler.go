@@ -110,10 +110,10 @@ func handleStats(dd string) http.HandlerFunc {
 
 		// ELO counts
 		eloScores := 0
-		if data, err := os.ReadFile(filepath.Join(config.Dir(), "user", "elo", "rating.json")); err == nil {
-			var scores map[int]float64
-			if json.Unmarshal(data, &scores) == nil {
-				eloScores = len(scores)
+		if data, err := os.ReadFile(filepath.Join(config.Dir(), "user", "elo", "elo_data.json")); err == nil {
+			var ed eloData
+			if json.Unmarshal(data, &ed) == nil {
+				eloScores = len(ed.Subjects)
 			}
 		}
 		eloComparisons := len(loadELOHistory())
