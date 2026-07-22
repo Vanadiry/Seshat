@@ -172,7 +172,7 @@
                                 ) {
                                     var e = eloData.entries[i];
                                     eloMap[e.id] = e.rating
-                                        ? Math.round(e.rating)
+                                        ? Number(e.rating).toFixed(1)
                                         : null;
                                 }
                                 for (var i = 0; i < subjects.length; i++) {

@@ -291,7 +291,7 @@
                 });
 
                 var html =
-                    '<div class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-bord-light"><div class="w-10 shrink-0 text-center">动画</div><div class="flex-1 min-w-0"></div><div class="w-[100px] text-center shrink-0">ELO Rating</div><div class="w-[100px] text-center shrink-0 font-mono">BGM Rank</div><div class="w-[60px] text-center shrink-0">ID</div></div>';
+                    '<div class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-bord-light"><div class="w-10 shrink-0 text-center">动画</div><div class="flex-1 min-w-0"></div><div class="w-[100px] text-center shrink-0">ELO Rating</div><div class="w-[100px] text-center shrink-0">BGM Rank</div><div class="w-[60px] text-center shrink-0">ID</div></div>';
                 for (var i = 0; i < items.length; i++) {
                     var it = items[i];
                     var bg = i % 2 === 0 ? "bg-surface" : "bg-surface-raised";
@@ -345,7 +345,7 @@
                             '<span class="' +
                             eloCls +
                             ' w-[120px] flex justify-center gap-1 shrink-0 font-mono"><span class="flex-1 text-right font-mono">' +
-                            (it.rating ? it.rating.toFixed(0) : "1500") +
+                            (it.rating ? it.rating.toFixed(1) : "1500") +
                             '</span><span class="text-xs text-sub flex-1 text-left font-mono">' +
                             (it.rank_pct != null
                                 ? it.rank_pct.toFixed(1) + "%"
@@ -370,7 +370,7 @@
                         );
                         var ratingVal = it.rating
                             ? typeof it.rating === "number"
-                                ? it.rating.toFixed(0)
+                                ? it.rating.toFixed(1)
                                 : it.rating
                             : "-";
                         html +=

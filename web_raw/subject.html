@@ -492,7 +492,7 @@
                         '<div class="text-xs text-sub text-center">ELO Rating</div>';
                     html +=
                         '<div class="flex items-baseline justify-center"><span class="text-3xl font-bold">' +
-                        Math.round(eloInfo.rating) +
+                        (eloInfo.rating || 0).toFixed(1) +
                         '</span><span class="text-xs text-sub ml-1">' +
                         (eloInfo.rank_pct || 0).toFixed(1) +
                         "%</span></div>";
