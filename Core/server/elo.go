@@ -168,8 +168,8 @@ func saveELOHistory(h []eloHistory) {
 }
 
 // getELOPair 混合策略返回两个评比条目：
-// 有人 <10 场：40% 低频优先，30% 相近分数，30% 随机
-// 全员 ≥10 场：10% 低频优先，60% 相近分数，30% 随机
+// Phase 1（有人 <10 场）：40% 低频加权，30% 相近分数，30% 随机
+// Phase 2（全员 ≥10 场）：10% 低频加权，60% 相近分数，20% 保持覆盖，10% 随机
 // Staleness 劫持：staleness > 2N 强制配对
 func getELOPair(dd string) []eloPairEntry {
 	keys, err := cache.List(dd, "subjects")
@@ -220,21 +220,28 @@ func getELOPair(dd string) []eloPairEntry {
 		}
 	}
 
-	var lowPct, simPct float64
-	if allSeen {
-		lowPct, simPct = 0.1, 0.6
-	} else {
-		lowPct, simPct = 0.4, 0.3
-	}
-
 	r := rand.Float64()
 	var id1, id2 int
-	if r < lowPct {
-		id1, id2 = pickLowFreq(eligible, &data)
-	} else if r < lowPct+simPct {
-		id1, id2 = pickSimilarScore(eligible, &data)
+	if allSeen {
+		// Phase 2: lowFreq 10%, simScore 60%, maintain 20%, random 10%
+		if r < 0.1 {
+			id1, id2 = pickLowFreq(eligible, &data)
+		} else if r < 0.7 {
+			id1, id2 = pickSimilarScore(eligible, &data)
+		} else if r < 0.9 {
+			id1, id2 = pickMaintain(eligible, &data)
+		} else {
+			id1, id2 = pickRandomPair(eligible)
+		}
 	} else {
-		id1, id2 = pickRandomPair(eligible)
+		// Phase 1: lowFreq 40%, simScore 30%, random 30%
+		if r < 0.4 {
+			id1, id2 = pickLowFreq(eligible, &data)
+		} else if r < 0.7 {
+			id1, id2 = pickSimilarScore(eligible, &data)
+		} else {
+			id1, id2 = pickRandomPair(eligible)
+		}
 	}
 
 	info1 := subjectSummary(dd, id1)
@@ -245,22 +252,69 @@ func getELOPair(dd string) []eloPairEntry {
 	}
 }
 
-// pickLowFreq 从最低对战次数的条目中选两个
+// pickLowFreq 按 1/(count+1) 加权采样选两个不同条目
 func pickLowFreq(eligible []int, data *eloData) (int, int) {
-	minCount := -1
-	var pool []int
-	for _, id := range eligible {
-		c := data.Subjects[id].Count
-		if minCount < 0 || c < minCount {
-			minCount = c
-			pool = []int{id}
-		} else if c <= minCount+1 {
-			pool = append(pool, id)
+	weights := make([]float64, len(eligible))
+	total := 0.0
+	for i, id := range eligible {
+		w := 1.0 / float64(data.Subjects[id].Count+1)
+		weights[i] = w
+		total += w
+	}
+	id1 := weightedPick(eligible, weights, total, 0)
+	id2 := weightedPick(eligible, weights, total, id1)
+	return id1, id2
+}
+
+func weightedPick(eligible []int, weights []float64, totalWeight float64, exclude int) int {
+	effTotal := totalWeight
+	exclIdx := -1
+	for i, id := range eligible {
+		if id == exclude {
+			effTotal -= weights[i]
+			exclIdx = i
+			break
 		}
 	}
-	if len(pool) < 2 {
-		return pickRandomPair(eligible)
+	if effTotal <= 0 {
+		for _, id := range eligible {
+			if id != exclude {
+				return id
+			}
+		}
+		return 0
 	}
+	r := rand.Float64() * effTotal
+	cumulative := 0.0
+	for i, id := range eligible {
+		if i == exclIdx {
+			continue
+		}
+		cumulative += weights[i]
+		if r < cumulative {
+			return id
+		}
+	}
+	for _, id := range eligible {
+		if id != exclude {
+			return id
+		}
+	}
+	return 0
+}
+
+// pickMaintain 从战斗次数最少的 30% 条目中随机配对
+func pickMaintain(eligible []int, data *eloData) (int, int) {
+	sorted := make([]int, len(eligible))
+	copy(sorted, eligible)
+	sort.Slice(sorted, func(i, j int) bool {
+		return data.Subjects[sorted[i]].Count < data.Subjects[sorted[j]].Count
+	})
+	n := len(sorted) * 30 / 100
+	if n < 2 {
+		n = 2
+	}
+	pool := sorted[:n]
 	i1 := rand.Intn(len(pool))
 	i2 := rand.Intn(len(pool))
 	for i2 == i1 {
