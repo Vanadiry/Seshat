@@ -186,18 +186,18 @@ fn graceful_exit(handle: tauri::AppHandle) {
 fn setup_menu(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::menu::{MenuBuilder, PredefinedMenuItem, SubmenuBuilder};
 
-    let app_menu = SubmenuBuilder::new(app, "Seshat Desktop")
+    let app_menu = SubmenuBuilder::new(app, "Seshat")
         .item(&PredefinedMenuItem::about(
             app,
-            Some("关于 Seshat Desktop"),
+            Some("关于 Seshat"),
             None,
         )?)
         .separator()
-        .item(&PredefinedMenuItem::hide(app, Some("隐藏 Seshat Desktop"))?)
+        .item(&PredefinedMenuItem::hide(app, Some("隐藏 Seshat"))?)
         .item(&PredefinedMenuItem::hide_others(app, Some("隐藏其他"))?)
         .item(&PredefinedMenuItem::show_all(app, Some("全部显示"))?)
         .separator()
-        .item(&PredefinedMenuItem::quit(app, Some("退出 Seshat Desktop"))?)
+        .item(&PredefinedMenuItem::quit(app, Some("退出 Seshat"))?)
         .build()?;
 
     let edit_menu = SubmenuBuilder::new(app, "编辑")
