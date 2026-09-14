@@ -8,9 +8,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/vanadiry/seshat/Core/cache"
-	"github.com/vanadiry/seshat/Core/events"
-	"github.com/vanadiry/seshat/Core/log"
+	"github.com/vanadiry/seshat/core/cache"
+	"github.com/vanadiry/seshat/core/events"
+	"github.com/vanadiry/seshat/core/log"
 )
 
 // scanAPIDir walks the new cache layout {domain}/{id%10}/{id}/*.json and calls fn for each file.

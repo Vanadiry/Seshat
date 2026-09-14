@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/vanadiry/seshat/Core/config"
+	"github.com/vanadiry/seshat/core/config"
 )
 
 func handleSettingsGet(cfg *config.Config) http.HandlerFunc {

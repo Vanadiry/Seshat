@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/vanadiry/seshat/Core/config"
+	"github.com/vanadiry/seshat/core/config"
 )
 
 var logger *slog.Logger

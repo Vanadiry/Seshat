@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/vanadiry/seshat/Core/bangumi"
-	"github.com/vanadiry/seshat/Core/cache"
-	"github.com/vanadiry/seshat/Core/config"
-	"github.com/vanadiry/seshat/Core/events"
-	"github.com/vanadiry/seshat/Core/log"
+	"github.com/vanadiry/seshat/core/bangumi"
+	"github.com/vanadiry/seshat/core/cache"
+	"github.com/vanadiry/seshat/core/config"
+	"github.com/vanadiry/seshat/core/events"
+	"github.com/vanadiry/seshat/core/log"
 )
 
 var maxInfoConcurrency int

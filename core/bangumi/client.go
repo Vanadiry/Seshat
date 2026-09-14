@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/vanadiry/seshat/Core/log"
+	"github.com/vanadiry/seshat/core/log"
 )
 
 var defaultTransport = &http.Transport{

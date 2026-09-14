@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/vanadiry/seshat/Core/cache"
-	"github.com/vanadiry/seshat/Core/config"
+	"github.com/vanadiry/seshat/core/cache"
+	"github.com/vanadiry/seshat/core/config"
 )
 
 func handleStats(dd string) http.HandlerFunc {

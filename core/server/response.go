@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/vanadiry/seshat/Core/log"
+	"github.com/vanadiry/seshat/core/log"
 )
 
 const maxBodySize = 1 << 20

@@ -9,10 +9,10 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/vanadiry/seshat/Core/config"
-	"github.com/vanadiry/seshat/Core/events"
-	"github.com/vanadiry/seshat/Core/log"
-	"github.com/vanadiry/seshat/Core/server"
+	"github.com/vanadiry/seshat/core/config"
+	"github.com/vanadiry/seshat/core/events"
+	"github.com/vanadiry/seshat/core/log"
+	"github.com/vanadiry/seshat/core/server"
 )
 
 func openBrowser(url string) {

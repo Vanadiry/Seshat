@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/vanadiry/seshat/Core/events"
-	"github.com/vanadiry/seshat/Core/log"
+	"github.com/vanadiry/seshat/core/events"
+	"github.com/vanadiry/seshat/core/log"
 )
 
 type Progress struct {
