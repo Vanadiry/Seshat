@@ -90,24 +90,25 @@ func Load() (*Config, error) {
 	return &cfg, nil
 }
 
-// Validate 校验会影响程序正常运行的字段。返回错误则不应启动。
-func (c *Config) Validate() error {
+// Validate 校验会影响程序正常运行的字段，返回全部错误。
+func (c *Config) Validate() []string {
+	var errs []string
 	if c.Server.BindAddr == "" {
-		return fmt.Errorf("bind_addr 不能为空")
+		errs = append(errs, "bind_addr 不能为空")
 	}
 	if c.Server.Port < 1 || c.Server.Port > 65535 {
-		return fmt.Errorf("port 必须在 1-65535 之间（当前 %d）", c.Server.Port)
+		errs = append(errs, fmt.Sprintf("port 必须在 1-65535 之间（当前 %d）", c.Server.Port))
 	}
 	if c.Server.ConcurrencyInfo < 1 {
-		return fmt.Errorf("concurrency_info 必须 >= 1（当前 %d）", c.Server.ConcurrencyInfo)
+		errs = append(errs, fmt.Sprintf("concurrency_info 必须 >= 1（当前 %d）", c.Server.ConcurrencyInfo))
 	}
 	if c.Server.ConcurrencyImage < 1 {
-		return fmt.Errorf("concurrency_image 必须 >= 1（当前 %d）", c.Server.ConcurrencyImage)
+		errs = append(errs, fmt.Sprintf("concurrency_image 必须 >= 1（当前 %d）", c.Server.ConcurrencyImage))
 	}
 	if c.Proxy.Host != "" && (c.Proxy.Port < 1 || c.Proxy.Port > 65535) {
-		return fmt.Errorf("proxy.port 必须在 1-65535 之间（当前 %d）", c.Proxy.Port)
+		errs = append(errs, fmt.Sprintf("proxy.port 必须在 1-65535 之间（当前 %d）", c.Proxy.Port))
 	}
-	return nil
+	return errs
 }
 
 // Warnings 返回不致命、但会影响部分功能的配置问题。

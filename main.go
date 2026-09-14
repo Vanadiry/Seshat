@@ -41,8 +41,13 @@ func runSeshat() (*http.Server, string) {
 	if err != nil {
 		stdlog.Fatalf("config: %v", err)
 	}
-	if err := cfg.Validate(); err != nil {
-		stdlog.Fatalf("配置不完整：%v\n请编辑 %s 后重试", err, config.Path())
+	if errs := cfg.Validate(); len(errs) > 0 {
+		// SESHAT_ERROR=<标题> 指定错误页标题，其余行作为正文
+		fmt.Fprintln(os.Stderr, "SESHAT_ERROR=配置有误")
+		for _, e := range errs {
+			fmt.Fprintln(os.Stderr, e)
+		}
+		os.Exit(1)
 	}
 
 	dd := cfg.DataDir()

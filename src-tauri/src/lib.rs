@@ -42,10 +42,34 @@ pub fn run() {
         });
 }
 
+/// 解析 sidecar stderr
+fn split_error(raw: &str) -> (String, String) {
+    let mut title = "后端启动失败".to_string();
+    let mut body: Vec<&str> = Vec::new();
+    for line in raw.lines() {
+        if let Some(t) = line.strip_prefix("SESHAT_ERROR=") {
+            title = t.trim().to_string();
+        } else {
+            body.push(line);
+        }
+    }
+    let msg = body.join("\n");
+    let msg = msg.trim();
+    let msg = if msg.is_empty() {
+        "请检查配置或重启应用".to_string()
+    } else {
+        msg.to_string()
+    };
+    (title, msg)
+}
+
 /// 桌面端：先建初始窗口，再拉起 Go sidecar，等它通过 stdout 报告监听地址后导航。
 #[cfg(not(mobile))]
 fn setup_desktop(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
-    let win = WebviewWindowBuilder::new(app, "main", WebviewUrl::External("about:blank".parse()?))
+    // 初始页用自包含的 data: 空白页
+    let blank: tauri::Url =
+        "data:text/html,%3C!doctype%20html%3E%3Cmeta%20charset=utf-8%3E".parse()?;
+    let win = WebviewWindowBuilder::new(app, "main", WebviewUrl::External(blank))
         .title("Seshat")
         .inner_size(1200.0, 800.0)
         .min_inner_size(1000.0, 600.0)
@@ -103,19 +127,10 @@ fn setup_desktop(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let handle = app.handle().clone();
     std::thread::spawn(move || {
         let mut crashes: Vec<Instant> = Vec::new();
-        let mut last_err = String::new();
         loop {
             let now = Instant::now();
             crashes.retain(|t| now.duration_since(*t) < Duration::from_secs(10));
             if crashes.len() >= 3 {
-                if let Some(w) = handle.get_webview_window("main") {
-                    let msg = if last_err.trim().is_empty() {
-                        "Seshat 后端多次启动失败，请检查配置或重启应用".to_string()
-                    } else {
-                        last_err.trim().to_string()
-                    };
-                    error_page::show(&w, "后端反复崩溃", &msg);
-                }
                 break;
             }
 
@@ -166,16 +181,18 @@ fn setup_desktop(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 
             // 收集 stderr，启动失败时展示原因
             let errbuf = Arc::new(Mutex::new(String::new()));
-            if let Some(err) = stderr {
+            let stderr_handle = if let Some(err) = stderr {
                 let eb = errbuf.clone();
-                std::thread::spawn(move || {
+                Some(std::thread::spawn(move || {
                     for line in BufReader::new(err).lines().map_while(Result::ok) {
                         let mut b = eb.lock().unwrap();
                         b.push_str(&line);
                         b.push('\n');
                     }
-                });
-            }
+                }))
+            } else {
+                None
+            };
 
             // 等待 sidecar 退出
             loop {
@@ -186,16 +203,20 @@ fn setup_desktop(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                 std::thread::sleep(Duration::from_millis(200));
             }
 
+            // 等 stderr 读完，避免竞态导致错误信息为空
+            if let Some(h) = stderr_handle {
+                let _ = h.join();
+            }
+
             if SHUTTING_DOWN.load(Ordering::Relaxed) {
                 break;
             }
             crashes.push(Instant::now());
 
-            last_err = errbuf.lock().unwrap().clone();
-            if !last_err.trim().is_empty() {
-                if let Some(w) = handle.get_webview_window("main") {
-                    error_page::show(&w, "后端启动失败", last_err.trim());
-                }
+            let raw = errbuf.lock().unwrap().clone();
+            let (title, msg) = split_error(&raw);
+            if let Some(w) = handle.get_webview_window("main") {
+                error_page::show(&w, &title, &msg);
             }
             std::thread::sleep(Duration::from_millis(500));
         }
