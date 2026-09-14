@@ -16,16 +16,16 @@ import (
 	"github.com/vanadiry/seshat/core/log"
 )
 
-func downloadImages(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int) {
-	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, nil)
+func downloadImages(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases, concurrency int) {
+	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, nil, concurrency)
 }
 
 // downloadImagesScoped 仅下载指定条目及其关联角色/人物的图像
-func downloadImagesScoped(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectIDs []int) {
-	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, subjectIDs)
+func downloadImagesScoped(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectIDs []int, concurrency int) {
+	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, subjectIDs, concurrency)
 }
 
-func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectFilter []int) {
+func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectFilter []int, concurrency int) {
 	log.Info("downloading images")
 	if err := os.MkdirAll(cache.IndexDir(dd), 0o755); err != nil {
 		log.Error("index dir mkdir failed", "err", err)
@@ -90,7 +90,7 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 	if p != nil {
 		p.Send("images_subjects", 0, len(subjIDs), "downloading")
 	}
-	dlImageList(subjIDs, "subject", nil, imgBase, bg, p, "images_subjects")
+	dlImageList(subjIDs, "subject", nil, imgBase, bg, p, "images_subjects", concurrency)
 
 	// 角色
 	if p != nil && totalPhases > 0 {
@@ -99,7 +99,7 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 	if p != nil {
 		p.Send("images_characters", 0, len(charIDs), "downloading")
 	}
-	dlImageList(charIDs, "character", nil, imgBase, bg, p, "images_characters")
+	dlImageList(charIDs, "character", nil, imgBase, bg, p, "images_characters", concurrency)
 
 	// 人物
 	if p != nil && totalPhases > 0 {
@@ -108,7 +108,7 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 	if p != nil {
 		p.Send("images_persons", 0, len(persIDs), "downloading")
 	}
-	dlImageList(persIDs, "person", nil, imgBase, bg, p, "images_persons")
+	dlImageList(persIDs, "person", nil, imgBase, bg, p, "images_persons", concurrency)
 
 	log.Info("images download complete")
 }
@@ -124,12 +124,12 @@ func imageExists(imgBase, kind string, id int) bool {
 	return true
 }
 
-func dlImageList(ids []int, kind string, imgMap map[int]cache.ImageEntry, imgBase string, bg *bangumi.Client, p *Progress, stage string) {
+func dlImageList(ids []int, kind string, imgMap map[int]cache.ImageEntry, imgBase string, bg *bangumi.Client, p *Progress, stage string, concurrency int) {
 	if len(ids) == 0 {
 		return
 	}
 	var wg sync.WaitGroup
-	sem := make(chan struct{}, maxImageConcurrency)
+	sem := make(chan struct{}, concurrency)
 	var done int
 	var mu sync.Mutex
 	for _, id := range ids {
@@ -297,7 +297,7 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 }
 
 // fillImageGaps 补充缺失的图片尺寸及索引中不存在的图片
-func fillImageGaps(dd string, bg *bangumi.Client, p *Progress) {
+func fillImageGaps(dd string, bg *bangumi.Client, p *Progress, concurrency int) {
 	imgBase := filepath.Join(dd, "images")
 	domains := []struct {
 		kind       string
@@ -343,7 +343,7 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress) {
 				p.Send("fill_"+d.kind+"_sizes", 0, len(partials), "")
 			}
 			var wg sync.WaitGroup
-			sem := make(chan struct{}, maxImageConcurrency)
+			sem := make(chan struct{}, concurrency)
 			var done int
 			var mu sync.Mutex
 			for _, pt := range partials {
@@ -384,7 +384,7 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress) {
 			if p != nil {
 				p.Send("fill_"+d.kind+"_miss", 0, len(missingIDs), "")
 			}
-			dlImageList(missingIDs, d.kind, imgMap, imgBase, bg, p, "fill_"+d.kind+"_miss")
+			dlImageList(missingIDs, d.kind, imgMap, imgBase, bg, p, "fill_"+d.kind+"_miss", concurrency)
 		}
 		phaseNum++
 

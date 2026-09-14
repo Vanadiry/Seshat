@@ -73,9 +73,9 @@ func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 		}
 	}
 	p.SetPhase(1, 5, "拉取动画数据")
-	fetchSubjectList(allIDs, bg, dd, imgDir, p)
+	fetchSubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
 	log.Info("all trackers refreshed", "subjects", len(seen))
-	downloadImages(dd, bg, p, 2, 5)
+	downloadImages(dd, bg, p, 2, 5, cfg.Server.ConcurrencyImage)
 	p.SetPhase(5, 5, "建立索引")
 	buildIndexes(dd, p)
 }
@@ -106,9 +106,9 @@ func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, 
 		return
 	}
 	p.SetPhase(1, 5, "拉取动画数据")
-	fetchSubjectList(allIDs, bg, dd, imgDir, p)
+	fetchSubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
 	log.Info("trackers refreshed", "names", names, "subjects", len(seen))
-	downloadImages(dd, bg, p, 2, 5)
+	downloadImages(dd, bg, p, 2, 5, cfg.Server.ConcurrencyImage)
 	p.SetPhase(5, 5, "建立索引")
 	buildIndexes(dd, p)
 }

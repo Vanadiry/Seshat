@@ -18,12 +18,12 @@ import (
 	"path/filepath"
 )
 
-func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
+func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int) {
 	if len(ids) == 0 {
 		return
 	}
 	var wg sync.WaitGroup
-	sem := make(chan struct{}, maxInfoConcurrency)
+	sem := make(chan struct{}, concurrency)
 	var done int
 	var mu sync.Mutex
 	for _, sid := range ids {
@@ -37,7 +37,7 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			fetchAll(sid, bg, dd, imgDir, p)
+			fetchAll(sid, bg, dd, imgDir, p, concurrency)
 			if p != nil {
 				mu.Lock()
 				done++
@@ -50,7 +50,7 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 }
 
 // fetchAll 拉取条目全部数据及关联角色/人物/图片
-func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
+func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int) {
 	log.Info("fetching subject", "id", sid)
 
 	// 条目
@@ -150,7 +150,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 				return
 			}
 			cache.Put(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(data))
-		}, nil, "", maxInfoConcurrency)
+		}, nil, "", concurrency)
 	}()
 
 	// 人物详情
@@ -191,7 +191,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 				return
 			}
 			cache.Put(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(data))
-		}, nil, "", maxInfoConcurrency)
+		}, nil, "", concurrency)
 	}()
 
 	// 角色出演条目
@@ -209,7 +209,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 				return
 			}
 			cache.Put(dd, cache.Key("characters", c.ID, "subjects.json"), cache.StripImages(data))
-		}, nil, "", maxInfoConcurrency)
+		}, nil, "", concurrency)
 	}()
 
 	// 角色相关人员
@@ -227,7 +227,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 				return
 			}
 			cache.Put(dd, cache.Key("characters", c.ID, "persons.json"), cache.StripImages(data))
-		}, nil, "", maxInfoConcurrency)
+		}, nil, "", concurrency)
 	}()
 
 	// 人物参与条目
@@ -245,7 +245,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 				return
 			}
 			cache.Put(dd, cache.Key("persons", pp.ID, "subjects.json"), cache.StripImages(data))
-		}, nil, "", maxInfoConcurrency)
+		}, nil, "", concurrency)
 	}()
 
 	// 人物出演角色
@@ -263,7 +263,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 				return
 			}
 			cache.Put(dd, cache.Key("persons", pp.ID, "characters.json"), cache.StripImages(data))
-		}, nil, "", maxInfoConcurrency)
+		}, nil, "", concurrency)
 	}()
 
 	// 剧集
@@ -662,8 +662,8 @@ func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 				}
 			}()
 			p.SetPhase(1, 5, "拉取动画数据")
-			fetchSubjectList(ids, bg, dd, imgDir, p)
-			downloadImagesScoped(dd, bg, p, 2, 5, ids)
+			fetchSubjectList(ids, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
+			downloadImagesScoped(dd, bg, p, 2, 5, ids, cfg.Server.ConcurrencyImage)
 			p.SetPhase(5, 5, "建立索引")
 			buildIndexes(dd, p)
 			log.Info("pulling subjects done", "ids", ids)
@@ -700,8 +700,8 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 			}()
 			if len(newIDs) > 0 {
 				p.SetPhase(1, phases, "拉取动画数据")
-				fetchSubjectList(newIDs, bg, dd, imgDir, p)
-				downloadImagesScoped(dd, bg, p, 2, phases, newIDs)
+				fetchSubjectList(newIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
+				downloadImagesScoped(dd, bg, p, 2, phases, newIDs, cfg.Server.ConcurrencyImage)
 				p.SetPhase(phases, phases, "建立索引")
 				buildIndexes(dd, p)
 				log.Info("incremental update done", "new_ids", len(newIDs))
@@ -805,8 +805,8 @@ func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 				p.Send("gap", done, len(allIDs), "")
 			}
 			log.Info("data gaps filled", "subjects", len(allIDs))
-			fillImageGaps(dd, bg, p)
-			downloadImages(dd, bg, p, 0, 0)
+			fillImageGaps(dd, bg, p, cfg.Server.ConcurrencyImage)
+			downloadImages(dd, bg, p, 0, 0, cfg.Server.ConcurrencyImage)
 			buildIndexes(dd, p)
 			p.Send("complete", len(allIDs), len(allIDs), "")
 			p.Close()
@@ -855,7 +855,7 @@ func handleFetchMeta(cfg *config.Config, bg *bangumi.Client, dd string) http.Han
 				}
 			}()
 			p.SetPhase(1, 3, "拉取动画数据")
-			fetchSubjectList(allIDs, bg, dd, imgDir, p)
+			fetchSubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
 			p.SetPhase(2, 3, "建立索引")
 			buildIndexes(dd, p)
 			log.Info("metadata refresh done", "subjects", len(allIDs))
