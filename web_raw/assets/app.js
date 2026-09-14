@@ -1507,6 +1507,11 @@ async function doFetchIndex() {
     if (d.task_id) startProgress(d.task_id);
 }
 
+// 数据类任务完成后的默认行为：刷新当前页面。
+function onFetchDone() {
+    location.reload();
+}
+
 // 进度通知横幅（右下角浮动）
 function startProgress(taskId, label) {
     var bodyHTML =
