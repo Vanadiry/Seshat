@@ -422,9 +422,6 @@ func fetchConcurrent[T any](items []T, fn func(T), p *Progress, stage string, co
 	if len(items) == 0 {
 		return
 	}
-	if concurrency < 1 {
-		concurrency = 32
-	}
 	if p != nil {
 		p.Send(stage, 0, len(items), "fetching")
 	}

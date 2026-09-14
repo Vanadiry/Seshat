@@ -147,19 +147,6 @@ func (c *Config) BuildConfigKV() map[string]any {
 	}
 }
 
-func Save(cfg *Config) error {
-	dir := Dir()
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
-	f, err := os.Create(filepath.Join(dir, "config.toml"))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	return toml.NewEncoder(f).Encode(cfg)
-}
-
 func (c *Config) DataDir() string {
 	if c.Server.DataHome != "" {
 		return c.Server.DataHome

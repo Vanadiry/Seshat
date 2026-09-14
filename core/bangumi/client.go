@@ -26,9 +26,6 @@ type Client struct {
 }
 
 func NewClient(ua, baseURL string, tokenFunc func() string, proxy *url.URL) *Client {
-	if baseURL == "" {
-		baseURL = "https://api.bgm.tv"
-	}
 	tr := defaultTransport.Clone()
 	if proxy != nil {
 		tr.Proxy = http.ProxyURL(proxy)
