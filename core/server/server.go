@@ -34,7 +34,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	id := imgDir
 	bg := bangumi.NewClient(cfg.Upstream.UserAgent, cfg.Upstream.BaseURL, func() string {
 		return cfg.Access.Token
-	})
+	}, cfg.ProxyURL())
 
 	// Frontend
 	mux.HandleFunc("GET /{page}", func(w http.ResponseWriter, r *http.Request) {

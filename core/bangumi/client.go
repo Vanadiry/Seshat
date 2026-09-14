@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -24,12 +25,16 @@ type Client struct {
 	tokenFunc func() string // 访问令牌，可能为空
 }
 
-func NewClient(ua, baseURL string, tokenFunc func() string) *Client {
+func NewClient(ua, baseURL string, tokenFunc func() string, proxy *url.URL) *Client {
 	if baseURL == "" {
 		baseURL = "https://api.bgm.tv"
 	}
+	tr := defaultTransport.Clone()
+	if proxy != nil {
+		tr.Proxy = http.ProxyURL(proxy)
+	}
 	return &Client{
-		http:      &http.Client{Timeout: 30 * time.Second, Transport: defaultTransport},
+		http:      &http.Client{Timeout: 30 * time.Second, Transport: tr},
 		ua:        ua,
 		baseURL:   baseURL,
 		tokenFunc: tokenFunc,

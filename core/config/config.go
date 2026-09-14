@@ -3,8 +3,11 @@ package config
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/BurntSushi/toml"
 )
@@ -23,6 +26,12 @@ type UpstreamConfig struct {
 	UserAgent string `toml:"user_agent"`
 }
 
+// ProxyConfig 上游拉取使用的 HTTP 代理，host 为空则不启用。
+type ProxyConfig struct {
+	Host string `toml:"host"`
+	Port int    `toml:"port"`
+}
+
 type FrontendConfig struct {
 	BackendURL  string `toml:"backend_url"`
 	FallbackURL string `toml:"fallback_url"`
@@ -35,8 +44,20 @@ type AccessConfig struct {
 type Config struct {
 	Server   ServerConfig   `toml:"server"`
 	Upstream UpstreamConfig `toml:"upstream"`
+	Proxy    ProxyConfig    `toml:"proxy"`
 	Frontend FrontendConfig `toml:"frontend"`
 	Access   AccessConfig   `toml:"access"`
+}
+
+// ProxyURL 返回配置的代理地址；未配置或非法则返回 nil。
+func (c *Config) ProxyURL() *url.URL {
+	if c.Proxy.Host == "" || c.Proxy.Port < 1 || c.Proxy.Port > 65535 {
+		return nil
+	}
+	return &url.URL{
+		Scheme: "http",
+		Host:   net.JoinHostPort(c.Proxy.Host, strconv.Itoa(c.Proxy.Port)),
+	}
 }
 
 func Dir() string {
@@ -83,6 +104,9 @@ func (c *Config) Validate() error {
 	if c.Server.ConcurrencyImage < 1 {
 		return fmt.Errorf("concurrency_image 必须 >= 1（当前 %d）", c.Server.ConcurrencyImage)
 	}
+	if c.Proxy.Host != "" && (c.Proxy.Port < 1 || c.Proxy.Port > 65535) {
+		return fmt.Errorf("proxy.port 必须在 1-65535 之间（当前 %d）", c.Proxy.Port)
+	}
 	return nil
 }
 
@@ -115,6 +139,8 @@ func (c *Config) BuildConfigKV() map[string]any {
 		"log_level":            c.Server.LogLevel,
 		"base_url":             c.Upstream.BaseURL,
 		"user_agent":           c.Upstream.UserAgent,
+		"proxy_host":           c.Proxy.Host,
+		"proxy_port":           c.Proxy.Port,
 		"backend_url":          c.Frontend.BackendURL,
 		"fallback_url":         c.Frontend.FallbackURL,
 		"bangumi_access_token": token,

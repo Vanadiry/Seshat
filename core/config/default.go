@@ -16,6 +16,11 @@ log_level = "warn"          # 日志级别: "debug" / "info" / "warn" / "error"
 base_url = "https://api.bgm.tv"
 user_agent = "Vanadiry/Seshat/v1.3.2 (https://github.com/Vanadiry/Seshat)"
 
+[proxy]
+# 上游拉取使用的 HTTP 代理。留空则不启用。
+host = ""
+port = 0
+
 [frontend]
 # 后端地址。留空则请求本地/api/v0。设为 https://api.bgm.tv 则前端直连番组计划。
 backend_url = ""
