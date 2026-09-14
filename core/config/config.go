@@ -76,9 +76,12 @@ func Load() (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			os.MkdirAll(Dir(), 0o755)
 			data = []byte(DefaultConfigTOML)
-			os.WriteFile(path, data, 0o644)
+			if err := os.MkdirAll(Dir(), 0o755); err != nil {
+				fmt.Fprintf(os.Stderr, "创建配置目录失败: %v\n", err)
+			} else if err := os.WriteFile(path, data, 0o644); err != nil {
+				fmt.Fprintf(os.Stderr, "写入默认配置失败: %v\n", err)
+			}
 		} else {
 			return nil, fmt.Errorf("读取配置失败: %w", err)
 		}

@@ -98,8 +98,13 @@ ids = []
 func EnsureExcludeFile() {
 	path := eloExcludePath()
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.MkdirAll(filepath.Dir(path), 0o755)
-		os.WriteFile(path, []byte(excludeTemplate), 0o644)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			log.Error("elo mkdir", "err", err)
+			return
+		}
+		if err := os.WriteFile(path, []byte(excludeTemplate), 0o644); err != nil {
+			log.Error("elo exclude write", "err", err)
+		}
 	}
 }
 
@@ -133,14 +138,21 @@ func loadEloData() eloData {
 }
 
 func saveEloData(d eloData) {
-	os.MkdirAll(filepath.Join(config.Dir(), "user", "elo"), 0o755)
+	if err := os.MkdirAll(filepath.Join(config.Dir(), "user", "elo"), 0o755); err != nil {
+		log.Error("saveEloData mkdir", "err", err)
+		events.Bus.Error("ELO 数据保存失败")
+		return
+	}
 	data, err := json.Marshal(d)
 	if err != nil {
 		log.Error("saveEloData marshal", "err", err)
 		events.Bus.Error("ELO 数据保存失败")
 		return
 	}
-	os.WriteFile(eloDataPath(), data, 0o644)
+	if err := os.WriteFile(eloDataPath(), data, 0o644); err != nil {
+		log.Error("saveEloData write", "err", err)
+		events.Bus.Error("ELO 数据保存失败")
+	}
 }
 
 func loadELOHistory() []eloHistory {
@@ -157,14 +169,21 @@ func loadELOHistory() []eloHistory {
 }
 
 func saveELOHistory(h []eloHistory) {
-	os.MkdirAll(filepath.Join(config.Dir(), "user", "elo"), 0o755)
+	if err := os.MkdirAll(filepath.Join(config.Dir(), "user", "elo"), 0o755); err != nil {
+		log.Error("saveELOHistory mkdir", "err", err)
+		events.Bus.Error("ELO 历史保存失败")
+		return
+	}
 	data, err := json.Marshal(h)
 	if err != nil {
 		log.Error("saveELOHistory marshal", "err", err)
 		events.Bus.Error("ELO 历史保存失败")
 		return
 	}
-	os.WriteFile(eloHistoryPath(), data, 0o644)
+	if err := os.WriteFile(eloHistoryPath(), data, 0o644); err != nil {
+		log.Error("saveELOHistory write", "err", err)
+		events.Bus.Error("ELO 历史保存失败")
+	}
 }
 
 // getELOPair 混合策略返回两个评比条目：

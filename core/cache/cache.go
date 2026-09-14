@@ -20,7 +20,9 @@ func Key(subdomain string, id int, file string) string {
 func Get(dataDir, key string) ([]byte, error) { return os.ReadFile(filepath.Join(Dir(dataDir), key)) }
 func Put(dataDir, key string, data []byte) error {
 	p := filepath.Join(Dir(dataDir), key)
-	os.MkdirAll(filepath.Dir(p), 0o755)
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		return err
+	}
 	return os.WriteFile(p, data, 0o644)
 }
 func Has(dataDir, key string) bool {

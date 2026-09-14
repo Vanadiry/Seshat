@@ -84,7 +84,10 @@ func rebuildTags(dd string) {
 		events.Bus.Error("标签索引生成失败")
 		return
 	}
-	os.WriteFile(tagsPath(dd), result, 0o644)
+	if err := os.WriteFile(tagsPath(dd), result, 0o644); err != nil {
+		log.Error("tags index write", "err", err)
+		events.Bus.Error("标签索引写入失败")
+	}
 	buildNameIndex(dd, "subjects")
 	buildNameIndex(dd, "characters")
 	buildPersonNames(dd)
@@ -114,7 +117,10 @@ func buildPersonNames(dd string) {
 		return
 	}
 	namePath := cache.IndexFile(dd, "persons_name.json")
-	os.WriteFile(namePath, result, 0o644)
+	if err := os.WriteFile(namePath, result, 0o644); err != nil {
+		log.Error("persons name index write", "err", err)
+		events.Bus.Error("人物名称索引写入失败")
+	}
 	clearIndexCache(namePath)
 	log.Info("persons_name.json built", "count", len(m))
 }
@@ -142,7 +148,10 @@ func buildNameIndex(dd, domain string) {
 		return
 	}
 	namePath := cache.IndexFile(dd, domain+"_name.json")
-	os.WriteFile(namePath, result, 0o644)
+	if err := os.WriteFile(namePath, result, 0o644); err != nil {
+		log.Error("name index write", "domain", domain, "err", err)
+		events.Bus.Error("名称索引写入失败")
+	}
 	clearIndexCache(namePath)
 	log.Info("name index built", "domain", domain, "count", len(m))
 }
@@ -150,7 +159,9 @@ func buildNameIndex(dd, domain string) {
 // buildIndexes scans all cached API JSON files and rebuilds list files + tags + name indexes.
 func buildIndexes(dd string, p *Progress) {
 	log.Info("rebuilding indexes from scan")
-	os.MkdirAll(cache.IndexDir(dd), 0o755)
+	if err := os.MkdirAll(cache.IndexDir(dd), 0o755); err != nil {
+		log.Error("index dir mkdir failed", "err", err)
+	}
 
 	var subjects []cache.SubjectSummary
 	var chars []cache.NameEntry

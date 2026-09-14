@@ -364,14 +364,21 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 
 	// 保存收藏供前端展示
 	userDir := filepath.Join(config.Dir(), "user", "info")
-	os.MkdirAll(userDir, 0o755)
+	if err := os.MkdirAll(userDir, 0o755); err != nil {
+		log.Error("user info mkdir failed", "err", err)
+		events.Bus.Error("收藏列表保存失败")
+		return
+	}
 	collData, err := json.Marshal(map[string]any{"subjects": all, "updated_at": time.Now().Format(time.RFC3339)})
 	if err != nil {
 		log.Error("marshal collections failed", "user", username, "err", err)
 		events.Bus.Error("收藏列表保存失败")
 		return
 	}
-	os.WriteFile(filepath.Join(userDir, "collections.json"), collData, 0o644)
+	if err := os.WriteFile(filepath.Join(userDir, "collections.json"), collData, 0o644); err != nil {
+		log.Error("write collections failed", "user", username, "err", err)
+		events.Bus.Error("收藏列表保存失败")
+	}
 
 	log.Info("user collections saved", "user", username, "count", len(all))
 }
@@ -379,7 +386,11 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 func fetchUserInfo(username string, bg *bangumi.Client, dd string) {
 	log.Info("fetching user info", "user", username)
 	userDir := filepath.Join(config.Dir(), "user", "info")
-	os.MkdirAll(userDir, 0o755)
+	if err := os.MkdirAll(userDir, 0o755); err != nil {
+		log.Error("user info mkdir failed", "err", err)
+		events.Bus.Error("用户信息保存失败")
+		return
+	}
 	data, err := bg.GetRaw(fmt.Sprintf("v0/users/%s", username))
 	if err != nil {
 		log.Warn("user info fetch failed", "user", username, "err", err)
@@ -397,13 +408,20 @@ func fetchUserInfo(username string, bg *bangumi.Client, dd string) {
 		events.Bus.Error("用户信息保存失败")
 		return
 	}
-	os.WriteFile(filepath.Join(userDir, "info.json"), clean, 0o644)
+	if err := os.WriteFile(filepath.Join(userDir, "info.json"), clean, 0o644); err != nil {
+		log.Error("write user info failed", "user", username, "err", err)
+		events.Bus.Error("用户信息保存失败")
+	}
 }
 
 func fetchUserAvatar(username string, bg *bangumi.Client, dd string) {
 	log.Info("fetching user avatar", "user", username)
 	userDir := filepath.Join(config.Dir(), "user", "info")
-	os.MkdirAll(userDir, 0o755)
+	if err := os.MkdirAll(userDir, 0o755); err != nil {
+		log.Error("user avatar mkdir failed", "err", err)
+		events.Bus.Error("用户头像保存失败")
+		return
+	}
 	imgData, err := bg.GetImage(fmt.Sprintf("v0/users/%s/avatar?type=large", username))
 	if err != nil {
 		log.Warn("user avatar fetch failed", "user", username, "err", err)
@@ -413,7 +431,10 @@ func fetchUserAvatar(username string, bg *bangumi.Client, dd string) {
 	if len(imgData) > 0 && imgData[0] == 0x89 {
 		ext = ".png"
 	}
-	os.WriteFile(filepath.Join(userDir, "large"+ext), imgData, 0o644)
+	if err := os.WriteFile(filepath.Join(userDir, "large"+ext), imgData, 0o644); err != nil {
+		log.Error("write user avatar failed", "user", username, "err", err)
+		events.Bus.Error("用户头像保存失败")
+	}
 	log.Info("user avatar saved", "user", username)
 }
 

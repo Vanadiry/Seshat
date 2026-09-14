@@ -26,12 +26,15 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	maxImageConcurrency = cfg.Server.ConcurrencyImage
 	mux := http.NewServeMux()
 	dd := cfg.DataDir()
-	os.MkdirAll(cache.IndexDir(dd), 0o755)
+	if err := os.MkdirAll(cache.IndexDir(dd), 0o755); err != nil {
+		log.Error("create index dir failed", "err", err)
+	}
 	imgDir := filepath.Join(dd, "images")
-	os.MkdirAll(imgDir, 0o755)
+	if err := os.MkdirAll(imgDir, 0o755); err != nil {
+		log.Error("create images dir failed", "err", err)
+	}
 	config.LoadPreferences() // ensure settings dir and preferences.json exist at startup
 
-	id := imgDir
 	bg := bangumi.NewClient(cfg.Upstream.UserAgent, cfg.Upstream.BaseURL, func() string {
 		return cfg.Access.Token
 	}, cfg.ProxyURL())
@@ -156,13 +159,13 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/", handleCacheReader(dd))
 
 	// Fetch
-	mux.HandleFunc("POST /api/v0/fetch/all", handleFetchAll(cfg, bg, dd, id))
-	mux.HandleFunc("POST /api/v0/fetch/deep", handleFetchDeep(cfg, bg, dd, id))
-	mux.HandleFunc("POST /api/v0/fetch/tracker", handleFetchTracker(cfg, bg, dd, id))
-	mux.HandleFunc("POST /api/v0/fetch/user", handleFetchUser(cfg, bg, dd, id))
-	mux.HandleFunc("POST /api/v0/fetch/subject", handleFetchSubject(cfg, bg, dd, id))
-	mux.HandleFunc("POST /api/v0/fetch/update", handleFetchUpdate(cfg, bg, dd, id))
-	mux.HandleFunc("POST /api/v0/fetch/gap", handleFetchGap(cfg, bg, dd, id))
+	mux.HandleFunc("POST /api/v0/fetch/all", handleFetchAll(cfg, bg, dd, imgDir))
+	mux.HandleFunc("POST /api/v0/fetch/deep", handleFetchDeep(cfg, bg, dd, imgDir))
+	mux.HandleFunc("POST /api/v0/fetch/tracker", handleFetchTracker(cfg, bg, dd, imgDir))
+	mux.HandleFunc("POST /api/v0/fetch/user", handleFetchUser(cfg, bg, dd, imgDir))
+	mux.HandleFunc("POST /api/v0/fetch/subject", handleFetchSubject(cfg, bg, dd, imgDir))
+	mux.HandleFunc("POST /api/v0/fetch/update", handleFetchUpdate(cfg, bg, dd, imgDir))
+	mux.HandleFunc("POST /api/v0/fetch/gap", handleFetchGap(cfg, bg, dd, imgDir))
 	mux.HandleFunc("POST /api/v0/fetch/meta", handleFetchMeta(cfg, bg, dd))
 	mux.HandleFunc("POST /api/v0/fetch/index", handleFetchIndex(dd))
 

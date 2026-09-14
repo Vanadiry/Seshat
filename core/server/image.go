@@ -27,7 +27,9 @@ func downloadImagesScoped(dd string, bg *bangumi.Client, p *Progress, phaseBase,
 
 func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectFilter []int) {
 	log.Info("downloading images")
-	os.MkdirAll(cache.IndexDir(dd), 0o755)
+	if err := os.MkdirAll(cache.IndexDir(dd), 0o755); err != nil {
+		log.Error("index dir mkdir failed", "err", err)
+	}
 	imgBase := filepath.Join(dd, "images")
 
 	// 构建实体列表：scoped 按指定条目过滤，full 扫描 API 数据目录
@@ -196,7 +198,10 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 			}
 			relPath := fmt.Sprintf("%ss_%s/%d/%d.jpg", kind, size, id%10, id)
 			fullPath := filepath.Join(imgBase, relPath)
-			os.MkdirAll(filepath.Dir(fullPath), 0o755)
+			if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+				log.Error("image mkdir failed", "kind", kind, "id", id, "size", size, "err", err)
+				return
+			}
 			if err := os.WriteFile(fullPath, data, 0o644); err != nil {
 				log.Error("image write failed", "kind", kind, "id", id, "size", size, "err", err)
 				events.Bus.Error(fmt.Sprintf("图片写入失败 %s #%d %s", kind, id, size))
@@ -260,7 +265,10 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 			}
 			relPath := fmt.Sprintf("%ss_%s/%d/%d.jpg", kind, size, id%10, id)
 			fullPath := filepath.Join(imgBase, relPath)
-			os.MkdirAll(filepath.Dir(fullPath), 0o755)
+			if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+				log.Error("image mkdir failed", "kind", kind, "id", id, "size", size, "err", err)
+				return
+			}
 			if err := os.WriteFile(fullPath, data, 0o644); err != nil {
 				log.Error("image write failed", "kind", kind, "id", id, "size", size, "err", err)
 				events.Bus.Error(fmt.Sprintf("图片写入失败 %s #%d %s", kind, id, size))

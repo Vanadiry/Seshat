@@ -19,7 +19,11 @@ func saveJSON(path string, v any) {
 		events.Bus.Error("索引文件保存失败")
 		return
 	}
-	os.WriteFile(path, data, 0o644)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		log.Error("saveJSON write", "path", path, "err", err)
+		events.Bus.Error("索引文件保存失败")
+		return
+	}
 	clearIndexCache(path)
 }
 

@@ -116,7 +116,11 @@ func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, 
 // addToSeshatTracker 将用户手动添加的 subject ID 记录到 _seshat.json。
 func addToSeshatTracker(cfg *config.Config, sid int) {
 	path := filepath.Join(cfg.TrackerDir(), "_seshat.json")
-	os.MkdirAll(filepath.Dir(path), 0o755)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		log.Error("tracker mkdir", "err", err)
+		events.Bus.Error("Tracker 写入失败")
+		return
+	}
 	var data struct {
 		Name     string `json:"name"`
 		Subjects []int  `json:"subjects"`
@@ -143,7 +147,10 @@ func addToSeshatTracker(cfg *config.Config, sid int) {
 		events.Bus.Error("Tracker 写入失败")
 		return
 	}
-	os.WriteFile(path, result, 0o644)
+	if err := os.WriteFile(path, result, 0o644); err != nil {
+		log.Error("tracker write", "sid", sid, "err", err)
+		events.Bus.Error("Tracker 写入失败")
+	}
 }
 
 // loadTrackerIDs 从 tracker 文件读取条目 ID 列表
@@ -282,8 +289,15 @@ func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 			return
 		}
 		tmpl := fmt.Sprintf(config.TrackerTemplate, req.Name, req.Name)
-		os.MkdirAll(cfg.TrackerDir(), 0o755)
-		os.WriteFile(path, []byte(tmpl), 0o644)
+		if err := os.MkdirAll(cfg.TrackerDir(), 0o755); err != nil {
+			writeError(w, 500, "无法创建 tracker 目录")
+			return
+		}
+		if err := os.WriteFile(path, []byte(tmpl), 0o644); err != nil {
+			log.Error("tracker create write", "err", err)
+			writeError(w, 500, "无法写入 tracker 文件")
+			return
+		}
 		writeJSON(w, map[string]string{"status": "created", "name": req.Name})
 	}
 }
@@ -329,7 +343,10 @@ func handleImportCollections(dd string) http.HandlerFunc {
 			}
 		}
 		td := filepath.Join(config.Dir(), "tracker")
-		os.MkdirAll(td, 0o755)
+		if err := os.MkdirAll(td, 0o755); err != nil {
+			writeError(w, 500, "无法创建 tracker 目录")
+			return
+		}
 		trackerData, err := json.Marshal(map[string]any{"name": "user", "subjects": ids})
 		if err != nil {
 			log.Error("import collections marshal", "err", err)
@@ -337,7 +354,11 @@ func handleImportCollections(dd string) http.HandlerFunc {
 			writeError(w, 500, "internal error")
 			return
 		}
-		os.WriteFile(filepath.Join(td, "user.json"), trackerData, 0o644)
+		if err := os.WriteFile(filepath.Join(td, "user.json"), trackerData, 0o644); err != nil {
+			log.Error("import collections write", "err", err)
+			writeError(w, 500, "无法写入 tracker 文件")
+			return
+		}
 		writeJSON(w, map[string]any{"status": "ok", "count": len(ids)})
 	}
 }
