@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	stdlog "log"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -40,6 +41,9 @@ func runSeshat() (*http.Server, string) {
 	if err != nil {
 		stdlog.Fatalf("config: %v", err)
 	}
+	if err := cfg.Validate(); err != nil {
+		stdlog.Fatalf("配置不完整：%v\n请编辑 %s 后重试", err, config.Path())
+	}
 
 	dd := cfg.DataDir()
 	os.MkdirAll(dd, 0o755)
@@ -48,22 +52,34 @@ func runSeshat() (*http.Server, string) {
 	log.Init(cfg.Server.LogLevel)
 	log.Info("Starting Seshat...")
 	events.InitBus()
+	for _, w := range cfg.Warnings() {
+		events.Bus.Warn(w)
+	}
 
 	router := server.New(cfg, webFS)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.BindAddr, cfg.Server.Port)
-	srv := &http.Server{Addr: addr, Handler: router}
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		stdlog.Fatalf("listen %s: %v", addr, err)
+	}
+	actual := ln.Addr().String()
+
+	// 向Tauri报告实际监听地址
+	fmt.Fprintf(os.Stdout, "SESHAT_ADDR=%s\n", actual)
+
+	srv := &http.Server{Addr: actual, Handler: router}
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
 				stdlog.Printf("server goroutine panic: %v", r)
 			}
 		}()
-		log.Info("listening", "addr", addr)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Info("listening", "addr", actual)
+		if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
 			stdlog.Fatal(err)
 		}
 	}()
 
-	return srv, addr
+	return srv, actual
 }

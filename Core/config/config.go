@@ -39,15 +39,6 @@ type Config struct {
 	Access   AccessConfig   `toml:"access"`
 }
 
-// defaultsFromTemplate 解析 default.go 中的模板，作为默认值的唯一来源。
-func defaultsFromTemplate() Config {
-	var c Config
-	if _, err := toml.Decode(DefaultConfigTOML, &c); err != nil {
-		panic(fmt.Sprintf("DefaultConfigTOML 解析失败: %v", err))
-	}
-	return c
-}
-
 func Dir() string {
 	if d := os.Getenv("SESHAT_HOME"); d != "" {
 		return d
@@ -58,38 +49,53 @@ func Dir() string {
 
 func Path() string { return filepath.Join(Dir(), "config.toml") }
 
+// Load 读取 config.toml；不存在时按 default.go 生成一份
 func Load() (*Config, error) {
-	def := defaultsFromTemplate()
 	path := Path()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			os.MkdirAll(Dir(), 0o755)
-			os.WriteFile(path, []byte(DefaultConfigTOML), 0o644)
-			return &def, nil
+			data = []byte(DefaultConfigTOML)
+			os.WriteFile(path, data, 0o644)
+		} else {
+			return nil, fmt.Errorf("读取配置失败: %w", err)
 		}
-		return nil, fmt.Errorf("读取配置失败: %w", err)
 	}
-	cfg := def
+	var cfg Config
 	if err := toml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("解析配置失败: %w", err)
 	}
-	if cfg.Server.Port < 1 || cfg.Server.Port > 65535 {
-		cfg.Server.Port = def.Server.Port
-	}
-	if cfg.Server.ConcurrencyInfo < 1 {
-		cfg.Server.ConcurrencyInfo = def.Server.ConcurrencyInfo
-	}
-	if cfg.Server.ConcurrencyImage < 1 {
-		cfg.Server.ConcurrencyImage = def.Server.ConcurrencyImage
-	}
-	if cfg.Server.LogLevel == "" {
-		cfg.Server.LogLevel = def.Server.LogLevel
-	}
-	if cfg.Upstream.UserAgent == "" {
-		cfg.Upstream.UserAgent = def.Upstream.UserAgent
-	}
 	return &cfg, nil
+}
+
+// Validate 校验会影响程序正常运行的字段。返回错误则不应启动。
+func (c *Config) Validate() error {
+	if c.Server.BindAddr == "" {
+		return fmt.Errorf("bind_addr 不能为空")
+	}
+	if c.Server.Port < 1 || c.Server.Port > 65535 {
+		return fmt.Errorf("port 必须在 1-65535 之间（当前 %d）", c.Server.Port)
+	}
+	if c.Server.ConcurrencyInfo < 1 {
+		return fmt.Errorf("concurrency_info 必须 >= 1（当前 %d）", c.Server.ConcurrencyInfo)
+	}
+	if c.Server.ConcurrencyImage < 1 {
+		return fmt.Errorf("concurrency_image 必须 >= 1（当前 %d）", c.Server.ConcurrencyImage)
+	}
+	return nil
+}
+
+// Warnings 返回不致命、但会影响部分功能的配置问题。
+func (c *Config) Warnings() []string {
+	w := []string{}
+	if c.Upstream.BaseURL == "" {
+		w = append(w, "未配置 base_url，无法拉取数据")
+	}
+	if c.Upstream.UserAgent == "" {
+		w = append(w, "未设置 user_agent，上游可能拒绝请求")
+	}
+	return w
 }
 
 // BuildConfigKV 返回 config.toml 当前值的纯 KV，token 非空显示 ***
@@ -126,19 +132,6 @@ func Save(cfg *Config) error {
 	}
 	defer f.Close()
 	return toml.NewEncoder(f).Encode(cfg)
-}
-
-func Validate(cfg *Config) error {
-	if cfg.Server.Port < 1 || cfg.Server.Port > 65535 {
-		return fmt.Errorf("port 必须在 1-65535 之间")
-	}
-	if cfg.Server.ConcurrencyInfo < 1 {
-		return fmt.Errorf("concurrency_info 必须 >= 1")
-	}
-	if cfg.Server.ConcurrencyImage < 1 {
-		return fmt.Errorf("concurrency_image 必须 >= 1")
-	}
-	return nil
 }
 
 func (c *Config) DataDir() string {

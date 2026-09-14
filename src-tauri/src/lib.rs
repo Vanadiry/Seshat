@@ -1,13 +1,12 @@
-use std::net::TcpStream;
+use std::io::{BufRead, BufReader};
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
-use std::process::{Child, Command};
+use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use tauri::Manager;
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
-mod config;
 mod error_page;
 
 static SIDECAR: Mutex<Option<Arc<Mutex<Child>>>> = Mutex::new(None);
@@ -23,122 +22,7 @@ pub fn run() {
             }
 
             #[cfg(not(mobile))]
-            {
-                let port = config::get_port();
-                let addr = format!("127.0.0.1:{}", port);
-                let ext = if cfg!(target_os = "windows") {
-                    ".exe"
-                } else {
-                    ""
-                };
-                let target = std::env::var("TARGET").unwrap_or_default();
-                let name_long = format!("seshat_server-{}{}", target, ext);
-                let name_short = format!("seshat_server{}", ext);
-
-                // 1) bundled: next to the main executable
-                // 2) dev: project_root/build/
-                let bin = std::env::current_exe()
-                    .ok()
-                    .and_then(|p| p.parent().map(|d| d.to_path_buf()))
-                    .and_then(|exe_dir| {
-                        let bundled = exe_dir.join(&name_short);
-                        if bundled.exists() {
-                            return Some(bundled);
-                        }
-                        let bundled_long = exe_dir.join(&name_long);
-                        if bundled_long.exists() {
-                            return Some(bundled_long);
-                        }
-                        None
-                    })
-                    .or_else(|| {
-                        let dev = std::env::current_dir()
-                            .ok()?
-                            .parent()?
-                            .join("build")
-                            .join(&name_long);
-                        if dev.exists() {
-                            Some(dev)
-                        } else {
-                            None
-                        }
-                    });
-                if TcpStream::connect(&addr).is_ok() {
-                    error_page::show(
-                        &app.get_webview_window("main").unwrap(),
-                        "无法启动后端",
-                        "Seshat 后端使用的端口被占用，请检查",
-                    );
-                } else if let Some(bin_path) = bin {
-                    let bin_path = Arc::new(bin_path);
-                    let handle = app.handle().clone();
-                    let port = port;
-                    std::thread::spawn(move || {
-                        let mut crashes: Vec<Instant> = Vec::new();
-                        loop {
-                            let now = Instant::now();
-                            crashes.retain(|t| now.duration_since(*t) < Duration::from_secs(10));
-                            if crashes.len() >= 3 {
-                                if let Some(window) = handle.get_webview_window("main") {
-                                    error_page::show(
-                                        &window,
-                                        "后端反复崩溃",
-                                        "Seshat 后端进程多次启动失败，请检查配置或重启应用",
-                                    );
-                                }
-                                break;
-                            }
-
-                            let mut cmd = Command::new(bin_path.as_ref());
-                            cmd.env("SESHAT_SIDECAR", "1");
-                            #[cfg(target_os = "windows")]
-                            {
-                                cmd.creation_flags(0x08000000);
-                            }
-                            if let Ok(child) = cmd.spawn() {
-                                let child = Arc::new(Mutex::new(child));
-                                let c = child.clone();
-                                *SIDECAR.lock().unwrap() = Some(child);
-
-                                // Wait for sidecar to be ready
-                                for _ in 0..30 {
-                                    std::thread::sleep(Duration::from_millis(100));
-                                    if TcpStream::connect(format!("127.0.0.1:{}", port)).is_ok() {
-                                        break;
-                                    }
-                                }
-                                if let Some(w) = handle.get_webview_window("main") {
-                                    let url = format!("http://127.0.0.1:{}", port);
-                                    let _ = w.eval(&format!("location.replace('{}')", url));
-                                }
-
-                                // Wait for sidecar to exit
-                                loop {
-                                    let exited =
-                                        c.lock().unwrap().try_wait().ok().flatten().is_some();
-                                    if exited {
-                                        break;
-                                    }
-                                    std::thread::sleep(Duration::from_millis(200));
-                                }
-                            }
-
-                            if SHUTTING_DOWN.load(Ordering::Relaxed) {
-                                break;
-                            }
-                            crashes.push(Instant::now());
-                            std::thread::sleep(Duration::from_millis(500));
-                        }
-                    });
-                    // Wait for initial start
-                    for _ in 0..30 {
-                        std::thread::sleep(Duration::from_millis(100));
-                        if TcpStream::connect(&addr).is_ok() {
-                            break;
-                        }
-                    }
-                }
-            }
+            setup_desktop(app)?;
 
             setup_menu(app)?;
             Ok(())
@@ -156,6 +40,168 @@ pub fn run() {
                 graceful_exit(_handle.clone());
             }
         });
+}
+
+/// 桌面端：先建初始窗口，再拉起 Go sidecar，等它通过 stdout 报告监听地址后导航。
+#[cfg(not(mobile))]
+fn setup_desktop(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    let win = WebviewWindowBuilder::new(app, "main", WebviewUrl::External("about:blank".parse()?))
+        .title("Seshat")
+        .inner_size(1200.0, 800.0)
+        .min_inner_size(1000.0, 600.0)
+        .center()
+        .resizable(true)
+        .fullscreen(false)
+        .build()?;
+
+    let ext = if cfg!(target_os = "windows") {
+        ".exe"
+    } else {
+        ""
+    };
+    let target = std::env::var("TARGET").unwrap_or_default();
+    let name_long = format!("seshat_server-{}{}", target, ext);
+    let name_short = format!("seshat_server{}", ext);
+
+    // 1) bundled: next to the main executable
+    // 2) dev: project_root/build/
+    let bin = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+        .and_then(|exe_dir| {
+            let bundled = exe_dir.join(&name_short);
+            if bundled.exists() {
+                return Some(bundled);
+            }
+            let bundled_long = exe_dir.join(&name_long);
+            if bundled_long.exists() {
+                return Some(bundled_long);
+            }
+            None
+        })
+        .or_else(|| {
+            let dev = std::env::current_dir()
+                .ok()?
+                .parent()?
+                .join("build")
+                .join(&name_long);
+            if dev.exists() {
+                Some(dev)
+            } else {
+                None
+            }
+        });
+
+    let bin = match bin {
+        Some(b) => b,
+        None => {
+            error_page::show(&win, "找不到后端程序", "Seshat 后端 sidecar 缺失，请重新安装");
+            return Ok(());
+        }
+    };
+
+    let handle = app.handle().clone();
+    std::thread::spawn(move || {
+        let mut crashes: Vec<Instant> = Vec::new();
+        let mut last_err = String::new();
+        loop {
+            let now = Instant::now();
+            crashes.retain(|t| now.duration_since(*t) < Duration::from_secs(10));
+            if crashes.len() >= 3 {
+                if let Some(w) = handle.get_webview_window("main") {
+                    let msg = if last_err.trim().is_empty() {
+                        "Seshat 后端多次启动失败，请检查配置或重启应用".to_string()
+                    } else {
+                        last_err.trim().to_string()
+                    };
+                    error_page::show(&w, "后端反复崩溃", &msg);
+                }
+                break;
+            }
+
+            let mut cmd = Command::new(&bin);
+            cmd.env("SESHAT_SIDECAR", "1");
+            cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
+            #[cfg(target_os = "windows")]
+            {
+                cmd.creation_flags(0x08000000);
+            }
+
+            let mut child = match cmd.spawn() {
+                Ok(c) => c,
+                Err(e) => {
+                    if let Some(w) = handle.get_webview_window("main") {
+                        error_page::show(&w, "无法启动后端", &e.to_string());
+                    }
+                    break;
+                }
+            };
+
+            let stdout = child.stdout.take();
+            let stderr = child.stderr.take();
+            let child = Arc::new(Mutex::new(child));
+            *SIDECAR.lock().unwrap() = Some(child.clone());
+
+            // 读 stdout，等待 sidecar 报告监听地址后导航窗口
+            if let Some(out) = stdout {
+                let h = handle.clone();
+                std::thread::spawn(move || {
+                    let mut navigated = false;
+                    for line in BufReader::new(out).lines().map_while(Result::ok) {
+                        if navigated {
+                            continue;
+                        }
+                        if let Some(addr) = line.strip_prefix("SESHAT_ADDR=") {
+                            if let Some(w) = h.get_webview_window("main") {
+                                if let Ok(url) = tauri::Url::parse(&format!("http://{}", addr.trim()))
+                                {
+                                    let _ = w.navigate(url);
+                                }
+                            }
+                            navigated = true;
+                        }
+                    }
+                });
+            }
+
+            // 收集 stderr，启动失败时展示原因
+            let errbuf = Arc::new(Mutex::new(String::new()));
+            if let Some(err) = stderr {
+                let eb = errbuf.clone();
+                std::thread::spawn(move || {
+                    for line in BufReader::new(err).lines().map_while(Result::ok) {
+                        let mut b = eb.lock().unwrap();
+                        b.push_str(&line);
+                        b.push('\n');
+                    }
+                });
+            }
+
+            // 等待 sidecar 退出
+            loop {
+                let exited = child.lock().unwrap().try_wait().ok().flatten().is_some();
+                if exited {
+                    break;
+                }
+                std::thread::sleep(Duration::from_millis(200));
+            }
+
+            if SHUTTING_DOWN.load(Ordering::Relaxed) {
+                break;
+            }
+            crashes.push(Instant::now());
+
+            last_err = errbuf.lock().unwrap().clone();
+            if !last_err.trim().is_empty() {
+                if let Some(w) = handle.get_webview_window("main") {
+                    error_page::show(&w, "后端启动失败", last_err.trim());
+                }
+            }
+            std::thread::sleep(Duration::from_millis(500));
+        }
+    });
+
+    Ok(())
 }
 
 fn graceful_exit(handle: tauri::AppHandle) {
