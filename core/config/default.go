@@ -14,7 +14,7 @@ log_level = "warn"          # 日志级别: "debug" / "info" / "warn" / "error"
 [upstream]
 # 上游地址，控制后端拉取数据时的请求位置，建议不动。留空将不能拉取数据。
 base_url = "https://api.bgm.tv"
-user_agent = "Vanadiry/Seshat/v1.3.2 (https://github.com/Vanadiry/Seshat)"
+user_agent = "Vanadiry/Seshat/v1.4.0 (https://github.com/Vanadiry/Seshat)"
 
 [proxy]
 # 上游拉取使用的 HTTP 代理。留空则不启用。
