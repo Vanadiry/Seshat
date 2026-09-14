@@ -218,6 +218,9 @@ fn setup_desktop(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             if let Some(w) = handle.get_webview_window("main") {
                 error_page::show(&w, &title, &msg);
             }
+            if raw.contains("SESHAT_ERROR=") {
+                break;
+            }
             std::thread::sleep(Duration::from_millis(500));
         }
     });
