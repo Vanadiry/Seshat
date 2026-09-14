@@ -45,11 +45,7 @@ func runSeshat() (*http.Server, string) {
 	os.MkdirAll(dd, 0o755)
 	os.MkdirAll(cfg.TrackerDir(), 0o755)
 	server.EnsureExcludeFile()
-	lvl := cfg.Server.LogLevel
-	if lvl == "" {
-		lvl = "info"
-	}
-	log.Init(lvl)
+	log.Init(cfg.Server.LogLevel)
 	log.Info("Starting Seshat...")
 	events.InitBus()
 

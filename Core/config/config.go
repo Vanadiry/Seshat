@@ -39,20 +39,13 @@ type Config struct {
 	Access   AccessConfig   `toml:"access"`
 }
 
-var Defaults = Config{
-	Server: ServerConfig{
-		BindAddr:         "127.0.0.1",
-		Port:             12500,
-		ConcurrencyInfo:  4,
-		ConcurrencyImage: 16,
-		DataHome:         "",
-		LogLevel:         "warn",
-	},
-	Upstream: UpstreamConfig{
-		BaseURL:   "https://api.bgm.tv",
-		UserAgent: "Vanadiry/Seshat/v1.3.2 (https://github.com/Vanadiry/Seshat)",
-	},
-	Frontend: FrontendConfig{BackendURL: "", FallbackURL: ""},
+// defaultsFromTemplate 解析 default.go 中的模板，作为默认值的唯一来源。
+func defaultsFromTemplate() Config {
+	var c Config
+	if _, err := toml.Decode(DefaultConfigTOML, &c); err != nil {
+		panic(fmt.Sprintf("DefaultConfigTOML 解析失败: %v", err))
+	}
+	return c
 }
 
 func Dir() string {
@@ -66,31 +59,35 @@ func Dir() string {
 func Path() string { return filepath.Join(Dir(), "config.toml") }
 
 func Load() (*Config, error) {
-	cfg := Defaults
+	def := defaultsFromTemplate()
 	path := Path()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			os.MkdirAll(Dir(), 0o755)
 			os.WriteFile(path, []byte(DefaultConfigTOML), 0o644)
-			return &cfg, nil
+			return &def, nil
 		}
 		return nil, fmt.Errorf("读取配置失败: %w", err)
 	}
+	cfg := def
 	if err := toml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("解析配置失败: %w", err)
 	}
 	if cfg.Server.Port < 1 || cfg.Server.Port > 65535 {
-		cfg.Server.Port = Defaults.Server.Port
+		cfg.Server.Port = def.Server.Port
 	}
 	if cfg.Server.ConcurrencyInfo < 1 {
-		cfg.Server.ConcurrencyInfo = Defaults.Server.ConcurrencyInfo
+		cfg.Server.ConcurrencyInfo = def.Server.ConcurrencyInfo
 	}
 	if cfg.Server.ConcurrencyImage < 1 {
-		cfg.Server.ConcurrencyImage = Defaults.Server.ConcurrencyImage
+		cfg.Server.ConcurrencyImage = def.Server.ConcurrencyImage
+	}
+	if cfg.Server.LogLevel == "" {
+		cfg.Server.LogLevel = def.Server.LogLevel
 	}
 	if cfg.Upstream.UserAgent == "" {
-		cfg.Upstream.UserAgent = Defaults.Upstream.UserAgent
+		cfg.Upstream.UserAgent = def.Upstream.UserAgent
 	}
 	return &cfg, nil
 }
