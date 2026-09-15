@@ -1625,13 +1625,34 @@ function startProgress(taskId, label) {
 }
 
 // 全局事件总线
+var _seenEvents = (function () {
+    try {
+        return JSON.parse(sessionStorage.getItem("seshat_seen_events") || "{}") || {};
+    } catch (_) {
+        return {};
+    }
+})();
+function _rememberEvent(id) {
+    _seenEvents[id] = 1;
+    var keys = Object.keys(_seenEvents);
+    for (var i = 0; i < keys.length - 200; i++) delete _seenEvents[keys[i]];
+    try {
+        sessionStorage.setItem("seshat_seen_events", JSON.stringify(_seenEvents));
+    } catch (_) {}
+}
 function initEventBus() {
     var es = new EventSource("/api/v0/events");
     es.onmessage = function (e) {
+        var d;
         try {
-            var d = JSON.parse(e.data);
+            d = JSON.parse(e.data);
         } catch (_) {
             return;
+        }
+        // 已处理过的事件（含历史回放）不再弹出；跨翻页/刷新保留
+        if (d.id) {
+            if (_seenEvents[d.id]) return;
+            _rememberEvent(d.id);
         }
         if (d.type === "error") showError(d.message);
         if (d.type === "warn") showWarn(d.message);

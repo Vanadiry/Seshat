@@ -1,6 +1,7 @@
 package events
 
 import (
+	"strconv"
 	"sync"
 	"time"
 )
@@ -14,6 +15,7 @@ const (
 )
 
 type Event struct {
+	ID      string    `json:"id"`
 	Type    EventType `json:"type"`
 	Message string    `json:"message"`
 	Time    int64     `json:"time"`
@@ -23,12 +25,16 @@ type EventBus struct {
 	mu      sync.Mutex
 	clients map[chan Event]struct{}
 	history []Event
+	seq     int
 }
 
 var Bus *EventBus
 
 // historyLimit 回放给新订阅者的历史事件条数上限
 const historyLimit = 50
+
+// sessionPrefix 每次进程启动唯一，避免重启后 id 与旧客户端已见的重复。
+var sessionPrefix = strconv.FormatInt(time.Now().UnixNano(), 36)
 
 func InitBus() {
 	Bus = &EventBus{
@@ -59,9 +65,15 @@ func (b *EventBus) Unsubscribe(ch chan Event) {
 }
 
 func (b *EventBus) Publish(typ EventType, msg string) {
-	e := Event{Type: typ, Message: msg, Time: time.Now().Unix()}
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	b.seq++
+	e := Event{
+		ID:      sessionPrefix + "-" + strconv.Itoa(b.seq),
+		Type:    typ,
+		Message: msg,
+		Time:    time.Now().Unix(),
+	}
 	b.history = append(b.history, e)
 	if len(b.history) > historyLimit {
 		b.history = b.history[len(b.history)-historyLimit:]
