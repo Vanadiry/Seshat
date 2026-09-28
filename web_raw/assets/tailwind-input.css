@@ -1,8 +1,5 @@
 @import "tailwindcss";
 
-@source "../web/*.html";
-@source "../web/*/*.html";
-
 /*  Dark mode (default) */
 :root {
     --c-bg: #1d1d1d;
