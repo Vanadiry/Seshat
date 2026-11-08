@@ -992,7 +992,8 @@ function initDialog() {
     dlg.style.opacity = "0";
     dlg.style.pointerEvents = "none";
     dlg.innerHTML =
-        '<div class="bg-surface-alt border border-bord rounded-xl p-6 w-[460px] max-w-[90vw] max-h-[90vh] overflow-y-auto">' +
+        '<div class="relative bg-surface-alt border border-bord rounded-xl w-[460px] max-w-[90vw] overflow-hidden">' +
+        '<div class="p-6 max-h-[90vh] overflow-y-auto">' +
         '<div class="flex items-center gap-3 mb-4">' +
         '<button id="btn-close-dlg" class="w-7 h-7 rounded-full border border-bord-strong flex items-center justify-center text-sub hover:text-text hover:border-bord-xstrong shrink-0 no-underline text-xs cursor-pointer bg-transparent" title="' +
         MSG.btnClose +
@@ -1055,6 +1056,7 @@ function initDialog() {
         MSG.btnRebuildAll +
         "</button>" +
         "</div>" +
+        "</div>" +
         // Confirmation overlay
         '<div id="confirm-overlay" class="absolute inset-0 bg-black/70 rounded-xl flex items-center justify-center z-10 transition-opacity duration-200" style="display:none;opacity:0">' +
         '<div class="bg-surface-alt border border-bord rounded-lg p-5 w-[340px] max-w-[85vw]">' +
@@ -1065,7 +1067,7 @@ function initDialog() {
         '<button id="btn-confirm-cancel" class="w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active">' +
         MSG.btnCancel +
         "</button>" +
-        "</div></div></div></div>";
+        "</div></div></div>";
 
     dlg.addEventListener("click", function (e) {
         if (e.target === dlg) closeFetch();
