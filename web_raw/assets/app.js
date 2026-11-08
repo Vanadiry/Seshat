@@ -258,24 +258,44 @@ function apiLocal(url) {
 function img(kind, id, size) {
     return API + "/v0/" + kind + "s/" + id + "/image?type=" + (size || "grid");
 }
-// imgOnError returns onerror attribute. If fallback is configured, first error retries via
-// FALLBACK_URL; second error shows local placeholder. Without fallback, shows placeholder directly.
-function imgOnError(kind, id, size) {
-    if (!window.FALLBACK_URL)
-        return "onerror=\"this.src='/assets/no-image.png'\"";
-    var fb =
+// imgFallbackSrc returns the remote fallback URL for an image, empty when fallback is unconfigured
+function imgFallbackSrc(kind, id, size) {
+    if (!window.FALLBACK_URL) return "";
+    return (
         window.FALLBACK_URL +
         "/v0/" +
         kind +
         "s/" +
         id +
         "/image?type=" +
-        (size || "grid");
+        (size || "grid")
+    );
+}
+// imgOnError returns onerror attribute. If fallback is configured, first error retries via
+// FALLBACK_URL; second error shows local placeholder. Without fallback, shows placeholder directly.
+function imgOnError(kind, id, size) {
+    var fb = imgFallbackSrc(kind, id, size);
+    if (!fb) return "onerror=\"this.src='/assets/no-image.png'\"";
     return (
         "onerror=\"if(!this._r){this._r=1;this.src='" +
         fb +
         "';addRemoteGlobe(this);}else{this.src='/assets/no-image.png';}\""
     );
+}
+// attachImgFallback applies the same fallback chain to an existing img element
+function attachImgFallback(el, kind, id, size) {
+    removeRemoteGlobe(el);
+    var fb = imgFallbackSrc(kind, id, size);
+    var retried = false;
+    el.onerror = function () {
+        if (!fb || retried) {
+            this.src = "/assets/no-image.png";
+            return;
+        }
+        retried = true;
+        this.src = fb;
+        addRemoteGlobe(this);
+    };
 }
 
 // Remote globe marker helpers
@@ -306,6 +326,17 @@ function addRemoteGlobe(el) {
         "position:absolute;top:4px;left:4px;z-index:10;width:20px;height:20px;pointer-events:none;";
     globe.title = "图片来自远程";
     wrap.appendChild(globe);
+}
+
+// removeRemoteGlobe unwraps the marker added by addRemoteGlobe so the element can be reused
+function removeRemoteGlobe(el) {
+    if (!el._g) return;
+    var wrap = el.parentNode;
+    if (wrap && wrap.parentNode) {
+        wrap.parentNode.insertBefore(el, wrap);
+        wrap.parentNode.removeChild(wrap);
+    }
+    el._g = 0;
 }
 
 // Infobox key blacklist：这些字段只做 URL/BBCode，不做名字匹配

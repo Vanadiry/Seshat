@@ -206,9 +206,7 @@
                         "pk-" + side + "-img-el"
                     );
                     imgEl.src = img("subject", it.id, "grid");
-                    imgEl.onerror = function () {
-                        this.src = "/assets/no-image.png";
-                    };
+                    attachImgFallback(imgEl, "subject", it.id, "grid");
                     document.getElementById("pk-" + side + "-id").textContent =
                         "#" + it.id;
                     document.getElementById(
