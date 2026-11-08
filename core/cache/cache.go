@@ -19,11 +19,36 @@ func Key(subdomain string, id int, file string) string {
 
 func Get(dataDir, key string) ([]byte, error) { return os.ReadFile(filepath.Join(Dir(dataDir), key)) }
 func Put(dataDir, key string, data []byte) error {
-	p := filepath.Join(Dir(dataDir), key)
-	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+	return WriteAtomic(filepath.Join(Dir(dataDir), key), data, 0o644)
+}
+
+// WriteAtomic 写同目录临时文件后 rename，避免中途失败留下半截文件
+func WriteAtomic(path string, data []byte, perm os.FileMode) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(p, data, 0o644)
+	f, err := os.CreateTemp(dir, ".tmp-*")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	defer os.Remove(tmp)
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Sync(); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmp, perm); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
 }
 func Has(dataDir, key string) bool {
 	_, err := os.Stat(filepath.Join(Dir(dataDir), key))

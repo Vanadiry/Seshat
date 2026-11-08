@@ -367,7 +367,7 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) error 
 	if err != nil {
 		return fmt.Errorf("序列化收藏失败: %w", err)
 	}
-	if err := os.WriteFile(filepath.Join(userDir, "collections.json"), collData, 0o644); err != nil {
+	if err := cache.WriteAtomic(filepath.Join(userDir, "collections.json"), collData, 0o644); err != nil {
 		return fmt.Errorf("保存收藏失败: %w", err)
 	}
 
