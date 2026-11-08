@@ -1257,7 +1257,7 @@ function _makeToast(
     }
     var el = document.createElement("div");
     el.className =
-        "fixed right-4 z-[300] rounded-lg shadow-2xl transition-all duration-300 max-w-[380px] min-w-[300px]";
+        "fixed right-4 z-[300] rounded-lg shadow-2xl transition-all duration-300 max-w-[60vw] min-w-[280px]";
     el.style.bottom = "16px";
     el.style.opacity = "0";
     el.style.transform = "translateY(8px)";
@@ -1275,7 +1275,9 @@ function _makeToast(
         (body
             ? '<div class="' +
               bodyBg +
-              ' px-4 py-2.5 rounded-b-lg text-[13px] leading-relaxed">' +
+              " px-4 py-2.5 rounded-b-lg text-[13px] leading-relaxed max-h-[60vh] overflow-y-auto break-words" +
+              (titleBg === "bg-toast-success" ? "" : " select-text") +
+              '">' +
               body +
               "</div>"
             : "");
@@ -1337,7 +1339,8 @@ function _makeToast(
             if (newBodyBg && body)
                 el.querySelector("div:last-child").className =
                     newBodyBg +
-                    " px-4 py-2.5 rounded-b-lg text-[13px] leading-relaxed";
+                    " px-4 py-2.5 rounded-b-lg text-[13px] leading-relaxed max-h-[60vh] overflow-y-auto break-words" +
+                    (newTitleBg === "bg-toast-success" ? "" : " select-text");
             if (newTitle)
                 el.querySelector("div:first-child span").textContent = newTitle;
             if (newBody && body)
