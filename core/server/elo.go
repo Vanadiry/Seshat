@@ -51,7 +51,7 @@ type eloEntry struct {
 	NameCN  string   `json:"name_cn"`
 	Score   float64  `json:"score"`
 	Rating  *float64 `json:"rating,omitempty"`
-	RankPct float64  `json:"rank_pct"`
+	RankPct *float64 `json:"rank_pct,omitempty"`
 }
 
 type eloOrphan struct {
@@ -439,7 +439,8 @@ func getELORanking(dd string) eloRankingResult {
 	sort.Slice(entries, func(i, j int) bool { return *entries[i].Rating > *entries[j].Rating })
 	if n := len(entries); n > 1 {
 		for i := range entries {
-			entries[i].RankPct = math.Round(float64(n-1-i)/float64(n-1)*100*10) / 10
+			pct := math.Round(float64(n-1-i)/float64(n-1)*100*10) / 10
+			entries[i].RankPct = &pct
 		}
 	}
 	sort.Slice(noRating, func(i, j int) bool { return noRating[i].Score > noRating[j].Score })

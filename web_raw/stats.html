@@ -214,6 +214,28 @@
                 var COL_ELO = "w-[120px] shrink-0";
                 var COL_BGM = "w-[100px] shrink-0";
                 var COL_ID = "w-[60px] shrink-0";
+                // ELO 单元格：两项都有就并排，只有一项就单独右对齐，都没有显示短横线
+                function eloCellInner(rating, pct) {
+                    if (rating && pct)
+                        return (
+                            '<span class="flex-1 text-right font-mono">' +
+                            rating +
+                            '</span><span class="text-sub flex-1 text-right font-mono">' +
+                            pct +
+                            "</span>"
+                        );
+                    if (pct)
+                        return (
+                            '<span class="flex-1 text-right font-mono text-sub">' +
+                            pct +
+                            "</span>"
+                        );
+                    return (
+                        '<span class="flex-1 text-right font-mono">' +
+                        (rating || "-") +
+                        "</span>"
+                    );
+                }
                 var items = [];
                 for (var i = 0; i < _entries.length; i++)
                     items.push(_entries[i]);
@@ -362,13 +384,14 @@
                             eloCls +
                             " " +
                             COL_ELO +
-                            ' flex justify-center gap-1 font-mono"><span class="flex-1 text-right font-mono">' +
-                            (it.rating ? it.rating.toFixed(1) : "1500") +
-                            '</span><span class="text-xs text-sub flex-1 text-right font-mono">' +
-                            (it.rank_pct != null
-                                ? it.rank_pct.toFixed(1) + "%"
-                                : "") +
-                            "</span></span>" +
+                            ' flex justify-center gap-1 font-mono">' +
+                            eloCellInner(
+                                it.rating ? it.rating.toFixed(1) : "1500",
+                                it.rank_pct != null
+                                    ? it.rank_pct.toFixed(1) + "%"
+                                    : ""
+                            ) +
+                            "</span>" +
                             '<span class="' +
                             bkgCls +
                             " " +
@@ -394,7 +417,11 @@
                             ? typeof it.rating === "number"
                                 ? it.rating.toFixed(1)
                                 : it.rating
-                            : "-";
+                            : "";
+                        var pctVal =
+                            it.rank_pct != null
+                                ? it.rank_pct.toFixed(1) + "%"
+                                : "";
                         html +=
                             "<div onclick=\"location.href='/subject?id=" +
                             it.id +
@@ -419,13 +446,9 @@
                             eloCls +
                             " " +
                             COL_ELO +
-                            ' flex justify-center gap-1 font-mono"><span class="flex-1 text-right font-mono">' +
-                            ratingVal +
-                            '</span><span class="text-sub flex-1 text-right font-mono">' +
-                            (it.rank_pct != null
-                                ? it.rank_pct.toFixed(1) + "%"
-                                : "") +
-                            "</span></span>" +
+                            ' flex justify-center gap-1 font-mono">' +
+                            eloCellInner(ratingVal, pctVal) +
+                            "</span>" +
                             '<span class="' +
                             bkgCls +
                             " " +
