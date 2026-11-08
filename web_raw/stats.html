@@ -13,6 +13,12 @@
             .sn {
                 font-variant-numeric: tabular-nums;
             }
+            /* 表头补齐透明边框，与数据行同宽 */
+            #stats-list > div:first-child {
+                border-top: 1px solid transparent;
+                border-left: 1px solid transparent;
+                border-right: 1px solid transparent;
+            }
         </style>
     </head>
     <body class="text-text font-[system-ui] min-h-screen">
@@ -204,6 +210,10 @@
 
             function render() {
                 var isElo = sortKey === "elo";
+                // 列宽在表头与两种数据行之间共用
+                var COL_ELO = "w-[120px] shrink-0";
+                var COL_BGM = "w-[100px] shrink-0";
+                var COL_ID = "w-[60px] shrink-0";
                 var items = [];
                 for (var i = 0; i < _entries.length; i++)
                     items.push(_entries[i]);
@@ -291,7 +301,13 @@
                 });
 
                 var html =
-                    '<div class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-bord-light"><div class="w-10 shrink-0 text-center">动画</div><div class="flex-1 min-w-0"></div><div class="w-[100px] text-center shrink-0">ELO Rating</div><div class="w-[100px] text-center shrink-0">BGM Rank</div><div class="w-[60px] text-center shrink-0">ID</div></div>';
+                    '<div class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-bord-light"><div class="w-10 shrink-0 text-center">动画</div><div class="flex-1 min-w-0"></div><div class="' +
+                    COL_ELO +
+                    ' text-center">ELO Rating</div><div class="' +
+                    COL_BGM +
+                    ' text-center">BGM Rank</div><div class="' +
+                    COL_ID +
+                    ' text-center">ID</div></div>';
                 for (var i = 0; i < items.length; i++) {
                     var it = items[i];
                     var bg = i % 2 === 0 ? "bg-surface" : "bg-surface-raised";
@@ -344,19 +360,25 @@
                             "</div>" +
                             '<span class="' +
                             eloCls +
-                            ' w-[120px] flex justify-center gap-1 shrink-0 font-mono"><span class="flex-1 text-right font-mono">' +
+                            " " +
+                            COL_ELO +
+                            ' flex justify-center gap-1 font-mono"><span class="flex-1 text-right font-mono">' +
                             (it.rating ? it.rating.toFixed(1) : "1500") +
-                            '</span><span class="text-xs text-sub flex-1 text-left font-mono">' +
+                            '</span><span class="text-xs text-sub flex-1 text-right font-mono">' +
                             (it.rank_pct != null
                                 ? it.rank_pct.toFixed(1) + "%"
                                 : "") +
                             "</span></span>" +
                             '<span class="' +
                             bkgCls +
-                            ' w-[80px] text-center shrink-0">' +
+                            " " +
+                            COL_BGM +
+                            ' text-center font-mono">' +
                             (it.score != null ? it.score.toFixed(1) : "-") +
                             "</span>" +
-                            '<span class="text-xs text-sub w-[60px] text-center shrink-0">#' +
+                            '<span class="text-xs text-sub ' +
+                            COL_ID +
+                            ' text-center font-mono">#' +
                             it.id +
                             "</span></div>";
                     } else {
@@ -395,7 +417,9 @@
                             "</div>" +
                             '<span class="' +
                             eloCls +
-                            ' w-[120px] flex justify-center gap-1 shrink-0 font-mono"><span class="flex-1 text-right font-mono">' +
+                            " " +
+                            COL_ELO +
+                            ' flex justify-center gap-1 font-mono"><span class="flex-1 text-right font-mono">' +
                             ratingVal +
                             '</span><span class="text-sub flex-1 text-right font-mono">' +
                             (it.rank_pct != null
@@ -404,10 +428,14 @@
                             "</span></span>" +
                             '<span class="' +
                             bkgCls +
-                            ' w-[100px] text-center shrink-0 font-mono">' +
+                            " " +
+                            COL_BGM +
+                            ' text-center font-mono">' +
                             (it.score ? it.score.toFixed(1) : "-") +
                             "</span>" +
-                            '<span class="text-xs text-sub w-[60px] text-left shrink-0 font-mono">#' +
+                            '<span class="text-xs text-sub ' +
+                            COL_ID +
+                            ' text-center font-mono">#' +
                             it.id +
                             "</span></div>";
                     }
