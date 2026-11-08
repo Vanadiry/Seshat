@@ -16,6 +16,9 @@ var defaultTransport = &http.Transport{
 	MaxIdleConnsPerHost: 100,
 	MaxConnsPerHost:     100,
 	IdleConnTimeout:     90 * time.Second,
+	// 自定义 Transport 不会自动启用 HTTP/2
+	// 缺少此项时 ALPN 仍协商出 h2，响应按 HTTP/1.x 解析，报 malformed HTTP response
+	ForceAttemptHTTP2: true,
 }
 
 type Client struct {
