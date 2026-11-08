@@ -1660,7 +1660,10 @@ function startProgress(taskId, label) {
 // 全局事件总线
 var _seenEvents = (function () {
     try {
-        return JSON.parse(sessionStorage.getItem("seshat_seen_events") || "{}") || {};
+        return (
+            JSON.parse(sessionStorage.getItem("seshat_seen_events") || "{}") ||
+            {}
+        );
     } catch (_) {
         return {};
     }
@@ -1670,7 +1673,10 @@ function _rememberEvent(id) {
     var keys = Object.keys(_seenEvents);
     for (var i = 0; i < keys.length - 200; i++) delete _seenEvents[keys[i]];
     try {
-        sessionStorage.setItem("seshat_seen_events", JSON.stringify(_seenEvents));
+        sessionStorage.setItem(
+            "seshat_seen_events",
+            JSON.stringify(_seenEvents)
+        );
     } catch (_) {}
 }
 function initEventBus() {
