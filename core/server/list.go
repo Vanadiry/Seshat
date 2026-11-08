@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
@@ -19,7 +18,7 @@ func saveJSON(path string, v any) {
 		events.Bus.Error("索引文件保存失败")
 		return
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := cache.WriteAtomic(path, data, 0o644); err != nil {
 		log.Error("saveJSON write", "path", path, "err", err)
 		events.Bus.Error("索引文件保存失败")
 		return

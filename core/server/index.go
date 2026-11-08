@@ -84,7 +84,7 @@ func rebuildTags(dd string) {
 		events.Bus.Error("标签索引生成失败")
 		return
 	}
-	if err := os.WriteFile(tagsPath(dd), result, 0o644); err != nil {
+	if err := cache.WriteAtomic(tagsPath(dd), result, 0o644); err != nil {
 		log.Error("tags index write", "err", err)
 		events.Bus.Error("标签索引写入失败")
 	}
@@ -117,7 +117,7 @@ func buildPersonNames(dd string) {
 		return
 	}
 	namePath := cache.IndexFile(dd, "persons_name.json")
-	if err := os.WriteFile(namePath, result, 0o644); err != nil {
+	if err := cache.WriteAtomic(namePath, result, 0o644); err != nil {
 		log.Error("persons name index write", "err", err)
 		events.Bus.Error("人物名称索引写入失败")
 	}
@@ -148,7 +148,7 @@ func buildNameIndex(dd, domain string) {
 		return
 	}
 	namePath := cache.IndexFile(dd, domain+"_name.json")
-	if err := os.WriteFile(namePath, result, 0o644); err != nil {
+	if err := cache.WriteAtomic(namePath, result, 0o644); err != nil {
 		log.Error("name index write", "domain", domain, "err", err)
 		events.Bus.Error("名称索引写入失败")
 	}

@@ -202,7 +202,7 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 				log.Error("image mkdir failed", "kind", kind, "id", id, "size", size, "err", err)
 				return
 			}
-			if err := os.WriteFile(fullPath, data, 0o644); err != nil {
+			if err := cache.WriteAtomic(fullPath, data, 0o644); err != nil {
 				log.Error("image write failed", "kind", kind, "id", id, "size", size, "err", err)
 				events.Bus.Error(fmt.Sprintf("图片写入失败 %s #%d %s", kind, id, size))
 				return
@@ -269,7 +269,7 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 				log.Error("image mkdir failed", "kind", kind, "id", id, "size", size, "err", err)
 				return
 			}
-			if err := os.WriteFile(fullPath, data, 0o644); err != nil {
+			if err := cache.WriteAtomic(fullPath, data, 0o644); err != nil {
 				log.Error("image write failed", "kind", kind, "id", id, "size", size, "err", err)
 				events.Bus.Error(fmt.Sprintf("图片写入失败 %s #%d %s", kind, id, size))
 				return

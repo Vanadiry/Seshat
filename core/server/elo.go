@@ -102,7 +102,7 @@ func EnsureExcludeFile() {
 			log.Error("elo mkdir", "err", err)
 			return
 		}
-		if err := os.WriteFile(path, []byte(excludeTemplate), 0o644); err != nil {
+		if err := cache.WriteAtomic(path, []byte(excludeTemplate), 0o644); err != nil {
 			log.Error("elo exclude write", "err", err)
 		}
 	}
@@ -149,7 +149,7 @@ func saveEloData(d eloData) {
 		events.Bus.Error("ELO 数据保存失败")
 		return
 	}
-	if err := os.WriteFile(eloDataPath(), data, 0o644); err != nil {
+	if err := cache.WriteAtomic(eloDataPath(), data, 0o644); err != nil {
 		log.Error("saveEloData write", "err", err)
 		events.Bus.Error("ELO 数据保存失败")
 	}
@@ -180,7 +180,7 @@ func saveELOHistory(h []eloHistory) {
 		events.Bus.Error("ELO 历史保存失败")
 		return
 	}
-	if err := os.WriteFile(eloHistoryPath(), data, 0o644); err != nil {
+	if err := cache.WriteAtomic(eloHistoryPath(), data, 0o644); err != nil {
 		log.Error("saveELOHistory write", "err", err)
 		events.Bus.Error("ELO 历史保存失败")
 	}

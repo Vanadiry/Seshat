@@ -400,7 +400,7 @@ func fetchUserInfo(username string, bg *bangumi.Client, dd string) {
 		events.Bus.Error("用户信息保存失败")
 		return
 	}
-	if err := os.WriteFile(filepath.Join(userDir, "info.json"), clean, 0o644); err != nil {
+	if err := cache.WriteAtomic(filepath.Join(userDir, "info.json"), clean, 0o644); err != nil {
 		log.Error("write user info failed", "user", username, "err", err)
 		events.Bus.Error("用户信息保存失败")
 	}
@@ -423,7 +423,7 @@ func fetchUserAvatar(username string, bg *bangumi.Client, dd string) {
 	if len(imgData) > 0 && imgData[0] == 0x89 {
 		ext = ".png"
 	}
-	if err := os.WriteFile(filepath.Join(userDir, "large"+ext), imgData, 0o644); err != nil {
+	if err := cache.WriteAtomic(filepath.Join(userDir, "large"+ext), imgData, 0o644); err != nil {
 		log.Error("write user avatar failed", "user", username, "err", err)
 		events.Bus.Error("用户头像保存失败")
 	}

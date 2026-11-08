@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+
+	"github.com/vanadiry/seshat/core/cache"
 )
 
 // Preferences 运行时的扁平偏好结构
@@ -53,7 +55,7 @@ func saveOverrides(m map[string]string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(PrefPath(), data, 0o644)
+	return cache.WriteAtomic(PrefPath(), data, 0o644)
 }
 
 // LoadPreferences 读取偏好，缺失项使用默认值

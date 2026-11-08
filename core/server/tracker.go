@@ -147,7 +147,7 @@ func addToSeshatTracker(cfg *config.Config, sid int) {
 		events.Bus.Error("Tracker 写入失败")
 		return
 	}
-	if err := os.WriteFile(path, result, 0o644); err != nil {
+	if err := cache.WriteAtomic(path, result, 0o644); err != nil {
 		log.Error("tracker write", "sid", sid, "err", err)
 		events.Bus.Error("Tracker 写入失败")
 	}
@@ -293,7 +293,7 @@ func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 			writeError(w, 500, "无法创建 tracker 目录")
 			return
 		}
-		if err := os.WriteFile(path, []byte(tmpl), 0o644); err != nil {
+		if err := cache.WriteAtomic(path, []byte(tmpl), 0o644); err != nil {
 			log.Error("tracker create write", "err", err)
 			writeError(w, 500, "无法写入 tracker 文件")
 			return
@@ -354,7 +354,7 @@ func handleImportCollections(dd string) http.HandlerFunc {
 			writeError(w, 500, "internal error")
 			return
 		}
-		if err := os.WriteFile(filepath.Join(td, "user.json"), trackerData, 0o644); err != nil {
+		if err := cache.WriteAtomic(filepath.Join(td, "user.json"), trackerData, 0o644); err != nil {
 			log.Error("import collections write", "err", err)
 			writeError(w, 500, "无法写入 tracker 文件")
 			return
