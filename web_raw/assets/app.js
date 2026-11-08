@@ -1133,7 +1133,7 @@ function initDialog() {
                                 if (d.error) {
                                     showError(d.error);
                                 } else {
-                                    showError(MSG.trackerCreated(name));
+                                    showSuccess(MSG.trackerCreated(name));
                                 }
                             });
                     });
@@ -1162,7 +1162,7 @@ function initDialog() {
                         })
                         .then(function (d) {
                             if (d.error) showError(d.error);
-                            else showError(MSG.importCollDone(d.count));
+                            else showSuccess(MSG.importCollDone(d.count));
                         });
                 }
             );
