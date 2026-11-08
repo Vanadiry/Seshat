@@ -324,19 +324,17 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 	log.Info("subject fetch done", "id", sid, "chars", len(charIDs), "persons", len(personIDs), "episodes", len(allEps))
 }
 
-// 阶段二：从缓存数据重建索引
-func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
+// 拉取用户收藏，失败时不做写入
+func fetchUserCollections(username string, bg *bangumi.Client, dd string) error {
 	log.Info("fetching collections", "user", username)
 
 	all := map[string]int{}
-	var ids []int
 
 	offset := 0
 	for {
 		data, err := bg.GetRawPaged(fmt.Sprintf("v0/users/%s/collections", username), offset, 50)
 		if err != nil {
-			log.Warn("user collections fetch failed", "offset", offset, "err", err)
-			break
+			return fmt.Errorf("拉取收藏失败，偏移 %d: %w", offset, err)
 		}
 		var resp struct {
 			Data []struct {
@@ -347,13 +345,11 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 			Total int `json:"total"`
 		}
 		if err := json.Unmarshal(data, &resp); err != nil {
-			log.Warn("unmarshal collections failed", "user", username, "err", err)
-			break
+			return fmt.Errorf("解析收藏失败: %w", err)
 		}
 		for _, d := range resp.Data {
 			if d.SubjectType == 2 {
 				all[strconv.Itoa(d.SubjectID)] = d.Type
-				ids = append(ids, d.SubjectID)
 			}
 		}
 		if offset+50 >= resp.Total {
@@ -362,25 +358,21 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) {
 		offset += 50
 	}
 
-	// 保存收藏供前端展示
+	// 全部页拉取成功后才写盘，中途失败会留下残缺列表
 	userDir := filepath.Join(config.Dir(), "user", "info")
 	if err := os.MkdirAll(userDir, 0o755); err != nil {
-		log.Error("user info mkdir failed", "err", err)
-		events.Bus.Error("收藏列表保存失败")
-		return
+		return fmt.Errorf("创建用户目录失败: %w", err)
 	}
 	collData, err := json.Marshal(map[string]any{"subjects": all, "updated_at": time.Now().Format(time.RFC3339)})
 	if err != nil {
-		log.Error("marshal collections failed", "user", username, "err", err)
-		events.Bus.Error("收藏列表保存失败")
-		return
+		return fmt.Errorf("序列化收藏失败: %w", err)
 	}
 	if err := os.WriteFile(filepath.Join(userDir, "collections.json"), collData, 0o644); err != nil {
-		log.Error("write collections failed", "user", username, "err", err)
-		events.Bus.Error("收藏列表保存失败")
+		return fmt.Errorf("保存收藏失败: %w", err)
 	}
 
 	log.Info("user collections saved", "user", username, "count", len(all))
+	return nil
 }
 
 func fetchUserInfo(username string, bg *bangumi.Client, dd string) {
@@ -609,8 +601,13 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 
 			p.SetPhase(3, 3, "拉取用户收藏")
 			p.Send("user_collections", 0, 1, "")
-			fetchUserCollections(uname, bg, dd)
-			p.Send("user_collections", 1, 1, "")
+			if err := fetchUserCollections(uname, bg, dd); err != nil {
+				log.Warn("user collections fetch failed", "user", uname, "err", err)
+				p.SetError("收藏列表拉取失败")
+				p.Send("user_collections", 1, 1, "error")
+			} else {
+				p.Send("user_collections", 1, 1, "")
+			}
 
 			p.Send("complete", 3, 3, "")
 			p.Close()
