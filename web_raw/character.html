@@ -77,7 +77,7 @@
                         "</span></div>";
                 }
 
-                // ── layout ──
+                // 布局
                 document.getElementById("view").innerHTML =
                     '<div class="flex flex-col md:flex-row gap-6">' +
                     '<div class="w-full md:w-[260px] shrink-0">' +
@@ -149,7 +149,7 @@
                         var persons = Array.isArray(results[1])
                             ? results[1]
                             : [];
-                        // Merge: persons subject_id matches subjects id, persons takes priority
+                        // 合并条目，persons 的 subject_id 匹配 subjects 的 id，persons 优先
                         var map = {};
                         for (var i = 0; i < subjects.length; i++) {
                             var s = subjects[i];
@@ -219,7 +219,7 @@
                     cards.push(
                         '<div class="border-t border-bord-light overflow-hidden" style="height:80px">' +
                             '<div class="flex items-center gap-3 h-full">' +
-                            // Subject image with type badge
+                            // 条目图片和类型徽章
                             '<div class="relative shrink-0 rounded overflow-hidden bg-surface cursor-pointer" style="width:64px;aspect-ratio:1" onclick="location.href=\'/subject?id=' +
                             item.id +
                             "'\">" +
@@ -236,7 +236,7 @@
                                   "</span>"
                                 : "") +
                             "</div>" +
-                            // Text area
+                            // 文本区
                             '<div class="flex-1 min-w-0">' +
                             '<div class="font-semibold text-[14px] cursor-pointer hover:text-pink truncate" onclick="location.href=\'/subject?id=' +
                             item.id +
@@ -255,7 +255,7 @@
                             (item.staff || "") +
                             "</span></div>" +
                             "</div>" +
-                            // Person area
+                            // 人物区
                             (item.person_id
                                 ? '<div class="flex items-start gap-2 shrink-0 cursor-pointer self-start mt-2" onclick="event.stopPropagation();location.href=\'/person?id=' +
                                   item.person_id +
@@ -273,7 +273,7 @@
                             "</div></div>"
                     );
                 }
-                // Pair into 2-column rows
+                // 两列配对
                 var html = "";
                 for (var i = 0; i < cards.length; i += 2) {
                     html +=
@@ -286,7 +286,7 @@
                         "</div>" +
                         "</div>";
                 }
-                // Title row + globe
+                // 标题行和地球标记
                 var remoteIcon =
                     isRemote(
                         "/v0/characters/" + window._charId + "/subjects"
@@ -298,7 +298,7 @@
                     '<div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">出演</span>' +
                     remoteIcon +
                     "</div>";
-                // Pagination
+                // 分页
                 var pagerHtml = "";
                 _appearShowing = end;
                 if (_appearAll.length > 10) {

@@ -110,7 +110,7 @@
                         : "") +
                     "</div>" +
                     '<div class="flex-1 min-w-0 flex flex-col gap-5">' +
-                    // Career + summary left, collects right
+                    // 左侧职业和简介，右侧收藏数
                     ((careerHtml || escapeHtml(p.summary)) && p.stat && p.stat.collects
                         ? '<div class="flex flex-col md:flex-row gap-4"><div class="flex-1 min-w-0">' +
                           (careerHtml
@@ -142,7 +142,7 @@
                                 : "") +
                             "</div>"
                           : "") +
-                    // Placeholders for async sections
+                    // 异步分区的占位
                     '<div id="chars-section"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">出演角色</span><span class="text-xs text-sub"><span class="spin"></span>加载中…</span></div></div>' +
                     '<div id="subjects-section"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">参与制作</span><span class="text-xs text-sub"><span class="spin"></span>加载中…</span></div></div>' +
                     "</div></div>";

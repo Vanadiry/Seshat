@@ -11,8 +11,8 @@ import (
 func Dir(dataDir string) string      { return filepath.Join(dataDir, "api") }
 func IndexDir(dataDir string) string { return filepath.Join(dataDir, "index") }
 
-// Key builds a data path: {subdomain}/{id%10}/{id}/{file}
-// e.g. Key("subjects", 51, "info.json") → "subjects/1/51/info.json"
+// Key 生成数据路径 {subdomain}/{id%10}/{id}/{file}
+// 例如 Key("subjects", 51, "info.json") 得到 "subjects/1/51/info.json"
 func Key(subdomain string, id int, file string) string {
 	return fmt.Sprintf("%s/%d/%d/%s", subdomain, id%10, id, file)
 }
@@ -79,7 +79,7 @@ func List(dataDir, dir string) ([]string, error) {
 	return names, nil
 }
 
-// ListIDs returns all saved IDs for a domain by scanning the API data directory.
+// ListIDs 扫描 API 数据目录，返回某个领域已保存的全部 ID
 func ListIDs(dataDir, domain string) ([]int, error) {
 	strs, err := List(dataDir, domain)
 	if err != nil {
@@ -94,11 +94,11 @@ func ListIDs(dataDir, domain string) ([]int, error) {
 	return ids, nil
 }
 
-// Index generation
+// 索引生成
 
-// StripImages returns JSON data with all "images" fields removed recursively.
+// StripImages 递归删除 JSON 中的 images 字段
 func StripImages(data []byte) []byte {
-	// Try as object first
+	// 先按对象解析
 	var obj map[string]any
 	if json.Unmarshal(data, &obj) == nil {
 		stripImagesRecursive(obj)
@@ -108,7 +108,7 @@ func StripImages(data []byte) []byte {
 		}
 		return r
 	}
-	// Try as array
+	// 再按数组解析
 	var arr []any
 	if json.Unmarshal(data, &arr) == nil {
 		for _, item := range arr {
@@ -139,7 +139,7 @@ func stripImagesRecursive(v map[string]any) {
 	}
 }
 
-// SubjectSummary is a lightweight subject entry for list files.
+// SubjectSummary 是列表文件使用的轻量条目
 type SubjectSummary struct {
 	ID       int     `json:"id"`
 	Name     string  `json:"name"`
@@ -149,14 +149,14 @@ type SubjectSummary struct {
 	Date     string  `json:"date"`
 }
 
-// NameEntry is a simple name+id entry for character/person lists.
+// NameEntry 是角色和人物列表使用的名称与 ID
 type NameEntry struct {
 	ID     int    `json:"id"`
 	Name   string `json:"name"`
 	NameCN string `json:"name_cn"`
 }
 
-// ImageEntry records local image paths.
+// ImageEntry 记录本地图片路径
 type ImageEntry struct {
 	Large string `json:"large"`
 	Grid  string `json:"grid"`

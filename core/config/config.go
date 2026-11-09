@@ -28,7 +28,7 @@ type UpstreamConfig struct {
 	UserAgent string `toml:"user_agent"`
 }
 
-// ProxyConfig 上游拉取使用的 HTTP 代理，host 为空则不启用。
+// ProxyConfig 上游拉取使用的 HTTP 代理，host 为空则不启用
 type ProxyConfig struct {
 	Host string `toml:"host"`
 	Port int    `toml:"port"`
@@ -51,7 +51,7 @@ type Config struct {
 	Access   AccessConfig   `toml:"access"`
 }
 
-// ProxyURL 返回配置的代理地址；未配置或非法则返回 nil。
+// ProxyURL 返回配置的代理地址；未配置或非法则返回 nil
 func (c *Config) ProxyURL() *url.URL {
 	if c.Proxy.Host == "" || c.Proxy.Port < 1 || c.Proxy.Port > 65535 {
 		return nil
@@ -95,7 +95,7 @@ func Load() (*Config, error) {
 	return &cfg, nil
 }
 
-// Validate 校验会影响程序正常运行的字段，返回全部错误。
+// Validate 校验会影响程序正常运行的字段，返回全部错误
 func (c *Config) Validate() []string {
 	var errs []string
 	if c.Server.BindAddr == "" {
@@ -118,7 +118,7 @@ func (c *Config) Validate() []string {
 	return errs
 }
 
-// Warnings 返回不致命、但会影响部分功能的配置问题。
+// Warnings 返回不致命、但会影响部分功能的配置问题
 func (c *Config) Warnings() []string {
 	w := []string{}
 	if c.Upstream.BaseURL == "" {

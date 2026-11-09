@@ -1,5 +1,5 @@
-// Package log 提供基于 slog 的结构化分级日志系统。
-// 日志同时输出到 stdout 和文件，文件超过 10MB 自动轮转，最多保留 10 个。
+// Package log 提供基于 slog 的结构化分级日志系统
+// 日志同时输出到 stdout 和文件，文件超过 10MB 自动轮转，最多保留 10 个
 package log
 
 import (
@@ -71,7 +71,7 @@ func (w *rotatingWriter) openFirst() error {
 	return nil
 }
 
-// Init 初始化日志系统。level 为 "debug" / "info" / "warn" / "error"。
+// Init 初始化日志系统。level 为 "debug" / "info" / "warn" / "error"
 func Init(level string) {
 	logDir := filepath.Join(config.Dir(), "logs")
 	os.MkdirAll(logDir, 0o755)
@@ -115,22 +115,22 @@ func rotateLogs(dir string, keep int) {
 	}
 }
 
-// Debug 输出调试日志。
+// Debug 输出调试日志
 func Debug(msg string, args ...any) {
 	log(slog.LevelDebug, msg, args...)
 }
 
-// Info 输出信息日志。
+// Info 输出信息日志
 func Info(msg string, args ...any) {
 	log(slog.LevelInfo, msg, args...)
 }
 
-// Warn 输出警告日志。
+// Warn 输出警告日志
 func Warn(msg string, args ...any) {
 	log(slog.LevelWarn, msg, args...)
 }
 
-// Error 输出错误日志。
+// Error 输出错误日志
 func Error(msg string, args ...any) {
 	log(slog.LevelError, msg, args...)
 }
@@ -158,7 +158,7 @@ func toAttrs(args []any) []slog.Attr {
 	return attrs
 }
 
-// HTTP 记录 HTTP 请求日志。
+// HTTP 记录 HTTP 请求日志
 func HTTP(method, path string, status int, duration time.Duration, requestID string) {
 	Debug("http request", "method", method, "path", path, "status", status, "duration", duration, "request_id", requestID)
 }

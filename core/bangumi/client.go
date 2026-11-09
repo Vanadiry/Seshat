@@ -41,7 +41,7 @@ func NewClient(ua, baseURL string, tokenFunc func() string, proxy *url.URL) *Cli
 	}
 }
 
-// setAuth 添加认证头。
+// setAuth 添加认证头
 func (c *Client) setAuth(req *http.Request) {
 	if c.tokenFunc != nil {
 		if tok := c.tokenFunc(); tok != "" {
@@ -50,7 +50,7 @@ func (c *Client) setAuth(req *http.Request) {
 	}
 }
 
-// GetImage 下载图片，瞬时错误自动重试 3 次，404 和占位图不重试。
+// GetImage 下载图片，瞬时错误自动重试 3 次，404 和占位图不重试
 func (c *Client) GetImage(urlPath string) ([]byte, error) {
 	url := fmt.Sprintf("%s/%s", c.baseURL, urlPath)
 	var lastErr error

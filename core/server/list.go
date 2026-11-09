@@ -38,8 +38,6 @@ func loadNameList(path string) []store.NameEntry {
 	return list
 }
 
-// (saveJSON already declared above)
-
 func handleListSubjects(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		list, _ := loadCachedIndex[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json"))

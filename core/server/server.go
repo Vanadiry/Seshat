@@ -1,4 +1,4 @@
-// Package server 提供 HTTP 路由和 API 处理。
+// Package server 提供 HTTP 路由和 API 处理
 package server
 
 import (
@@ -33,7 +33,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		return cfg.Access.Token
 	}, cfg.ProxyURL())
 
-	// Frontend
+	// 前端
 	mux.HandleFunc("GET /{page}", func(w http.ResponseWriter, r *http.Request) {
 		page := r.PathValue("page")
 		if strings.HasSuffix(page, ".html") {
@@ -52,7 +52,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		w.Header().Set("Cache-Control", "no-store")
 		http.ServeFileFS(w, r, embedFS, "web/"+page+".html")
 	})
-	// app.min.js with config injection
+	// 注入配置的 app.min.js
 	mux.HandleFunc("GET /assets/app.min.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
 		w.Header().Set("Cache-Control", "no-cache")
@@ -72,7 +72,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		}
 		w.Write(data)
 	})
-	// All other assets
+	// 其他静态资源
 	mux.HandleFunc("GET /assets/{path...}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		http.ServeFileFS(w, r, embedFS, "web/assets/"+r.PathValue("path"))
@@ -90,7 +90,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		http.ServeFileFS(w, r, embedFS, "web/index.html")
 	})
 
-	// SSE
+	// SSE 事件
 	mux.HandleFunc("GET /api/v0/events", events.HandleSSE)
 	mux.HandleFunc("POST /api/v0/open-url", handleOpenURL)
 	mux.HandleFunc("GET /api/v0/task/{id}", handleProgress)
@@ -106,7 +106,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/tasks", handleActiveTasks)
 	mux.HandleFunc("GET /api/v0/info", handleInfo)
 
-	// Data API
+	// 数据 API
 	mux.HandleFunc("GET /api/v0/subjects/list", handleListSubjects(dd))
 	mux.HandleFunc("GET /api/v0/characters/list", handleListCharacters(dd))
 	mux.HandleFunc("GET /api/v0/persons/list", handleListPersons(dd))
@@ -135,7 +135,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/episodes", handleEpisodes(dd))
 	mux.HandleFunc("GET /api/v0/", handleDataReader(dd))
 
-	// Fetch
+	// 拉取
 	mux.HandleFunc("POST /api/v0/fetch/all", handleFetchAll(cfg, bg, dd, imgDir))
 	mux.HandleFunc("POST /api/v0/fetch/deep", handleFetchDeep(cfg, bg, dd, imgDir))
 	mux.HandleFunc("POST /api/v0/fetch/tracker", handleFetchTracker(cfg, bg, dd, imgDir))
@@ -146,41 +146,41 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("POST /api/v0/fetch/meta", handleFetchMeta(cfg, bg, dd))
 	mux.HandleFunc("POST /api/v0/fetch/index", handleFetchIndex(dd))
 
-	// Tracker
+	// Tracker 管理
 	mux.HandleFunc("POST /api/v0/tracker/create", handleTrackerCreate(cfg))
 	mux.HandleFunc("GET /api/v0/tracker", handleTrackerList(cfg))
 	mux.HandleFunc("POST /api/v0/tracker/import-collections", handleImportCollections(dd))
 
-	// Settings
+	// 设置
 	mux.HandleFunc("GET /api/v0/settings", handleSettingsGet(cfg))
 	mux.HandleFunc("POST /api/v0/settings", handleSettingsPost)
 
-	// User
+	// 用户
 	mux.HandleFunc("GET /api/v0/users/{username}", handleUser(dd))
 	mux.HandleFunc("GET /api/v0/users/{username}/avatar", serveUserAvatar(dd))
 	mux.HandleFunc("GET /api/v0/users/{username}/collections", handleUserCollections(dd))
 
-	// Tags
+	// 标签
 	mux.HandleFunc("GET /api/v0/tags", handleTags(dd))
 	mux.HandleFunc("GET /api/v0/tags/{name}/subjects", handleTagSubjects(dd))
 
-	// Stats
+	// 统计
 	mux.HandleFunc("GET /api/v0/stats", handleStats(dd))
 
-	// ELO
+	// ELO 评分
 	mux.HandleFunc("GET /api/v0/elo/pair", handleELOPair(dd))
 	mux.HandleFunc("POST /api/v0/elo/compare", handleELOCompare(dd))
 	mux.HandleFunc("GET /api/v0/elo/ranking", handleELORanking(dd))
 	mux.HandleFunc("GET /api/v0/elo/history", handleELOHistory(dd))
 	mux.HandleFunc("POST /api/v0/elo/rebuild", handleELORebuild(dd))
 
-	// Search
+	// 搜索
 	mux.HandleFunc("POST /api/v0/search/subjects", handleSearchSubjects(dd))
 	mux.HandleFunc("POST /api/v0/search/characters", handleSearchCharacters(dd))
 	mux.HandleFunc("POST /api/v0/search/persons", handleSearchPersons(dd))
 	mux.HandleFunc("POST /api/v0/search/tags", handleSearchTags(dd))
 
-	// Image API (official-style: /v0/subjects/{id}/image?type=large|grid)
+	// 图片 API，兼容官方路径 /v0/subjects/{id}/image?type=large|grid
 	imgHandler := func(kind string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			serveImage(w, r, dd, kind, r.URL.Query().Get("type"))

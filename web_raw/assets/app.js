@@ -1,6 +1,6 @@
-// Seshat shared JS — top bar, fetch dialog, SSE progress, API helpers
+// Seshat 共享脚本，包含顶栏、拉取弹窗、SSE 进度和 API 辅助函数
 
-// HTML escape for safe innerHTML
+// HTML 转义，避免 innerHTML 注入
 function escapeHtml(str) {
     if (!str) return "";
     return String(str)
@@ -18,7 +18,7 @@ function openUrl(url) {
     });
 }
 
-// Theme: follow system when set to "auto"
+// 主题跟随系统，值为 auto 时生效
 var _themeMedia = window.matchMedia("(prefers-color-scheme: light)");
 _themeMedia.addEventListener("change", function (e) {
     if ((localStorage.getItem("theme") || "auto") !== "auto") return;
@@ -29,7 +29,7 @@ document.addEventListener("dragstart", function (e) {
     if (e.target.tagName === "IMG") e.preventDefault();
 });
 
-// Drag-to-scroll on .thin-scroll containers
+// 在 .thin-scroll 容器上拖拽滚动
 (function () {
     var el,
         startX,
@@ -63,7 +63,7 @@ document.addEventListener("dragstart", function (e) {
         }
         el = null;
     });
-    // Prevent click after drag
+    // 拖拽结束后阻止误触点击
     document.addEventListener(
         "click",
         function (e) {
@@ -79,13 +79,13 @@ document.addEventListener("dragstart", function (e) {
 
 const API = window.BACKEND_URL || "/api";
 
-// UI text (edit here to customize dialog messages)
+// 界面文案，弹窗提示在这里修改
 var MSG = {
-    // Top bar
+    // 顶栏
     customBackendWarn: "自定义后端模式，所有数据将从远程获取",
     fallbackWarn: "回退模式，缺失数据将从回退端点获取",
     bothWarn: "自定义后端和回退模式，请确保你明白此配置",
-    // Fetch dialog
+    // 拉取弹窗
     dialogTitle: "管理数据",
     idLabel: "拉取动画",
     idPlaceholder: "动画 ID，如 51 或 51, 288",
@@ -112,7 +112,7 @@ var MSG = {
         return "已将 " + n + " 个条目导入至 tracker/user.json";
     },
 
-    // Confirm messages
+    // 确认提示
     confirmFetchId: function (ids) {
         return (
             "将从拉取动画 " +
@@ -157,24 +157,24 @@ var MSG = {
         return "将删除 " + d + "/data 的全部数据，并完整重建。";
     },
 
-    // Validation
+    // 校验
     errInvalidTrackerName:
         "Tracker 名称仅允许大小写字母、数字、短横线和下划线。",
     errUserFetchFailed: "刷新用户数据失败: ",
     errNoUsername:
         "未在配置中设置用户名（[user] username），无法刷新用户数据。",
 
-    // Progress
+    // 进度
     progressConnecting: "连接中...",
     progressDone: "完成",
 
-    // Infobox
+    // 信息栏
     infoboxGender: "性别",
     infoboxBloodType: "血型",
     infoboxBirthday: "生日",
     bloodTypeMap: { 1: "A", 2: "B", 3: "AB", 4: "O" },
 
-    // Episode types
+    // 章节类型
     epTypes: {
         0: "本篇",
         1: "SP",
@@ -184,7 +184,7 @@ var MSG = {
         5: "MAD",
         6: "其他"
     },
-    // Subject types (used in character appearances)
+    // 条目类型，用于角色出演
     subjectTypes: { 1: "书籍", 2: "动画", 3: "音乐", 4: "游戏", 6: "三次元" },
     genderMap: { male: "男", female: "女" },
     careerMap: {
@@ -211,7 +211,7 @@ function authOpts() {
     return { headers: { Authorization: "Bearer " + tok } };
 }
 
-// Loading bar
+// 加载条
 var _ldCount = 0,
     _ldTimer = null;
 function _ldShow() {
@@ -249,7 +249,7 @@ async function api(url) {
         _ldHide();
     }
 }
-// apiLocal always uses local backend for list/index data
+// apiLocal 始终请求本机后端，用于列表和索引数据
 function apiLocal(url) {
     return fetch("/api" + url).then(function (r) {
         return r.ok ? r.json() : null;
@@ -277,7 +277,7 @@ function getInstanceInfo() {
 function img(kind, id, size) {
     return API + "/v0/" + kind + "s/" + id + "/image?type=" + (size || "grid");
 }
-// imgFallbackSrc returns the remote fallback URL for an image, empty when fallback is unconfigured
+// imgFallbackSrc 返回图片的远端回退地址，未配置时为空
 function imgFallbackSrc(kind, id, size) {
     if (!window.FALLBACK_URL) return "";
     return (
@@ -290,8 +290,8 @@ function imgFallbackSrc(kind, id, size) {
         (size || "grid")
     );
 }
-// imgOnError returns onerror attribute. If fallback is configured, first error retries via
-// FALLBACK_URL; second error shows local placeholder. Without fallback, shows placeholder directly.
+// imgOnError 返回 onerror 属性，配置回退时第一次错误走
+// FALLBACK_URL，第二次错误显示本地占位图。未配置回退时直接显示占位图
 function imgOnError(kind, id, size) {
     var fb = imgFallbackSrc(kind, id, size);
     if (!fb) return "onerror=\"this.src='/assets/no-image.png'\"";
@@ -301,7 +301,7 @@ function imgOnError(kind, id, size) {
         "';addRemoteGlobe(this);}else{this.src='/assets/no-image.png';}\""
     );
 }
-// attachImgFallback applies the same fallback chain to an existing img element
+// attachImgFallback 给已有 img 应用同一套回退链
 function attachImgFallback(el, kind, id, size) {
     removeRemoteGlobe(el);
     var fb = imgFallbackSrc(kind, id, size);
@@ -317,8 +317,8 @@ function attachImgFallback(el, kind, id, size) {
     };
 }
 
-// Remote globe marker helpers
-// globeIcon returns an <img> tag for the globe marker. Use in headers and section titles.
+// 远端标记辅助函数
+// globeIcon 返回地球标记的 img 标签，用于标题和分区标题
 function globeIcon(cls) {
     return (
         '<img src="/assets/global.svg" class="' +
@@ -326,7 +326,7 @@ function globeIcon(cls) {
         ' shrink-0" title="此数据来自远程">'
     );
 }
-// addRemoteGlobe wraps a remote-fallback image and adds a globe overlay at top-left corner.
+// addRemoteGlobe 包装远端回退图片，在左上角加地球标记
 function addRemoteGlobe(el) {
     if (el._g) return;
     el._g = 1;
@@ -347,7 +347,7 @@ function addRemoteGlobe(el) {
     wrap.appendChild(globe);
 }
 
-// removeRemoteGlobe unwraps the marker added by addRemoteGlobe so the element can be reused
+// removeRemoteGlobe 移除 addRemoteGlobe 加的标记，便于复用元素
 function removeRemoteGlobe(el) {
     if (!el._g) return;
     var wrap = el.parentNode;
@@ -369,7 +369,7 @@ var INFOBOX_NO_MATCH_KEYS = [
     "话数"
 ];
 
-// Name → ID lookup maps (subjects/characters/persons)
+// 名称到 ID 的映射，包含条目、角色、人物
 var _subjectMap = null,
     _charMap = null,
     _personMap = null;
@@ -502,7 +502,7 @@ function lookupLocalName(name) {
     return null;
 }
 
-// Regex building for name matching
+// 名称匹配用的正则构建
 var _personRegex = null;
 function buildPersonRegex() {
     if (_personRegex) return _personRegex;
@@ -552,12 +552,12 @@ function linkifyByMap(text, map, hrefPrefix) {
     return parts.join("");
 }
 
-// Keep existing linkifyPerson for backward compat (used in infobox)
+// 保留 linkifyPerson 兼容旧代码，信息栏仍在用
 function linkifyPerson(text) {
     return linkifyByMap(text, _personMap, "/person?id=");
 }
 
-// Apply all three name matchers, skipping text already inside <a> tags
+// 应用三种名称匹配，跳过已在 a 标签里的文本
 function linkifyAllNames(text) {
     if (!text) return text;
     var parts = text.split(/(<a\b[^>]*>.*?<\/a>)/);
@@ -624,7 +624,7 @@ function formatSummary(text) {
 // infoboxData：提取侧栏信息（infobox + 顶层字段）
 function infoboxData(d) {
     var items = [];
-    // Top-level fields
+    // 顶层字段
     if (d.gender)
         items.push([MSG.infoboxGender, MSG.genderMap[d.gender] || d.gender]);
     if (d.blood_type) {
@@ -638,7 +638,7 @@ function infoboxData(d) {
         if (d.birth_day) bd.push(d.birth_day + "日");
         items.push([MSG.infoboxBirthday, bd.join("")]);
     }
-    // infobox array
+    // 信息栏数组
     var ib = d.infobox;
     if (typeof ib === "string") {
         try {
@@ -670,7 +670,7 @@ function infoboxData(d) {
                                 ]);
                         }
                     } else if (v[0].v) {
-                        // Value-only objects: [{v: "クラナド"}]
+                        // 只有值的对象，例如 [{v: "クラナド"}]
                         items.push([ib[i].key, "", 0]);
                         for (var j = 0; j < v.length; j++) {
                             if (v[j].v)
@@ -681,7 +681,7 @@ function infoboxData(d) {
                                 ]);
                         }
                     } else {
-                        // Fallback: show first string from array
+                        // 兜底显示数组里的第一个字符串
                         for (var j = 0; j < v.length; j++) {
                             if (typeof v[j] === "string") {
                                 items.push([
@@ -694,7 +694,7 @@ function infoboxData(d) {
                         }
                     }
                 } else {
-                    // Plain string array
+                    // 纯字符串数组
                     for (var j = 0; j < v.length; j++) {
                         if (typeof v[j] === "string") {
                             items.push([
@@ -742,7 +742,7 @@ function extractCN(d) {
     return "";
 }
 
-// Loading bar + top bar
+// 加载条和顶栏
 (function () {
     var bar = document.createElement("div");
     bar.id = "load-bar";
@@ -851,7 +851,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     });
 
-    // Reconnect to active tasks after page refresh
+    // 页面刷新后重新连接进行中的任务
     api("/v0/tasks").then(function (d) {
         if (d && d.data && d.data.length) {
             for (var i = 0; i < d.data.length; i++) {
@@ -860,7 +860,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Load user avatar
+    // 加载用户头像
     if (window.USERNAME) {
         api("/v0/users/" + window.USERNAME).then(function (u) {
             if (u && u.id) {
@@ -971,7 +971,7 @@ function showLightbox(src) {
     overlay.appendChild(bar);
     overlay.appendChild(wrap);
     document.body.appendChild(overlay);
-    // animate in
+    // 入场动画
     requestAnimationFrame(function () {
         overlay.style.background = "rgba(0,0,0,.85)";
         img.style.opacity = "1";
@@ -996,7 +996,7 @@ function showLightbox(src) {
             document.removeEventListener("keydown", handler);
         }
     });
-    // Zoom + drag
+    // 缩放和拖拽
     var scale = 1,
         tx = 0,
         ty = 0,
@@ -1075,7 +1075,7 @@ function initDialog() {
         '<h3 class="text-base font-bold">' +
         MSG.dialogTitle +
         "</h3></div>" +
-        // ID input row
+        // ID 输入行
         '<label class="text-xs text-sub block mb-1">' +
         MSG.idLabel +
         "</label>" +
@@ -1084,7 +1084,7 @@ function initDialog() {
         MSG.idPlaceholder +
         '" pattern="[0-9, ]*" class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm">' +
         '<button id="btn-do-fetch" class="w-9 h-9 rounded-lg bg-pink text-white font-bold cursor-pointer border-0 hover:opacity-90 flex items-center justify-center" title="拉取">&check;</button></div>' +
-        // Tracker input row
+        // Tracker 输入行
         '<label class="text-xs text-sub block mb-1">' +
         MSG.trackerLabel +
         "</label>" +
@@ -1093,7 +1093,7 @@ function initDialog() {
         MSG.trackerPlaceholder +
         '" pattern="[a-zA-Z0-9_\\-]*" class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm">' +
         '<button id="btn-tracker-fetch" class="w-9 h-9 rounded-lg bg-pink text-white font-bold cursor-pointer border-0 hover:opacity-90 flex items-center justify-center" title="拉取或创建">&check;</button></div>' +
-        // Action buttons
+        // 操作按钮
         '<div class="flex flex-col gap-2 mt-3 mb-2">' +
         '<div class="grid grid-cols-3 gap-2">' +
         '<button id="btn-user" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
@@ -1117,7 +1117,7 @@ function initDialog() {
         MSG.btnRefreshAll +
         "</button>" +
         "</div></div>" +
-        // Danger zone
+        // 危险区
         '<button id="btn-danger-toggle" class="w-full px-3 py-2 rounded-lg border border-[rgba(255,0,0,.3)] bg-transparent text-[#dc2626] text-sm cursor-pointer hover:bg-pink-bg">' +
         MSG.btnDangerZone +
         "</button>" +
@@ -1131,7 +1131,7 @@ function initDialog() {
         "</button>" +
         "</div>" +
         "</div>" +
-        // Confirmation overlay
+        // 确认遮罩
         '<div id="confirm-overlay" class="absolute inset-0 bg-black/70 rounded-xl flex items-center justify-center z-10 transition-opacity duration-200" style="display:none;opacity:0">' +
         '<div class="bg-surface-alt border border-bord rounded-lg p-5 w-[340px] max-w-[85vw]">' +
         '<p id="confirm-msg" class="text-sm mb-4 leading-relaxed"></p>' +
@@ -1155,7 +1155,7 @@ function initDialog() {
         .getElementById("btn-confirm-cancel")
         .addEventListener("click", closeConfirm);
 
-    // Danger zone toggle (expand only, no collapse)
+    // 危险区开关，只展开不收起
     document
         .getElementById("btn-danger-toggle")
         .addEventListener("click", function () {
@@ -1163,7 +1163,7 @@ function initDialog() {
             this.remove();
         });
 
-    // Wire up action buttons with confirmation
+    // 绑定带确认的操作按钮
     document
         .getElementById("btn-do-fetch")
         .addEventListener("click", function () {
@@ -1180,7 +1180,7 @@ function initDialog() {
                 showError(MSG.errInvalidTrackerName);
                 return;
             }
-            // Check if tracker exists
+            // 检查 Tracker 是否存在
             api("/v0/tracker").then(function (resp) {
                 var list = (resp && resp.data) || [];
                 var found = false;
@@ -1632,7 +1632,7 @@ function startProgress(taskId, label) {
         false
     );
 
-    // Add cancel button
+    // 添加终止按钮
     var titleBar = t.el.querySelector("div:first-child");
     var cancelBtn = document.createElement("span");
     cancelBtn.className =

@@ -105,7 +105,7 @@
             }
 
             function updateTabCount(kind, count) {
-                if (tab !== kind) return; // Only update the currently active tab
+                if (tab !== kind) return; // 只更新当前激活的标签页
                 var el = document.getElementById("tab-" + kind);
                 if (!el || count <= 0) return;
                 var base =
@@ -207,7 +207,7 @@
                 charCount = chars.length;
                 updateTabCount("ep", epCount);
                 updateTabCount("chars", charCount);
-                // Load persons count asynchronously
+                // 异步加载人物数量
                 api("/v0/subjects/" + SID + "/persons").then(function (pRaw) {
                     var p = Array.isArray(pRaw)
                         ? pRaw
@@ -224,7 +224,7 @@
                     })
                     .slice(0, 12);
 
-                // Episode grid — sorted by sort, inline type separators
+                // 剧集网格，按 sort 排序，类型分隔符内联
                 var epGrid = "";
                 var allEps = eps.slice().sort(function (a, b) {
                     var ta = a.type || 0,
@@ -256,7 +256,7 @@
                         var e = allEps[i];
                         var t = e.type || 0;
                         if (t !== lastType && t !== 0) {
-                            // Type marker cell with vertical line + label
+                            // 类型标记单元，竖线和文字
                             var sepGap = "gap-1",
                                 sepText = "text-[9px]";
                             if (t >= 1 && t <= 3) {
@@ -329,7 +329,7 @@
                     epGrid += "</div>";
                 }
 
-                // Tags
+                // 标签
                 var tagsHtml = "";
                 if (s.tags && s.tags.length) {
                     var shown = s.tags.slice(0, 20);
@@ -347,7 +347,7 @@
                     tagsHtml += "</div>";
                 }
 
-                // Rating histogram — vertical bars with hover tooltip
+                // 评分直方图，竖条和悬浮提示
                 var histHtml = "";
                 var cnt = s.rating && s.rating.count;
                 if (cnt) {
@@ -392,7 +392,7 @@
                             "</span>";
                     }
                     histHtml += "</div>";
-                    // Standard deviation
+                    // 标准差
                     var mean = (s.rating && s.rating.score) || 0;
                     var sumSq = 0;
                     for (var k3 = 1; k3 <= 10; k3++) {
@@ -409,7 +409,7 @@
                         "</div>";
                 }
 
-                // Infobox entries
+                // 信息栏条目
                 var infoHtml = "";
                 for (var i = 0; i < infoItems.length; i++) {
                     infoHtml +=
@@ -422,7 +422,7 @@
                         "</span></div>";
                 }
 
-                // Rating panel
+                // 评分面板
                 var scoreHtml =
                     s.rating && s.rating.score
                         ? s.rating.score.toFixed(1)
@@ -481,11 +481,11 @@
                 // ── 右上右栏：评分面板 ──
                 html +=
                     '<div class="w-full md:w-[230px] shrink-0 self-start bg-surface-alt border border-bord rounded-xl">';
-                // Header strip
+                // 顶部条
                 html +=
                     '<div class="bg-surface-alt px-4 py-2 rounded-t-xl"><span class="font-bold">评分</span></div>';
                 html += '<div class="border-t border-bord-mid"></div>';
-                // Content
+                // 内容
                 html += '<div class="px-4 pt-2 pb-2">';
                 if (eloInfo && eloInfo.rating) {
                     html +=
@@ -537,7 +537,7 @@
                             "<div onclick=\"location.href='/character?id=" +
                             c.id +
                             '\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">' +
-                            // Image with floating badge
+                            // 图片和浮动徽章
                             '<div class="relative rounded-lg overflow-hidden bg-surface" style="aspect-ratio:1/1.414">' +
                             '<img src="' +
                             img("character", c.id, "small") +
@@ -548,7 +548,7 @@
                             c.relation +
                             "</span>" +
                             "</div>" +
-                            // Name + CV
+                            // 名称和声优
                             '<div class="mt-1.5 px-0.5">' +
                             '<div class="text-[13px] font-semibold truncate">' +
                             primaryName(escapeHtml(c.name), "") +
@@ -602,7 +602,7 @@
                             "<div onclick=\"location.href='/subject?id=" +
                             r.id +
                             '\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">' +
-                            // Image with floating badge
+                            // 图片和浮动徽章
                             '<div class="relative rounded-lg overflow-hidden bg-surface aspect-square">' +
                             '<img src="' +
                             img("subject", r.id, "small") +
@@ -615,7 +615,7 @@
                                   "</span>"
                                 : "") +
                             "</div>" +
-                            // Title
+                            // 标题
                             '<div class="mt-1.5 px-0.5">' +
                             '<div class="text-[13px] font-semibold line-clamp-3">' +
                             (escapeHtml(r.name_cn) ||
@@ -709,7 +709,7 @@
 
                 function epRows(list, label) {
                     if (!list.length) return "";
-                    // Build individual episode cards
+                    // 构建单个剧集卡片
                     var cards = [];
                     for (var i = 0; i < list.length; i++) {
                         var e = list[i];
@@ -757,7 +757,7 @@
                                 "</div>"
                         );
                     }
-                    // Pair into 2-column rows
+                    // 两列配对
                     var html =
                         '<div class="mb-6"><div class="text-sm text-sub font-semibold mb-3">' +
                         label +
@@ -806,7 +806,7 @@
                 updateTabCount("chars", charCount);
                 window._chars = chars;
 
-                // Build dynamic filter list from relation fields
+                // 根据关系字段构建动态筛选项
                 var relSet = {};
                 for (var i = 0; i < chars.length; i++) {
                     var rel = chars[i].relation || "其他";
@@ -916,7 +916,7 @@
                                 "</div></div></div>"
                         );
                     }
-                    // Paired 2-column layout
+                    // 两列配对布局
                     var html = "";
                     for (var i = 0; i < cards.length; i += 2) {
                         html +=
@@ -986,7 +986,7 @@
                 for (var i = 0; i < entries.length; i++) {
                     var k = entries[i][0],
                         v = entries[i][1];
-                    // 2-column grid for names within each section
+                    // 每个分区内名称使用两列网格
                     var nameHtml =
                         '<div class="grid grid-cols-2 gap-x-4 gap-y-0.5">';
                     for (var j = 0; j < v.length; j++) {

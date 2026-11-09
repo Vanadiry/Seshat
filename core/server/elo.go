@@ -191,7 +191,7 @@ func saveELOHistory(h []eloHistory) {
 	}
 }
 
-// getELOPair 混合策略返回两个评比条目：
+// getELOPair 混合策略返回两个评比条目
 // Phase 1（有人 <10 场）：40% 低频加权，30% 相近分数，30% 随机
 // Phase 2（全员 ≥10 场）：10% 低频加权，60% 相近分数，20% 保持覆盖，10% 随机
 // Staleness 劫持：staleness > 2N 强制配对
@@ -247,7 +247,7 @@ func getELOPair(dd string) []eloPairEntry {
 	r := rand.Float64()
 	var id1, id2 int
 	if allSeen {
-		// Phase 2: lowFreq 10%, simScore 60%, maintain 20%, random 10%
+		// 第二阶段：低频 10%，相似度 60%，保持 20%，随机 10%
 		if r < 0.1 {
 			id1, id2 = pickLowFreq(eligible, &data)
 		} else if r < 0.7 {
@@ -258,7 +258,7 @@ func getELOPair(dd string) []eloPairEntry {
 			id1, id2 = pickRandomPair(eligible)
 		}
 	} else {
-		// Phase 1: lowFreq 40%, simScore 30%, random 30%
+		// 第一阶段：低频 40%，相似度 30%，随机 30%
 		if r < 0.4 {
 			id1, id2 = pickLowFreq(eligible, &data)
 		} else if r < 0.7 {

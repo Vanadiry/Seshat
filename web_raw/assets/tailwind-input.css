@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/*  Dark mode (default) */
+/* 深色模式，默认 */
 :root {
     --c-bg: #1d1d1d;
     --c-surface: #202028;
@@ -18,7 +18,7 @@
     --c-bord-xstrong: rgba(255, 255, 255, 0.4);
     --c-pink: #fe8a95;
     --c-pink-bg: #403638;
-    /* Tier colors (episode types, rating ranks) */
+    /* 档位颜色，用于章节类型和评分等级 */
     --c-tier-gold: #d4a040;
     --c-tier-gold-bg: #33281a;
     --c-tier-blue: #5c8eb0;
@@ -27,7 +27,7 @@
     --c-tier-purple-bg: #241a2e;
     --c-tier-green: #4c8c68;
     --c-tier-green-bg: #1a2e24;
-    /* ELO badge + tag hover */
+    /* ELO 徽章和标签悬浮 */
     --c-elo-bg: #2a2a3a;
     --c-elo-text: #8b9dc3;
     --c-pk-overlay: rgba(0, 0, 0, 0.85);
@@ -47,7 +47,7 @@
     color-scheme: dark;
 }
 
-/*  Light mode */
+/* 浅色模式 */
 html.light {
     --c-bg: #f5f5f5;
     --c-surface: #ffffff;
@@ -65,7 +65,7 @@ html.light {
     --c-bord-xstrong: rgba(0, 0, 0, 0.25);
     --c-pink: #fe8a95;
     --c-pink-bg: #fce4e8;
-    /* Tier colors — lighter backgrounds, darker text for contrast */
+    /* 档位颜色，浅色背景和深色文字，保证对比度 */
     --c-tier-gold: #b8860b;
     --c-tier-gold-bg: #fef3e0;
     --c-tier-blue: #3a6d99;
@@ -74,7 +74,7 @@ html.light {
     --c-tier-purple-bg: #f0e8f5;
     --c-tier-green: #3a7050;
     --c-tier-green-bg: #e6f0ea;
-    /* ELO badge + tag hover */
+    /* ELO 徽章和标签悬浮 */
     --c-elo-bg: #e0e3ec;
     --c-elo-text: #5a6d8a;
     --c-pk-overlay: rgba(0, 0, 0, 0.5);
@@ -136,43 +136,74 @@ html.light {
     --color-toast-warning-bg: var(--c-toast-warning-bg);
 }
 
-/* Disable text selection globally — whitelist via .select-text */
-* { user-select: none; }
-.select-text, .select-text * { user-select: text; }
+/* 全局禁用文本选中，通过 .select-text 开白名单 */
+* {
+    user-select: none;
+}
+.select-text,
+.select-text * {
+    user-select: text;
+}
 
-/*  Loading bar */
+/* 加载条 */
 #load-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 2px;
-  z-index: 9999;
-  background: linear-gradient(90deg, transparent, var(--c-pink), var(--c-pink), transparent);
-  opacity: 0;
-  transition: opacity .2s;
-  pointer-events: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 2px;
+    z-index: 9999;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--c-pink),
+        var(--c-pink),
+        transparent
+    );
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
 }
 #load-bar.active {
-  opacity: 1;
-  animation: loadBarShimmer 1.5s ease-in-out infinite;
+    opacity: 1;
+    animation: loadBarShimmer 1.5s ease-in-out infinite;
 }
 @keyframes loadBarShimmer {
-  0%   { left: -30%; width: 30%; }
-  50%  { left: 50%;  width: 40%; }
-  100% { left: 100%; width: 30%; }
+    0% {
+        left: -30%;
+        width: 30%;
+    }
+    50% {
+        left: 50%;
+        width: 40%;
+    }
+    100% {
+        left: 100%;
+        width: 30%;
+    }
 }
 
-/*  Custom scrollbar */
+/* 自定义滚动条 */
 .thin-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: var(--c-sub-dim) transparent;
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-sub-dim) transparent;
 }
-.thin-scroll::-webkit-scrollbar { height: 4px !important; width: 4px !important; display: block !important; }
-.thin-scroll::-webkit-scrollbar-track { background: transparent !important; }
-.thin-scroll::-webkit-scrollbar-thumb { background: var(--c-sub-dim) !important; border-radius: 2px !important; }
-.thin-scroll::-webkit-scrollbar-thumb:hover { background: var(--c-sub) !important; }
+.thin-scroll::-webkit-scrollbar {
+    height: 4px !important;
+    width: 4px !important;
+    display: block !important;
+}
+.thin-scroll::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+    background: var(--c-sub-dim) !important;
+    border-radius: 2px !important;
+}
+.thin-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--c-sub) !important;
+}
 
-/* Select arrow — dark mode */
+/* 下拉箭头，深色模式 */
 select:where(.search-type, .custom-select) {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.52)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
@@ -184,7 +215,7 @@ html.light select:where(.search-type, .custom-select) {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(0,0,0,.5)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }
 
-/*  Loading spinner */
+/* 加载动画 */
 .spin {
     display: inline-block;
     width: 14px;
@@ -194,6 +225,10 @@ html.light select:where(.search-type, .custom-select) {
     border-radius: 50%;
     vertical-align: -2px;
     margin-right: 4px;
-    animation: spin .6s linear infinite;
+    animation: spin 0.6s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

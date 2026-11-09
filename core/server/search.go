@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// searchAllJSON scans all info.json files under data/api/{domain} for keyword match.
+// searchAllJSON 扫描 data/api/{domain} 下的 info.json，按关键词匹配
 func searchAllJSON(dd, domain, q string) []map[string]any {
 	q = strings.ToLower(q)
 	var results []map[string]any

@@ -33,7 +33,7 @@ func handleStats(dd string) http.HandlerFunc {
 			Count int    `json:"count"`
 		}
 
-		// Image stats
+		// 图片统计
 		var img imageStats
 		for _, kind := range []string{"subject", "character", "person"} {
 			m := loadImageIndex(dd, kind+"s_image.json")
@@ -71,7 +71,7 @@ func handleStats(dd string) http.HandlerFunc {
 			}
 		}
 
-		// Data counts from index lists
+		// 从索引列表统计数据数量
 		var entries entryCount
 		for _, domain := range []string{"subjects", "characters", "persons"} {
 			list := loadNameList(store.IndexFile(dd, domain+".json"))
@@ -85,7 +85,7 @@ func handleStats(dd string) http.HandlerFunc {
 			}
 		}
 
-		// Trackers
+		// Tracker 列表
 		var trackers []trackerInfo
 		td := filepath.Join(config.Dir(), "tracker")
 		files, _ := filepath.Glob(filepath.Join(td, "*.json"))
@@ -97,7 +97,7 @@ func handleStats(dd string) http.HandlerFunc {
 			trackers = append(trackers, trackerInfo{Name: name, Count: count})
 		}
 
-		// Collections
+		// 收藏
 		collCount := 0
 		if data, err := os.ReadFile(filepath.Join(userDir(dd), "collections.json")); err == nil {
 			var coll struct {
@@ -114,7 +114,7 @@ func handleStats(dd string) http.HandlerFunc {
 			}
 		}
 
-		// ELO counts
+		// ELO 统计
 		eloScores := 0
 		if data, err := os.ReadFile(filepath.Join(config.Dir(), "user", "elo", "elo_data.json")); err == nil {
 			var ed eloData
@@ -124,7 +124,7 @@ func handleStats(dd string) http.HandlerFunc {
 		}
 		eloComparisons := len(loadELOHistory())
 
-		// Tracker total entries
+		// Tracker 条目总数
 		trackerTotal := 0
 		for _, t := range trackers {
 			trackerTotal += t.Count

@@ -13,7 +13,7 @@ import (
 	"github.com/vanadiry/seshat/core/store"
 )
 
-// scanAPIDir walks the data layout {domain}/{id%10}/{id}/*.json and calls fn for each file.
+// scanAPIDir 遍历数据目录 {domain}/{id%10}/{id}/*.json，对每个文件调用 fn
 func scanAPIDir(dd, domain string, fn func(path string)) {
 	base := filepath.Join(store.Dir(dd), domain)
 	digits, _ := os.ReadDir(base)
@@ -50,7 +50,7 @@ func loadTags(dd string) map[string]tagInfo {
 	return tags
 }
 
-// rebuildTags 扫描所有已保存的 subject JSON，重建 tags.json。
+// rebuildTags 扫描所有已保存的 subject JSON，重建 tags.json
 func rebuildTags(dd string) {
 	tags := map[string]tagInfo{}
 	scanAPIDir(dd, "subjects", func(path string) {
@@ -94,7 +94,7 @@ func rebuildTags(dd string) {
 	log.Info("tags index rebuilt", "count", len(tags))
 }
 
-// buildPersonNames generates a name→id lookup from persons.json.
+// buildPersonNames 从 persons.json 生成名称到 ID 的映射
 func buildPersonNames(dd string) {
 	list, err := loadCachedIndex[[]store.NameEntry](store.IndexFile(dd, "persons.json"))
 	if err != nil {
@@ -125,7 +125,7 @@ func buildPersonNames(dd string) {
 	log.Info("persons_name.json built", "count", len(m))
 }
 
-// buildNameIndex generates a name→id lookup for a given domain (subjects/characters/persons).
+// buildNameIndex 为指定领域生成名称到 ID 的映射，领域为 subjects、characters 或 persons
 func buildNameIndex(dd, domain string) {
 	list, err := loadCachedIndex[[]store.NameEntry](store.IndexFile(dd, domain+".json"))
 	if err != nil {
@@ -156,7 +156,7 @@ func buildNameIndex(dd, domain string) {
 	log.Info("name index built", "domain", domain, "count", len(m))
 }
 
-// buildIndexes scans all saved API JSON files and rebuilds list files + tags + name indexes.
+// buildIndexes 扫描已保存的 API JSON，重建列表、标签和名称索引
 func buildIndexes(dd string, p *Progress) {
 	log.Info("rebuilding indexes from scan")
 	if err := os.MkdirAll(store.IndexDir(dd), 0o755); err != nil {

@@ -245,7 +245,7 @@
 
             function handlePK(side) {
                 if (_state === "idle") {
-                    // Expand clicked side, shrink other
+                    // 展开点击的一侧，收缩另一侧
                     _state = side;
                     var winner = document.getElementById("pk-" + side);
                     var loser = document.getElementById(
@@ -260,7 +260,7 @@
                     loser.style.flex = "0 0 200px";
                     loser.classList.add("shrunk");
                 } else if (_state === side) {
-                    // Confirm — submit
+                    // 确认并提交
                     var loserSide = side === "left" ? "right" : "left";
                     var winnerId = _pair[side === "left" ? 0 : 1].id;
                     var loserId = _pair[loserSide === "left" ? 0 : 1].id;
@@ -276,13 +276,13 @@
                         loadHistory();
                     });
                 } else {
-                    // Clicked the shrunk card — cancel, go back to idle
+                    // 点击收缩的卡片，取消并回到待机
                     _state = "idle";
                     resetPKStyles();
                 }
             }
 
-            // ── History ──
+            // 历史
             function loadHistory() {
                 api("/v0/elo/history").then(function (data) {
                     _history =
@@ -416,7 +416,7 @@
                 }
                 document.getElementById("history-area").innerHTML = html;
 
-                // Pagination
+                // 分页
                 var ph = document.getElementById("history-pager");
                 if (_history.length > 10) {
                     var remaining = _history.length - _histShowing;

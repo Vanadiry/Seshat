@@ -208,7 +208,7 @@ func loadTrackerIDs(path string) []int {
 	return parseTOMLIDArray(data)
 }
 
-// parseTOMLIDArray 解析 TOML 格式的 ids = [...] 数组，支持多行逗号分隔。
+// parseTOMLIDArray 解析 TOML 格式的 ids = [...] 数组，支持多行逗号分隔
 func parseTOMLIDArray(data []byte) []int {
 	var ids []int
 	inArray := false
