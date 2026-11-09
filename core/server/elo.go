@@ -60,7 +60,10 @@ type eloOrphan struct {
 }
 
 type eloRankingResult struct {
-	Entries       []eloEntry  `json:"entries"`
+	Total         int         `json:"total"`
+	Limit         int         `json:"limit"`
+	Offset        int         `json:"offset"`
+	Data          []eloEntry  `json:"data"`
 	NoRating      []eloEntry  `json:"no_rating"`
 	Orphans       []eloOrphan `json:"orphans"`
 	TotalCompares int         `json:"total_compares"`
@@ -455,8 +458,20 @@ func getELORanking(dd string) eloRankingResult {
 	}
 	sort.Slice(orphans, func(i, j int) bool { return orphans[i].Rating > orphans[j].Rating })
 
+	if entries == nil {
+		entries = []eloEntry{}
+	}
+	if noRating == nil {
+		noRating = []eloEntry{}
+	}
+	if orphans == nil {
+		orphans = []eloOrphan{}
+	}
 	return eloRankingResult{
-		Entries:       entries,
+		Total:         len(entries),
+		Limit:         0,
+		Offset:        0,
+		Data:          entries,
 		NoRating:      noRating,
 		Orphans:       orphans,
 		TotalCompares: data.GlobalCompareCount,
@@ -522,7 +537,7 @@ func handleELORanking(dd string) http.HandlerFunc {
 }
 
 func handleELOHistory(dd string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) { writeJSON(w, loadELOHistory()) }
+	return func(w http.ResponseWriter, r *http.Request) { writeList(w, loadELOHistory()) }
 }
 
 func rebuildELO() {

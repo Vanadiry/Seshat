@@ -330,7 +330,7 @@ func handleTrackerList(cfg *config.Config) http.HandlerFunc {
 			name = strings.TrimSuffix(name, ".toml")
 			list = append(list, tinfo{Name: name, Count: len(loadTrackerIDs(f))})
 		}
-		writeJSON(w, list)
+		writeList(w, list)
 	}
 }
 

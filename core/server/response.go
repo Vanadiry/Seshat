@@ -77,6 +77,19 @@ func writeJSON(w http.ResponseWriter, v any) {
 	}
 }
 
+// writeList 输出统一的分页列表结构，不分页时 limit 和 offset 为 0
+func writeList[T any](w http.ResponseWriter, list []T) {
+	if list == nil {
+		list = []T{}
+	}
+	writeJSON(w, map[string]any{
+		"total":  len(list),
+		"limit":  0,
+		"offset": 0,
+		"data":   list,
+	})
+}
+
 // writeNotFound 输出带 path 和 method 的 404
 func writeNotFound(w http.ResponseWriter, r *http.Request, description string) {
 	writeError(w, r, http.StatusNotFound, description, map[string]any{

@@ -32,7 +32,13 @@
             }
 
             // 卡片渲染
-            var _collTypes = { 1: "想看", 2: "看过", 3: "在看", 4: "搁置", 5: "抛弃" };
+            var _collTypes = {
+                1: "想看",
+                2: "看过",
+                3: "在看",
+                4: "搁置",
+                5: "抛弃"
+            };
             var _collCls = {
                 1: "bg-pink-bg text-tier-gold",
                 2: "bg-pink-bg text-tier-green",
@@ -150,7 +156,8 @@
                 document.getElementById("grid").innerHTML =
                     '<div class="col-span-full text-center py-20 text-sub"><span class="spin"></span>加载中…</div>';
                 try {
-                    var subjects = (await apiLocal("/v0/subjects/list")) || [];
+                    var subjectsResp = await apiLocal("/v0/subjects/list");
+                    var subjects = (subjectsResp && subjectsResp.data) || [];
                     // 合并 ELO 与收藏数据
                     Promise.all([
                         api("/v0/elo/ranking"),
@@ -165,14 +172,10 @@
                         .then(function (results) {
                             var eloData = results[0],
                                 collData = results[1];
-                            if (eloData && eloData.entries) {
+                            if (eloData && eloData.data) {
                                 var eloMap = {};
-                                for (
-                                    var i = 0;
-                                    i < eloData.entries.length;
-                                    i++
-                                ) {
-                                    var e = eloData.entries[i];
+                                for (var i = 0; i < eloData.data.length; i++) {
+                                    var e = eloData.data[i];
                                     eloMap[e.id] = e.rating
                                         ? Number(e.rating).toFixed(1)
                                         : null;

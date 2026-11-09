@@ -79,7 +79,8 @@
             }
 
             (async () => {
-                allItems = (await api("/v0/tags")) || [];
+                var res = await api("/v0/tags");
+                allItems = (res && res.data) || [];
                 if (!allItems.length) {
                     document.getElementById("tags").innerHTML =
                         '<span class="text-sub text-sm">暂无标签</span>';

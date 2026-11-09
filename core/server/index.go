@@ -299,7 +299,7 @@ func handleTags(dd string) http.HandlerFunc {
 			list = append(list, tagItem{Name: name, Count: info.Count})
 		}
 		sort.Slice(list, func(i, j int) bool { return list[i].Count > list[j].Count })
-		writeJSON(w, list)
+		writeList(w, list)
 	}
 }
 
@@ -309,7 +309,7 @@ func handleTagSubjects(dd string) http.HandlerFunc {
 		tags := loadTags(dd)
 		info, ok := tags[name]
 		if !ok {
-			writeJSON(w, []int{})
+			writeList(w, []any{})
 			return
 		}
 		var subjects []any
@@ -330,6 +330,6 @@ func handleTagSubjects(dd string) http.HandlerFunc {
 			json.Unmarshal(data, &s)
 			subjects = append(subjects, s)
 		}
-		writeJSON(w, subjects)
+		writeList(w, subjects)
 	}
 }

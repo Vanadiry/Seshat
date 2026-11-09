@@ -853,9 +853,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Reconnect to active tasks after page refresh
     api("/v0/tasks").then(function (d) {
-        if (d && d.tasks && d.tasks.length) {
-            for (var i = 0; i < d.tasks.length; i++) {
-                startProgress(d.tasks[i].id, d.tasks[i].label);
+        if (d && d.data && d.data.length) {
+            for (var i = 0; i < d.data.length; i++) {
+                startProgress(d.data[i].id, d.data[i].label);
             }
         }
     });
@@ -1181,7 +1181,8 @@ function initDialog() {
                 return;
             }
             // Check if tracker exists
-            api("/v0/tracker").then(function (list) {
+            api("/v0/tracker").then(function (resp) {
+                var list = (resp && resp.data) || [];
                 var found = false;
                 if (list)
                     for (var i = 0; i < list.length; i++) {

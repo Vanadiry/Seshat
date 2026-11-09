@@ -185,7 +185,7 @@
             async function load() {
                 try {
                     var data = (await api("/v0/elo/ranking")) || {};
-                    _entries = data && data.entries ? data.entries : [];
+                    _entries = data && data.data ? data.data : [];
                     _noRating = data && data.no_rating ? data.no_rating : [];
                     _orphans = data && data.orphans ? data.orphans : [];
                     sortBy("elo");

@@ -147,7 +147,7 @@ func activeTasks() []map[string]string {
 }
 
 func handleActiveTasks(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, map[string]any{"tasks": activeTasks()})
+	writeList(w, activeTasks())
 }
 
 func handleProgress(w http.ResponseWriter, r *http.Request) {

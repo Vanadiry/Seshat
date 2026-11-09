@@ -195,10 +195,10 @@
                       ? relsRaw.data
                       : [];
                 var eloInfo = null;
-                if (eloData && eloData.entries) {
-                    for (var i = 0; i < eloData.entries.length; i++) {
-                        if (eloData.entries[i].id == SID) {
-                            eloInfo = eloData.entries[i];
+                if (eloData && eloData.data) {
+                    for (var i = 0; i < eloData.data.length; i++) {
+                        if (eloData.data[i].id == SID) {
+                            eloInfo = eloData.data[i];
                             break;
                         }
                     }

@@ -286,7 +286,7 @@
             function loadHistory() {
                 api("/v0/elo/history").then(function (data) {
                     _history =
-                        data && data.length ? data.slice().reverse() : [];
+                        data && data.data ? data.data.slice().reverse() : [];
                     _histShowing = Math.min(10, _history.length);
                     renderHistory();
                 });

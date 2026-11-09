@@ -43,21 +43,21 @@ func loadNameList(path string) []cache.NameEntry {
 func handleListSubjects(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		list, _ := loadCachedIndex[[]cache.SubjectSummary](cache.IndexFile(dd, "subjects.json"))
-		writeJSON(w, list)
+		writeList(w, list)
 	}
 }
 
 func handleListCharacters(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		list, _ := loadCachedIndex[[]cache.NameEntry](cache.IndexFile(dd, "characters.json"))
-		writeJSON(w, list)
+		writeList(w, list)
 	}
 }
 
 func handleListPersons(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		list, _ := loadCachedIndex[[]cache.NameEntry](cache.IndexFile(dd, "persons.json"))
-		writeJSON(w, list)
+		writeList(w, list)
 	}
 }
 

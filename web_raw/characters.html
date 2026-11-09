@@ -98,7 +98,8 @@
             }
 
             (async () => {
-                allItems = (await apiLocal("/v0/characters/list")) || [];
+                var res = await apiLocal("/v0/characters/list");
+                allItems = (res && res.data) || [];
                 if (!allItems.length) {
                     document.getElementById("grid").innerHTML =
                         '<div class="col-span-full text-center py-20 text-sub">暂无数据</div>';
