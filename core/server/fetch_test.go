@@ -155,3 +155,40 @@ func TestFetchAllSucceedsWithoutEpisodes(t *testing.T) {
 		t.Fatal("没有剧集的条目不应缺少核心文件")
 	}
 }
+
+func TestFetchAllKeepsOldEpisodesOnPageFailure(t *testing.T) {
+	dd := t.TempDir()
+	old := `[{"id":999,"type":0}]`
+	if err := cache.Put(dd, cache.Key("subjects", 51, "episodes.json"), []byte(old)); err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/v0/subjects/51":
+			w.Write([]byte(`{"id":51,"total_episodes":150,"eps":150}`))
+		case "/v0/subjects/51/characters", "/v0/subjects/51/persons", "/v0/subjects/51/subjects":
+			w.Write([]byte(`[]`))
+		case "/v0/episodes":
+			if r.URL.Query().Get("offset") == "0" {
+				w.Write([]byte(`{"data":[{"id":1,"type":0}],"total":150}`))
+				return
+			}
+			w.WriteHeader(http.StatusNotFound)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+	c := bangumi.NewClient("test", srv.URL, nil, nil)
+	if fetchAll(51, c, dd, filepath.Join(dd, "images"), nil, 1) {
+		t.Fatal("第二页失败时应返回 false")
+	}
+	data, err := cache.Get(dd, cache.Key("subjects", 51, "episodes.json"))
+	if err != nil {
+		t.Fatalf("读取旧剧集: %v", err)
+	}
+	if string(data) != old {
+		t.Fatalf("旧剧集被覆盖，内容为 %q", data)
+	}
+}

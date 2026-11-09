@@ -349,11 +349,13 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 		}()
 		defer wg3.Done()
 		offset := 0
+		complete := true
 		for {
 			data, err := bg.GetRaw(fmt.Sprintf("v0/episodes?subject_id=%d&limit=100&offset=%d", sid, offset))
 			if err != nil {
 				log.Warn("episodes fetch failed", "subject", sid, "offset", offset, "err", err)
 				requiredFailed.Store(true)
+				complete = false
 				break
 			}
 			var page struct {
@@ -363,12 +365,14 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			if err := json.Unmarshal(data, &page); err != nil {
 				log.Warn("episodes parse failed", "subject", sid, "offset", offset, "err", err)
 				requiredFailed.Store(true)
+				complete = false
 				break
 			}
 			if len(page.Data) == 0 {
 				if page.Total > 0 {
 					log.Warn("episodes empty page", "subject", sid, "offset", offset, "total", page.Total)
 					requiredFailed.Store(true)
+					complete = false
 				}
 				break
 			}
@@ -377,6 +381,10 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 				break
 			}
 			offset += 100
+		}
+		if !complete {
+			log.Warn("episodes incomplete, keep old file", "subject", sid, "fetched", len(allEps))
+			return
 		}
 		if len(allEps) > 0 {
 			result, err := json.Marshal(allEps)
