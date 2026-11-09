@@ -24,6 +24,7 @@ pub fn run() {
             #[cfg(not(mobile))]
             setup_desktop(app)?;
 
+            #[cfg(target_os = "macos")]
             setup_menu(app)?;
             Ok(())
         })
@@ -253,6 +254,7 @@ fn graceful_exit(handle: tauri::AppHandle) {
     }
 }
 
+#[cfg(target_os = "macos")]
 fn setup_menu(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::menu::{MenuBuilder, PredefinedMenuItem, SubmenuBuilder};
 
@@ -280,9 +282,21 @@ fn setup_menu(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .item(&PredefinedMenuItem::select_all(app, Some("全选"))?)
         .build()?;
 
+    let window_menu = SubmenuBuilder::new(app, "窗口")
+        .item(&PredefinedMenuItem::minimize(app, Some("最小化"))?)
+        .item(&PredefinedMenuItem::maximize(app, Some("缩放"))?)
+        .item(&PredefinedMenuItem::fullscreen(app, Some("全屏"))?)
+        .separator()
+        .item(&PredefinedMenuItem::bring_all_to_front(
+            app,
+            Some("全部置于顶层"),
+        )?)
+        .build()?;
+
     let menu = MenuBuilder::new(app)
         .item(&app_menu)
         .item(&edit_menu)
+        .item(&window_menu)
         .build()?;
 
     app.set_menu(menu)?;
