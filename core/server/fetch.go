@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/vanadiry/seshat/core/bangumi"
@@ -17,6 +18,18 @@ import (
 	"os"
 	"path/filepath"
 )
+
+// putCache 写入缓存并在失败时上报，返回是否成功
+func putCache(dd, key string, data []byte, p *Progress) bool {
+	if err := cache.Put(dd, key, data); err != nil {
+		log.Error("cache put failed", "key", key, "err", err)
+		if p != nil {
+			p.SetError(fmt.Sprintf("缓存写入失败 %s: %v", key, err))
+		}
+		return false
+	}
+	return true
+}
 
 func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int) []int {
 	if len(ids) == 0 {
@@ -65,6 +78,7 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 // fetchAll 拉取条目全部数据及关联角色/人物/图片
 func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int) bool {
 	log.Info("fetching subject", "id", sid)
+	var writeFailed atomic.Bool
 
 	// 条目
 	if p != nil {
@@ -79,7 +93,12 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 		}
 		return false
 	}
-	cache.Put(dd, cache.Key("subjects", sid, "info.json"), cache.StripImages(data))
+	if !putCache(dd, cache.Key("subjects", sid, "info.json"), cache.StripImages(data), p) {
+		if p != nil {
+			p.Send("subject", 1, 1, "error")
+		}
+		return false
+	}
 	if p != nil {
 		p.Send("subject", 1, 1, "done")
 	}
@@ -119,7 +138,10 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			}
 			return
 		}
-		cache.Put(dd, cache.Key("subjects", sid, "characters.json"), cache.StripImages(data))
+		if !putCache(dd, cache.Key("subjects", sid, "characters.json"), cache.StripImages(data), p) {
+			writeFailed.Store(true)
+			return
+		}
 		if err := json.Unmarshal(data, &chars); err != nil {
 			log.Warn("unmarshal chars failed", "subject", sid, "err", err)
 			if p != nil {
@@ -144,7 +166,10 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			}
 			return
 		}
-		cache.Put(dd, cache.Key("subjects", sid, "persons.json"), cache.StripImages(data))
+		if !putCache(dd, cache.Key("subjects", sid, "persons.json"), cache.StripImages(data), p) {
+			writeFailed.Store(true)
+			return
+		}
 		if err := json.Unmarshal(data, &persons); err != nil {
 			log.Warn("unmarshal persons failed", "subject", sid, "err", err)
 			if p != nil {
@@ -180,7 +205,9 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 				p.SetError(err.Error())
 				return
 			}
-			cache.Put(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(data))
+			if !putCache(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(data), p) {
+				writeFailed.Store(true)
+			}
 		}, nil, "", concurrency)
 	}()
 
@@ -221,7 +248,9 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 				p.SetError(err.Error())
 				return
 			}
-			cache.Put(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(data))
+			if !putCache(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(data), p) {
+				writeFailed.Store(true)
+			}
 		}, nil, "", concurrency)
 	}()
 
@@ -239,7 +268,9 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			if err != nil {
 				return
 			}
-			cache.Put(dd, cache.Key("characters", c.ID, "subjects.json"), cache.StripImages(data))
+			if !putCache(dd, cache.Key("characters", c.ID, "subjects.json"), cache.StripImages(data), p) {
+				writeFailed.Store(true)
+			}
 		}, nil, "", concurrency)
 	}()
 
@@ -257,7 +288,9 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			if err != nil {
 				return
 			}
-			cache.Put(dd, cache.Key("characters", c.ID, "persons.json"), cache.StripImages(data))
+			if !putCache(dd, cache.Key("characters", c.ID, "persons.json"), cache.StripImages(data), p) {
+				writeFailed.Store(true)
+			}
 		}, nil, "", concurrency)
 	}()
 
@@ -275,7 +308,9 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			if err != nil {
 				return
 			}
-			cache.Put(dd, cache.Key("persons", pp.ID, "subjects.json"), cache.StripImages(data))
+			if !putCache(dd, cache.Key("persons", pp.ID, "subjects.json"), cache.StripImages(data), p) {
+				writeFailed.Store(true)
+			}
 		}, nil, "", concurrency)
 	}()
 
@@ -293,7 +328,9 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			if err != nil {
 				return
 			}
-			cache.Put(dd, cache.Key("persons", pp.ID, "characters.json"), cache.StripImages(data))
+			if !putCache(dd, cache.Key("persons", pp.ID, "characters.json"), cache.StripImages(data), p) {
+				writeFailed.Store(true)
+			}
 		}, nil, "", concurrency)
 	}()
 
@@ -333,7 +370,9 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 				events.Bus.Error(fmt.Sprintf("剧集数据序列化失败 #%d", sid))
 				return
 			}
-			cache.Put(dd, cache.Key("subjects", sid, "episodes.json"), cache.StripImages(result))
+			if !putCache(dd, cache.Key("subjects", sid, "episodes.json"), cache.StripImages(result), p) {
+				writeFailed.Store(true)
+			}
 		}
 	}()
 
@@ -347,11 +386,17 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 		}()
 		defer wg3.Done()
 		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/subjects", sid)); err == nil {
-			cache.Put(dd, cache.Key("subjects", sid, "subjects.json"), cache.StripImages(data))
+			if !putCache(dd, cache.Key("subjects", sid, "subjects.json"), cache.StripImages(data), p) {
+				writeFailed.Store(true)
+			}
 		}
 	}()
 	wg3.Wait()
 
+	if writeFailed.Load() {
+		log.Warn("subject fetch incomplete", "id", sid, "reason", "cache write failed")
+		return false
+	}
 	log.Info("subject fetch done", "id", sid, "chars", len(charIDs), "persons", len(personIDs), "episodes", len(allEps))
 	return true
 }
@@ -800,7 +845,7 @@ func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 						for _, c := range chars {
 							if !cache.Has(dd, cache.Key("characters", c.ID, "info.json")) {
 								if d, e := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID)); e == nil {
-									cache.Put(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(d))
+									putCache(dd, cache.Key("characters", c.ID, "info.json"), cache.StripImages(d), p)
 								} else {
 									log.Warn("gap character fetch failed", "id", c.ID, "err", e)
 									if p != nil {
@@ -820,7 +865,7 @@ func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 						for _, pp := range persons {
 							if !cache.Has(dd, cache.Key("persons", pp.ID, "info.json")) {
 								if d, e := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID)); e == nil {
-									cache.Put(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(d))
+									putCache(dd, cache.Key("persons", pp.ID, "info.json"), cache.StripImages(d), p)
 								} else {
 									log.Warn("gap person fetch failed", "id", pp.ID, "err", e)
 									if p != nil {
