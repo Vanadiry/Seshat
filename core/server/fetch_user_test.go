@@ -32,19 +32,34 @@ func collectionsPage(offset, total int) []byte {
 	return b
 }
 
-func readCollections(t *testing.T, home string) map[string]int {
+func readCollections(t *testing.T, home string) []map[string]any {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join(home, "data", "user", "collections.json"))
 	if err != nil {
 		t.Fatalf("读取收藏: %v", err)
 	}
 	var v struct {
-		Subjects map[string]int `json:"subjects"`
+		Data []map[string]any `json:"data"`
 	}
 	if err := json.Unmarshal(data, &v); err != nil {
 		t.Fatalf("解析收藏: %v", err)
 	}
-	return v.Subjects
+	return v.Data
+}
+
+func readCollectionsSummary(t *testing.T, home string) []map[string]any {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(home, "data", "user", "collections_summary.json"))
+	if err != nil {
+		t.Fatalf("读取收藏摘要: %v", err)
+	}
+	var v struct {
+		Data []map[string]any `json:"data"`
+	}
+	if err := json.Unmarshal(data, &v); err != nil {
+		t.Fatalf("解析收藏摘要: %v", err)
+	}
+	return v.Data
 }
 
 func TestFetchUserCollectionsWritesAllPages(t *testing.T) {
@@ -64,6 +79,13 @@ func TestFetchUserCollectionsWritesAllPages(t *testing.T) {
 	if got := len(readCollections(t, home)); got != 120 {
 		t.Errorf("收藏条数为 %d，期望 120", got)
 	}
+	summary := readCollectionsSummary(t, home)
+	if len(summary) != 120 {
+		t.Errorf("摘要条数为 %d，期望 120", len(summary))
+	}
+	if summary[0]["subject_id"] == nil || summary[0]["subject_type"] == nil || summary[0]["type"] == nil || summary[0]["rate"] == nil {
+		t.Errorf("摘要字段不全: %v", summary[0])
+	}
 }
 
 func TestFetchUserCollectionsKeepsOldFileOnFailure(t *testing.T) {
@@ -80,7 +102,7 @@ func TestFetchUserCollectionsKeepsOldFileOnFailure(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	old := `{"subjects":{"999":1},"updated_at":"2026-01-01T00:00:00Z"}`
+	old := `{"data":[{"subject_id":999,"subject_type":2,"type":1}],"updated_at":"2026-01-01T00:00:00Z"}`
 	dir := filepath.Join(home, "data", "user")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)

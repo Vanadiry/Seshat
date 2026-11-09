@@ -342,18 +342,23 @@ func handleImportCollections(dd string) http.HandlerFunc {
 			return
 		}
 		var coll struct {
-			Subjects map[string]int `json:"subjects"`
+			Data []struct {
+				SubjectID   int `json:"subject_id"`
+				SubjectType int `json:"subject_type"`
+			} `json:"data"`
 		}
 		if json.Unmarshal(data, &coll) != nil {
 			writeError(w, r, 400, "invalid collections data")
 			return
 		}
+		seen := map[int]bool{}
 		var ids []int
-		for sid := range coll.Subjects {
-			id, _ := strconv.Atoi(sid)
-			if id > 0 {
-				ids = append(ids, id)
+		for _, item := range coll.Data {
+			if item.SubjectType != 2 || item.SubjectID <= 0 || seen[item.SubjectID] {
+				continue
 			}
+			seen[item.SubjectID] = true
+			ids = append(ids, item.SubjectID)
 		}
 		td := filepath.Join(config.Dir(), "tracker")
 		if err := os.MkdirAll(td, 0o755); err != nil {

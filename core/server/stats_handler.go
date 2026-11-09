@@ -101,10 +101,16 @@ func handleStats(dd string) http.HandlerFunc {
 		collCount := 0
 		if data, err := os.ReadFile(filepath.Join(userDir(dd), "collections.json")); err == nil {
 			var coll struct {
-				Subjects map[string]int `json:"subjects"`
+				Data []struct {
+					SubjectType int `json:"subject_type"`
+				} `json:"data"`
 			}
 			if json.Unmarshal(data, &coll) == nil {
-				collCount = len(coll.Subjects)
+				for _, item := range coll.Data {
+					if item.SubjectType == 2 {
+						collCount++
+					}
+				}
 			}
 		}
 

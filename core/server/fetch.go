@@ -460,7 +460,7 @@ func subjectCoreIncomplete(dd string, sid int) bool {
 func fetchUserCollections(username string, bg *bangumi.Client, dd string) error {
 	log.Info("fetching collections", "user", username)
 
-	all := map[string]int{}
+	var items []json.RawMessage
 
 	offset := 0
 	for {
@@ -469,25 +469,38 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) error 
 			return fmt.Errorf("拉取收藏失败，偏移 %d: %w", offset, err)
 		}
 		var resp struct {
-			Data []struct {
-				SubjectID   int `json:"subject_id"`
-				SubjectType int `json:"subject_type"`
-				Type        int `json:"type"`
-			} `json:"data"`
-			Total int `json:"total"`
+			Data  []json.RawMessage `json:"data"`
+			Total int               `json:"total"`
 		}
 		if err := json.Unmarshal(data, &resp); err != nil {
 			return fmt.Errorf("解析收藏失败: %w", err)
 		}
-		for _, d := range resp.Data {
-			if d.SubjectType == 2 {
-				all[strconv.Itoa(d.SubjectID)] = d.Type
-			}
-		}
+		items = append(items, resp.Data...)
 		if offset+50 >= resp.Total {
 			break
 		}
 		offset += 50
+	}
+
+	full := make([]json.RawMessage, 0, len(items))
+	summary := make([]map[string]any, 0, len(items))
+	for _, raw := range items {
+		clean := cache.StripImages(raw)
+		full = append(full, clean)
+		var item struct {
+			SubjectID   int `json:"subject_id"`
+			SubjectType int `json:"subject_type"`
+			Type        int `json:"type"`
+			Rate        int `json:"rate"`
+		}
+		if json.Unmarshal(clean, &item) == nil {
+			summary = append(summary, map[string]any{
+				"subject_id":   item.SubjectID,
+				"subject_type": item.SubjectType,
+				"type":         item.Type,
+				"rate":         item.Rate,
+			})
+		}
 	}
 
 	// 全部页拉取成功后才写盘，中途失败会留下残缺列表
@@ -495,15 +508,23 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) error 
 	if err := os.MkdirAll(userDir, 0o755); err != nil {
 		return fmt.Errorf("创建用户目录失败: %w", err)
 	}
-	collData, err := json.Marshal(map[string]any{"subjects": all, "updated_at": time.Now().Format(time.RFC3339)})
+	updated := time.Now().Format(time.RFC3339)
+	fullData, err := json.Marshal(map[string]any{"updated_at": updated, "data": full})
 	if err != nil {
 		return fmt.Errorf("序列化收藏失败: %w", err)
 	}
-	if err := cache.WriteAtomic(filepath.Join(userDir, "collections.json"), collData, 0o644); err != nil {
+	if err := cache.WriteAtomic(filepath.Join(userDir, "collections.json"), fullData, 0o644); err != nil {
 		return fmt.Errorf("保存收藏失败: %w", err)
 	}
+	summaryData, err := json.Marshal(map[string]any{"updated_at": updated, "data": summary})
+	if err != nil {
+		return fmt.Errorf("序列化收藏摘要失败: %w", err)
+	}
+	if err := cache.WriteAtomic(filepath.Join(userDir, "collections_summary.json"), summaryData, 0o644); err != nil {
+		return fmt.Errorf("保存收藏摘要失败: %w", err)
+	}
 
-	log.Info("user collections saved", "user", username, "count", len(all))
+	log.Info("user collections saved", "user", username, "count", len(full))
 	return nil
 }
 
