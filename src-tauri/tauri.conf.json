@@ -35,7 +35,6 @@
         "languages": ["SimpChinese", "English"]
       }
     },
-    "copyright": "Copyright © 2026 Vanadiry",
     "longDescription": "离线优先的 Bangumi 数据管理与浏览工具。",
     "android": {
       "debugApplicationIdSuffix": ".debug"
