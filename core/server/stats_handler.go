@@ -99,7 +99,7 @@ func handleStats(dd string) http.HandlerFunc {
 
 		// Collections
 		collCount := 0
-		if data, err := os.ReadFile(filepath.Join(config.Dir(), "user", "info", "collections.json")); err == nil {
+		if data, err := os.ReadFile(filepath.Join(userDir(dd), "collections.json")); err == nil {
 			var coll struct {
 				Subjects map[string]int `json:"subjects"`
 			}

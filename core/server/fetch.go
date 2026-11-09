@@ -491,7 +491,7 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) error 
 	}
 
 	// 全部页拉取成功后才写盘，中途失败会留下残缺列表
-	userDir := filepath.Join(config.Dir(), "user", "info")
+	userDir := filepath.Join(dd, "user")
 	if err := os.MkdirAll(userDir, 0o755); err != nil {
 		return fmt.Errorf("创建用户目录失败: %w", err)
 	}
@@ -509,7 +509,7 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) error 
 
 func fetchUserInfo(username string, bg *bangumi.Client, dd string) error {
 	log.Info("fetching user info", "user", username)
-	userDir := filepath.Join(config.Dir(), "user", "info")
+	userDir := filepath.Join(dd, "user")
 	if err := os.MkdirAll(userDir, 0o755); err != nil {
 		return fmt.Errorf("创建用户目录失败: %w", err)
 	}
@@ -534,7 +534,7 @@ func fetchUserInfo(username string, bg *bangumi.Client, dd string) error {
 
 func fetchUserAvatar(username string, bg *bangumi.Client, dd string) error {
 	log.Info("fetching user avatar", "user", username)
-	userDir := filepath.Join(config.Dir(), "user", "info")
+	userDir := filepath.Join(dd, "user")
 	if err := os.MkdirAll(userDir, 0o755); err != nil {
 		return fmt.Errorf("创建用户目录失败: %w", err)
 	}

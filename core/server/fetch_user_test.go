@@ -34,7 +34,7 @@ func collectionsPage(offset, total int) []byte {
 
 func readCollections(t *testing.T, home string) map[string]int {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join(home, "user", "info", "collections.json"))
+	data, err := os.ReadFile(filepath.Join(home, "data", "user", "collections.json"))
 	if err != nil {
 		t.Fatalf("读取收藏: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestFetchUserCollectionsWritesAllPages(t *testing.T) {
 	defer srv.Close()
 
 	c := bangumi.NewClient("test", srv.URL, nil, nil)
-	if err := fetchUserCollections("tester", c, ""); err != nil {
+	if err := fetchUserCollections("tester", c, filepath.Join(home, "data")); err != nil {
 		t.Fatalf("拉取失败: %v", err)
 	}
 	if got := len(readCollections(t, home)); got != 120 {
@@ -81,7 +81,7 @@ func TestFetchUserCollectionsKeepsOldFileOnFailure(t *testing.T) {
 	defer srv.Close()
 
 	old := `{"subjects":{"999":1},"updated_at":"2026-01-01T00:00:00Z"}`
-	dir := filepath.Join(home, "user", "info")
+	dir := filepath.Join(home, "data", "user")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func TestFetchUserCollectionsKeepsOldFileOnFailure(t *testing.T) {
 	}
 
 	c := bangumi.NewClient("test", srv.URL, nil, nil)
-	if err := fetchUserCollections("tester", c, ""); err == nil {
+	if err := fetchUserCollections("tester", c, filepath.Join(home, "data")); err == nil {
 		t.Fatal("第二页失败时应返回错误")
 	}
 	data, err := os.ReadFile(path)
@@ -113,10 +113,10 @@ func TestFetchUserInfoWritesOnSuccess(t *testing.T) {
 	defer srv.Close()
 
 	c := bangumi.NewClient("test", srv.URL, nil, nil)
-	if err := fetchUserInfo("tester", c, ""); err != nil {
+	if err := fetchUserInfo("tester", c, filepath.Join(home, "data")); err != nil {
 		t.Fatalf("拉取失败: %v", err)
 	}
-	data, err := os.ReadFile(filepath.Join(home, "user", "info", "info.json"))
+	data, err := os.ReadFile(filepath.Join(home, "data", "user", "info.json"))
 	if err != nil {
 		t.Fatalf("读取 info.json: %v", err)
 	}
@@ -134,7 +134,7 @@ func TestFetchUserInfoKeepsOldFileOnFailure(t *testing.T) {
 	defer srv.Close()
 
 	old := `{"id":9,"username":"old"}`
-	dir := filepath.Join(home, "user", "info")
+	dir := filepath.Join(home, "data", "user")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +144,7 @@ func TestFetchUserInfoKeepsOldFileOnFailure(t *testing.T) {
 	}
 
 	c := bangumi.NewClient("test", srv.URL, nil, nil)
-	if err := fetchUserInfo("tester", c, ""); err == nil {
+	if err := fetchUserInfo("tester", c, filepath.Join(home, "data")); err == nil {
 		t.Fatal("上游失败时应返回错误")
 	}
 	data, err := os.ReadFile(path)
