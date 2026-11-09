@@ -159,6 +159,6 @@ func toAttrs(args []any) []slog.Attr {
 }
 
 // HTTP 记录 HTTP 请求日志。
-func HTTP(method, path string, status int, duration time.Duration) {
-	Debug("http request", "method", method, "path", path, "status", status, "duration", duration)
+func HTTP(method, path string, status int, duration time.Duration, requestID string) {
+	Debug("http request", "method", method, "path", path, "status", status, "duration", duration, "request_id", requestID)
 }

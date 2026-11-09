@@ -208,7 +208,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/subjects/{id}/image", imgHandler("subject"))
 	mux.HandleFunc("GET /api/v0/characters/{id}/image", imgHandler("character"))
 	mux.HandleFunc("GET /api/v0/persons/{id}/image", imgHandler("person"))
-	return withLogging(withCORS(cfg)(mux))
+	return withRequestID(withLogging(withCORS(cfg)(mux)))
 }
 
 type statusRecorder struct {
@@ -228,7 +228,7 @@ func withLogging(next http.Handler) http.Handler {
 		start := time.Now()
 		sr := &statusRecorder{ResponseWriter: w, status: 200}
 		next.ServeHTTP(sr, r)
-		log.HTTP(r.Method, r.URL.Path, sr.status, time.Since(start))
+		log.HTTP(r.Method, r.URL.Path, sr.status, time.Since(start), requestIDFrom(r.Context()))
 	})
 }
 

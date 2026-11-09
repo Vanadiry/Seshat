@@ -14,6 +14,7 @@ type errorBody struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Details     any    `json:"details,omitempty"`
+	RequestID   string `json:"request_id,omitempty"`
 	Error       string `json:"error,omitempty"`
 }
 
@@ -62,6 +63,7 @@ func writeError(w http.ResponseWriter, r *http.Request, code int, description st
 		Title:       statusTitle(code),
 		Description: description,
 		Details:     detail,
+		RequestID:   requestIDFrom(r.Context()),
 		Error:       description,
 	}
 	if err := json.NewEncoder(w).Encode(body); err != nil {
