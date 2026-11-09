@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/vanadiry/seshat/core/bangumi"
@@ -99,5 +100,58 @@ func TestFetchUserCollectionsKeepsOldFileOnFailure(t *testing.T) {
 	}
 	if string(data) != old {
 		t.Errorf("旧缓存被覆盖，内容为 %q", data)
+	}
+}
+
+func TestFetchUserInfoWritesOnSuccess(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("SESHAT_HOME", home)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"id":1,"username":"tester"}`))
+	}))
+	defer srv.Close()
+
+	c := bangumi.NewClient("test", srv.URL, nil, nil)
+	if err := fetchUserInfo("tester", c, ""); err != nil {
+		t.Fatalf("拉取失败: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(home, "user", "info", "info.json"))
+	if err != nil {
+		t.Fatalf("读取 info.json: %v", err)
+	}
+	if !strings.Contains(string(data), `"username":"tester"`) {
+		t.Errorf("内容不含 username: %s", data)
+	}
+}
+
+func TestFetchUserInfoKeepsOldFileOnFailure(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("SESHAT_HOME", home)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	old := `{"id":9,"username":"old"}`
+	dir := filepath.Join(home, "user", "info")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "info.json")
+	if err := os.WriteFile(path, []byte(old), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	c := bangumi.NewClient("test", srv.URL, nil, nil)
+	if err := fetchUserInfo("tester", c, ""); err == nil {
+		t.Fatal("上游失败时应返回错误")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("读取旧文件: %v", err)
+	}
+	if string(data) != old {
+		t.Errorf("旧文件被覆盖，内容为 %q", data)
 	}
 }

@@ -98,10 +98,19 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			}
 		}()
 		defer wg.Done()
-		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/characters", sid)); err == nil {
-			cache.Put(dd, cache.Key("subjects", sid, "characters.json"), cache.StripImages(data))
-			if err := json.Unmarshal(data, &chars); err != nil {
-				log.Warn("unmarshal chars failed", "subject", sid, "err", err)
+		data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/characters", sid))
+		if err != nil {
+			log.Warn("subject characters fetch failed", "subject", sid, "err", err)
+			if p != nil {
+				p.SetError(fmt.Sprintf("角色列表拉取失败 #%d: %v", sid, err))
+			}
+			return
+		}
+		cache.Put(dd, cache.Key("subjects", sid, "characters.json"), cache.StripImages(data))
+		if err := json.Unmarshal(data, &chars); err != nil {
+			log.Warn("unmarshal chars failed", "subject", sid, "err", err)
+			if p != nil {
+				p.SetError(fmt.Sprintf("角色列表解析失败 #%d: %v", sid, err))
 			}
 		}
 	}()
@@ -114,10 +123,19 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			}
 		}()
 		defer wg.Done()
-		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/persons", sid)); err == nil {
-			cache.Put(dd, cache.Key("subjects", sid, "persons.json"), cache.StripImages(data))
-			if err := json.Unmarshal(data, &persons); err != nil {
-				log.Warn("unmarshal persons failed", "subject", sid, "err", err)
+		data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/persons", sid))
+		if err != nil {
+			log.Warn("subject persons fetch failed", "subject", sid, "err", err)
+			if p != nil {
+				p.SetError(fmt.Sprintf("人物列表拉取失败 #%d: %v", sid, err))
+			}
+			return
+		}
+		cache.Put(dd, cache.Key("subjects", sid, "persons.json"), cache.StripImages(data))
+		if err := json.Unmarshal(data, &persons); err != nil {
+			log.Warn("unmarshal persons failed", "subject", sid, "err", err)
+			if p != nil {
+				p.SetError(fmt.Sprintf("人物列表解析失败 #%d: %v", sid, err))
 			}
 		}
 	}()
@@ -375,59 +393,50 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) error 
 	return nil
 }
 
-func fetchUserInfo(username string, bg *bangumi.Client, dd string) {
+func fetchUserInfo(username string, bg *bangumi.Client, dd string) error {
 	log.Info("fetching user info", "user", username)
 	userDir := filepath.Join(config.Dir(), "user", "info")
 	if err := os.MkdirAll(userDir, 0o755); err != nil {
-		log.Error("user info mkdir failed", "err", err)
-		events.Bus.Error("用户信息保存失败")
-		return
+		return fmt.Errorf("创建用户目录失败: %w", err)
 	}
 	data, err := bg.GetRaw(fmt.Sprintf("v0/users/%s", username))
 	if err != nil {
-		log.Warn("user info fetch failed", "user", username, "err", err)
-		return
+		return fmt.Errorf("拉取用户信息失败: %w", err)
 	}
 	var userData map[string]any
 	if err := json.Unmarshal(data, &userData); err != nil {
-		log.Warn("unmarshal user info failed", "user", username, "err", err)
-		return
+		return fmt.Errorf("解析用户信息失败: %w", err)
 	}
 	delete(userData, "avatar")
 	clean, err := json.Marshal(userData)
 	if err != nil {
-		log.Error("marshal user info failed", "user", username, "err", err)
-		events.Bus.Error("用户信息保存失败")
-		return
+		return fmt.Errorf("序列化用户信息失败: %w", err)
 	}
 	if err := cache.WriteAtomic(filepath.Join(userDir, "info.json"), clean, 0o644); err != nil {
-		log.Error("write user info failed", "user", username, "err", err)
-		events.Bus.Error("用户信息保存失败")
+		return fmt.Errorf("保存用户信息失败: %w", err)
 	}
+	return nil
 }
 
-func fetchUserAvatar(username string, bg *bangumi.Client, dd string) {
+func fetchUserAvatar(username string, bg *bangumi.Client, dd string) error {
 	log.Info("fetching user avatar", "user", username)
 	userDir := filepath.Join(config.Dir(), "user", "info")
 	if err := os.MkdirAll(userDir, 0o755); err != nil {
-		log.Error("user avatar mkdir failed", "err", err)
-		events.Bus.Error("用户头像保存失败")
-		return
+		return fmt.Errorf("创建用户目录失败: %w", err)
 	}
 	imgData, err := bg.GetImage(fmt.Sprintf("v0/users/%s/avatar?type=large", username))
 	if err != nil {
-		log.Warn("user avatar fetch failed", "user", username, "err", err)
-		return
+		return fmt.Errorf("拉取用户头像失败: %w", err)
 	}
 	ext := ".jpg"
 	if len(imgData) > 0 && imgData[0] == 0x89 {
 		ext = ".png"
 	}
 	if err := cache.WriteAtomic(filepath.Join(userDir, "large"+ext), imgData, 0o644); err != nil {
-		log.Error("write user avatar failed", "user", username, "err", err)
-		events.Bus.Error("用户头像保存失败")
+		return fmt.Errorf("保存用户头像失败: %w", err)
 	}
 	log.Info("user avatar saved", "user", username)
+	return nil
 }
 
 // countTrackerTotal 统计全部 tracker 中的条目总数
@@ -591,13 +600,23 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 			}()
 			p.SetPhase(1, 3, "拉取用户信息")
 			p.Send("user_info", 0, 1, "")
-			fetchUserInfo(uname, bg, dd)
-			p.Send("user_info", 1, 1, "")
+			if err := fetchUserInfo(uname, bg, dd); err != nil {
+				log.Warn("user info fetch failed", "user", uname, "err", err)
+				p.SetError("用户信息拉取失败")
+				p.Send("user_info", 1, 1, "error")
+			} else {
+				p.Send("user_info", 1, 1, "")
+			}
 
 			p.SetPhase(2, 3, "拉取用户头像")
 			p.Send("user_avatar", 0, 1, "")
-			fetchUserAvatar(uname, bg, dd)
-			p.Send("user_avatar", 1, 1, "")
+			if err := fetchUserAvatar(uname, bg, dd); err != nil {
+				log.Warn("user avatar fetch failed", "user", uname, "err", err)
+				p.SetError("用户头像拉取失败")
+				p.Send("user_avatar", 1, 1, "error")
+			} else {
+				p.Send("user_avatar", 1, 1, "")
+			}
 
 			p.SetPhase(3, 3, "拉取用户收藏")
 			p.Send("user_collections", 0, 1, "")

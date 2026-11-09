@@ -100,10 +100,12 @@ func EnsureExcludeFile() {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			log.Error("elo mkdir", "err", err)
+			events.Bus.Error("ELO 排除列表初始化失败")
 			return
 		}
 		if err := cache.WriteAtomic(path, []byte(excludeTemplate), 0o644); err != nil {
 			log.Error("elo exclude write", "err", err)
+			events.Bus.Error("ELO 排除列表初始化失败")
 		}
 	}
 }
