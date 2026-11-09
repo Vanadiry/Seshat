@@ -105,6 +105,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		}()
 	})
 	mux.HandleFunc("GET /api/v0/tasks", handleActiveTasks)
+	mux.HandleFunc("GET /api/v0/info", handleInfo)
 
 	// Cache API
 	mux.HandleFunc("GET /api/v0/subjects/list", handleListSubjects(dd))

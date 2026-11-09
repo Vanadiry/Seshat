@@ -869,6 +869,24 @@ paths:
           description: 缺少 url 参数
 
 # 其他
+  /api/v0/info:                         # 实例信息
+    get:
+      tags: [其他]
+      summary: 实例信息
+      description: 返回实例名称、版本、许可证、仓库与版权，供关于页展示。
+      responses:
+        "200":
+          description: 实例信息
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name: { type: string, example: "Seshat" }
+                  version: { type: string, example: "1.4.3" }
+                  license: { type: string, example: "AGPL-3.0" }
+                  repository: { type: string, example: "https://github.com/Vanadiry/Seshat" }
+                  copyright: { type: string, example: "Copyright © 2026 Vanadiry" }
   /api/v0/settings:                     # 获取和修改设置
     get:
       tags: [其他]

@@ -1,6 +1,8 @@
 package config
 
-const DefaultConfigTOML = `# Seshat 配置
+import "fmt"
+
+var DefaultConfigTOML = fmt.Sprintf(`# Seshat 配置
 # 要修改此处内容，建议先阅读文档
 
 [server]
@@ -14,7 +16,7 @@ log_level = "warn"          # 日志级别: "debug" / "info" / "warn" / "error"
 [upstream]
 # 上游地址，控制后端拉取数据时的请求位置，建议不动。留空将不能拉取数据。
 base_url = "https://api.bgm.tv"
-user_agent = "Vanadiry/Seshat/v1.4.3 (https://github.com/Vanadiry/Seshat)"
+user_agent = "Vanadiry/Seshat/v%s (https://github.com/Vanadiry/Seshat)"
 
 [proxy]
 # 上游拉取使用的 HTTP 代理。留空则不启用。
@@ -30,7 +32,7 @@ fallback_url = ""
 [access]
 # 个人访问令牌，用于拉取受限条目。在 https://next.bgm.tv/demo/access-token 生成。
 bangumi_access_token = ""
-`
+`, Version)
 
 const TrackerTemplate = `# Tracker: %s
 name = "%s"
