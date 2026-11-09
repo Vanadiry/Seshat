@@ -56,8 +56,9 @@ func writeCollections(t *testing.T, dd, full, summary string) {
 
 func requestCollections(t *testing.T, dd, query string) (*httptest.ResponseRecorder, collectionListPage) {
 	t.Helper()
+	setupUser(t)
 	w := httptest.NewRecorder()
-	handleUserCollections(dd)(w, httptest.NewRequest(http.MethodGet, "/api/v0/users/x/collections?"+query, nil))
+	handleUserCollections(dd)(w, requestWithUser("/api/v0/users/tester/collections?"+query, "tester"))
 	var page collectionListPage
 	if w.Code == http.StatusOK {
 		if err := json.Unmarshal(w.Body.Bytes(), &page); err != nil {

@@ -3,18 +3,47 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 
+	"github.com/vanadiry/seshat/core/config"
 	"github.com/vanadiry/seshat/core/events"
 	"github.com/vanadiry/seshat/core/log"
 )
 
 func userDir(dd string) string { return filepath.Join(dd, "user") }
 
+func configuredUsername() (string, bool) {
+	pref, err := config.LoadPreferences()
+	if err != nil || pref == nil {
+		return "", false
+	}
+	return pref.Username, true
+}
+
+// requirePathUsername 校验路径 username 与配置用户一致
+func requirePathUsername(w http.ResponseWriter, r *http.Request) (string, bool) {
+	want, ok := configuredUsername()
+	if !ok {
+		writeError(w, r, http.StatusInternalServerError, "读取用户配置失败")
+		return "", false
+	}
+	got := r.PathValue("username")
+	if want == "" || got != want {
+		writeNotFound(w, r, "用户不存在")
+		return "", false
+	}
+	return got, true
+}
+
 func handleUser(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		name, ok := requirePathUsername(w, r)
+		if !ok {
+			return
+		}
 		data, err := os.ReadFile(filepath.Join(userDir(dd), "info.json"))
 		if err != nil {
 			writeNotFound(w, r, "用户信息不存在")
@@ -26,6 +55,13 @@ func handleUser(dd string) http.HandlerFunc {
 			return
 		}
 		delete(m, "avatar")
+		base := requestBaseURL(r)
+		avatar := base + "/api/v0/users/" + url.PathEscape(name) + "/avatar?type=large"
+		m["avatar"] = map[string]string{
+			"large":  avatar,
+			"medium": avatar,
+			"small":  avatar,
+		}
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(m); err != nil {
 			log.Error("user json encode", "err", err)
@@ -36,6 +72,9 @@ func handleUser(dd string) http.HandlerFunc {
 
 func serveUserAvatar(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := requirePathUsername(w, r); !ok {
+			return
+		}
 		for _, ext := range []string{".jpg", ".png"} {
 			path := filepath.Join(userDir(dd), "large"+ext)
 			if _, err := os.Stat(path); err == nil {
@@ -115,6 +154,9 @@ func handleCollectionSummary(w http.ResponseWriter, r *http.Request, dd string) 
 
 func handleUserCollections(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := requirePathUsername(w, r); !ok {
+			return
+		}
 		view := r.URL.Query().Get("view")
 		if view != "" && view != "summary" {
 			writeError(w, r, http.StatusBadRequest, "view 不合法")
