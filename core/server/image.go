@@ -113,15 +113,16 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 	log.Info("images download complete")
 }
 
-// imageExists 检查图片三种尺寸是否都已存在于磁盘
-func imageExists(imgBase, kind string, id int) bool {
+// missingImageSizes 返回指定条目在磁盘上缺失的图片尺寸
+func missingImageSizes(imgBase, kind string, id int) []string {
+	var missing []string
 	for _, size := range []string{"large", "grid", "small"} {
 		path := filepath.Join(imgBase, fmt.Sprintf("%ss_%s/%d/%d.jpg", kind, size, id%10, id))
 		if _, err := os.Stat(path); err != nil {
-			return false
+			missing = append(missing, size)
 		}
 	}
-	return true
+	return missing
 }
 
 func dlImageList(ids []int, kind string, imgMap map[int]cache.ImageEntry, imgBase string, bg *bangumi.Client, p *Progress, stage string, concurrency int) {
@@ -156,80 +157,35 @@ func dlImageList(ids []int, kind string, imgMap map[int]cache.ImageEntry, imgBas
 }
 
 func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.ImageEntry, imgBase string, mu *sync.Mutex, p *Progress) {
-	// 去重：检查 map 或磁盘
+	// 只补缺失的尺寸，避免整组重下
+	var missing []string
 	if imgMap != nil {
 		mu.Lock()
-		entry, hasAll := imgMap[id]
+		entry, ok := imgMap[id]
 		mu.Unlock()
-		if hasAll && entry.Large != "" && entry.Grid != "" && entry.Small != "" {
-			return
+		if ok {
+			if entry.Large == "" {
+				missing = append(missing, "large")
+			}
+			if entry.Grid == "" {
+				missing = append(missing, "grid")
+			}
+			if entry.Small == "" {
+				missing = append(missing, "small")
+			}
+		} else {
+			missing = []string{"large", "grid", "small"}
 		}
 	} else {
-		if imageExists(imgBase, kind, id) {
-			return
-		}
+		missing = missingImageSizes(imgBase, kind, id)
 	}
-
-	// 三个尺寸并发下载
-	type result struct {
-		size, path string
+	if len(missing) == 0 {
+		return
 	}
-	var wg sync.WaitGroup
-	results := make(chan result, 3)
-
-	for _, size := range []string{"large", "grid", "small"} {
-		wg.Add(1)
-		go func(size string) {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Error("goroutine panic", "panic", r)
-				}
-			}()
-			defer wg.Done()
-			data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
-			if err != nil {
-				if !strings.Contains(err.Error(), "placeholder") && !strings.Contains(err.Error(), "HTTP 404") {
-					log.Warn("image download failed", "kind", kind, "id", id, "size", size, "err", err)
-					if p != nil {
-						p.SetError(fmt.Sprintf("Image %s #%d %s: %v", kind, id, size, err))
-					}
-				}
-				return
-			}
-			relPath := fmt.Sprintf("%ss_%s/%d/%d.jpg", kind, size, id%10, id)
-			fullPath := filepath.Join(imgBase, relPath)
-			if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
-				log.Error("image mkdir failed", "kind", kind, "id", id, "size", size, "err", err)
-				return
-			}
-			if err := cache.WriteAtomic(fullPath, data, 0o644); err != nil {
-				log.Error("image write failed", "kind", kind, "id", id, "size", size, "err", err)
-				events.Bus.Error(fmt.Sprintf("图片写入失败 %s #%d %s", kind, id, size))
-				return
-			}
-			results <- result{size, relPath}
-		}(size)
+	if imgMap == nil {
+		imgMap = map[int]cache.ImageEntry{id: cache.ImageEntry{}}
 	}
-	wg.Wait()
-	close(results)
-
-	var entry cache.ImageEntry
-	for r := range results {
-		switch r.size {
-		case "large":
-			entry.Large = r.path
-		case "grid":
-			entry.Grid = r.path
-		case "small":
-			entry.Small = r.path
-		}
-	}
-
-	if imgMap != nil && (entry.Large != "" || entry.Grid != "" || entry.Small != "") {
-		mu.Lock()
-		imgMap[id] = entry
-		mu.Unlock()
-	}
+	dlMissingSizes(bg, kind, id, missing, imgMap, imgBase, mu, p)
 }
 
 // dlMissingSizes 仅下载指定条目缺失的图片尺寸
