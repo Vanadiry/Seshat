@@ -2,7 +2,7 @@ openapi: "3.0.0"
 info:
   title: Seshat API
   description: 离线优先的 Bangumi 数据管理与浏览工具。
-  version: "1.4.3"
+  version: "1.5.0"
 servers:
   - url: http://127.0.0.1:12500
     description: Seshat 本地后端
@@ -883,7 +883,7 @@ paths:
                 type: object
                 properties:
                   name: { type: string, example: "Seshat" }
-                  version: { type: string, example: "1.4.3" }
+                  version: { type: string, example: "1.5.0" }
                   license: { type: string, example: "AGPL-3.0" }
                   repository: { type: string, example: "https://github.com/Vanadiry/Seshat" }
                   copyright: { type: string, example: "Copyright © 2026 Vanadiry" }

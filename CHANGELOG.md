@@ -1,5 +1,29 @@
 # Changelog
 
+## [v1.5.0] - 2026-11-09
+
+> 此版本是 1.x 的最后一个版本。
+
+### Added
+
+- `GET /api/v0/info` 实例信息端点
+- 设置页底部增加关于区块
+- 版本同步测试，检查 Go、Tauri、Cargo 与 OpenAPI 的版本声明
+
+### Changed
+
+- 用户下拉菜单的“项目 GitHub”改为读取 `/v0/info`
+- 移除原生关于窗口的版权文案
+- 图片下载只补充缺失的尺寸
+- 剧集分页失败时保留已有的完整 `episodes.json`
+
+### Fixed
+
+- `fetch/subject` 成功后创建并记录 `_seshat.json`
+- `cache.Put` 的返回值参与失败判定
+- `fetchAll` 的角色、人物、剧集和关联条目失败参与成功判定
+- `fetch/gap` 能修复缺失的剧集和关联条目
+
 ## [v1.4.3] - 2026-11-09
 
 ### Added
