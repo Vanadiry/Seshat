@@ -872,6 +872,33 @@ document.addEventListener("keydown", function (e) {
     }
 });
 
+// "/" 打开搜索页；已在搜索页时聚焦输入框
+document.addEventListener("keydown", function (e) {
+    if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target;
+    if (t) {
+        var tag = t.tagName;
+        if (
+            tag === "INPUT" ||
+            tag === "TEXTAREA" ||
+            tag === "SELECT" ||
+            t.isContentEditable
+        )
+            return;
+    }
+    var p = location.pathname;
+    if (p === "/search" || p === "/search.html") {
+        var q = document.getElementById("q");
+        if (q && document.activeElement !== q) {
+            e.preventDefault();
+            q.focus();
+        }
+        return;
+    }
+    e.preventDefault();
+    location.href = "/search";
+});
+
 // 拉取弹窗：输入行 + 操作按钮 + 危险区 + 二次确认
 var dlgInited = false,
     confirmCb = null;
