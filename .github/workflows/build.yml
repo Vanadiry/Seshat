@@ -130,3 +130,4 @@ jobs:
           files: |
             release/*
           draft: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
