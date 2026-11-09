@@ -38,7 +38,6 @@ func TestWriteErrorShape(t *testing.T) {
 		Title       string         `json:"title"`
 		Description string         `json:"description"`
 		Details     map[string]any `json:"details"`
-		Error       string         `json:"error"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("解析响应: %v", err)
@@ -49,11 +48,11 @@ func TestWriteErrorShape(t *testing.T) {
 	if body.Description != "条目未找到" {
 		t.Errorf("description = %q", body.Description)
 	}
-	if body.Error != "条目未找到" {
-		t.Errorf("过渡 error = %q", body.Error)
-	}
 	if body.Details["path"] != "/api/v0/subjects/999" {
 		t.Errorf("details = %v", body.Details)
+	}
+	if strings.Contains(w.Body.String(), `"error"`) {
+		t.Errorf("不应再输出过渡 error 字段: %s", w.Body.String())
 	}
 }
 
