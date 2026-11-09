@@ -53,11 +53,20 @@ func countTrackerNames(cfg *config.Config, names []string) int {
 	return len(seen)
 }
 
-// forceRefresh 删除全部缓存后完整重建
+// clearContentCache 删除内容缓存，保留 data/user
+func clearContentCache(dd string) {
+	for _, name := range []string{"api", "images", "index"} {
+		if err := os.RemoveAll(filepath.Join(dd, name)); err != nil {
+			log.Error("clear content cache failed", "dir", name, "err", err)
+		}
+	}
+}
+
+// forceRefresh 删除全部内容缓存后完整重建
 func forceRefresh(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, p *Progress) {
-	log.Info("force refresh: clearing cache")
-	os.RemoveAll(dd)
-	log.Info("force refresh: cache cleared, starting rebuild")
+	log.Info("force refresh: clearing content cache")
+	clearContentCache(dd)
+	log.Info("force refresh: content cache cleared, starting rebuild")
 	refreshAllTrackers(cfg, bg, dd, imgDir, p)
 }
 
