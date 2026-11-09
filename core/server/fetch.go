@@ -79,6 +79,7 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int) bool {
 	log.Info("fetching subject", "id", sid)
 	var writeFailed atomic.Bool
+	var requiredFailed atomic.Bool
 
 	// 条目
 	if p != nil {
@@ -133,6 +134,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 		data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/characters", sid))
 		if err != nil {
 			log.Warn("subject characters fetch failed", "subject", sid, "err", err)
+			requiredFailed.Store(true)
 			if p != nil {
 				p.SetError(fmt.Sprintf("角色列表拉取失败 #%d: %v", sid, err))
 			}
@@ -144,6 +146,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 		}
 		if err := json.Unmarshal(data, &chars); err != nil {
 			log.Warn("unmarshal chars failed", "subject", sid, "err", err)
+			requiredFailed.Store(true)
 			if p != nil {
 				p.SetError(fmt.Sprintf("角色列表解析失败 #%d: %v", sid, err))
 			}
@@ -161,6 +164,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 		data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/persons", sid))
 		if err != nil {
 			log.Warn("subject persons fetch failed", "subject", sid, "err", err)
+			requiredFailed.Store(true)
 			if p != nil {
 				p.SetError(fmt.Sprintf("人物列表拉取失败 #%d: %v", sid, err))
 			}
@@ -172,6 +176,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 		}
 		if err := json.Unmarshal(data, &persons); err != nil {
 			log.Warn("unmarshal persons failed", "subject", sid, "err", err)
+			requiredFailed.Store(true)
 			if p != nil {
 				p.SetError(fmt.Sprintf("人物列表解析失败 #%d: %v", sid, err))
 			}
@@ -347,26 +352,37 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 		for {
 			data, err := bg.GetRaw(fmt.Sprintf("v0/episodes?subject_id=%d&limit=100&offset=%d", sid, offset))
 			if err != nil {
+				log.Warn("episodes fetch failed", "subject", sid, "offset", offset, "err", err)
+				requiredFailed.Store(true)
 				break
 			}
 			var page struct {
 				Data  []json.RawMessage `json:"data"`
 				Total int               `json:"total"`
 			}
-			if json.Unmarshal(data, &page) == nil && len(page.Data) > 0 {
-				allEps = append(allEps, page.Data...)
-				if len(allEps) >= page.Total {
-					break
-				}
-				offset += 100
-			} else {
+			if err := json.Unmarshal(data, &page); err != nil {
+				log.Warn("episodes parse failed", "subject", sid, "offset", offset, "err", err)
+				requiredFailed.Store(true)
 				break
 			}
+			if len(page.Data) == 0 {
+				if page.Total > 0 {
+					log.Warn("episodes empty page", "subject", sid, "offset", offset, "total", page.Total)
+					requiredFailed.Store(true)
+				}
+				break
+			}
+			allEps = append(allEps, page.Data...)
+			if len(allEps) >= page.Total {
+				break
+			}
+			offset += 100
 		}
 		if len(allEps) > 0 {
 			result, err := json.Marshal(allEps)
 			if err != nil {
 				log.Error("marshal episodes failed", "subject", sid, "err", err)
+				requiredFailed.Store(true)
 				events.Bus.Error(fmt.Sprintf("剧集数据序列化失败 #%d", sid))
 				return
 			}
@@ -389,16 +405,47 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			if !putCache(dd, cache.Key("subjects", sid, "subjects.json"), cache.StripImages(data), p) {
 				writeFailed.Store(true)
 			}
+		} else {
+			log.Warn("subject relations fetch failed", "subject", sid, "err", err)
+			requiredFailed.Store(true)
 		}
 	}()
 	wg3.Wait()
 
-	if writeFailed.Load() {
-		log.Warn("subject fetch incomplete", "id", sid, "reason", "cache write failed")
+	if writeFailed.Load() || requiredFailed.Load() {
+		log.Warn("subject fetch incomplete", "id", sid, "write_failed", writeFailed.Load(), "required_failed", requiredFailed.Load())
 		return false
 	}
 	log.Info("subject fetch done", "id", sid, "chars", len(charIDs), "persons", len(personIDs), "episodes", len(allEps))
 	return true
+}
+
+// subjectCoreIncomplete 检查条目的核心文件是否缺失
+func subjectCoreIncomplete(dd string, sid int) bool {
+	for _, file := range []string{"info.json", "characters.json", "persons.json", "subjects.json"} {
+		if !cache.Has(dd, cache.Key("subjects", sid, file)) {
+			return true
+		}
+	}
+	data, err := cache.Get(dd, cache.Key("subjects", sid, "info.json"))
+	if err != nil {
+		return true
+	}
+	var info struct {
+		TotalEpisodes int `json:"total_episodes"`
+		Eps           int `json:"eps"`
+	}
+	if json.Unmarshal(data, &info) != nil {
+		return true
+	}
+	expected := info.TotalEpisodes
+	if expected == 0 {
+		expected = info.Eps
+	}
+	if expected > 0 && !cache.Has(dd, cache.Key("subjects", sid, "episodes.json")) {
+		return true
+	}
+	return false
 }
 
 // 拉取用户收藏，失败时不做写入
@@ -836,6 +883,13 @@ func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) h
 			var done int
 			log.Info("filling data gaps", "subjects", len(allIDs))
 			for _, sid := range allIDs {
+				if subjectCoreIncomplete(dd, sid) {
+					if !fetchAll(sid, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo) {
+						if p != nil {
+							p.SetError(fmt.Sprintf("条目 #%d 修复失败", sid))
+						}
+					}
+				}
 				// 检查角色
 				if data, err := os.ReadFile(filepath.Join(cache.Dir(dd), cache.Key("subjects", sid, "characters.json"))); err == nil {
 					var chars []struct {
