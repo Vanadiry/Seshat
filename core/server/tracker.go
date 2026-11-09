@@ -288,8 +288,8 @@ func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 		var req struct {
 			Name string `json:"name"`
 		}
-		if limitBody(w, r); json.NewDecoder(r.Body).Decode(&req) != nil {
-			writeError(w, r, 400, "invalid request body")
+		limitBody(w, r)
+		if !decodeJSON(w, r, &req) {
 			return
 		}
 		if req.Name == "" || !validTrackerName(req.Name) {

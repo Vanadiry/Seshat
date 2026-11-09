@@ -428,5 +428,5 @@ func serveImage(w http.ResponseWriter, r *http.Request, dd, kind, size string) {
 		}
 	}
 	// 404 触发前端 onerror 回退
-	http.NotFound(w, r)
+	writeNotFound(w, r, "图片不存在")
 }

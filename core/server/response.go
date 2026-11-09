@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/vanadiry/seshat/core/log"
@@ -76,4 +77,28 @@ func writeJSON(w http.ResponseWriter, v any) {
 	if err := json.NewEncoder(w).Encode(v); err != nil {
 		log.Error("writeJSON encode", "err", err)
 	}
+}
+
+// writeNotFound 输出带 path 和 method 的 404
+func writeNotFound(w http.ResponseWriter, r *http.Request, description string) {
+	writeError(w, r, http.StatusNotFound, description, map[string]any{
+		"path":   r.URL.Path,
+		"method": r.Method,
+	})
+}
+
+// decodeJSON 解码请求体，超限返回 413，其余解析失败返回 400
+func decodeJSON(w http.ResponseWriter, r *http.Request, v any) bool {
+	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			writeError(w, r, http.StatusRequestEntityTooLarge, "请求体过大", map[string]any{
+				"max_bytes": maxErr.Limit,
+			})
+			return false
+		}
+		writeError(w, r, http.StatusBadRequest, "请求体不合法")
+		return false
+	}
+	return true
 }

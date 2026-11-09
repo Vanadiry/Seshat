@@ -66,13 +66,13 @@ func handleCacheReader(dd string) http.HandlerFunc {
 		path := strings.TrimPrefix(r.URL.Path, "/api/v0/")
 		parts := strings.Split(strings.Trim(path, "/"), "/")
 		if len(parts) < 2 {
-			http.NotFound(w, r)
+			writeNotFound(w, r, "缓存路径不合法")
 			return
 		}
 		domain := parts[0]
 		id, err := strconv.Atoi(parts[1])
 		if err != nil {
-			http.NotFound(w, r)
+			writeNotFound(w, r, "条目 ID 不合法")
 			return
 		}
 		file := "info.json"
@@ -81,7 +81,7 @@ func handleCacheReader(dd string) http.HandlerFunc {
 		}
 		data, err := cache.Get(dd, cache.Key(domain, id, file))
 		if err != nil {
-			http.NotFound(w, r)
+			writeNotFound(w, r, "缓存条目不存在")
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")

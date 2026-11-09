@@ -47,7 +47,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 			return
 		}
 		if embedFS == nil {
-			http.NotFound(w, r)
+			writeError(w, r, http.StatusInternalServerError, "frontend not embedded")
 			return
 		}
 		w.Header().Set("Cache-Control", "no-store")
@@ -80,7 +80,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	})
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
-			http.NotFound(w, r)
+			writeNotFound(w, r, "页面不存在")
 			return
 		}
 		if embedFS == nil {

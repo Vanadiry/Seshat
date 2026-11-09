@@ -68,57 +68,60 @@ func searchAllJSON(dd, domain, q string) []map[string]any {
 	return results
 }
 
+func keywordFromRequest(w http.ResponseWriter, r *http.Request) (string, bool) {
+	limitBody(w, r)
+	var req struct {
+		Keyword string `json:"keyword"`
+	}
+	if !decodeJSON(w, r, &req) {
+		return "", false
+	}
+	if req.Keyword == "" {
+		writeJSON(w, map[string]any{"data": []any{}})
+		return "", false
+	}
+	return req.Keyword, true
+}
+
 func handleSearchSubjects(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req struct {
-			Keyword string `json:"keyword"`
-		}
-		if limitBody(w, r); json.NewDecoder(r.Body).Decode(&req) != nil || req.Keyword == "" {
-			writeJSON(w, map[string]any{"data": []any{}})
+		keyword, ok := keywordFromRequest(w, r)
+		if !ok {
 			return
 		}
-		writeJSON(w, map[string]any{"data": searchAllJSON(dd, "subjects", req.Keyword)})
+		writeJSON(w, map[string]any{"data": searchAllJSON(dd, "subjects", keyword)})
 	}
 }
 
 func handleSearchCharacters(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req struct {
-			Keyword string `json:"keyword"`
-		}
-		if limitBody(w, r); json.NewDecoder(r.Body).Decode(&req) != nil || req.Keyword == "" {
-			writeJSON(w, map[string]any{"data": []any{}})
+		keyword, ok := keywordFromRequest(w, r)
+		if !ok {
 			return
 		}
-		writeJSON(w, map[string]any{"data": searchAllJSON(dd, "characters", req.Keyword)})
+		writeJSON(w, map[string]any{"data": searchAllJSON(dd, "characters", keyword)})
 	}
 }
 
 func handleSearchPersons(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req struct {
-			Keyword string `json:"keyword"`
-		}
-		if limitBody(w, r); json.NewDecoder(r.Body).Decode(&req) != nil || req.Keyword == "" {
-			writeJSON(w, map[string]any{"data": []any{}})
+		keyword, ok := keywordFromRequest(w, r)
+		if !ok {
 			return
 		}
-		writeJSON(w, map[string]any{"data": searchAllJSON(dd, "persons", req.Keyword)})
+		writeJSON(w, map[string]any{"data": searchAllJSON(dd, "persons", keyword)})
 	}
 }
 
 func handleSearchTags(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req struct {
-			Keyword string `json:"keyword"`
-		}
-		if limitBody(w, r); json.NewDecoder(r.Body).Decode(&req) != nil || req.Keyword == "" {
-			writeJSON(w, map[string]any{"data": []any{}})
+		keyword, ok := keywordFromRequest(w, r)
+		if !ok {
 			return
 		}
 		tags := loadTags(dd)
 		var results []map[string]any
-		ql := strings.ToLower(req.Keyword)
+		ql := strings.ToLower(keyword)
 		for name, info := range tags {
 			if strings.Contains(strings.ToLower(name), ql) {
 				results = append(results, map[string]any{"name": name, "count": info.Count})

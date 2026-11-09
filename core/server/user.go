@@ -18,12 +18,12 @@ func handleUser(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := os.ReadFile(filepath.Join(userDir(), "info.json"))
 		if err != nil {
-			http.NotFound(w, r)
+			writeNotFound(w, r, "用户信息不存在")
 			return
 		}
 		var m map[string]any
 		if json.Unmarshal(data, &m) != nil {
-			http.NotFound(w, r)
+			writeError(w, r, http.StatusInternalServerError, "用户信息解析失败")
 			return
 		}
 		delete(m, "avatar")
@@ -44,7 +44,7 @@ func serveUserAvatar(dd string) http.HandlerFunc {
 				return
 			}
 		}
-		http.NotFound(w, r)
+		writeNotFound(w, r, "用户头像不存在")
 	}
 }
 

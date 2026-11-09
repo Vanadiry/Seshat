@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/url"
 	"os/exec"
@@ -26,7 +25,10 @@ func handleOpenURL(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		URL string `json:"url"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.URL == "" {
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if body.URL == "" {
 		writeError(w, r, http.StatusBadRequest, "missing url")
 		return
 	}
