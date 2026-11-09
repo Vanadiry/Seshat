@@ -255,6 +255,19 @@ function apiLocal(url) {
         return r.ok ? r.json() : null;
     });
 }
+// errText 从错误响应里取可读文案
+function errText(d, status) {
+    if (d && d.description) return d.description;
+    if (d && d.title) return d.title;
+    if (d && d.error) return d.error;
+    return "请求失败 (" + status + ")";
+}
+// readJSON 解析响应体，失败时返回 null
+function readJSON(res) {
+    return res.json().catch(function () {
+        return null;
+    });
+}
 // getInstanceInfo 复用一次 /v0/info 请求
 var _infoPromise = null;
 function getInstanceInfo() {
@@ -1179,17 +1192,15 @@ function initDialog() {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ name: name })
-                        })
-                            .then(function (r) {
-                                return r.json();
-                            })
-                            .then(function (d) {
-                                if (d.error) {
-                                    showError(d.error);
+                        }).then(function (r) {
+                            return r.json().then(function (d) {
+                                if (!r.ok) {
+                                    showError(errText(d, r.status));
                                 } else {
                                     showSuccess(MSG.trackerCreated(name));
                                 }
                             });
+                        });
                     });
                 }
             });
@@ -1210,14 +1221,12 @@ function initDialog() {
                     closeFetch();
                     fetch(API + "/v0/tracker/import-collections", {
                         method: "POST"
-                    })
-                        .then(function (r) {
-                            return r.json();
-                        })
-                        .then(function (d) {
-                            if (d.error) showError(d.error);
+                    }).then(function (r) {
+                        return r.json().then(function (d) {
+                            if (!r.ok) showError(errText(d, r.status));
                             else showSuccess(MSG.importCollDone(d.count));
                         });
+                    });
                 }
             );
         });
@@ -1493,9 +1502,9 @@ async function doFetch() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: ids })
     });
-    var d = await res.json();
-    if (d.error) {
-        showError(d.error);
+    var d = await readJSON(res);
+    if (!res.ok || !d) {
+        showError(errText(d, res.status));
         return;
     }
     if (d.task_id) startProgress(d.task_id);
@@ -1509,9 +1518,9 @@ async function doTrackerFetch() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ names: [v] })
     });
-    var d = await res.json();
-    if (d.error) {
-        showError(d.error);
+    var d = await readJSON(res);
+    if (!res.ok || !d) {
+        showError(errText(d, res.status));
         return;
     }
     closeFetch();
@@ -1520,11 +1529,9 @@ async function doTrackerFetch() {
 
 async function doUserFetch() {
     var res = await fetch(API + "/v0/fetch/user", { method: "POST" });
-    var d = await res.json().catch(function () {
-        return { error: "请求失败 (" + res.status + ")" };
-    });
-    if (d.error) {
-        showError(MSG.errUserFetchFailed + d.error);
+    var d = await readJSON(res);
+    if (!res.ok || !d) {
+        showError(MSG.errUserFetchFailed + errText(d, res.status));
         return;
     }
     closeFetch();
@@ -1534,9 +1541,9 @@ async function doUserFetch() {
 async function doRefreshAll() {
     closeFetch();
     var res = await fetch(API + "/v0/fetch/all", { method: "POST" });
-    var d = await res.json();
-    if (d.error) {
-        showError(d.error);
+    var d = await readJSON(res);
+    if (!res.ok || !d) {
+        showError(errText(d, res.status));
         return;
     }
     if (d.task_id) startProgress(d.task_id);
@@ -1545,9 +1552,9 @@ async function doRefreshAll() {
 async function doDeepRebuild() {
     closeFetch();
     var res = await fetch(API + "/v0/fetch/deep", { method: "POST" });
-    var d = await res.json();
-    if (d.error) {
-        showError(d.error);
+    var d = await readJSON(res);
+    if (!res.ok || !d) {
+        showError(errText(d, res.status));
         return;
     }
     if (d.task_id) startProgress(d.task_id);
@@ -1556,9 +1563,9 @@ async function doDeepRebuild() {
 async function doFetchUpdate() {
     closeFetch();
     var res = await fetch(API + "/v0/fetch/update", { method: "POST" });
-    var d = await res.json();
-    if (d.error) {
-        showError(d.error);
+    var d = await readJSON(res);
+    if (!res.ok || !d) {
+        showError(errText(d, res.status));
         return;
     }
     if (d.task_id) startProgress(d.task_id);
@@ -1566,9 +1573,9 @@ async function doFetchUpdate() {
 async function doFetchGap() {
     closeFetch();
     var res = await fetch(API + "/v0/fetch/gap", { method: "POST" });
-    var d = await res.json();
-    if (d.error) {
-        showError(d.error);
+    var d = await readJSON(res);
+    if (!res.ok || !d) {
+        showError(errText(d, res.status));
         return;
     }
     if (d.task_id) startProgress(d.task_id);
@@ -1576,9 +1583,9 @@ async function doFetchGap() {
 async function doFetchMeta() {
     closeFetch();
     var res = await fetch(API + "/v0/fetch/meta", { method: "POST" });
-    var d = await res.json();
-    if (d.error) {
-        showError(d.error);
+    var d = await readJSON(res);
+    if (!res.ok || !d) {
+        showError(errText(d, res.status));
         return;
     }
     if (d.task_id) startProgress(d.task_id);
@@ -1587,9 +1594,9 @@ async function doFetchMeta() {
 async function doFetchIndex() {
     closeFetch();
     var res = await fetch(API + "/v0/fetch/index", { method: "POST" });
-    var d = await res.json();
-    if (d.error) {
-        showError(d.error);
+    var d = await readJSON(res);
+    if (!res.ok || !d) {
+        showError(errText(d, res.status));
         return;
     }
     if (d.task_id) startProgress(d.task_id);

@@ -296,11 +296,12 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(updates)
-                })
-                    .then(function (r) {
-                        return r.json();
-                    })
-                    .then(function (d) {
+                }).then(function (r) {
+                    return readJSON(r).then(function (d) {
+                        if (!r.ok) {
+                            msg.textContent = errText(d, r.status);
+                            return;
+                        }
                         if (d.error && !d.success) {
                             msg.textContent = d.error;
                             return;
@@ -325,6 +326,7 @@
                         }
                         if (!d.error) loadSettings();
                     });
+                });
             }
 
             loadSettings();
