@@ -68,7 +68,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.SUBJECT_SORT=%q;\nwindow.AUTO_LINK_NAMES=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\nwindow.ACCESS_TOKEN=%q;\n", cfg.Frontend.BackendURL, pref.PreferLang, pref.Username, pref.SubjectSort, pref.AutoLinkNames, cfg.Frontend.FallbackURL, config.Dir(), token)
 		data, err := fs.ReadFile(embedFS, "web/assets/app.min.js")
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "app bundle not found")
+			writeError(w, r, http.StatusInternalServerError, "app bundle not found")
 			return
 		}
 		w.Write(data)
@@ -84,7 +84,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 			return
 		}
 		if embedFS == nil {
-			writeError(w, http.StatusInternalServerError, "frontend not embedded")
+			writeError(w, r, http.StatusInternalServerError, "frontend not embedded")
 			return
 		}
 		w.Header().Set("Cache-Control", "no-store")
@@ -136,7 +136,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/episodes", func(w http.ResponseWriter, r *http.Request) {
 		sid := r.URL.Query().Get("subject_id")
 		if sid == "" {
-			writeError(w, 400, "subject_id required")
+			writeError(w, r, 400, "subject_id required")
 			return
 		}
 		id, err := strconv.Atoi(sid)

@@ -27,12 +27,12 @@ func handleOpenURL(w http.ResponseWriter, r *http.Request) {
 		URL string `json:"url"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.URL == "" {
-		writeError(w, http.StatusBadRequest, "missing url")
+		writeError(w, r, http.StatusBadRequest, "missing url")
 		return
 	}
 	u, err := url.Parse(body.URL)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		writeError(w, http.StatusBadRequest, "only http/https URLs are allowed")
+		writeError(w, r, http.StatusBadRequest, "only http/https URLs are allowed")
 		return
 	}
 	OpenBrowser(u.String())

@@ -289,26 +289,26 @@ func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 			Name string `json:"name"`
 		}
 		if limitBody(w, r); json.NewDecoder(r.Body).Decode(&req) != nil {
-			writeError(w, 400, "invalid request body")
+			writeError(w, r, 400, "invalid request body")
 			return
 		}
 		if req.Name == "" || !validTrackerName(req.Name) {
-			writeError(w, 400, "tracker name must be alphanumeric, dash, or underscore")
+			writeError(w, r, 400, "tracker name must be alphanumeric, dash, or underscore")
 			return
 		}
 		path := filepath.Join(cfg.TrackerDir(), req.Name+".toml")
 		if _, err := os.Stat(path); err == nil {
-			writeError(w, 409, "tracker already exists")
+			writeError(w, r, 409, "tracker already exists")
 			return
 		}
 		tmpl := fmt.Sprintf(config.TrackerTemplate, req.Name, req.Name)
 		if err := os.MkdirAll(cfg.TrackerDir(), 0o755); err != nil {
-			writeError(w, 500, "无法创建 tracker 目录")
+			writeError(w, r, 500, "无法创建 tracker 目录")
 			return
 		}
 		if err := cache.WriteAtomic(path, []byte(tmpl), 0o644); err != nil {
 			log.Error("tracker create write", "err", err)
-			writeError(w, 500, "无法写入 tracker 文件")
+			writeError(w, r, 500, "无法写入 tracker 文件")
 			return
 		}
 		writeJSON(w, map[string]string{"status": "created", "name": req.Name})
@@ -338,14 +338,14 @@ func handleImportCollections(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := os.ReadFile(filepath.Join(config.Dir(), "user", "info", "collections.json"))
 		if err != nil {
-			writeError(w, 400, "collections not found")
+			writeError(w, r, 400, "collections not found")
 			return
 		}
 		var coll struct {
 			Subjects map[string]int `json:"subjects"`
 		}
 		if json.Unmarshal(data, &coll) != nil {
-			writeError(w, 400, "invalid collections data")
+			writeError(w, r, 400, "invalid collections data")
 			return
 		}
 		var ids []int
@@ -357,19 +357,19 @@ func handleImportCollections(dd string) http.HandlerFunc {
 		}
 		td := filepath.Join(config.Dir(), "tracker")
 		if err := os.MkdirAll(td, 0o755); err != nil {
-			writeError(w, 500, "无法创建 tracker 目录")
+			writeError(w, r, 500, "无法创建 tracker 目录")
 			return
 		}
 		trackerData, err := json.Marshal(map[string]any{"name": "user", "subjects": ids})
 		if err != nil {
 			log.Error("import collections marshal", "err", err)
 			events.Bus.Error("收藏列表导入失败")
-			writeError(w, 500, "internal error")
+			writeError(w, r, 500, "internal error")
 			return
 		}
 		if err := cache.WriteAtomic(filepath.Join(td, "user.json"), trackerData, 0o644); err != nil {
 			log.Error("import collections write", "err", err)
-			writeError(w, 500, "无法写入 tracker 文件")
+			writeError(w, r, 500, "无法写入 tracker 文件")
 			return
 		}
 		writeJSON(w, map[string]any{"status": "ok", "count": len(ids)})

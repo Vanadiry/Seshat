@@ -153,7 +153,7 @@ func handleActiveTasks(w http.ResponseWriter, r *http.Request) {
 func handleProgress(w http.ResponseWriter, r *http.Request) {
 	p := getProgress(r.PathValue("id"))
 	if p == nil {
-		writeError(w, http.StatusNotFound, "task not found")
+		writeError(w, r, http.StatusNotFound, "task not found")
 		return
 	}
 	w.Header().Set("Content-Type", "text/event-stream")

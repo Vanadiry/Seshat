@@ -490,7 +490,7 @@ func handleELOPair(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pair := getELOPair(dd)
 		if pair == nil {
-			writeError(w, http.StatusInternalServerError, "need at least 2 cached subjects")
+			writeError(w, r, http.StatusInternalServerError, "need at least 2 cached subjects")
 			return
 		}
 		// pair 类型为 []eloPairEntry
@@ -505,11 +505,11 @@ func handleELOCompare(dd string) http.HandlerFunc {
 			Loser  int `json:"loser"`
 		}
 		if limitBody(w, r); json.NewDecoder(r.Body).Decode(&req) != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeError(w, r, http.StatusBadRequest, "invalid request body")
 			return
 		}
 		if req.Winner == 0 || req.Loser == 0 {
-			writeError(w, 400, "winner and loser required")
+			writeError(w, r, 400, "winner and loser required")
 			return
 		}
 		updateELO(dd, req.Winner, req.Loser)
