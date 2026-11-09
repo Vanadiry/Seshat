@@ -84,6 +84,7 @@ func handleCacheReader(dd string) http.HandlerFunc {
 			writeNotFound(w, r, "缓存条目不存在")
 			return
 		}
+		data = injectImages(data, domain, file, id, r, dd)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(data)
 	}

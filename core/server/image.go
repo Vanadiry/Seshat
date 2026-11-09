@@ -403,6 +403,45 @@ func loadImageIndex(dd, name string) map[int]cache.ImageEntry {
 	return m
 }
 
+func entryPath(entry cache.ImageEntry, size string) string {
+	switch size {
+	case "large":
+		return entry.Large
+	case "grid":
+		return entry.Grid
+	case "small":
+		return entry.Small
+	default:
+		return ""
+	}
+}
+
+// imageSizeOrder 返回请求尺寸的尝试顺序，优先临近的更高档位
+func imageSizeOrder(requested string) []string {
+	switch requested {
+	case "large":
+		return []string{"large", "small", "grid"}
+	case "small":
+		return []string{"small", "large", "grid"}
+	case "grid":
+		return []string{"grid", "small", "large"}
+	case "medium", "common":
+		return []string{"large", "small", "grid"}
+	default:
+		return []string{"grid", "small", "large"}
+	}
+}
+
+// pickImageSize 返回实际可用的尺寸，没有可用图片时返回空字符串
+func pickImageSize(entry cache.ImageEntry, requested string) string {
+	for _, size := range imageSizeOrder(requested) {
+		if entryPath(entry, size) != "" {
+			return size
+		}
+	}
+	return ""
+}
+
 func serveImage(w http.ResponseWriter, r *http.Request, dd, kind, size string) {
 	if size == "" {
 		size = "grid"
@@ -412,13 +451,11 @@ func serveImage(w http.ResponseWriter, r *http.Request, dd, kind, size string) {
 	images := loadImageIndex(dd, kind+"s_image.json")
 	entry, ok := images[id]
 	if ok {
-		path := entry.Large
-		if size == "grid" {
-			path = entry.Grid
-		} else if size == "small" {
-			path = entry.Small
-		}
-		if path != "" {
+		for _, candidate := range imageSizeOrder(size) {
+			path := entryPath(entry, candidate)
+			if path == "" {
+				continue
+			}
 			fullPath := filepath.Join(dd, "images", path)
 			if _, err := os.Stat(fullPath); err == nil {
 				w.Header().Set("Cache-Control", "no-store")
