@@ -11,10 +11,10 @@ import (
 	"sync"
 
 	"github.com/vanadiry/seshat/core/bangumi"
-	"github.com/vanadiry/seshat/core/cache"
 	"github.com/vanadiry/seshat/core/config"
 	"github.com/vanadiry/seshat/core/events"
 	"github.com/vanadiry/seshat/core/log"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 // seshatTrackerMu 串行化 _seshat.json 的读改写，避免并发追加互相覆盖
@@ -169,7 +169,7 @@ func addToSeshatTracker(sid int) {
 		events.Bus.Error("Tracker 写入失败")
 		return
 	}
-	if err := cache.WriteAtomic(path, result, 0o644); err != nil {
+	if err := store.WriteAtomic(path, result, 0o644); err != nil {
 		log.Error("tracker write", "sid", sid, "err", err)
 		events.Bus.Error("Tracker 写入失败")
 	}
@@ -263,7 +263,7 @@ func diffTrackerIDs(cfg *config.Config, dd string) []int {
 	}
 	// 读取已有条目 ID
 	existing := map[int]bool{}
-	if list, err := loadCachedIndex[[]cache.SubjectSummary](cache.IndexFile(dd, "subjects.json")); err == nil {
+	if list, err := loadCachedIndex[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json")); err == nil {
 		for _, s := range list {
 			existing[s.ID] = true
 		}
@@ -315,7 +315,7 @@ func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 			writeError(w, r, 500, "无法创建 tracker 目录")
 			return
 		}
-		if err := cache.WriteAtomic(path, []byte(tmpl), 0o644); err != nil {
+		if err := store.WriteAtomic(path, []byte(tmpl), 0o644); err != nil {
 			log.Error("tracker create write", "err", err)
 			writeError(w, r, 500, "无法写入 tracker 文件")
 			return
@@ -381,7 +381,7 @@ func handleImportCollections(dd string) http.HandlerFunc {
 			writeError(w, r, 500, "internal error")
 			return
 		}
-		if err := cache.WriteAtomic(filepath.Join(td, "user.json"), trackerData, 0o644); err != nil {
+		if err := store.WriteAtomic(filepath.Join(td, "user.json"), trackerData, 0o644); err != nil {
 			log.Error("import collections write", "err", err)
 			writeError(w, r, 500, "无法写入 tracker 文件")
 			return

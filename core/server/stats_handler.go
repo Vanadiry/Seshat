@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/vanadiry/seshat/core/cache"
 	"github.com/vanadiry/seshat/core/config"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 func handleStats(dd string) http.HandlerFunc {
@@ -74,7 +74,7 @@ func handleStats(dd string) http.HandlerFunc {
 		// Data counts from index lists
 		var entries entryCount
 		for _, domain := range []string{"subjects", "characters", "persons"} {
-			list := loadNameList(cache.IndexFile(dd, domain+".json"))
+			list := loadNameList(store.IndexFile(dd, domain+".json"))
 			switch domain {
 			case "subjects":
 				entries.Subjects = len(list)

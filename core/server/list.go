@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/vanadiry/seshat/core/cache"
 	"github.com/vanadiry/seshat/core/events"
 	"github.com/vanadiry/seshat/core/log"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 func saveJSON(path string, v any) {
@@ -18,7 +18,7 @@ func saveJSON(path string, v any) {
 		events.Bus.Error("索引文件保存失败")
 		return
 	}
-	if err := cache.WriteAtomic(path, data, 0o644); err != nil {
+	if err := store.WriteAtomic(path, data, 0o644); err != nil {
 		log.Error("saveJSON write", "path", path, "err", err)
 		events.Bus.Error("索引文件保存失败")
 		return
@@ -33,8 +33,8 @@ type tagInfo struct {
 	Subjects []int `json:"subjects"`
 }
 
-func loadNameList(path string) []cache.NameEntry {
-	list, _ := loadCachedIndex[[]cache.NameEntry](path)
+func loadNameList(path string) []store.NameEntry {
+	list, _ := loadCachedIndex[[]store.NameEntry](path)
 	return list
 }
 
@@ -42,21 +42,21 @@ func loadNameList(path string) []cache.NameEntry {
 
 func handleListSubjects(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		list, _ := loadCachedIndex[[]cache.SubjectSummary](cache.IndexFile(dd, "subjects.json"))
+		list, _ := loadCachedIndex[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json"))
 		writeList(w, list)
 	}
 }
 
 func handleListCharacters(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		list, _ := loadCachedIndex[[]cache.NameEntry](cache.IndexFile(dd, "characters.json"))
+		list, _ := loadCachedIndex[[]store.NameEntry](store.IndexFile(dd, "characters.json"))
 		writeList(w, list)
 	}
 }
 
 func handleListPersons(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		list, _ := loadCachedIndex[[]cache.NameEntry](cache.IndexFile(dd, "persons.json"))
+		list, _ := loadCachedIndex[[]store.NameEntry](store.IndexFile(dd, "persons.json"))
 		writeList(w, list)
 	}
 }
@@ -79,7 +79,7 @@ func handleDataReader(dd string) http.HandlerFunc {
 		if len(parts) >= 3 {
 			file = parts[2] + ".json"
 		}
-		data, err := cache.Get(dd, cache.Key(domain, id, file))
+		data, err := store.Get(dd, store.Key(domain, id, file))
 		if err != nil {
 			writeNotFound(w, r, "数据不存在")
 			return

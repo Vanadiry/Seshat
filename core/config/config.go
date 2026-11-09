@@ -11,7 +11,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/vanadiry/seshat/core/cache"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 type ServerConfig struct {
@@ -81,7 +81,7 @@ func Load() (*Config, error) {
 			data = []byte(DefaultConfigTOML)
 			if err := os.MkdirAll(Dir(), 0o755); err != nil {
 				fmt.Fprintf(os.Stderr, "创建配置目录失败: %v\n", err)
-			} else if err := cache.WriteAtomic(path, data, 0o644); err != nil {
+			} else if err := store.WriteAtomic(path, data, 0o644); err != nil {
 				fmt.Fprintf(os.Stderr, "写入默认配置失败: %v\n", err)
 			}
 		} else {

@@ -11,9 +11,9 @@ import (
 	"sync"
 
 	"github.com/vanadiry/seshat/core/bangumi"
-	"github.com/vanadiry/seshat/core/cache"
 	"github.com/vanadiry/seshat/core/events"
 	"github.com/vanadiry/seshat/core/log"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 func downloadImages(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases, concurrency int) {
@@ -27,7 +27,7 @@ func downloadImagesScoped(dd string, bg *bangumi.Client, p *Progress, phaseBase,
 
 func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectFilter []int, concurrency int) {
 	log.Info("downloading images")
-	if err := os.MkdirAll(cache.IndexDir(dd), 0o755); err != nil {
+	if err := os.MkdirAll(store.IndexDir(dd), 0o755); err != nil {
 		log.Error("index dir mkdir failed", "err", err)
 	}
 	imgBase := filepath.Join(dd, "images")
@@ -42,7 +42,7 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 		charSet := map[int]bool{}
 		persSet := map[int]bool{}
 		for _, sid := range subjectFilter {
-			if data, err := os.ReadFile(filepath.Join(cache.Dir(dd), cache.Key("subjects", sid, "characters.json"))); err == nil {
+			if data, err := os.ReadFile(filepath.Join(store.Dir(dd), store.Key("subjects", sid, "characters.json"))); err == nil {
 				var chars []struct {
 					ID     int `json:"id"`
 					Actors []struct {
@@ -60,7 +60,7 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 					}
 				}
 			}
-			if data, err := os.ReadFile(filepath.Join(cache.Dir(dd), cache.Key("subjects", sid, "persons.json"))); err == nil {
+			if data, err := os.ReadFile(filepath.Join(store.Dir(dd), store.Key("subjects", sid, "persons.json"))); err == nil {
 				var persons []struct {
 					ID int `json:"id"`
 				}
@@ -78,9 +78,9 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 			persIDs = append(persIDs, id)
 		}
 	} else {
-		subjIDs, _ = cache.ListIDs(dd, "subjects")
-		charIDs, _ = cache.ListIDs(dd, "characters")
-		persIDs, _ = cache.ListIDs(dd, "persons")
+		subjIDs, _ = store.ListIDs(dd, "subjects")
+		charIDs, _ = store.ListIDs(dd, "characters")
+		persIDs, _ = store.ListIDs(dd, "persons")
 	}
 
 	// 条目
@@ -125,7 +125,7 @@ func missingImageSizes(imgBase, kind string, id int) []string {
 	return missing
 }
 
-func dlImageList(ids []int, kind string, imgMap map[int]cache.ImageEntry, imgBase string, bg *bangumi.Client, p *Progress, stage string, concurrency int) {
+func dlImageList(ids []int, kind string, imgMap map[int]store.ImageEntry, imgBase string, bg *bangumi.Client, p *Progress, stage string, concurrency int) {
 	if len(ids) == 0 {
 		return
 	}
@@ -156,7 +156,7 @@ func dlImageList(ids []int, kind string, imgMap map[int]cache.ImageEntry, imgBas
 	wg.Wait()
 }
 
-func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.ImageEntry, imgBase string, mu *sync.Mutex, p *Progress) {
+func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]store.ImageEntry, imgBase string, mu *sync.Mutex, p *Progress) {
 	// 只补缺失的尺寸，避免整组重下
 	var missing []string
 	if imgMap != nil {
@@ -183,13 +183,13 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]cache.Image
 		return
 	}
 	if imgMap == nil {
-		imgMap = map[int]cache.ImageEntry{id: cache.ImageEntry{}}
+		imgMap = map[int]store.ImageEntry{id: store.ImageEntry{}}
 	}
 	dlMissingSizes(bg, kind, id, missing, imgMap, imgBase, mu, p)
 }
 
 // dlMissingSizes 仅下载指定条目缺失的图片尺寸
-func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, imgMap map[int]cache.ImageEntry, imgBase string, mu *sync.Mutex, p *Progress) {
+func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, imgMap map[int]store.ImageEntry, imgBase string, mu *sync.Mutex, p *Progress) {
 	mu.Lock()
 	entry := imgMap[id]
 	mu.Unlock()
@@ -225,7 +225,7 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 				log.Error("image mkdir failed", "kind", kind, "id", id, "size", size, "err", err)
 				return
 			}
-			if err := cache.WriteAtomic(fullPath, data, 0o644); err != nil {
+			if err := store.WriteAtomic(fullPath, data, 0o644); err != nil {
 				log.Error("image write failed", "kind", kind, "id", id, "size", size, "err", err)
 				events.Bus.Error(fmt.Sprintf("图片写入失败 %s #%d %s", kind, id, size))
 				return
@@ -268,7 +268,7 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress, concurrency int) 
 	phaseNum := 1
 	for _, d := range domains {
 		imgMap := loadImageIndex(dd, d.kind+"s_image.json")
-		nameList := loadNameList(cache.IndexFile(dd, d.kind+"s.json"))
+		nameList := loadNameList(store.IndexFile(dd, d.kind+"s.json"))
 
 		// 阶段一：补充已有条目缺失的图片尺寸
 		type partial struct {
@@ -344,7 +344,7 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress, concurrency int) 
 		}
 		phaseNum++
 
-		saveJSON(cache.IndexFile(dd, d.kind+"s_image.json"), imgMap)
+		saveJSON(store.IndexFile(dd, d.kind+"s_image.json"), imgMap)
 	}
 }
 
@@ -353,7 +353,7 @@ func RebuildImageIndex(dd string) {
 	imgBase := filepath.Join(dd, "images")
 	kinds := []string{"subject", "character", "person"}
 	for _, kind := range kinds {
-		m := map[int]cache.ImageEntry{}
+		m := map[int]store.ImageEntry{}
 		for _, size := range []string{"large", "grid", "small"} {
 			dir := filepath.Join(imgBase, kind+"s_"+size)
 			digits, err := os.ReadDir(dir)
@@ -388,22 +388,22 @@ func RebuildImageIndex(dd string) {
 				}
 			}
 		}
-		saveJSON(cache.IndexFile(dd, kind+"s_image.json"), m)
+		saveJSON(store.IndexFile(dd, kind+"s_image.json"), m)
 		log.Info("image index rebuilt", "kind", kind+"s", "count", len(m))
 	}
 }
 
 // 辅助函数
 
-func loadImageIndex(dd, name string) map[int]cache.ImageEntry {
-	m, err := loadCachedIndex[map[int]cache.ImageEntry](cache.IndexFile(dd, name))
+func loadImageIndex(dd, name string) map[int]store.ImageEntry {
+	m, err := loadCachedIndex[map[int]store.ImageEntry](store.IndexFile(dd, name))
 	if err != nil || m == nil {
-		return map[int]cache.ImageEntry{}
+		return map[int]store.ImageEntry{}
 	}
 	return m
 }
 
-func entryPath(entry cache.ImageEntry, size string) string {
+func entryPath(entry store.ImageEntry, size string) string {
 	switch size {
 	case "large":
 		return entry.Large
@@ -433,7 +433,7 @@ func imageSizeOrder(requested string) []string {
 }
 
 // pickImageSize 返回实际可用的尺寸，没有可用图片时返回空字符串
-func pickImageSize(entry cache.ImageEntry, requested string) string {
+func pickImageSize(entry store.ImageEntry, requested string) string {
 	for _, size := range imageSizeOrder(requested) {
 		if entryPath(entry, size) != "" {
 			return size

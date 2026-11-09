@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/vanadiry/seshat/core/cache"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 const maxEpisodesLimit = 200
@@ -55,7 +55,7 @@ func handleEpisodes(dd string) http.HandlerFunc {
 		}
 
 		episodes := []json.RawMessage{}
-		if data, err := cache.Get(dd, cache.Key("subjects", id, "episodes.json")); err == nil {
+		if data, err := store.Get(dd, store.Key("subjects", id, "episodes.json")); err == nil {
 			if json.Unmarshal(data, &episodes) != nil {
 				writeError(w, r, http.StatusInternalServerError, "剧集数据解析失败")
 				return

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vanadiry/seshat/core/cache"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 func putJSON(t *testing.T, dd, key string, v any) {
@@ -18,18 +18,18 @@ func putJSON(t *testing.T, dd, key string, v any) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := cache.Put(dd, key, data); err != nil {
+	if err := store.Put(dd, key, data); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func putImageIndex(t *testing.T, dd, name string, index map[int]cache.ImageEntry) {
+func putImageIndex(t *testing.T, dd, name string, index map[int]store.ImageEntry) {
 	t.Helper()
 	data, err := json.Marshal(index)
 	if err != nil {
 		t.Fatal(err)
 	}
-	path := cache.IndexFile(dd, name)
+	path := store.IndexFile(dd, name)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -65,8 +65,8 @@ func imagesOf(t *testing.T, obj map[string]any) map[string]any {
 
 func TestInjectSubjectImages(t *testing.T) {
 	dd := t.TempDir()
-	putJSON(t, dd, cache.Key("subjects", 51, "info.json"), map[string]any{"id": 51})
-	putImageIndex(t, dd, "subjects_image.json", map[int]cache.ImageEntry{
+	putJSON(t, dd, store.Key("subjects", 51, "info.json"), map[string]any{"id": 51})
+	putImageIndex(t, dd, "subjects_image.json", map[int]store.ImageEntry{
 		51: {Large: "l.jpg", Grid: "g.jpg", Small: "s.jpg"},
 	})
 
@@ -85,7 +85,7 @@ func TestInjectSubjectImages(t *testing.T) {
 		t.Fatalf("medium/common 应映射到 large: %v", images)
 	}
 
-	raw, err := cache.Get(dd, cache.Key("subjects", 51, "info.json"))
+	raw, err := store.Get(dd, store.Key("subjects", 51, "info.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,8 +96,8 @@ func TestInjectSubjectImages(t *testing.T) {
 
 func TestInjectCharacterImages(t *testing.T) {
 	dd := t.TempDir()
-	putJSON(t, dd, cache.Key("characters", 319, "info.json"), map[string]any{"id": 319})
-	putImageIndex(t, dd, "characters_image.json", map[int]cache.ImageEntry{
+	putJSON(t, dd, store.Key("characters", 319, "info.json"), map[string]any{"id": 319})
+	putImageIndex(t, dd, "characters_image.json", map[int]store.ImageEntry{
 		319: {Large: "l.jpg"},
 	})
 
@@ -119,11 +119,11 @@ func TestInjectCharacterImages(t *testing.T) {
 
 func TestInjectRelatedArray(t *testing.T) {
 	dd := t.TempDir()
-	putJSON(t, dd, cache.Key("subjects", 51, "characters.json"), []map[string]any{
+	putJSON(t, dd, store.Key("subjects", 51, "characters.json"), []map[string]any{
 		{"id": 1},
 		{"id": 2},
 	})
-	putImageIndex(t, dd, "characters_image.json", map[int]cache.ImageEntry{
+	putImageIndex(t, dd, "characters_image.json", map[int]store.ImageEntry{
 		1: {Large: "l.jpg"},
 		2: {Small: "s.jpg"},
 	})
@@ -148,7 +148,7 @@ func TestInjectRelatedArray(t *testing.T) {
 
 func TestInjectSkipsEpisodes(t *testing.T) {
 	dd := t.TempDir()
-	putJSON(t, dd, cache.Key("subjects", 51, "episodes.json"), []map[string]any{{"id": 1}})
+	putJSON(t, dd, store.Key("subjects", 51, "episodes.json"), []map[string]any{{"id": 1}})
 
 	w := serveData(t, dd, "/api/v0/subjects/51/episodes")
 	if strings.Contains(w.Body.String(), `"images"`) {
@@ -158,8 +158,8 @@ func TestInjectSkipsEpisodes(t *testing.T) {
 
 func TestInjectPlaceholderAndEmpty(t *testing.T) {
 	dd := t.TempDir()
-	putJSON(t, dd, cache.Key("subjects", 51, "info.json"), map[string]any{"id": 51})
-	putJSON(t, dd, cache.Key("characters", 319, "info.json"), map[string]any{"id": 319})
+	putJSON(t, dd, store.Key("subjects", 51, "info.json"), map[string]any{"id": 51})
+	putJSON(t, dd, store.Key("characters", 319, "info.json"), map[string]any{"id": 319})
 
 	subject := imagesOf(t, decodeObject(t, serveData(t, dd, "/api/v0/subjects/51")))
 	if subject["large"] != "http://example.com/assets/no-image.png" {

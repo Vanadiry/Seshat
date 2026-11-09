@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/vanadiry/seshat/core/cache"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 // injectSpec 返回文件对应的图片类型和是否为数组
@@ -64,7 +64,7 @@ func requestBaseURL(r *http.Request) string {
 }
 
 // buildImages 生成本地图片地址，没有图片时返回占位图或空字符串
-func buildImages(kind string, id int, base string, index map[int]cache.ImageEntry) map[string]string {
+func buildImages(kind string, id int, base string, index map[int]store.ImageEntry) map[string]string {
 	entry := index[id]
 	keys := []string{"large", "common", "medium", "small", "grid"}
 	if kind != "subject" {

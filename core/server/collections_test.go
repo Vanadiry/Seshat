@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/vanadiry/seshat/core/cache"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 const collectionsFullFixture = `{
@@ -71,7 +71,7 @@ func requestCollections(t *testing.T, dd, query string) (*httptest.ResponseRecor
 func TestUserCollectionsPaged(t *testing.T) {
 	dd := t.TempDir()
 	writeCollections(t, dd, collectionsFullFixture, collectionsSummaryFixture)
-	putImageIndex(t, dd, "subjects_image.json", map[int]cache.ImageEntry{1: {Large: "l.jpg"}})
+	putImageIndex(t, dd, "subjects_image.json", map[int]store.ImageEntry{1: {Large: "l.jpg"}})
 
 	w, page := requestCollections(t, dd, "")
 	if w.Code != http.StatusOK || page.Total != 3 || page.Limit != 3 || page.Offset != 0 || len(page.Data) != 3 {

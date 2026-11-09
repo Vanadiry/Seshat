@@ -11,10 +11,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/vanadiry/seshat/core/cache"
 	"github.com/vanadiry/seshat/core/config"
 	"github.com/vanadiry/seshat/core/events"
 	"github.com/vanadiry/seshat/core/log"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 const eloDefault = 1500
@@ -106,7 +106,7 @@ func EnsureExcludeFile() {
 			events.Bus.Error("ELO 排除列表初始化失败")
 			return
 		}
-		if err := cache.WriteAtomic(path, []byte(excludeTemplate), 0o644); err != nil {
+		if err := store.WriteAtomic(path, []byte(excludeTemplate), 0o644); err != nil {
 			log.Error("elo exclude write", "err", err)
 			events.Bus.Error("ELO 排除列表初始化失败")
 		}
@@ -154,7 +154,7 @@ func saveEloData(d eloData) {
 		events.Bus.Error("ELO 数据保存失败")
 		return
 	}
-	if err := cache.WriteAtomic(eloDataPath(), data, 0o644); err != nil {
+	if err := store.WriteAtomic(eloDataPath(), data, 0o644); err != nil {
 		log.Error("saveEloData write", "err", err)
 		events.Bus.Error("ELO 数据保存失败")
 	}
@@ -185,7 +185,7 @@ func saveELOHistory(h []eloHistory) {
 		events.Bus.Error("ELO 历史保存失败")
 		return
 	}
-	if err := cache.WriteAtomic(eloHistoryPath(), data, 0o644); err != nil {
+	if err := store.WriteAtomic(eloHistoryPath(), data, 0o644); err != nil {
 		log.Error("saveELOHistory write", "err", err)
 		events.Bus.Error("ELO 历史保存失败")
 	}
@@ -196,7 +196,7 @@ func saveELOHistory(h []eloHistory) {
 // Phase 2（全员 ≥10 场）：10% 低频加权，60% 相近分数，20% 保持覆盖，10% 随机
 // Staleness 劫持：staleness > 2N 强制配对
 func getELOPair(dd string) []eloPairEntry {
-	keys, err := cache.List(dd, "subjects")
+	keys, err := store.List(dd, "subjects")
 	if err != nil || len(keys) < 2 {
 		return nil
 	}
@@ -415,7 +415,7 @@ func updateELO(dd string, winnerID, loserID int) {
 
 // loadSubjectIndex 读取条目索引
 func loadSubjectIndex(dd string) []eloEntry {
-	list, _ := loadCachedIndex[[]cache.SubjectSummary](cache.IndexFile(dd, "subjects.json"))
+	list, _ := loadCachedIndex[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json"))
 	var result []eloEntry
 	for _, s := range list {
 		result = append(result, eloEntry{ID: s.ID, Name: s.Name, NameCN: s.NameCN, Score: s.Score})
@@ -486,7 +486,7 @@ type subjectInfo struct {
 }
 
 func subjectSummary(dd string, id int) subjectInfo {
-	data, err := cache.Get(dd, cache.Key("subjects", id, "info.json"))
+	data, err := store.Get(dd, store.Key("subjects", id, "info.json"))
 	if err != nil {
 		return subjectInfo{}
 	}

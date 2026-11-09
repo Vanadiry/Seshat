@@ -11,16 +11,16 @@ import (
 	"time"
 
 	"github.com/vanadiry/seshat/core/bangumi"
-	"github.com/vanadiry/seshat/core/cache"
 	"github.com/vanadiry/seshat/core/config"
 	"github.com/vanadiry/seshat/core/events"
 	"github.com/vanadiry/seshat/core/log"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux := http.NewServeMux()
 	dd := cfg.DataDir()
-	if err := os.MkdirAll(cache.IndexDir(dd), 0o755); err != nil {
+	if err := os.MkdirAll(store.IndexDir(dd), 0o755); err != nil {
 		log.Error("create index dir failed", "err", err)
 	}
 	imgDir := filepath.Join(dd, "images")
@@ -112,7 +112,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/persons/list", handleListPersons(dd))
 	nameHandler := func(domain string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			path := cache.IndexFile(dd, domain+"_name.json")
+			path := store.IndexFile(dd, domain+"_name.json")
 			stat, err := os.Stat(path)
 			if err != nil {
 				writeJSON(w, map[string]int{})

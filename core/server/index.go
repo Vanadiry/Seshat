@@ -8,14 +8,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/vanadiry/seshat/core/cache"
 	"github.com/vanadiry/seshat/core/events"
 	"github.com/vanadiry/seshat/core/log"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 // scanAPIDir walks the data layout {domain}/{id%10}/{id}/*.json and calls fn for each file.
 func scanAPIDir(dd, domain string, fn func(path string)) {
-	base := filepath.Join(cache.Dir(dd), domain)
+	base := filepath.Join(store.Dir(dd), domain)
 	digits, _ := os.ReadDir(base)
 	for _, d := range digits {
 		if !d.IsDir() {
@@ -39,7 +39,7 @@ func scanAPIDir(dd, domain string, fn func(path string)) {
 
 // 阶段三：通过官方端点下载图片
 func tagsPath(dd string) string {
-	return cache.IndexFile(dd, "tags.json")
+	return store.IndexFile(dd, "tags.json")
 }
 
 func loadTags(dd string) map[string]tagInfo {
@@ -84,7 +84,7 @@ func rebuildTags(dd string) {
 		events.Bus.Error("标签索引生成失败")
 		return
 	}
-	if err := cache.WriteAtomic(tagsPath(dd), result, 0o644); err != nil {
+	if err := store.WriteAtomic(tagsPath(dd), result, 0o644); err != nil {
 		log.Error("tags index write", "err", err)
 		events.Bus.Error("标签索引写入失败")
 	}
@@ -96,7 +96,7 @@ func rebuildTags(dd string) {
 
 // buildPersonNames generates a name→id lookup from persons.json.
 func buildPersonNames(dd string) {
-	list, err := loadCachedIndex[[]cache.NameEntry](cache.IndexFile(dd, "persons.json"))
+	list, err := loadCachedIndex[[]store.NameEntry](store.IndexFile(dd, "persons.json"))
 	if err != nil {
 		log.Warn("persons_name: persons.json not found")
 		return
@@ -116,8 +116,8 @@ func buildPersonNames(dd string) {
 		events.Bus.Error("人物名称索引生成失败")
 		return
 	}
-	namePath := cache.IndexFile(dd, "persons_name.json")
-	if err := cache.WriteAtomic(namePath, result, 0o644); err != nil {
+	namePath := store.IndexFile(dd, "persons_name.json")
+	if err := store.WriteAtomic(namePath, result, 0o644); err != nil {
 		log.Error("persons name index write", "err", err)
 		events.Bus.Error("人物名称索引写入失败")
 	}
@@ -127,7 +127,7 @@ func buildPersonNames(dd string) {
 
 // buildNameIndex generates a name→id lookup for a given domain (subjects/characters/persons).
 func buildNameIndex(dd, domain string) {
-	list, err := loadCachedIndex[[]cache.NameEntry](cache.IndexFile(dd, domain+".json"))
+	list, err := loadCachedIndex[[]store.NameEntry](store.IndexFile(dd, domain+".json"))
 	if err != nil {
 		log.Warn("name index file not found", "domain", domain)
 		return
@@ -147,8 +147,8 @@ func buildNameIndex(dd, domain string) {
 		events.Bus.Error("名称索引生成失败")
 		return
 	}
-	namePath := cache.IndexFile(dd, domain+"_name.json")
-	if err := cache.WriteAtomic(namePath, result, 0o644); err != nil {
+	namePath := store.IndexFile(dd, domain+"_name.json")
+	if err := store.WriteAtomic(namePath, result, 0o644); err != nil {
 		log.Error("name index write", "domain", domain, "err", err)
 		events.Bus.Error("名称索引写入失败")
 	}
@@ -159,13 +159,13 @@ func buildNameIndex(dd, domain string) {
 // buildIndexes scans all saved API JSON files and rebuilds list files + tags + name indexes.
 func buildIndexes(dd string, p *Progress) {
 	log.Info("rebuilding indexes from scan")
-	if err := os.MkdirAll(cache.IndexDir(dd), 0o755); err != nil {
+	if err := os.MkdirAll(store.IndexDir(dd), 0o755); err != nil {
 		log.Error("index dir mkdir failed", "err", err)
 	}
 
-	var subjects []cache.SubjectSummary
-	var chars []cache.NameEntry
-	var persons []cache.NameEntry
+	var subjects []store.SubjectSummary
+	var chars []store.NameEntry
+	var persons []store.NameEntry
 	tags := map[string]tagInfo{}
 
 	// 扫描条目
@@ -192,7 +192,7 @@ func buildIndexes(dd string, p *Progress) {
 			} `json:"tags"`
 		}
 		if json.Unmarshal(data, &s) == nil && s.ID > 0 {
-			subjects = append(subjects, cache.SubjectSummary{ID: s.ID, Name: s.Name, NameCN: s.NameCN, Score: s.Rating.Score, Platform: s.Platform, Date: s.Date})
+			subjects = append(subjects, store.SubjectSummary{ID: s.ID, Name: s.Name, NameCN: s.NameCN, Score: s.Rating.Score, Platform: s.Platform, Date: s.Date})
 			for _, t := range s.Tags {
 				info := tags[t.Name]
 				info.Count++
@@ -201,7 +201,7 @@ func buildIndexes(dd string, p *Progress) {
 			}
 		}
 	})
-	saveJSON(cache.IndexFile(dd, "subjects.json"), subjects)
+	saveJSON(store.IndexFile(dd, "subjects.json"), subjects)
 
 	// 扫描角色
 	if p != nil {
@@ -231,10 +231,10 @@ func buildIndexes(dd string, p *Progress) {
 					break
 				}
 			}
-			chars = append(chars, cache.NameEntry{ID: c.ID, Name: c.Name, NameCN: nameCN})
+			chars = append(chars, store.NameEntry{ID: c.ID, Name: c.Name, NameCN: nameCN})
 		}
 	})
-	saveJSON(cache.IndexFile(dd, "characters.json"), chars)
+	saveJSON(store.IndexFile(dd, "characters.json"), chars)
 
 	// 扫描人物
 	if p != nil {
@@ -264,16 +264,16 @@ func buildIndexes(dd string, p *Progress) {
 					break
 				}
 			}
-			persons = append(persons, cache.NameEntry{ID: p.ID, Name: p.Name, NameCN: nameCN})
+			persons = append(persons, store.NameEntry{ID: p.ID, Name: p.Name, NameCN: nameCN})
 		}
 	})
-	saveJSON(cache.IndexFile(dd, "persons.json"), persons)
+	saveJSON(store.IndexFile(dd, "persons.json"), persons)
 
 	// 保存标签
 	if p != nil {
 		p.Send("phase", 3, 5, "saving tags")
 	}
-	saveJSON(cache.IndexFile(dd, "tags.json"), tags)
+	saveJSON(store.IndexFile(dd, "tags.json"), tags)
 	buildNameIndex(dd, "subjects")
 	buildNameIndex(dd, "characters")
 	buildPersonNames(dd)
@@ -314,7 +314,7 @@ func handleTagSubjects(dd string) http.HandlerFunc {
 		}
 		var subjects []any
 		for _, sid := range info.Subjects {
-			data, err := cache.Get(dd, cache.Key("subjects", sid, "info.json"))
+			data, err := store.Get(dd, store.Key("subjects", sid, "info.json"))
 			if err != nil {
 				continue
 			}

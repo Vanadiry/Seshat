@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/vanadiry/seshat/core/cache"
 	"github.com/vanadiry/seshat/core/config"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 func writeIndexJSON(t *testing.T, dd, name string, v any) {
@@ -18,7 +18,7 @@ func writeIndexJSON(t *testing.T, dd, name string, v any) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	path := cache.IndexFile(dd, name)
+	path := store.IndexFile(dd, name)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -38,7 +38,7 @@ func decodeListBody(t *testing.T, w *httptest.ResponseRecorder) map[string]any {
 
 func TestListSubjectsShape(t *testing.T) {
 	dd := t.TempDir()
-	writeIndexJSON(t, dd, "subjects.json", []cache.SubjectSummary{{ID: 1, Name: "a"}})
+	writeIndexJSON(t, dd, "subjects.json", []store.SubjectSummary{{ID: 1, Name: "a"}})
 	w := httptest.NewRecorder()
 	handleListSubjects(dd)(w, httptest.NewRequest(http.MethodGet, "/api/v0/subjects/list", nil))
 	body := decodeListBody(t, w)
@@ -73,7 +73,7 @@ func TestTagSubjectsShape(t *testing.T) {
 	writeIndexJSON(t, dd, "tags.json", map[string]tagInfo{
 		"喜剧": {Count: 1, Subjects: []int{1}},
 	})
-	putJSON(t, dd, cache.Key("subjects", 1, "info.json"), map[string]any{"id": 1, "name": "a"})
+	putJSON(t, dd, store.Key("subjects", 1, "info.json"), map[string]any{"id": 1, "name": "a"})
 	r := httptest.NewRequest(http.MethodGet, "/api/v0/tags/喜剧/subjects", nil)
 	r.SetPathValue("name", "喜剧")
 	w := httptest.NewRecorder()

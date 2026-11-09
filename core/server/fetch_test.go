@@ -8,16 +8,16 @@ import (
 	"testing"
 
 	"github.com/vanadiry/seshat/core/bangumi"
-	"github.com/vanadiry/seshat/core/cache"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 func TestPutDataSuccess(t *testing.T) {
 	dd := t.TempDir()
-	key := cache.Key("subjects", 51, "info.json")
+	key := store.Key("subjects", 51, "info.json")
 	if !putData(dd, key, []byte(`{"id":51}`), nil) {
 		t.Fatal("putData 返回失败")
 	}
-	if _, err := cache.Get(dd, key); err != nil {
+	if _, err := store.Get(dd, key); err != nil {
 		t.Fatalf("读取数据: %v", err)
 	}
 }
@@ -28,7 +28,7 @@ func TestPutDataFailure(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dd, "api"), []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if putData(dd, cache.Key("subjects", 51, "info.json"), []byte(`{"id":51}`), nil) {
+	if putData(dd, store.Key("subjects", 51, "info.json"), []byte(`{"id":51}`), nil) {
 		t.Fatal("putData 应当返回失败")
 	}
 }
@@ -42,7 +42,7 @@ func writeSubjectCore(t *testing.T, dd string, sid int, info string) {
 		"subjects.json":   "[]",
 	}
 	for name, data := range files {
-		if err := cache.Put(dd, cache.Key("subjects", sid, name), []byte(data)); err != nil {
+		if err := store.Put(dd, store.Key("subjects", sid, name), []byte(data)); err != nil {
 			t.Fatalf("写入 %s: %v", name, err)
 		}
 	}
@@ -81,7 +81,7 @@ func TestSubjectCoreIncompleteEpsFallback(t *testing.T) {
 func TestSubjectCoreIncompleteWithEpisodes(t *testing.T) {
 	dd := t.TempDir()
 	writeSubjectCore(t, dd, 51, `{"id":51,"total_episodes":12,"eps":12}`)
-	if err := cache.Put(dd, cache.Key("subjects", 51, "episodes.json"), []byte("[]")); err != nil {
+	if err := store.Put(dd, store.Key("subjects", 51, "episodes.json"), []byte("[]")); err != nil {
 		t.Fatal(err)
 	}
 	if subjectCoreIncomplete(dd, 51) {
@@ -159,7 +159,7 @@ func TestFetchAllSucceedsWithoutEpisodes(t *testing.T) {
 func TestFetchAllKeepsOldEpisodesOnPageFailure(t *testing.T) {
 	dd := t.TempDir()
 	old := `[{"id":999,"type":0}]`
-	if err := cache.Put(dd, cache.Key("subjects", 51, "episodes.json"), []byte(old)); err != nil {
+	if err := store.Put(dd, store.Key("subjects", 51, "episodes.json"), []byte(old)); err != nil {
 		t.Fatal(err)
 	}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -184,7 +184,7 @@ func TestFetchAllKeepsOldEpisodesOnPageFailure(t *testing.T) {
 	if fetchAll(51, c, dd, filepath.Join(dd, "images"), nil, 1) {
 		t.Fatal("第二页失败时应返回 false")
 	}
-	data, err := cache.Get(dd, cache.Key("subjects", 51, "episodes.json"))
+	data, err := store.Get(dd, store.Key("subjects", 51, "episodes.json"))
 	if err != nil {
 		t.Fatalf("读取旧剧集: %v", err)
 	}

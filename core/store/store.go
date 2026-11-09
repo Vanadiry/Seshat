@@ -1,4 +1,4 @@
-package cache
+package store
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 func Dir(dataDir string) string      { return filepath.Join(dataDir, "api") }
 func IndexDir(dataDir string) string { return filepath.Join(dataDir, "index") }
 
-// Key builds a cache path: {subdomain}/{id%10}/{id}/{file}
+// Key builds a data path: {subdomain}/{id%10}/{id}/{file}
 // e.g. Key("subjects", 51, "info.json") → "subjects/1/51/info.json"
 func Key(subdomain string, id int, file string) string {
 	return fmt.Sprintf("%s/%d/%d/%s", subdomain, id%10, id, file)
@@ -79,7 +79,7 @@ func List(dataDir, dir string) ([]string, error) {
 	return names, nil
 }
 
-// ListIDs returns all cached IDs for a domain by scanning the API data directory.
+// ListIDs returns all saved IDs for a domain by scanning the API data directory.
 func ListIDs(dataDir, domain string) ([]int, error) {
 	strs, err := List(dataDir, domain)
 	if err != nil {

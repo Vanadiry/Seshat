@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/vanadiry/seshat/core/cache"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 type episodePage struct {
@@ -18,7 +18,7 @@ type episodePage struct {
 
 func writeEpisodes(t *testing.T, dd string, sid int, data string) {
 	t.Helper()
-	if err := cache.Put(dd, cache.Key("subjects", sid, "episodes.json"), []byte(data)); err != nil {
+	if err := store.Put(dd, store.Key("subjects", sid, "episodes.json"), []byte(data)); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/vanadiry/seshat/core/bangumi"
-	"github.com/vanadiry/seshat/core/cache"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 func TestMissingImageSizes(t *testing.T) {
@@ -76,7 +76,7 @@ func TestDLImageOnlyRequestsMissingSizesFromIndex(t *testing.T) {
 	var requests []string
 	var mu sync.Mutex
 	c := imageTestServer(t, &requests, &mu)
-	imgMap := map[int]cache.ImageEntry{
+	imgMap := map[int]store.ImageEntry{
 		51: {Large: "large.jpg", Grid: "grid.jpg"},
 	}
 	dlImage(c, "subject", 51, imgMap, imgBase, &mu, nil)
@@ -92,9 +92,9 @@ func TestDLImageOnlyRequestsMissingSizesFromIndex(t *testing.T) {
 }
 
 func TestPickImageSize(t *testing.T) {
-	all := cache.ImageEntry{Large: "l", Grid: "g", Small: "s"}
+	all := store.ImageEntry{Large: "l", Grid: "g", Small: "s"}
 	cases := []struct {
-		entry     cache.ImageEntry
+		entry     store.ImageEntry
 		requested string
 		want      string
 	}{
@@ -103,11 +103,11 @@ func TestPickImageSize(t *testing.T) {
 		{all, "grid", "grid"},
 		{all, "medium", "large"},
 		{all, "common", "large"},
-		{cache.ImageEntry{Large: "l"}, "small", "large"},
-		{cache.ImageEntry{Large: "l"}, "grid", "large"},
-		{cache.ImageEntry{Grid: "g"}, "large", "grid"},
-		{cache.ImageEntry{Grid: "g"}, "small", "grid"},
-		{cache.ImageEntry{}, "large", ""},
+		{store.ImageEntry{Large: "l"}, "small", "large"},
+		{store.ImageEntry{Large: "l"}, "grid", "large"},
+		{store.ImageEntry{Grid: "g"}, "large", "grid"},
+		{store.ImageEntry{Grid: "g"}, "small", "grid"},
+		{store.ImageEntry{}, "large", ""},
 	}
 	for _, c := range cases {
 		if got := pickImageSize(c.entry, c.requested); got != c.want {
@@ -125,9 +125,9 @@ func TestServeImageFallback(t *testing.T) {
 	if err := os.WriteFile(imgPath, []byte("img"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	index := map[int]cache.ImageEntry{51: {Large: "subjects_large/1/51.jpg"}}
+	index := map[int]store.ImageEntry{51: {Large: "subjects_large/1/51.jpg"}}
 	data, _ := json.Marshal(index)
-	indexFile := cache.IndexFile(dd, "subjects_image.json")
+	indexFile := store.IndexFile(dd, "subjects_image.json")
 	if err := os.MkdirAll(filepath.Dir(indexFile), 0o755); err != nil {
 		t.Fatal(err)
 	}
