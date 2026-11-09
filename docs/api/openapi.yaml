@@ -80,7 +80,7 @@ paths:
           }
       responses:
         "200": { description: 图像文件 }
-        "404": { description: 图片未缓存 }
+        "404": { description: 图片不存在 }
   /api/v0/subjects/{id}/characters: # 条目关联的角色
     get:
       tags: [条目]
@@ -242,7 +242,7 @@ paths:
           }
       responses:
         "200": { description: 图片文件 }
-        "404": { description: 图片未缓存 }
+        "404": { description: 图片不存在 }
   /api/v0/characters/{id}/persons: # 角色关联的人物
     get:
       tags: [角色]
@@ -358,7 +358,7 @@ paths:
           }
       responses:
         "200": { description: 图片文件 }
-        "404": { description: 图片未缓存 }
+        "404": { description: 图片不存在 }
   /api/v0/persons/{id}/characters: # 人物关联的角色
     get:
       tags: [人物]
@@ -584,7 +584,7 @@ paths:
       tags: [拉取]
       summary: 拉取条目
       description: |
-        从Bangumi API拉取条目的全部数据并缓存到本地。
+        从Bangumi API拉取条目的全部数据并保存到本地。
         支持`{"id": 51}`拉取单个，`{"ids": [51, 288, 9717]}`拉取多个。
         自动记录到_seshat.json，返回task_id。
       requestBody:
@@ -724,7 +724,7 @@ paths:
     post:
       tags: [拉取]
       summary: 刷新元数据
-      description: 重新拉取所有subject/character/person的info.json，覆盖本地缓存。不下载图片。
+      description: 重新拉取所有subject/character/person的info.json，覆盖本地数据。不下载图片。
       responses:
         "200":
           description: 后台执行
@@ -740,7 +740,7 @@ paths:
     post:
       tags: [拉取]
       summary: 重建索引
-      description: 扫描api目录下所有已缓存的JSON，重建三项索引，不包括images索引。
+      description: 扫描 api 目录下所有已保存的 JSON，重建三项索引，不包括images索引。
       responses:
         "200":
           description: 后台执行
@@ -1068,7 +1068,7 @@ paths:
       summary: 统计数据
       responses:
         "200":
-          description: 图片、缓存、Tracker、收藏等统计
+          description: 图片、数据、Tracker、收藏等统计
           content:
             application/json:
               schema:
@@ -1113,7 +1113,7 @@ components:
       required: [title, description]
       properties:
         title: { type: string, example: "Not Found" }
-        description: { type: string, example: "缓存条目不存在" }
+        description: { type: string, example: "数据不存在" }
         details:
           description: 结构化补充信息
           oneOf:

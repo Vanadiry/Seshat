@@ -13,7 +13,7 @@ import (
 	"github.com/vanadiry/seshat/core/log"
 )
 
-// scanAPIDir walks the new cache layout {domain}/{id%10}/{id}/*.json and calls fn for each file.
+// scanAPIDir walks the data layout {domain}/{id%10}/{id}/*.json and calls fn for each file.
 func scanAPIDir(dd, domain string, fn func(path string)) {
 	base := filepath.Join(cache.Dir(dd), domain)
 	digits, _ := os.ReadDir(base)
@@ -50,7 +50,7 @@ func loadTags(dd string) map[string]tagInfo {
 	return tags
 }
 
-// rebuildTags 扫描所有已缓存的 subject JSON，重建 tags.json。
+// rebuildTags 扫描所有已保存的 subject JSON，重建 tags.json。
 func rebuildTags(dd string) {
 	tags := map[string]tagInfo{}
 	scanAPIDir(dd, "subjects", func(path string) {
@@ -156,7 +156,7 @@ func buildNameIndex(dd, domain string) {
 	log.Info("name index built", "domain", domain, "count", len(m))
 }
 
-// buildIndexes scans all cached API JSON files and rebuilds list files + tags + name indexes.
+// buildIndexes scans all saved API JSON files and rebuilds list files + tags + name indexes.
 func buildIndexes(dd string, p *Progress) {
 	log.Info("rebuilding indexes from scan")
 	if err := os.MkdirAll(cache.IndexDir(dd), 0o755); err != nil {

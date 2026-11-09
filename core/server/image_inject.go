@@ -86,7 +86,7 @@ func buildImages(kind string, id int, base string, index map[int]cache.ImageEntr
 	return out
 }
 
-// injectImages 在响应时补齐 images，不修改缓存文件
+// injectImages 在响应时补齐 images，不修改数据文件
 func injectImages(data []byte, domain, file string, id int, r *http.Request, dd string) []byte {
 	kind, array, ok := injectSpec(domain, file)
 	if !ok {

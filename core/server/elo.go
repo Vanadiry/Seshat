@@ -505,7 +505,7 @@ func handleELOPair(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pair := getELOPair(dd)
 		if pair == nil {
-			writeError(w, r, http.StatusConflict, "至少需要 2 个已缓存条目")
+			writeError(w, r, http.StatusConflict, "至少需要 2 个本地条目")
 			return
 		}
 		// pair 类型为 []eloPairEntry

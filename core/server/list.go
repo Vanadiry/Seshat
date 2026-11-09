@@ -61,12 +61,12 @@ func handleListPersons(dd string) http.HandlerFunc {
 	}
 }
 
-func handleCacheReader(dd string) http.HandlerFunc {
+func handleDataReader(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/api/v0/")
 		parts := strings.Split(strings.Trim(path, "/"), "/")
 		if len(parts) < 2 {
-			writeNotFound(w, r, "缓存路径不合法")
+			writeNotFound(w, r, "数据路径不合法")
 			return
 		}
 		domain := parts[0]
@@ -81,7 +81,7 @@ func handleCacheReader(dd string) http.HandlerFunc {
 		}
 		data, err := cache.Get(dd, cache.Key(domain, id, file))
 		if err != nil {
-			writeNotFound(w, r, "缓存条目不存在")
+			writeNotFound(w, r, "数据不存在")
 			return
 		}
 		data = injectImages(data, domain, file, id, r, dd)

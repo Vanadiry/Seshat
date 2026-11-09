@@ -71,7 +71,7 @@ func handleStats(dd string) http.HandlerFunc {
 			}
 		}
 
-		// Cache counts from index lists
+		// Data counts from index lists
 		var entries entryCount
 		for _, domain := range []string{"subjects", "characters", "persons"} {
 			list := loadNameList(cache.IndexFile(dd, domain+".json"))
@@ -132,7 +132,7 @@ func handleStats(dd string) http.HandlerFunc {
 
 		writeJSON(w, map[string]any{
 			"images":          img,
-			"cache_entries":   entries,
+			"data_entries":    entries,
 			"trackers":        trackers,
 			"tracker_total":   trackerTotal,
 			"collections":     collCount,

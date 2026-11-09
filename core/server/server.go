@@ -106,7 +106,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/tasks", handleActiveTasks)
 	mux.HandleFunc("GET /api/v0/info", handleInfo)
 
-	// Cache API
+	// Data API
 	mux.HandleFunc("GET /api/v0/subjects/list", handleListSubjects(dd))
 	mux.HandleFunc("GET /api/v0/characters/list", handleListCharacters(dd))
 	mux.HandleFunc("GET /api/v0/persons/list", handleListPersons(dd))
@@ -133,7 +133,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/characters/name", nameHandler("characters"))
 	mux.HandleFunc("GET /api/v0/persons/name", nameHandler("persons"))
 	mux.HandleFunc("GET /api/v0/episodes", handleEpisodes(dd))
-	mux.HandleFunc("GET /api/v0/", handleCacheReader(dd))
+	mux.HandleFunc("GET /api/v0/", handleDataReader(dd))
 
 	// Fetch
 	mux.HandleFunc("POST /api/v0/fetch/all", handleFetchAll(cfg, bg, dd, imgDir))

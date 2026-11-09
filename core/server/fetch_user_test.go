@@ -118,10 +118,10 @@ func TestFetchUserCollectionsKeepsOldFileOnFailure(t *testing.T) {
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("读取旧缓存: %v", err)
+		t.Fatalf("读取旧数据: %v", err)
 	}
 	if string(data) != old {
-		t.Errorf("旧缓存被覆盖，内容为 %q", data)
+		t.Errorf("旧数据被覆盖，内容为 %q", data)
 	}
 }
 

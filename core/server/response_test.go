@@ -68,7 +68,7 @@ func TestWriteErrorOmitsEmptyDetails(t *testing.T) {
 func TestWriteNotFoundShape(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v0/subjects/999", nil)
-	writeNotFound(w, r, "缓存条目不存在")
+	writeNotFound(w, r, "数据不存在")
 
 	var body struct {
 		Title       string         `json:"title"`

@@ -115,19 +115,19 @@
                 api("/v0/stats").then(function (s) {
                     if (!s) return;
                     var cards = [];
-                    if (s.cache_entries) {
+                    if (s.data_entries) {
                         var total =
-                            s.cache_entries.subjects +
-                            s.cache_entries.characters +
-                            s.cache_entries.persons;
+                            s.data_entries.subjects +
+                            s.data_entries.characters +
+                            s.data_entries.persons;
                         cards.push({
                             label: "条目（共" + total + "项）",
                             value:
-                                s.cache_entries.subjects +
+                                s.data_entries.subjects +
                                 " / " +
-                                s.cache_entries.characters +
+                                s.data_entries.characters +
                                 " / " +
-                                s.cache_entries.persons,
+                                s.data_entries.persons,
                             sub: "动画 / 角色 / 人物"
                         });
                     }

@@ -38,10 +38,10 @@ func putImageIndex(t *testing.T, dd, name string, index map[int]cache.ImageEntry
 	}
 }
 
-func serveCache(t *testing.T, dd, path string) *httptest.ResponseRecorder {
+func serveData(t *testing.T, dd, path string) *httptest.ResponseRecorder {
 	t.Helper()
 	w := httptest.NewRecorder()
-	handleCacheReader(dd)(w, httptest.NewRequest(http.MethodGet, path, nil))
+	handleDataReader(dd)(w, httptest.NewRequest(http.MethodGet, path, nil))
 	return w
 }
 
@@ -70,7 +70,7 @@ func TestInjectSubjectImages(t *testing.T) {
 		51: {Large: "l.jpg", Grid: "g.jpg", Small: "s.jpg"},
 	})
 
-	w := serveCache(t, dd, "/api/v0/subjects/51")
+	w := serveData(t, dd, "/api/v0/subjects/51")
 	images := imagesOf(t, decodeObject(t, w))
 	for _, key := range []string{"large", "common", "medium", "small", "grid"} {
 		if _, ok := images[key]; !ok {
@@ -90,7 +90,7 @@ func TestInjectSubjectImages(t *testing.T) {
 		t.Fatal(err)
 	}
 	if strings.Contains(string(raw), `"images"`) {
-		t.Fatal("缓存文件被写入 images")
+		t.Fatal("数据文件被写入 images")
 	}
 }
 
@@ -101,7 +101,7 @@ func TestInjectCharacterImages(t *testing.T) {
 		319: {Large: "l.jpg"},
 	})
 
-	w := serveCache(t, dd, "/api/v0/characters/319")
+	w := serveData(t, dd, "/api/v0/characters/319")
 	images := imagesOf(t, decodeObject(t, w))
 	if len(images) != 4 {
 		t.Fatalf("character images 应有 4 个键: %v", images)
@@ -128,7 +128,7 @@ func TestInjectRelatedArray(t *testing.T) {
 		2: {Small: "s.jpg"},
 	})
 
-	w := serveCache(t, dd, "/api/v0/subjects/51/characters")
+	w := serveData(t, dd, "/api/v0/subjects/51/characters")
 	var items []map[string]any
 	if err := json.Unmarshal(w.Body.Bytes(), &items); err != nil {
 		t.Fatalf("解析响应: %v", err)
@@ -150,7 +150,7 @@ func TestInjectSkipsEpisodes(t *testing.T) {
 	dd := t.TempDir()
 	putJSON(t, dd, cache.Key("subjects", 51, "episodes.json"), []map[string]any{{"id": 1}})
 
-	w := serveCache(t, dd, "/api/v0/subjects/51/episodes")
+	w := serveData(t, dd, "/api/v0/subjects/51/episodes")
 	if strings.Contains(w.Body.String(), `"images"`) {
 		t.Fatalf("剧集不应注入 images: %s", w.Body.String())
 	}
@@ -161,12 +161,12 @@ func TestInjectPlaceholderAndEmpty(t *testing.T) {
 	putJSON(t, dd, cache.Key("subjects", 51, "info.json"), map[string]any{"id": 51})
 	putJSON(t, dd, cache.Key("characters", 319, "info.json"), map[string]any{"id": 319})
 
-	subject := imagesOf(t, decodeObject(t, serveCache(t, dd, "/api/v0/subjects/51")))
+	subject := imagesOf(t, decodeObject(t, serveData(t, dd, "/api/v0/subjects/51")))
 	if subject["large"] != "http://example.com/assets/no-image.png" {
 		t.Fatalf("Subject 无图应使用占位图: %v", subject)
 	}
 
-	character := imagesOf(t, decodeObject(t, serveCache(t, dd, "/api/v0/characters/319")))
+	character := imagesOf(t, decodeObject(t, serveData(t, dd, "/api/v0/characters/319")))
 	for key, value := range character {
 		if value != "" {
 			t.Fatalf("Character 无图应为空字符串，%s = %v", key, value)

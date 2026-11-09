@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestClearContentCacheKeepsUser(t *testing.T) {
+func TestClearContentDataKeepsUser(t *testing.T) {
 	dd := t.TempDir()
 	for _, name := range []string{"api/a", "images/b", "index/c", "user/info.json"} {
 		path := filepath.Join(dd, name)
@@ -18,7 +18,7 @@ func TestClearContentCacheKeepsUser(t *testing.T) {
 		}
 	}
 
-	clearContentCache(dd)
+	clearContentData(dd)
 
 	for _, name := range []string{"api", "images", "index"} {
 		if _, err := os.Stat(filepath.Join(dd, name)); !os.IsNotExist(err) {
