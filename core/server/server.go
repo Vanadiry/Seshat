@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -133,25 +132,7 @@ func New(cfg *config.Config, embedFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/v0/subjects/name", nameHandler("subjects"))
 	mux.HandleFunc("GET /api/v0/characters/name", nameHandler("characters"))
 	mux.HandleFunc("GET /api/v0/persons/name", nameHandler("persons"))
-	mux.HandleFunc("GET /api/v0/episodes", func(w http.ResponseWriter, r *http.Request) {
-		sid := r.URL.Query().Get("subject_id")
-		if sid == "" {
-			writeError(w, r, 400, "subject_id required")
-			return
-		}
-		id, err := strconv.Atoi(sid)
-		if err != nil {
-			writeJSON(w, []any{})
-			return
-		}
-		data, err := cache.Get(dd, cache.Key("subjects", id, "episodes.json"))
-		if err != nil {
-			writeJSON(w, []any{})
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
-	})
+	mux.HandleFunc("GET /api/v0/episodes", handleEpisodes(dd))
 	mux.HandleFunc("GET /api/v0/", handleCacheReader(dd))
 
 	// Fetch
