@@ -27,7 +27,7 @@ Seshat 提供 Desktop 和 Server 两种运行方式。
 二者功能和行为完全一样，只是 Desktop 版本多了 Tauri 壳，可以作为桌面应用。  
 Server 使用浏览器显示前端。
 
-macOS 和 Windows 建议使用 Desktop。Linux 请使用 Server。
+macOS 和 Windows 建议使用 Desktop。Linux 请使用 Server。  
 （~~Linux 没有 Desktop，因为我懒了QvQ，对不起呜呜。~~）  
 
 ### Seshat Desktop
