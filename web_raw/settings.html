@@ -12,18 +12,21 @@
     </head>
     <body class="text-text font-[system-ui] min-h-screen">
         <div id="topbar"></div>
-        <main class="max-w-[1200px] mx-auto p-6 flex gap-8">
-            <div class="flex-1 min-w-0">
-                <div id="settings-form">
-                    <div class="text-center py-20 text-sub">
-                        <span class="spin"></span>加载中…
+        <main class="max-w-[1200px] mx-auto p-6">
+            <div class="flex gap-8">
+                <div class="flex-1 min-w-0">
+                    <div id="settings-form">
+                        <div class="text-center py-20 text-sub">
+                            <span class="spin"></span>加载中…
+                        </div>
                     </div>
                 </div>
+                <div class="hidden lg:block w-px bg-bord-light shrink-0"></div>
+                <div class="flex-1 min-w-0 hidden lg:block">
+                    <div id="settings-sidebar" class="sticky top-6"></div>
+                </div>
             </div>
-            <div class="hidden lg:block w-px bg-bord-light shrink-0"></div>
-            <div class="flex-1 min-w-0 hidden lg:block">
-                <div id="settings-sidebar" class="sticky top-6"></div>
-            </div>
+            <div id="about" class="mt-10 scroll-mt-20"></div>
         </main>
         <script src="assets/app.min.js"></script>
         <script>
@@ -127,7 +130,46 @@
                         _prefs = data.prefs || {};
                         renderLeft();
                         renderRight(data.config || {});
+                        scrollToHash();
                     });
+            }
+
+            function renderAbout(info) {
+                var meta = [];
+                if (info.version) meta.push("版本：" + info.version);
+                if (info.license) meta.push("许可证：" + info.license);
+                var html =
+                    '<div class="border-t border-bord pt-6 text-center">' +
+                    '<div class="text-sm text-text">' +
+                    escapeHtml(info.name || "Seshat") +
+                    "</div>";
+                if (meta.length) {
+                    html +=
+                        '<div class="text-xs text-sub mt-1">' +
+                        escapeHtml(meta.join("｜")) +
+                        "</div>";
+                }
+                if (info.copyright) {
+                    html +=
+                        '<div class="text-xs text-sub mt-1">' +
+                        escapeHtml(info.copyright) +
+                        "</div>";
+                }
+                html += "</div>";
+                document.getElementById("about").innerHTML = html;
+                scrollToHash();
+            }
+
+            function scrollToHash() {
+                if (!location.hash) return;
+                var el = document.getElementById(location.hash.slice(1));
+                if (el) el.scrollIntoView();
+            }
+
+            function loadInfo() {
+                getInstanceInfo().then(function (info) {
+                    if (info) renderAbout(info);
+                });
             }
 
             function sectionTitle(title) {
@@ -286,6 +328,7 @@
             }
 
             loadSettings();
+            loadInfo();
         </script>
     </body>
 </html>

@@ -255,6 +255,12 @@ function apiLocal(url) {
         return r.ok ? r.json() : null;
     });
 }
+// getInstanceInfo 复用一次 /v0/info 请求
+var _infoPromise = null;
+function getInstanceInfo() {
+    if (!_infoPromise) _infoPromise = apiLocal("/v0/info");
+    return _infoPromise;
+}
 function img(kind, id, size) {
     return API + "/v0/" + kind + "s/" + id + "/image?type=" + (size || "grid");
 }
@@ -800,7 +806,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <a href="/settings" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">设置</a>
             <a href="#" onclick="location.reload();return false" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">刷新页面</a>
             <div class="border-t border-bord-light my-1"></div>
-            <a href="#" onclick="openUrl('https://github.com/Vanadiry/Seshat');return false" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">项目 GitHub</a>
+            <a id="user-dropdown-github" href="#" onclick="openUrl('https://github.com/Vanadiry/Seshat');return false" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">项目 GitHub</a>
           </div>
         </div>
       </div>
@@ -812,6 +818,16 @@ document.addEventListener("DOMContentLoaded", () => {
     </style>`;
 
     document.getElementById("btn-fetch").addEventListener("click", openFetch);
+
+    getInstanceInfo().then(function (info) {
+        if (!info || !info.repository) return;
+        var link = document.getElementById("user-dropdown-github");
+        if (!link) return;
+        link.onclick = function (e) {
+            e.preventDefault();
+            openUrl(info.repository);
+        };
+    });
 
     // Reconnect to active tasks after page refresh
     api("/v0/tasks").then(function (d) {
