@@ -18,14 +18,15 @@ import (
 	"path/filepath"
 )
 
-func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int) {
+func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int) []int {
 	if len(ids) == 0 {
-		return
+		return nil
 	}
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, concurrency)
 	var done int
 	var mu sync.Mutex
+	success := map[int]bool{}
 	for _, sid := range ids {
 		wg.Add(1)
 		go func(sid int) {
@@ -37,7 +38,11 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			fetchAll(sid, bg, dd, imgDir, p, concurrency)
+			if fetchAll(sid, bg, dd, imgDir, p, concurrency) {
+				mu.Lock()
+				success[sid] = true
+				mu.Unlock()
+			}
 			if p != nil {
 				mu.Lock()
 				done++
@@ -47,10 +52,18 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 		}(sid)
 	}
 	wg.Wait()
+
+	result := make([]int, 0, len(success))
+	for _, sid := range ids {
+		if success[sid] {
+			result = append(result, sid)
+		}
+	}
+	return result
 }
 
 // fetchAll 拉取条目全部数据及关联角色/人物/图片
-func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int) {
+func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int) bool {
 	log.Info("fetching subject", "id", sid)
 
 	// 条目
@@ -64,7 +77,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			p.SetError(err.Error())
 			p.Send("subject", 1, 1, "error")
 		}
-		return
+		return false
 	}
 	cache.Put(dd, cache.Key("subjects", sid, "info.json"), cache.StripImages(data))
 	if p != nil {
@@ -340,6 +353,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 	wg3.Wait()
 
 	log.Info("subject fetch done", "id", sid, "chars", len(charIDs), "persons", len(personIDs), "episodes", len(allEps))
+	return true
 }
 
 // 拉取用户收藏，失败时不做写入
@@ -666,9 +680,6 @@ func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 			idStrs = append(idStrs, strconv.Itoa(sid))
 		}
 		p := newProgress(len(ids), "fetch_subject", "拉取动画 #"+strings.Join(idStrs, ", "))
-		for _, sid := range ids {
-			addToSeshatTracker(cfg, sid)
-		}
 		log.Info("pulling subjects", "ids", ids)
 		go func() {
 			defer func() {
@@ -678,7 +689,10 @@ func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 				}
 			}()
 			p.SetPhase(1, 5, "拉取动画数据")
-			fetchSubjectList(ids, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
+			success := fetchSubjectList(ids, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
+			for _, sid := range success {
+				addToSeshatTracker(sid)
+			}
 			downloadImagesScoped(dd, bg, p, 2, 5, ids, cfg.Server.ConcurrencyImage)
 			p.SetPhase(5, 5, "建立索引")
 			buildIndexes(dd, p)

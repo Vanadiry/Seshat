@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/vanadiry/seshat/core/bangumi"
 	"github.com/vanadiry/seshat/core/cache"
@@ -15,6 +16,9 @@ import (
 	"github.com/vanadiry/seshat/core/events"
 	"github.com/vanadiry/seshat/core/log"
 )
+
+// seshatTrackerMu 串行化 _seshat.json 的读改写，避免并发追加互相覆盖
+var seshatTrackerMu sync.Mutex
 
 func countTrackerTotal(cfg *config.Config) int {
 	files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
@@ -113,9 +117,13 @@ func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, 
 	buildIndexes(dd, p)
 }
 
-// addToSeshatTracker 将用户手动添加的 subject ID 记录到 _seshat.json。
-func addToSeshatTracker(cfg *config.Config, sid int) {
-	path := filepath.Join(cfg.TrackerDir(), "_seshat.json")
+// addToSeshatTracker 将用户手动添加的 subject ID 记录到 _seshat.json
+// 文件不存在时会创建，内容损坏时保留原文件并报错，不覆盖用户数据
+func addToSeshatTracker(sid int) {
+	seshatTrackerMu.Lock()
+	defer seshatTrackerMu.Unlock()
+
+	path := filepath.Join(config.Dir(), "tracker", "_seshat.json")
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		log.Error("tracker mkdir", "err", err)
 		events.Bus.Error("Tracker 写入失败")
@@ -127,9 +135,14 @@ func addToSeshatTracker(cfg *config.Config, sid int) {
 	}
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return
-	}
-	if json.Unmarshal(raw, &data) != nil {
+		if !os.IsNotExist(err) {
+			log.Error("tracker read", "sid", sid, "err", err)
+			events.Bus.Error("Tracker 写入失败")
+			return
+		}
+	} else if err := json.Unmarshal(raw, &data); err != nil {
+		log.Error("tracker parse", "sid", sid, "err", err)
+		events.Bus.Error("Tracker 文件格式错误，已忽略")
 		return
 	}
 	if data.Name == "" {
