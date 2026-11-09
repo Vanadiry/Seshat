@@ -798,6 +798,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div id="user-dropdown-name" class="px-4 pt-1 pb-2 text-sm font-bold text-center" style="display:none"></div>
             <div id="user-dropdown-name-sep" class="border-t border-bord-light my-1" style="display:none"></div>
             <a href="/settings" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">设置</a>
+            <a href="#" onclick="location.reload();return false" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">刷新页面</a>
             <div class="border-t border-bord-light my-1"></div>
             <a href="#" onclick="openUrl('https://github.com/Vanadiry/Seshat');return false" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">项目 GitHub</a>
           </div>
@@ -861,6 +862,14 @@ document.addEventListener("click", function () {
     var dd = document.getElementById("user-dropdown");
     dd.style.opacity = "0";
     dd.style.pointerEvents = "none";
+});
+
+// Cmd+R / Ctrl+R 刷新页面
+document.addEventListener("keydown", function (e) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "r") {
+        e.preventDefault();
+        location.reload();
+    }
 });
 
 // 拉取弹窗：输入行 + 操作按钮 + 危险区 + 二次确认
