@@ -172,13 +172,19 @@
                             if (collData && collData.data) {
                                 var collMap = {};
                                 for (var i = 0; i < collData.data.length; i++) {
-                                    collMap[collData.data[i].subject_id] =
-                                        collData.data[i].type;
+                                    var item = collData.data[i];
+                                    collMap[item.subject_id] = {
+                                        type: item.type,
+                                        rate: Number(item.rate) || 0
+                                    };
                                 }
                                 for (var i = 0; i < subjects.length; i++) {
-                                    if (collMap[subjects[i].id])
-                                        subjects[i]._coll =
-                                            collMap[subjects[i].id];
+                                    var coll = collMap[subjects[i].id];
+                                    if (!coll) continue;
+                                    subjects[i]._coll = coll.type;
+                                    if (coll.rate > 0) {
+                                        subjects[i]._my = coll.rate;
+                                    }
                                 }
                             }
                             finishLoad(subjects);
@@ -201,17 +207,67 @@
                     return;
                 }
                 var sort = window.SUBJECT_SORT || "elo";
+                function sortValue(it, key) {
+                    if (key === "elo") {
+                        return it._elo ? Number(it._elo) : null;
+                    }
+                    if (key === "my") {
+                        return it._my ? Number(it._my) : null;
+                    }
+                    if (key === "bgm") {
+                        return it.score ? Number(it.score) : null;
+                    }
+                    return null;
+                }
+                function sortByOrder(order, pinWatching) {
+                    allItems.sort(function (a, b) {
+                        if (pinWatching) {
+                            var aw = Number(a._coll) === 3 ? 1 : 0;
+                            var bw = Number(b._coll) === 3 ? 1 : 0;
+                            if (aw !== bw) return bw - aw;
+                        }
+                        for (var i = 0; i < order.length; i++) {
+                            var av = sortValue(a, order[i]);
+                            var bv = sortValue(b, order[i]);
+                            var am = av === null;
+                            var bm = bv === null;
+                            if (am && bm) continue;
+                            if (am) return 1;
+                            if (bm) return -1;
+                            if (av !== bv) return bv - av;
+                        }
+                        var an = primaryName(a.name || "", a.name_cn || "");
+                        var bn = primaryName(b.name || "", b.name_cn || "");
+                        var d = String(an).localeCompare(
+                            String(bn),
+                            "zh-Hans",
+                            {
+                                numeric: true,
+                                sensitivity: "base"
+                            }
+                        );
+                        if (d !== 0) return d;
+                        return (a.id || 0) - (b.id || 0);
+                    });
+                }
+                function sortByPrimary(primary) {
+                    sortByOrder(
+                        [primary].concat(
+                            ["elo", "my", "bgm"].filter(function (k) {
+                                return k !== primary;
+                            })
+                        ),
+                        false
+                    );
+                }
                 if (sort === "elo") {
-                    allItems.sort(function (a, b) {
-                        var ae = a._elo || 0,
-                            be = b._elo || 0;
-                        if (ae !== be) return be - ae;
-                        return (b.score || 0) - (a.score || 0);
-                    });
+                    sortByPrimary("elo");
+                } else if (sort === "my") {
+                    sortByPrimary("my");
                 } else if (sort === "bgm_rank") {
-                    allItems.sort(function (a, b) {
-                        return (b.score || 0) - (a.score || 0);
-                    });
+                    sortByPrimary("bgm");
+                } else if (sort === "watching") {
+                    sortByOrder(["elo", "my", "bgm"], true);
                 } else if (sort === "random") {
                     allItems.sort(function () {
                         return Math.random() - 0.5;
