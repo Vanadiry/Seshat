@@ -120,6 +120,7 @@
             ];
 
             var _prefs = {};
+            var _aboutInfo = null;
 
             function loadSettings() {
                 fetch(API + "/v0/settings")
@@ -149,6 +150,24 @@
                         escapeHtml(meta.join("｜")) +
                         "</div>";
                 }
+                var capsText;
+                if (!window.BACKEND_URL) {
+                    capsText = capLabels(CAPS_ALL).join("、");
+                } else if (typeof _caps === "undefined" || !_caps) {
+                    capsText = "探测中";
+                } else if (!_caps.seshat) {
+                    capsText = "未识别为 Seshat";
+                } else {
+                    var names = capLabels(_caps.features);
+                    capsText = names.length
+                        ? names.join("、")
+                        : "未提供能力清单";
+                }
+                html +=
+                    '<div class="text-xs text-sub mt-1 leading-relaxed">' +
+                    (window.BACKEND_URL ? "远端能力：" : "能力：") +
+                    escapeHtml(capsText) +
+                    "</div>";
                 if (info.copyright) {
                     html +=
                         '<div class="text-xs text-sub mt-1">' +
@@ -168,7 +187,12 @@
 
             function loadInfo() {
                 getInstanceInfo().then(function (info) {
-                    if (info) renderAbout(info);
+                    if (!info) return;
+                    _aboutInfo = info;
+                    renderAbout(info);
+                });
+                capabilitiesReady().then(function () {
+                    if (_aboutInfo) renderAbout(_aboutInfo);
                 });
             }
 

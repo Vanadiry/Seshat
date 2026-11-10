@@ -79,21 +79,43 @@ document.addEventListener("dragstart", function (e) {
 
 const API = window.BACKEND_URL || "/api";
 
-// 能力清单，与后端 /v0/info 保持一致
-var CAPS_ALL = [
-    "elo",
-    "events",
-    "fetch",
-    "lists",
-    "names",
-    "search.characters",
-    "search.persons",
-    "search.subjects",
-    "stats",
-    "tags",
-    "task",
-    "tracker"
+// 能力表，顺序即设置页的展示顺序
+var CAPS = [
+    { key: "fetch", label: "数据拉取" },
+    { key: "tracker", label: "Tracker 管理" },
+    { key: "lists", label: "列表索引" },
+    { key: "names", label: "名称索引" },
+    { key: "search.subjects", label: "条目搜索" },
+    { key: "search.characters", label: "角色搜索" },
+    { key: "search.persons", label: "人物搜索" },
+    { key: "elo", label: "ELO 评分" },
+    { key: "tags", label: "标签" },
+    { key: "stats", label: "统计" },
+    { key: "task", label: "任务" },
+    { key: "events", label: "事件通知" }
 ];
+var CAPS_ALL = CAPS.map(function (c) {
+    return c.key;
+});
+var CAPS_LABELS = {};
+CAPS.forEach(function (c) {
+    CAPS_LABELS[c.key] = c.label;
+});
+
+// 按能力表顺序输出中文名，未知能力排在后面
+function capLabels(features) {
+    var on = {};
+    for (var i = 0; i < features.length; i++) on[features[i]] = true;
+    var out = [];
+    for (var j = 0; j < CAPS.length; j++) {
+        if (on[CAPS[j].key]) out.push(CAPS[j].label);
+    }
+    for (var k = 0; k < features.length; k++) {
+        if (!CAPS_LABELS[features[k]]) out.push(features[k]);
+    }
+    return out;
+}
+
 var CAPS_TTL = 10 * 60 * 1000;
 var CAPS_FAIL_TTL = 30 * 1000;
 var CAPS_KEY = "seshat_caps:" + API;
