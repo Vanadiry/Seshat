@@ -14,12 +14,15 @@ const (
 )
 
 // handleInfo 返回实例信息，供关于页展示
-func handleInfo(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, map[string]any{
-		"name":       instanceName,
-		"version":    config.Version,
-		"license":    instanceLicense,
-		"repository": instanceRepository,
-		"copyright":  instanceCopyright,
-	})
+func handleInfo(features func() []string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, map[string]any{
+			"name":       instanceName,
+			"version":    config.Version,
+			"license":    instanceLicense,
+			"repository": instanceRepository,
+			"copyright":  instanceCopyright,
+			"features":   features(),
+		})
+	}
 }

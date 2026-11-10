@@ -987,7 +987,7 @@ paths:
     get:
       tags: [其他]
       summary: 实例信息
-      description: 返回实例名称、版本、许可证、仓库与版权，供关于页展示。
+      description: 返回实例名称、版本、许可证、仓库、版权与能力清单，供关于页和能力探测使用。
       responses:
         "200":
           description: 实例信息
@@ -1006,6 +1006,22 @@ paths:
                     }
                   copyright:
                     { type: string, example: "Copyright © 2026 Vanadiry" }
+                  features:
+                    type: array
+                    items: { type: string }
+                    example:
+                      - elo
+                      - events
+                      - fetch
+                      - lists
+                      - names
+                      - search.characters
+                      - search.persons
+                      - search.subjects
+                      - stats
+                      - tags
+                      - task
+                      - tracker
   /api/v0/settings: # 获取和修改设置
     get:
       tags: [其他]
