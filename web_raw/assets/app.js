@@ -355,72 +355,16 @@ var MSG = {
     configWarnBothBody: "数据从自定义后端获取，本地缺失时从回退端点获取",
     configWarnFailedTitle: "自定义后端连接失败",
     configWarnFailedBody: "能力相关功能已禁用",
-    // 拉取弹窗
-    dialogTitle: "管理数据",
-    idLabel: "拉取动画",
-    idPlaceholder: "动画 ID，如 51 或 51, 288",
-    trackerLabel: "拉取或创建 Tracker",
-    trackerPlaceholder: "Tracker 名称",
-    btnUserFetch: "刷新用户数据",
-    btnUpdate: "增量更新",
-    btnGap: "补充数据",
-    btnMeta: "刷新元数据",
-    btnRefreshAll: "刷新全部",
-    confirmGap:
-        "将遍历所有已缓存条目，检查并拉取有更新的人物/角色/剧集等数据。",
-    confirmMeta: "将重新拉取所有条目的基本信息（不包含图片）。",
-    btnDangerZone: "危险区",
-    btnRebuildIndex: "重建索引",
-    btnRebuildAll: "重建全部",
-    btnExecute: "执行",
+    // 管理操作
     btnCancel: "取消",
-    btnClose: "关闭",
-    btnImportColl: "导入收藏",
-    confirmImportColl:
-        "将从用户收藏列表中读取数据，并存入 Tracker。\n之后拉取数据时将能够拉取你的收藏。",
     importCollDone: function (n) {
         return "已将 " + n + " 个条目导入至 tracker/user.json";
     },
 
     // 确认提示
-    confirmFetchId: function (ids) {
-        return (
-            "将从拉取动画 " +
-            ids
-                .split(",")
-                .map(function (s) {
-                    return "#" + s.trim();
-                })
-                .join(", ") +
-            " 的完整数据"
-        );
-    },
-    confirmTrackerFetch: function (name) {
-        return "将拉取 Tracker [" + name + "] 中记录的全部动画数据？";
-    },
-    confirmTrackerCreate: function (name) {
-        return "未找到 Tracker [" + name + "]。\n是否创建？";
-    },
-    trackerCreated: function (name) {
-        var d = window.SESHAT_HOME
-            ? window.SESHAT_HOME + "/tracker"
-            : "~/.vSoft/Seshat/tracker";
-        return (
-            "Tracker [" +
-            name +
-            "] 已创建。请在 " +
-            d +
-            "/" +
-            name +
-            ".toml 中填写动画 ID，然后返回此处重新拉取。"
-        );
-    },
     confirmUserFetch: function () {
         return "将拉取 " + window.USERNAME + " 的用户数据与收藏列表。";
     },
-    confirmUpdate: "将对比本地与上游数据，并添加缺失的数据。",
-    confirmRefreshAll:
-        "将从上游拉取全部 Tracker 数据，覆盖已有内容。本地多余数据不会删除。",
     confirmRebuildIndex: "将从本地 JSON 中重建所有索引。",
     confirmRebuildAll: function () {
         var d = window.SESHAT_HOME || "~/.vSoft/Seshat";
@@ -1273,8 +1217,7 @@ document.addEventListener("keydown", function (e) {
 });
 
 // 拉取弹窗：输入行 + 操作按钮 + 危险区 + 二次确认
-var dlgInited = false,
-    confirmCb = null;
+var confirmCb = null;
 
 function showLightbox(src) {
     var el = document.getElementById("lightbox");
@@ -1389,169 +1332,6 @@ function showLightbox(src) {
         img.style.cursor = "";
         apply();
     });
-}
-
-function initDialog() {
-    if (dlgInited) return;
-    dlgInited = true;
-    var dlg = document.createElement("div");
-    dlg.id = "dlg-overlay";
-    dlg.className =
-        "fixed inset-0 z-[100] bg-black/60 flex items-center justify-center transition-opacity duration-200";
-    dlg.style.opacity = "0";
-    dlg.style.pointerEvents = "none";
-    dlg.innerHTML =
-        '<div class="relative bg-surface-alt border border-bord rounded-xl w-[460px] max-w-[90vw] overflow-hidden">' +
-        '<div class="p-6 max-h-[90vh] overflow-y-auto">' +
-        '<div class="flex items-center gap-3 mb-4">' +
-        '<button id="btn-close-dlg" class="w-7 h-7 rounded-full border border-bord-strong flex items-center justify-center text-sub hover:text-text hover:border-bord-xstrong shrink-0 no-underline text-xs cursor-pointer bg-transparent" title="' +
-        MSG.btnClose +
-        '">&times;</button>' +
-        '<h3 class="text-base font-bold">' +
-        MSG.dialogTitle +
-        "</h3></div>" +
-        // ID 输入行
-        '<label class="text-xs text-sub block mb-1">' +
-        MSG.idLabel +
-        "</label>" +
-        '<div class="flex gap-2 mb-4">' +
-        '<input id="fetch-input" placeholder="' +
-        MSG.idPlaceholder +
-        '" pattern="[0-9, ]*" class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm">' +
-        '<button id="btn-do-fetch" class="w-9 h-9 rounded-lg bg-pink text-white font-bold cursor-pointer border-0 hover:opacity-90 flex items-center justify-center" title="拉取">&check;</button></div>' +
-        // Tracker 输入行
-        '<label data-feature="tracker" class="text-xs text-sub block mb-1">' +
-        MSG.trackerLabel +
-        "</label>" +
-        '<div data-feature="tracker" class="flex gap-2 mb-4">' +
-        '<input id="tracker-input" placeholder="' +
-        MSG.trackerPlaceholder +
-        '" pattern="[a-zA-Z0-9_\\-]*" class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm">' +
-        '<button id="btn-tracker-fetch" class="w-9 h-9 rounded-lg bg-pink text-white font-bold cursor-pointer border-0 hover:opacity-90 flex items-center justify-center" title="拉取或创建">&check;</button></div>' +
-        // 操作按钮
-        '<div class="flex flex-col gap-2 mt-3 mb-2">' +
-        '<div class="grid grid-cols-3 gap-2">' +
-        '<button id="btn-user" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
-        MSG.btnUserFetch +
-        "</button>" +
-        '<button id="btn-import-coll" data-feature="tracker" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
-        MSG.btnImportColl +
-        "</button>" +
-        '<button id="btn-update" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
-        MSG.btnUpdate +
-        "</button>" +
-        "</div>" +
-        '<div class="grid grid-cols-3 gap-2">' +
-        '<button id="btn-gap" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
-        MSG.btnGap +
-        "</button>" +
-        '<button id="btn-meta" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
-        MSG.btnMeta +
-        "</button>" +
-        '<button id="btn-all" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
-        MSG.btnRefreshAll +
-        "</button>" +
-        "</div></div>" +
-        // 危险区
-        '<button id="btn-danger-toggle" class="w-full px-3 py-2 rounded-lg border border-[rgba(255,0,0,.3)] bg-transparent text-[#dc2626] text-sm cursor-pointer hover:bg-pink-bg">' +
-        MSG.btnDangerZone +
-        "</button>" +
-        '<div id="danger-zone" class="hidden mt-2 grid grid-cols-3 gap-2">' +
-        '<button id="btn-index" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
-        MSG.btnRebuildIndex +
-        "</button>" +
-        '<button id="btn-rebuild-elo" data-feature="elo" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">重建 ELO</button>' +
-        '<button id="btn-deep" class="px-3 py-2 rounded-lg bg-[#dc2626] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">' +
-        MSG.btnRebuildAll +
-        "</button>" +
-        "</div>" +
-        "</div>" +
-        // 确认遮罩
-        '<div id="confirm-overlay" class="absolute inset-0 bg-black/70 rounded-xl flex items-center justify-center z-10 transition-opacity duration-200" style="display:none;opacity:0">' +
-        '<div class="bg-surface-alt border border-bord rounded-lg p-5 w-[340px] max-w-[85vw]">' +
-        '<p id="confirm-msg" class="text-sm mb-4 leading-relaxed"></p>' +
-        '<button id="btn-confirm-exec" class="w-full px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 mb-2">' +
-        MSG.btnExecute +
-        "</button>" +
-        '<button id="btn-confirm-cancel" class="w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active">' +
-        MSG.btnCancel +
-        "</button>" +
-        "</div></div></div>";
-
-    dlg.addEventListener("click", function (e) {
-        if (e.target === dlg) closeFetch();
-    });
-    document.body.appendChild(dlg);
-    applyFeatureVisibility(dlg);
-    capabilitiesReady().then(function () {
-        applyFeatureVisibility(dlg);
-    });
-
-    document
-        .getElementById("btn-close-dlg")
-        .addEventListener("click", closeFetch);
-    document
-        .getElementById("btn-confirm-cancel")
-        .addEventListener("click", closeConfirm);
-
-    // 危险区开关，只展开不收起
-    document
-        .getElementById("btn-danger-toggle")
-        .addEventListener("click", function () {
-            document.getElementById("danger-zone").classList.remove("hidden");
-            this.remove();
-        });
-
-    // 绑定带确认的操作按钮
-    document
-        .getElementById("btn-do-fetch")
-        .addEventListener("click", confirmFetchIDs);
-    document
-        .getElementById("btn-tracker-fetch")
-        .addEventListener("click", doTrackerFetchOrCreate);
-    document.getElementById("btn-user").addEventListener("click", function () {
-        if (!window.USERNAME) {
-            showError(MSG.errNoUsername);
-            return;
-        }
-        confirmAction(MSG.confirmUserFetch(), doUserFetch);
-    });
-    document
-        .getElementById("btn-import-coll")
-        .addEventListener("click", function () {
-            confirmAction(
-                "将用户收藏列表导入为 Tracker，之后可参与其他拉取行为。",
-                doImportCollections
-            );
-        });
-    document
-        .getElementById("btn-update")
-        .addEventListener("click", function () {
-            confirmAction(MSG.confirmUpdate, doFetchUpdate);
-        });
-    document.getElementById("btn-gap").addEventListener("click", function () {
-        confirmAction(MSG.confirmGap, doFetchGap);
-    });
-    document.getElementById("btn-meta").addEventListener("click", function () {
-        confirmAction(MSG.confirmMeta, doFetchMeta);
-    });
-    document.getElementById("btn-all").addEventListener("click", function () {
-        confirmAction(MSG.confirmRefreshAll, doRefreshAll);
-    });
-    document.getElementById("btn-index").addEventListener("click", function () {
-        confirmAction(MSG.confirmRebuildIndex, doFetchIndex);
-    });
-    document.getElementById("btn-deep").addEventListener("click", function () {
-        confirmAction(MSG.confirmRebuildAll(), doDeepRebuild);
-    });
-    document
-        .getElementById("btn-rebuild-elo")
-        .addEventListener("click", function () {
-            confirmAction(
-                "将清空当前 ELO 分数并从对战历史完整重建",
-                doRebuildELO
-            );
-        });
 }
 
 function confirmAction(msg, cb) {
@@ -1745,70 +1525,7 @@ function closeConfirm() {
     confirmCb = null;
 }
 
-function openFetch() {
-    initDialog();
-    var dlg = document.getElementById("dlg-overlay");
-    dlg.style.display = "flex";
-    requestAnimationFrame(function () {
-        dlg.style.opacity = "1";
-        dlg.style.pointerEvents = "auto";
-    });
-    document.getElementById("fetch-input").focus();
-}
-function closeFetch() {
-    var dlg = document.getElementById("dlg-overlay");
-    if (!dlg) return;
-    dlg.style.opacity = "0";
-    dlg.style.pointerEvents = "none";
-    setTimeout(function () {
-        dlg.style.display = "none";
-    }, 200);
-    closeConfirm();
-}
-
-function confirmFetchIDs() {
-    var ids = document.getElementById("fetch-input").value.trim();
-    if (!ids) return;
-    confirmAction(MSG.confirmFetchId(ids), doFetch);
-}
-
-function doTrackerFetchOrCreate() {
-    var name = document.getElementById("tracker-input").value.trim();
-    if (!name) return;
-    if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
-        showError(MSG.errInvalidTrackerName);
-        return;
-    }
-    api("/v0/tracker").then(function (resp) {
-        var list = (resp && resp.data) || [];
-        var found = false;
-        for (var i = 0; i < list.length; i++) {
-            if (list[i].name === name) {
-                found = true;
-                break;
-            }
-        }
-        if (found) {
-            confirmAction(MSG.confirmTrackerFetch(name), doTrackerFetch);
-            return;
-        }
-        confirmAction(MSG.confirmTrackerCreate(name), function () {
-            fetch(API + "/v0/tracker/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: name })
-            }).then(function (r) {
-                return r.json().then(function (d) {
-                    if (!r.ok) showError(errText(d, r.status));
-                    else showSuccess(MSG.trackerCreated(name));
-                });
-            });
-        });
-    });
-}
-
 async function doImportCollections() {
-    closeFetch();
     var res = await fetch(API + "/v0/tracker/import-collections", {
         method: "POST"
     });
@@ -1821,7 +1538,6 @@ async function doImportCollections() {
 }
 
 async function doRebuildELO() {
-    closeFetch();
     var res = await fetch(API + "/v0/elo/rebuild", { method: "POST" });
     var d = await readJSON(res);
     if (!res.ok || !d || d.status !== "ok") {
@@ -1831,47 +1547,6 @@ async function doRebuildELO() {
     showSuccess("已重建 " + d.count + " 条 ELO 分数和计数");
 }
 
-async function doFetch() {
-    var v = document.getElementById("fetch-input").value.trim();
-    if (!v) return;
-    closeFetch();
-    var ids = v
-        .split(",")
-        .map(function (s) {
-            return parseInt(s.trim());
-        })
-        .filter(Boolean);
-    if (!ids.length) return;
-    var res = await fetch(API + "/v0/fetch/subject", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: ids })
-    });
-    var d = await readJSON(res);
-    if (!res.ok || !d) {
-        showError(errText(d, res.status));
-        return;
-    }
-    if (d.task_id) startProgress(d.task_id);
-}
-
-async function doTrackerFetch() {
-    var v = document.getElementById("tracker-input").value.trim();
-    if (!v) return;
-    var res = await fetch(API + "/v0/fetch/tracker", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ names: [v] })
-    });
-    var d = await readJSON(res);
-    if (!res.ok || !d) {
-        showError(errText(d, res.status));
-        return;
-    }
-    closeFetch();
-    if (d.task_id) startProgress(d.task_id);
-}
-
 async function doUserFetch() {
     var res = await fetch(API + "/v0/fetch/user", { method: "POST" });
     var d = await readJSON(res);
@@ -1879,23 +1554,10 @@ async function doUserFetch() {
         showError(MSG.errUserFetchFailed + errText(d, res.status));
         return;
     }
-    closeFetch();
-    if (d.task_id) startProgress(d.task_id);
-}
-
-async function doRefreshAll() {
-    closeFetch();
-    var res = await fetch(API + "/v0/fetch/all", { method: "POST" });
-    var d = await readJSON(res);
-    if (!res.ok || !d) {
-        showError(errText(d, res.status));
-        return;
-    }
     if (d.task_id) startProgress(d.task_id);
 }
 
 async function doDeepRebuild() {
-    closeFetch();
     var res = await fetch(API + "/v0/fetch/deep", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1909,39 +1571,7 @@ async function doDeepRebuild() {
     if (d.task_id) startProgress(d.task_id);
 }
 
-async function doFetchUpdate() {
-    closeFetch();
-    var res = await fetch(API + "/v0/fetch/update", { method: "POST" });
-    var d = await readJSON(res);
-    if (!res.ok || !d) {
-        showError(errText(d, res.status));
-        return;
-    }
-    if (d.task_id) startProgress(d.task_id);
-}
-async function doFetchGap() {
-    closeFetch();
-    var res = await fetch(API + "/v0/fetch/gap", { method: "POST" });
-    var d = await readJSON(res);
-    if (!res.ok || !d) {
-        showError(errText(d, res.status));
-        return;
-    }
-    if (d.task_id) startProgress(d.task_id);
-}
-async function doFetchMeta() {
-    closeFetch();
-    var res = await fetch(API + "/v0/fetch/meta", { method: "POST" });
-    var d = await readJSON(res);
-    if (!res.ok || !d) {
-        showError(errText(d, res.status));
-        return;
-    }
-    if (d.task_id) startProgress(d.task_id);
-}
-
 async function doFetchIndex() {
-    closeFetch();
     var res = await fetch(API + "/v0/fetch/index", { method: "POST" });
     var d = await readJSON(res);
     if (!res.ok || !d) {
