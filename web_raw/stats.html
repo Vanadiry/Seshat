@@ -40,6 +40,7 @@
                 _noRating = [],
                 _orphans = [];
             var _orphanNames = {};
+            var _myRates = {};
             var sortKey = "elo";
             var sortDir = "desc";
             var _nameCollator = new Intl.Collator("zh-Hans", {
@@ -151,6 +152,25 @@
                     _entries = data && data.data ? data.data : [];
                     _noRating = data && data.no_rating ? data.no_rating : [];
                     _orphans = data && data.orphans ? data.orphans : [];
+                    _myRates = {};
+                    if (window.USERNAME) {
+                        try {
+                            var summary = await api(
+                                "/v0/users/" +
+                                    window.USERNAME +
+                                    "/collections?view=summary"
+                            );
+                            if (summary && summary.data) {
+                                for (var i = 0; i < summary.data.length; i++) {
+                                    var rate = Number(summary.data[i].rate);
+                                    if (rate > 0) {
+                                        _myRates[summary.data[i].subject_id] =
+                                            rate;
+                                    }
+                                }
+                            }
+                        } catch (_) {}
+                    }
                     render();
                 } catch (e) {
                     document.getElementById("stats-list").innerHTML =
@@ -161,6 +181,7 @@
             function render() {
                 // 列宽在表头与两种数据行之间共用
                 var COL_ELO = "w-[120px] shrink-0";
+                var COL_MY = "w-[90px] shrink-0";
                 var COL_BGM = "w-[100px] shrink-0";
                 var COL_ID = "w-[60px] shrink-0";
                 // ELO 单元格：两项都有就并排，只有一项就单独右对齐，都没有显示短横线
@@ -258,6 +279,12 @@
                             return null;
                         return Number(it.rating);
                     }
+                    if (key === "my") {
+                        var rate = _myRates[it.id];
+                        if (rate == null || rate === 0 || rate === "")
+                            return null;
+                        return Number(rate);
+                    }
                     if (key === "score") {
                         if (
                             it.score == null ||
@@ -269,15 +296,24 @@
                     }
                     return null;
                 }
+                var sortOrder = ["elo", "my", "score"];
                 items.sort(function (a, b) {
-                    var av = sortValue(a, sortKey);
-                    var bv = sortValue(b, sortKey);
-                    var am = av === null;
-                    var bm = bv === null;
-                    if (am && !bm) return 1;
-                    if (!am && bm) return -1;
-                    if (!am && !bm && av !== bv) {
-                        return sortDir === "asc" ? av - bv : bv - av;
+                    var keys = [sortKey].concat(
+                        sortOrder.filter(function (k) {
+                            return k !== sortKey;
+                        })
+                    );
+                    for (var k = 0; k < keys.length; k++) {
+                        var av = sortValue(a, keys[k]);
+                        var bv = sortValue(b, keys[k]);
+                        var am = av === null;
+                        var bm = bv === null;
+                        if (am && bm) continue;
+                        if (am) return 1;
+                        if (bm) return -1;
+                        if (av !== bv) {
+                            return sortDir === "asc" ? av - bv : bv - av;
+                        }
                     }
                     var an = primaryName(a.name || "", a.name_cn || "");
                     var bn = primaryName(b.name || "", b.name_cn || "");
@@ -291,6 +327,7 @@
                     '<div class="w-10 shrink-0"></div>' +
                     '<div class="flex-1 min-w-0">动画</div>' +
                     sortHeader("ELO 评分", "elo", COL_ELO) +
+                    sortHeader("我的评分", "my", COL_MY) +
                     sortHeader("番组计划评分", "score", COL_BGM) +
                     '<div class="' +
                     COL_ID +
@@ -300,6 +337,10 @@
                     var bg = i % 2 === 0 ? "bg-surface" : "bg-surface-raised";
                     var eloCls =
                         sortKey === "elo"
+                            ? "text-sm font-semibold"
+                            : "text-sm text-sub";
+                    var myCls =
+                        sortKey === "my"
                             ? "text-sm font-semibold"
                             : "text-sm text-sub";
                     var bkgCls =
@@ -360,6 +401,13 @@
                             ) +
                             "</span>" +
                             '<span class="' +
+                            myCls +
+                            " " +
+                            COL_MY +
+                            ' text-center font-mono">' +
+                            (_myRates[it.id] || "-") +
+                            "</span>" +
+                            '<span class="' +
                             bkgCls +
                             " " +
                             COL_BGM +
@@ -415,6 +463,13 @@
                             COL_ELO +
                             ' flex justify-center gap-1 font-mono">' +
                             eloCellInner(ratingVal, pctVal) +
+                            "</span>" +
+                            '<span class="' +
+                            myCls +
+                            " " +
+                            COL_MY +
+                            ' text-center font-mono">' +
+                            (_myRates[it.id] || "-") +
                             "</span>" +
                             '<span class="' +
                             bkgCls +
