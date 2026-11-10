@@ -99,6 +99,21 @@ data/index/*.json
 
 图片只补缺失的尺寸。“重建全部”删除 `data/api`、`data/images`、`data/index`，保留 `data/user`。
 
+## 跨源
+
+CORS 按监听地址决定，不回显固定自身地址。
+
+- 回环监听只放行回环 Origin，包括 `localhost`、`127.0.0.0/8` 和 `::1`
+- 非回环监听放行任意合法的 `http` 或 `https` Origin，公网域名和公网 IP 都可用
+- 空值表示监听所有地址，按非回环处理
+- `null` 和非法 Origin 始终拒绝
+- 拒绝的 Origin 发普通请求返回 403，预检返回 204 但不带允许头
+
+允许时回显请求 Origin，并返回 `Vary: Origin`。允许的请求头为 `Content-Type`、`Authorization` 和 `X-Request-ID`，响应头暴露 `X-Request-ID`。
+
+绑定非回环地址后，任意网页都能调用 API。当前没有鉴权，拉取、Tracker 和 ELO 都会改数据。  
+公网暴露需要自行承担风险，CORS 不负责权限控制。
+
 ## 兼容性
 
 镜像端点尽量对齐官方 v0，主要差异如下：
