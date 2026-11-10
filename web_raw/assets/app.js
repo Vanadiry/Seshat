@@ -1180,6 +1180,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <nav class="flex gap-1 items-center">
           <a href="/rating" data-feature="elo" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/rating")}">评分</a>
           <a href="/search" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/search")}">搜索</a>
+          <a href="/settings" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/settings")}">设置</a>
         </nav>
         <button id="btn-fetch" data-feature-all="fetch,task" class="px-4 py-1.5 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">管理数据</button>
         <div class="relative shrink-0">
@@ -1197,7 +1198,6 @@ document.addEventListener("DOMContentLoaded", () => {
           <div id="user-dropdown" class="absolute right-0 top-full mt-2 bg-surface-raised border border-bord-strong rounded-xl shadow-2xl py-2 w-[180px] z-[300] overflow-hidden" style="opacity:0;pointer-events:none;transition:opacity .2s ease">
             <div id="user-dropdown-name" class="px-4 pt-1 pb-2 text-sm font-bold text-center" style="display:none"></div>
             <div id="user-dropdown-name-sep" class="border-t border-bord-light my-1" style="display:none"></div>
-            <a href="/settings" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">设置</a>
             <a href="#" onclick="location.reload();return false" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">刷新页面</a>
             <div class="border-t border-bord-light my-1"></div>
           </div>
