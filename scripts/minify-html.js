@@ -9,6 +9,7 @@ const FILES = [
     "character.html",
     "characters.html",
     "index.html",
+    "manage.html",
     "person.html",
     "persons.html",
     "rating.html",

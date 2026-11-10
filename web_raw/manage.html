@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh-CN" class="bg-bg">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="view-transition" content="same-origin" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>管理 | Seshat</title>
+
+        <script src="/assets/theme.min.js"></script>
+        <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+        <link rel="stylesheet" href="/assets/style.css" />
+    </head>
+    <body class="text-text font-[system-ui] min-h-screen">
+        <div id="topbar"></div>
+
+        <main class="max-w-[720px] mx-auto p-6">
+            <section class="mb-8">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-[3px] h-[18px] bg-pink rounded-sm"></span>
+                    <h2 class="font-bold text-sm">按 ID 拉取</h2>
+                </div>
+                <p class="text-xs text-sub mb-3">
+                    输入一个或多个动画 ID，逗号分隔。拉取成功后会记录到
+                    _seshat.json。
+                </p>
+                <div class="flex gap-2">
+                    <input
+                        id="fetch-input"
+                        placeholder="动画 ID，如 51 或 51, 288"
+                        pattern="[0-9, ]*"
+                        class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm"
+                    />
+                    <button
+                        id="btn-page-fetch"
+                        class="px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90"
+                    >
+                        拉取
+                    </button>
+                </div>
+            </section>
+
+            <section data-feature="tracker" class="mb-8">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-[3px] h-[18px] bg-pink rounded-sm"></span>
+                    <h2 class="font-bold text-sm">Tracker</h2>
+                </div>
+                <p class="text-xs text-sub mb-3">
+                    输入 Tracker 名称。不存在时会询问是否创建。
+                </p>
+                <div class="flex gap-2">
+                    <input
+                        id="tracker-input"
+                        placeholder="Tracker 名称"
+                        pattern="[a-zA-Z0-9_\-]*"
+                        class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm"
+                    />
+                    <button
+                        id="btn-page-tracker"
+                        class="px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90"
+                    >
+                        拉取
+                    </button>
+                </div>
+            </section>
+
+            <section class="mb-8">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-[3px] h-[18px] bg-pink rounded-sm"></span>
+                    <h2 class="font-bold text-sm">批量维护</h2>
+                </div>
+                <p class="text-xs text-sub mb-3">
+                    任务进度会显示在右下角。每个操作都会先弹出确认。
+                </p>
+                <div class="flex flex-col gap-2">
+                    <button
+                        id="btn-page-update"
+                        class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                    >
+                        增量更新
+                    </button>
+                    <button
+                        id="btn-page-gap"
+                        class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                    >
+                        补充数据
+                    </button>
+                    <button
+                        id="btn-page-meta"
+                        class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                    >
+                        刷新元数据
+                    </button>
+                    <button
+                        id="btn-page-all"
+                        class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                    >
+                        刷新全部
+                    </button>
+                    <button
+                        id="btn-page-user"
+                        class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                    >
+                        刷新用户数据
+                    </button>
+                    <button
+                        id="btn-page-import"
+                        class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                    >
+                        导入收藏为 Tracker
+                    </button>
+                </div>
+            </section>
+
+            <section class="mb-8">
+                <div class="flex items-center gap-2 mb-3">
+                    <span
+                        class="w-[3px] h-[18px] bg-[#dc2626] rounded-sm"
+                    ></span>
+                    <h2 class="font-bold text-sm text-[#dc2626]">危险区</h2>
+                </div>
+                <p class="text-xs text-sub mb-3">
+                    这些操作会影响大量数据，请先确认。
+                </p>
+                <div class="flex flex-col gap-2">
+                    <button
+                        id="btn-page-index"
+                        class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                    >
+                        重建索引
+                    </button>
+                    <button
+                        id="btn-page-elo"
+                        data-feature="elo"
+                        class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                    >
+                        重建 ELO
+                    </button>
+                    <button
+                        id="btn-page-deep"
+                        class="px-3 py-2 rounded-lg bg-[#dc2626] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90"
+                    >
+                        重建全部
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <div
+            id="confirm-overlay"
+            class="fixed inset-0 bg-black/70 flex items-center justify-center z-[400] transition-opacity duration-200"
+            style="display: none; opacity: 0"
+        >
+            <div
+                class="bg-surface-alt border border-bord rounded-lg p-5 w-[340px] max-w-[85vw]"
+            >
+                <p id="confirm-msg" class="text-sm mb-4 leading-relaxed"></p>
+                <button
+                    id="btn-confirm-exec"
+                    class="w-full px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 mb-2"
+                >
+                    执行
+                </button>
+                <button
+                    id="btn-confirm-cancel"
+                    class="w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active"
+                >
+                    取消
+                </button>
+            </div>
+        </div>
+
+        <script src="assets/app.min.js"></script>
+        <script>
+            (async () => {
+                if (!(await requireFeature("fetch"))) return;
+                if (!(await requireFeature("task"))) return;
+                applyFeatureVisibility(document);
+
+                document.getElementById("btn-page-fetch").onclick =
+                    confirmFetchIDs;
+                document
+                    .getElementById("fetch-input")
+                    .addEventListener("keydown", function (e) {
+                        if (e.key === "Enter") confirmFetchIDs();
+                    });
+
+                document.getElementById("btn-page-tracker").onclick =
+                    doTrackerFetchOrCreate;
+                document
+                    .getElementById("tracker-input")
+                    .addEventListener("keydown", function (e) {
+                        if (e.key === "Enter") doTrackerFetchOrCreate();
+                    });
+
+                document.getElementById("btn-page-update").onclick =
+                    function () {
+                        confirmAction(MSG.confirmUpdate, doFetchUpdate);
+                    };
+                document.getElementById("btn-page-gap").onclick = function () {
+                    confirmAction(MSG.confirmGap, doFetchGap);
+                };
+                document.getElementById("btn-page-meta").onclick = function () {
+                    confirmAction(MSG.confirmMeta, doFetchMeta);
+                };
+                document.getElementById("btn-page-all").onclick = function () {
+                    confirmAction(MSG.confirmRefreshAll, doRefreshAll);
+                };
+                document.getElementById("btn-page-user").onclick = function () {
+                    if (!window.USERNAME) {
+                        showError(MSG.errNoUsername);
+                        return;
+                    }
+                    confirmAction(MSG.confirmUserFetch(), doUserFetch);
+                };
+                document.getElementById("btn-page-import").onclick =
+                    function () {
+                        confirmAction(
+                            "将用户收藏列表导入为 Tracker，之后可参与其他拉取行为。",
+                            doImportCollections
+                        );
+                    };
+                document.getElementById("btn-page-index").onclick =
+                    function () {
+                        confirmAction(MSG.confirmRebuildIndex, doFetchIndex);
+                    };
+                document.getElementById("btn-page-elo").onclick = function () {
+                    confirmAction(
+                        "将清空当前 ELO 分数并从对战历史完整重建",
+                        doRebuildELO
+                    );
+                };
+                document.getElementById("btn-page-deep").onclick = function () {
+                    confirmAction(MSG.confirmRebuildAll(), doDeepRebuild);
+                };
+                document.getElementById("btn-confirm-cancel").onclick =
+                    closeConfirm;
+            })();
+        </script>
+    </body>
+</html>

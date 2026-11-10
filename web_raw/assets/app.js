@@ -1181,8 +1181,8 @@ document.addEventListener("DOMContentLoaded", () => {
           <a href="/rating" data-feature="elo" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/rating")}">评分</a>
           <a href="/search" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/search")}">搜索</a>
           <a href="/settings" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/settings")}">设置</a>
+          <a id="btn-fetch" href="/manage" data-feature-all="fetch,task" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/manage")}">管理数据</a>
         </nav>
-        <button id="btn-fetch" data-feature-all="fetch,task" class="px-4 py-1.5 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">管理数据</button>
         <button type="button" class="relative group w-8 h-8 shrink-0 cursor-pointer rounded-lg border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-pink" aria-label="刷新页面" onclick="location.reload()">
           <img id="user-avatar" src="" class="w-8 h-8 rounded-lg object-cover bg-surface shrink-0" style="display:none">
           <div id="user-placeholder" class="w-8 h-8 rounded-lg shrink-0" style="background:linear-gradient(135deg,#ff6b6b,#feca57,#48dbfb,#ff9ff3,#54a0ff);background-size:300% 300%;animation:rainbow 3s ease infinite"></div>
@@ -1200,8 +1200,6 @@ document.addEventListener("DOMContentLoaded", () => {
       @keyframes imgFadeIn { from{opacity:0} to{opacity:1} }
       img, .grid > *, #results > div, #view > div, #appearances-section > div, #chars-section > div, #subjects-section > div, #stats-list > div, #history-area > div { animation: imgFadeIn .35s ease }
     </style>`;
-
-    document.getElementById("btn-fetch").addEventListener("click", openFetch);
 
     capabilitiesReady().then(function () {
         applyFeatureVisibility(tb);
@@ -1507,55 +1505,10 @@ function initDialog() {
     // 绑定带确认的操作按钮
     document
         .getElementById("btn-do-fetch")
-        .addEventListener("click", function () {
-            var ids = document.getElementById("fetch-input").value.trim();
-            if (!ids) return;
-            confirmAction(MSG.confirmFetchId(ids), doFetch);
-        });
+        .addEventListener("click", confirmFetchIDs);
     document
         .getElementById("btn-tracker-fetch")
-        .addEventListener("click", function () {
-            var name = document.getElementById("tracker-input").value.trim();
-            if (!name) return;
-            if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
-                showError(MSG.errInvalidTrackerName);
-                return;
-            }
-            // 检查 Tracker 是否存在
-            api("/v0/tracker").then(function (resp) {
-                var list = (resp && resp.data) || [];
-                var found = false;
-                if (list)
-                    for (var i = 0; i < list.length; i++) {
-                        if (list[i].name === name) {
-                            found = true;
-                            break;
-                        }
-                    }
-                if (found) {
-                    confirmAction(
-                        MSG.confirmTrackerFetch(name),
-                        doTrackerFetch
-                    );
-                } else {
-                    confirmAction(MSG.confirmTrackerCreate(name), function () {
-                        fetch(API + "/v0/tracker/create", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ name: name })
-                        }).then(function (r) {
-                            return r.json().then(function (d) {
-                                if (!r.ok) {
-                                    showError(errText(d, r.status));
-                                } else {
-                                    showSuccess(MSG.trackerCreated(name));
-                                }
-                            });
-                        });
-                    });
-                }
-            });
-        });
+        .addEventListener("click", doTrackerFetchOrCreate);
     document.getElementById("btn-user").addEventListener("click", function () {
         if (!window.USERNAME) {
             showError(MSG.errNoUsername);
@@ -1568,17 +1521,7 @@ function initDialog() {
         .addEventListener("click", function () {
             confirmAction(
                 "将用户收藏列表导入为 Tracker，之后可参与其他拉取行为。",
-                function () {
-                    closeFetch();
-                    fetch(API + "/v0/tracker/import-collections", {
-                        method: "POST"
-                    }).then(function (r) {
-                        return r.json().then(function (d) {
-                            if (!r.ok) showError(errText(d, r.status));
-                            else showSuccess(MSG.importCollDone(d.count));
-                        });
-                    });
-                }
+                doImportCollections
             );
         });
     document
@@ -1606,22 +1549,7 @@ function initDialog() {
         .addEventListener("click", function () {
             confirmAction(
                 "将清空当前 ELO 分数并从对战历史完整重建",
-                function () {
-                    closeFetch();
-                    fetch(API + "/v0/elo/rebuild", { method: "POST" })
-                        .then(function (r) {
-                            return r.json();
-                        })
-                        .then(function (d) {
-                            if (d.status === "ok") {
-                                showSuccess(
-                                    "已重建 " + d.count + " 条 ELO 分数和计数"
-                                );
-                            } else {
-                                showError("重建失败");
-                            }
-                        });
-                }
+                doRebuildELO
             );
         });
 }
@@ -1829,12 +1757,78 @@ function openFetch() {
 }
 function closeFetch() {
     var dlg = document.getElementById("dlg-overlay");
+    if (!dlg) return;
     dlg.style.opacity = "0";
     dlg.style.pointerEvents = "none";
     setTimeout(function () {
         dlg.style.display = "none";
     }, 200);
     closeConfirm();
+}
+
+function confirmFetchIDs() {
+    var ids = document.getElementById("fetch-input").value.trim();
+    if (!ids) return;
+    confirmAction(MSG.confirmFetchId(ids), doFetch);
+}
+
+function doTrackerFetchOrCreate() {
+    var name = document.getElementById("tracker-input").value.trim();
+    if (!name) return;
+    if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
+        showError(MSG.errInvalidTrackerName);
+        return;
+    }
+    api("/v0/tracker").then(function (resp) {
+        var list = (resp && resp.data) || [];
+        var found = false;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].name === name) {
+                found = true;
+                break;
+            }
+        }
+        if (found) {
+            confirmAction(MSG.confirmTrackerFetch(name), doTrackerFetch);
+            return;
+        }
+        confirmAction(MSG.confirmTrackerCreate(name), function () {
+            fetch(API + "/v0/tracker/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: name })
+            }).then(function (r) {
+                return r.json().then(function (d) {
+                    if (!r.ok) showError(errText(d, r.status));
+                    else showSuccess(MSG.trackerCreated(name));
+                });
+            });
+        });
+    });
+}
+
+async function doImportCollections() {
+    closeFetch();
+    var res = await fetch(API + "/v0/tracker/import-collections", {
+        method: "POST"
+    });
+    var d = await readJSON(res);
+    if (!res.ok) {
+        showError(errText(d, res.status));
+        return;
+    }
+    showSuccess(MSG.importCollDone(d.count));
+}
+
+async function doRebuildELO() {
+    closeFetch();
+    var res = await fetch(API + "/v0/elo/rebuild", { method: "POST" });
+    var d = await readJSON(res);
+    if (!res.ok || !d || d.status !== "ok") {
+        showError("重建失败");
+        return;
+    }
+    showSuccess("已重建 " + d.count + " 条 ELO 分数和计数");
 }
 
 async function doFetch() {
