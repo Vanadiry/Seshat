@@ -1896,7 +1896,11 @@ async function doRefreshAll() {
 
 async function doDeepRebuild() {
     closeFetch();
-    var res = await fetch(API + "/v0/fetch/deep", { method: "POST" });
+    var res = await fetch(API + "/v0/fetch/deep", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm_clean: true })
+    });
     var d = await readJSON(res);
     if (!res.ok || !d) {
         showError(errText(d, res.status));

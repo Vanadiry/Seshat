@@ -141,6 +141,7 @@ func buildRouter(cfg *config.Config, embedFS fs.FS) *router {
 	r.core("GET /api/v0/", handleDataReader(dd))
 
 	// 拉取
+	r.feature("fetch", "POST /api/v0/fetch", handleFetchUnified(cfg, bg, dd, imgDir))
 	r.feature("fetch", "POST /api/v0/fetch/all", handleFetchAll(cfg, bg, dd, imgDir))
 	r.feature("fetch", "POST /api/v0/fetch/deep", handleFetchDeep(cfg, bg, dd, imgDir))
 	r.feature("fetch", "POST /api/v0/fetch/tracker", handleFetchTracker(cfg, bg, dd, imgDir))

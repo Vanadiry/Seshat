@@ -17,15 +17,20 @@ import (
 )
 
 func downloadImages(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases, concurrency int) {
-	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, nil, concurrency)
+	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, nil, concurrency, false)
 }
 
 // downloadImagesScoped 仅下载指定条目及其关联角色/人物的图像
 func downloadImagesScoped(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectIDs []int, concurrency int) {
-	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, subjectIDs, concurrency)
+	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, subjectIDs, concurrency, false)
 }
 
-func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectFilter []int, concurrency int) {
+// downloadImagesScopedForce 覆盖指定条目及其关联角色/人物的全部图像
+func downloadImagesScopedForce(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectIDs []int, concurrency int) {
+	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, subjectIDs, concurrency, true)
+}
+
+func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectFilter []int, concurrency int, force bool) {
 	log.Info("downloading images")
 	if err := os.MkdirAll(store.IndexDir(dd), 0o755); err != nil {
 		log.Error("index dir mkdir failed", "err", err)
@@ -90,7 +95,7 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 	if p != nil {
 		p.Send("images_subjects", 0, len(subjIDs), "downloading")
 	}
-	dlImageList(subjIDs, "subject", nil, imgBase, bg, p, "images_subjects", concurrency)
+	dlImageList(subjIDs, "subject", nil, imgBase, bg, p, "images_subjects", concurrency, force)
 
 	// 角色
 	if p != nil && totalPhases > 0 {
@@ -99,7 +104,7 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 	if p != nil {
 		p.Send("images_characters", 0, len(charIDs), "downloading")
 	}
-	dlImageList(charIDs, "character", nil, imgBase, bg, p, "images_characters", concurrency)
+	dlImageList(charIDs, "character", nil, imgBase, bg, p, "images_characters", concurrency, force)
 
 	// 人物
 	if p != nil && totalPhases > 0 {
@@ -108,7 +113,7 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 	if p != nil {
 		p.Send("images_persons", 0, len(persIDs), "downloading")
 	}
-	dlImageList(persIDs, "person", nil, imgBase, bg, p, "images_persons", concurrency)
+	dlImageList(persIDs, "person", nil, imgBase, bg, p, "images_persons", concurrency, force)
 
 	log.Info("images download complete")
 }
@@ -125,7 +130,7 @@ func missingImageSizes(imgBase, kind string, id int) []string {
 	return missing
 }
 
-func dlImageList(ids []int, kind string, imgMap map[int]store.ImageEntry, imgBase string, bg *bangumi.Client, p *Progress, stage string, concurrency int) {
+func dlImageList(ids []int, kind string, imgMap map[int]store.ImageEntry, imgBase string, bg *bangumi.Client, p *Progress, stage string, concurrency int, force bool) {
 	if len(ids) == 0 {
 		return
 	}
@@ -144,7 +149,7 @@ func dlImageList(ids []int, kind string, imgMap map[int]store.ImageEntry, imgBas
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			dlImage(bg, kind, id, imgMap, imgBase, &mu, p)
+			dlImage(bg, kind, id, imgMap, imgBase, &mu, p, force)
 			if p != nil {
 				mu.Lock()
 				done++
@@ -156,10 +161,12 @@ func dlImageList(ids []int, kind string, imgMap map[int]store.ImageEntry, imgBas
 	wg.Wait()
 }
 
-func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]store.ImageEntry, imgBase string, mu *sync.Mutex, p *Progress) {
-	// 只补缺失的尺寸，避免整组重下
+func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]store.ImageEntry, imgBase string, mu *sync.Mutex, p *Progress, force bool) {
+	// 默认只补缺失的尺寸，force 时整组重下
 	var missing []string
-	if imgMap != nil {
+	if force {
+		missing = []string{"large", "grid", "small"}
+	} else if imgMap != nil {
 		mu.Lock()
 		entry, ok := imgMap[id]
 		mu.Unlock()
@@ -340,7 +347,7 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress, concurrency int) 
 			if p != nil {
 				p.Send("fill_"+d.kind+"_miss", 0, len(missingIDs), "")
 			}
-			dlImageList(missingIDs, d.kind, imgMap, imgBase, bg, p, "fill_"+d.kind+"_miss", concurrency)
+			dlImageList(missingIDs, d.kind, imgMap, imgBase, bg, p, "fill_"+d.kind+"_miss", concurrency, false)
 		}
 		phaseNum++
 

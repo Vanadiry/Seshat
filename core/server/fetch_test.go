@@ -115,7 +115,7 @@ func fetchAllServer(t *testing.T, failPath string) *bangumi.Client {
 func TestFetchAllFailsWhenRequiredFileMissing(t *testing.T) {
 	dd := t.TempDir()
 	c := fetchAllServer(t, "/v0/subjects/51/characters")
-	if fetchAll(51, c, dd, filepath.Join(dd, "images"), nil, 1) {
+	if fetchAll(51, c, dd, filepath.Join(dd, "images"), nil, 1, true) {
 		t.Fatal("角色列表失败时应返回 false")
 	}
 }
@@ -123,7 +123,7 @@ func TestFetchAllFailsWhenRequiredFileMissing(t *testing.T) {
 func TestFetchAllSucceedsWithCoreFiles(t *testing.T) {
 	dd := t.TempDir()
 	c := fetchAllServer(t, "")
-	if !fetchAll(51, c, dd, filepath.Join(dd, "images"), nil, 1) {
+	if !fetchAll(51, c, dd, filepath.Join(dd, "images"), nil, 1, true) {
 		t.Fatal("核心文件齐全时应返回 true")
 	}
 	if subjectCoreIncomplete(dd, 51) {
@@ -148,7 +148,7 @@ func TestFetchAllSucceedsWithoutEpisodes(t *testing.T) {
 	}))
 	defer srv.Close()
 	c := bangumi.NewClient("test", srv.URL, nil, nil)
-	if !fetchAll(51, c, dd, filepath.Join(dd, "images"), nil, 1) {
+	if !fetchAll(51, c, dd, filepath.Join(dd, "images"), nil, 1, true) {
 		t.Fatal("没有剧集的条目应当返回 true")
 	}
 	if subjectCoreIncomplete(dd, 51) {
@@ -181,7 +181,7 @@ func TestFetchAllKeepsOldEpisodesOnPageFailure(t *testing.T) {
 	}))
 	defer srv.Close()
 	c := bangumi.NewClient("test", srv.URL, nil, nil)
-	if fetchAll(51, c, dd, filepath.Join(dd, "images"), nil, 1) {
+	if fetchAll(51, c, dd, filepath.Join(dd, "images"), nil, 1, true) {
 		t.Fatal("第二页失败时应返回 false")
 	}
 	data, err := store.Get(dd, store.Key("subjects", 51, "episodes.json"))
@@ -190,5 +190,43 @@ func TestFetchAllKeepsOldEpisodesOnPageFailure(t *testing.T) {
 	}
 	if string(data) != old {
 		t.Fatalf("旧剧集被覆盖，内容为 %q", data)
+	}
+}
+
+func TestFetchAllFillKeepsExistingInfo(t *testing.T) {
+	dd := t.TempDir()
+	old := `{"id":51,"name":"old","total_episodes":0,"eps":0}`
+	if err := store.Put(dd, store.Key("subjects", 51, "info.json"), []byte(old)); err != nil {
+		t.Fatal(err)
+	}
+	c := fetchAllServer(t, "")
+	if !fetchAll(51, c, dd, filepath.Join(dd, "images"), nil, 1, false) {
+		t.Fatal("只补缺失时应当返回 true")
+	}
+	data, err := store.Get(dd, store.Key("subjects", 51, "info.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != old {
+		t.Fatalf("已有 info.json 被覆盖为 %q", data)
+	}
+}
+
+func TestFetchAllOverwriteReplacesExistingInfo(t *testing.T) {
+	dd := t.TempDir()
+	old := `{"id":51,"name":"old","total_episodes":0,"eps":0}`
+	if err := store.Put(dd, store.Key("subjects", 51, "info.json"), []byte(old)); err != nil {
+		t.Fatal(err)
+	}
+	c := fetchAllServer(t, "")
+	if !fetchAll(51, c, dd, filepath.Join(dd, "images"), nil, 1, true) {
+		t.Fatal("覆盖模式应当返回 true")
+	}
+	data, err := store.Get(dd, store.Key("subjects", 51, "info.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) == old {
+		t.Fatal("覆盖模式没有替换 info.json")
 	}
 }

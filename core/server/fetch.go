@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -51,7 +49,7 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			if fetchAll(sid, bg, dd, imgDir, p, concurrency) {
+			if fetchAll(sid, bg, dd, imgDir, p, concurrency, true) {
 				mu.Lock()
 				success[sid] = true
 				mu.Unlock()
@@ -75,8 +73,23 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 	return result
 }
 
+// loadOrFetchData 读取已有文件，缺失时拉取并写入
+func loadOrFetchData(dd, key, path string, bg *bangumi.Client, overwrite bool) ([]byte, error) {
+	if !overwrite && store.Has(dd, key) {
+		return store.Get(dd, key)
+	}
+	data, err := bg.GetRaw(path)
+	if err != nil {
+		return nil, err
+	}
+	if err := store.Put(dd, key, store.StripImages(data)); err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
 // fetchAll 拉取条目全部数据及关联角色/人物/图片
-func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int) bool {
+func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int, overwrite bool) bool {
 	log.Info("fetching subject", "id", sid)
 	var writeFailed atomic.Bool
 	var requiredFailed atomic.Bool
@@ -85,17 +98,17 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 	if p != nil {
 		p.Send("subject", 0, 1, "fetching")
 	}
-	data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d", sid))
+	_, err := loadOrFetchData(
+		dd,
+		store.Key("subjects", sid, "info.json"),
+		fmt.Sprintf("v0/subjects/%d", sid),
+		bg,
+		overwrite,
+	)
 	if err != nil {
 		log.Warn("subject fetch failed", "id", sid, "err", err)
 		if p != nil {
 			p.SetError(err.Error())
-			p.Send("subject", 1, 1, "error")
-		}
-		return false
-	}
-	if !putData(dd, store.Key("subjects", sid, "info.json"), store.StripImages(data), p) {
-		if p != nil {
 			p.Send("subject", 1, 1, "error")
 		}
 		return false
@@ -131,17 +144,19 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			}
 		}()
 		defer wg.Done()
-		data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/characters", sid))
+		data, err := loadOrFetchData(
+			dd,
+			store.Key("subjects", sid, "characters.json"),
+			fmt.Sprintf("v0/subjects/%d/characters", sid),
+			bg,
+			overwrite,
+		)
 		if err != nil {
 			log.Warn("subject characters fetch failed", "subject", sid, "err", err)
 			requiredFailed.Store(true)
 			if p != nil {
 				p.SetError(fmt.Sprintf("角色列表拉取失败 #%d: %v", sid, err))
 			}
-			return
-		}
-		if !putData(dd, store.Key("subjects", sid, "characters.json"), store.StripImages(data), p) {
-			writeFailed.Store(true)
 			return
 		}
 		if err := json.Unmarshal(data, &chars); err != nil {
@@ -161,17 +176,19 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			}
 		}()
 		defer wg.Done()
-		data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/persons", sid))
+		data, err := loadOrFetchData(
+			dd,
+			store.Key("subjects", sid, "persons.json"),
+			fmt.Sprintf("v0/subjects/%d/persons", sid),
+			bg,
+			overwrite,
+		)
 		if err != nil {
 			log.Warn("subject persons fetch failed", "subject", sid, "err", err)
 			requiredFailed.Store(true)
 			if p != nil {
 				p.SetError(fmt.Sprintf("人物列表拉取失败 #%d: %v", sid, err))
 			}
-			return
-		}
-		if !putData(dd, store.Key("subjects", sid, "persons.json"), store.StripImages(data), p) {
-			writeFailed.Store(true)
 			return
 		}
 		if err := json.Unmarshal(data, &persons); err != nil {
@@ -204,13 +221,17 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 		}()
 		defer wg3.Done()
 		fetchConcurrent(charIDs, func(c charRef) {
+			key := store.Key("characters", c.ID, "info.json")
+			if !overwrite && store.Has(dd, key) {
+				return
+			}
 			data, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID))
 			if err != nil {
 				log.Warn("character fetch failed", "id", c.ID, "err", err)
 				p.SetError(err.Error())
 				return
 			}
-			if !putData(dd, store.Key("characters", c.ID, "info.json"), store.StripImages(data), p) {
+			if !putData(dd, key, store.StripImages(data), p) {
 				writeFailed.Store(true)
 			}
 		}, nil, "", concurrency)
@@ -247,13 +268,17 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 		}()
 		defer wg3.Done()
 		fetchConcurrent(personIDs, func(pp personRef) {
+			key := store.Key("persons", pp.ID, "info.json")
+			if !overwrite && store.Has(dd, key) {
+				return
+			}
 			data, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID))
 			if err != nil {
 				log.Warn("person fetch failed", "id", pp.ID, "err", err)
 				p.SetError(err.Error())
 				return
 			}
-			if !putData(dd, store.Key("persons", pp.ID, "info.json"), store.StripImages(data), p) {
+			if !putData(dd, key, store.StripImages(data), p) {
 				writeFailed.Store(true)
 			}
 		}, nil, "", concurrency)
@@ -269,11 +294,15 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 		}()
 		defer wg3.Done()
 		fetchConcurrent(charIDs, func(c charRef) {
+			key := store.Key("characters", c.ID, "subjects.json")
+			if !overwrite && store.Has(dd, key) {
+				return
+			}
 			data, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d/subjects", c.ID))
 			if err != nil {
 				return
 			}
-			if !putData(dd, store.Key("characters", c.ID, "subjects.json"), store.StripImages(data), p) {
+			if !putData(dd, key, store.StripImages(data), p) {
 				writeFailed.Store(true)
 			}
 		}, nil, "", concurrency)
@@ -289,11 +318,15 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 		}()
 		defer wg3.Done()
 		fetchConcurrent(charIDs, func(c charRef) {
+			key := store.Key("characters", c.ID, "persons.json")
+			if !overwrite && store.Has(dd, key) {
+				return
+			}
 			data, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d/persons", c.ID))
 			if err != nil {
 				return
 			}
-			if !putData(dd, store.Key("characters", c.ID, "persons.json"), store.StripImages(data), p) {
+			if !putData(dd, key, store.StripImages(data), p) {
 				writeFailed.Store(true)
 			}
 		}, nil, "", concurrency)
@@ -309,11 +342,15 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 		}()
 		defer wg3.Done()
 		fetchConcurrent(personIDs, func(pp personRef) {
+			key := store.Key("persons", pp.ID, "subjects.json")
+			if !overwrite && store.Has(dd, key) {
+				return
+			}
 			data, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d/subjects", pp.ID))
 			if err != nil {
 				return
 			}
-			if !putData(dd, store.Key("persons", pp.ID, "subjects.json"), store.StripImages(data), p) {
+			if !putData(dd, key, store.StripImages(data), p) {
 				writeFailed.Store(true)
 			}
 		}, nil, "", concurrency)
@@ -329,11 +366,15 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 		}()
 		defer wg3.Done()
 		fetchConcurrent(personIDs, func(pp personRef) {
+			key := store.Key("persons", pp.ID, "characters.json")
+			if !overwrite && store.Has(dd, key) {
+				return
+			}
 			data, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d/characters", pp.ID))
 			if err != nil {
 				return
 			}
-			if !putData(dd, store.Key("persons", pp.ID, "characters.json"), store.StripImages(data), p) {
+			if !putData(dd, key, store.StripImages(data), p) {
 				writeFailed.Store(true)
 			}
 		}, nil, "", concurrency)
@@ -348,6 +389,10 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			}
 		}()
 		defer wg3.Done()
+		epKey := store.Key("subjects", sid, "episodes.json")
+		if !overwrite && store.Has(dd, epKey) {
+			return
+		}
 		offset := 0
 		complete := true
 		for {
@@ -409,8 +454,12 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			}
 		}()
 		defer wg3.Done()
+		relKey := store.Key("subjects", sid, "subjects.json")
+		if !overwrite && store.Has(dd, relKey) {
+			return
+		}
 		if data, err := bg.GetRaw(fmt.Sprintf("v0/subjects/%d/subjects", sid)); err == nil {
-			if !putData(dd, store.Key("subjects", sid, "subjects.json"), store.StripImages(data), p) {
+			if !putData(dd, relKey, store.StripImages(data), p) {
 				writeFailed.Store(true)
 			}
 		} else {
@@ -613,27 +662,11 @@ func fetchConcurrent[T any](items []T, fn func(T), p *Progress, stage string, co
 
 func handleFetchAll(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if cfg.Upstream.BaseURL == "" {
-			writeError(w, r, 400, "base_url not configured")
-			return
-		}
-		if taskLocked() {
-			writeError(w, r, 409, "已有任务正在运行，请等待完成")
-			return
-		}
-		p := newProgress(countTrackerTotal(cfg), "fetch_all", "刷新全部")
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Error("goroutine panic", "panic", r)
-					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
-				}
-			}()
-			refreshAllTrackers(cfg, bg, dd, imgDir, p)
-			p.Send("complete", p.Total, p.Total, "")
-			p.Close()
-		}()
-		writeJSON(w, map[string]any{"status": "fetching", "task_id": p.ID})
+		serveFetchRequest(w, r, cfg, bg, dd, imgDir, fetchRequest{
+			Source: fetchSourceTrackerAll,
+			JSON:   fetchJSONOverwrite,
+			Images: fetchImagesFill,
+		})
 	}
 }
 
@@ -641,6 +674,17 @@ func handleFetchDeep(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Upstream.BaseURL == "" {
 			writeError(w, r, 400, "base_url not configured")
+			return
+		}
+		var req struct {
+			ConfirmClean bool `json:"confirm_clean"`
+		}
+		limitBody(w, r)
+		if !decodeJSON(w, r, &req) {
+			return
+		}
+		if !req.ConfirmClean {
+			writeError(w, r, http.StatusBadRequest, "重建全部需要确认")
 			return
 		}
 		if taskLocked() {
@@ -665,14 +709,6 @@ func handleFetchDeep(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 
 func handleFetchTracker(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if cfg.Upstream.BaseURL == "" {
-			writeError(w, r, 400, "base_url not configured")
-			return
-		}
-		if taskLocked() {
-			writeError(w, r, 409, "已有任务正在运行，请等待完成")
-			return
-		}
 		var req struct {
 			Names []string `json:"names"`
 		}
@@ -680,29 +716,12 @@ func handleFetchTracker(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 		if !decodeJSON(w, r, &req) {
 			return
 		}
-		for _, n := range req.Names {
-			if !validTrackerName(n) {
-				writeError(w, r, http.StatusBadRequest, "invalid tracker name: "+n)
-				return
-			}
-		}
-		if countTrackerNames(cfg, req.Names) == 0 {
-			writeError(w, r, http.StatusNotFound, "tracker not found or empty: "+strings.Join(req.Names, ", "))
-			return
-		}
-		p := newProgress(countTrackerNames(cfg, req.Names), "fetch_tracker", "拉取 Tracker: "+strings.Join(req.Names, ", "))
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Error("goroutine panic", "panic", r)
-					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
-				}
-			}()
-			refreshTrackers(cfg, bg, dd, imgDir, req.Names, p)
-			p.Send("complete", p.Total, p.Total, "")
-			p.Close()
-		}()
-		writeJSON(w, map[string]any{"status": "fetching", "names": req.Names, "task_id": p.ID})
+		serveFetchRequest(w, r, cfg, bg, dd, imgDir, fetchRequest{
+			Source: fetchSourceTrackerNames,
+			Names:  req.Names,
+			JSON:   fetchJSONOverwrite,
+			Images: fetchImagesFill,
+		})
 	}
 }
 
@@ -772,10 +791,6 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 
 func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if cfg.Upstream.BaseURL == "" {
-			writeError(w, r, 400, "base_url not configured")
-			return
-		}
 		var req struct {
 			ID  int   `json:"id"`
 			IDs []int `json:"ids"`
@@ -788,79 +803,22 @@ func handleFetchSubject(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 		if req.ID != 0 {
 			ids = []int{req.ID}
 		}
-		if len(ids) == 0 {
-			writeError(w, r, 400, "id or ids required")
-			return
-		}
-		if taskLocked() {
-			writeError(w, r, 409, "已有任务正在运行，请等待完成")
-			return
-		}
-		var idStrs []string
-		for _, sid := range ids {
-			idStrs = append(idStrs, strconv.Itoa(sid))
-		}
-		p := newProgress(len(ids), "fetch_subject", "拉取动画 #"+strings.Join(idStrs, ", "))
-		log.Info("pulling subjects", "ids", ids)
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Error("goroutine panic", "panic", r)
-					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
-				}
-			}()
-			p.SetPhase(1, 5, "拉取动画数据")
-			success := fetchSubjectList(ids, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
-			for _, sid := range success {
-				addToSeshatTracker(sid)
-			}
-			downloadImagesScoped(dd, bg, p, 2, 5, ids, cfg.Server.ConcurrencyImage)
-			p.SetPhase(5, 5, "建立索引")
-			buildIndexes(dd, p)
-			log.Info("pulling subjects done", "ids", ids)
-			p.Send("complete", len(ids), len(ids), "")
-			p.Close()
-		}()
-		writeJSON(w, map[string]any{"status": "fetching", "count": len(ids), "task_id": p.ID})
+		serveFetchRequest(w, r, cfg, bg, dd, imgDir, fetchRequest{
+			Source: fetchSourceIDs,
+			IDs:    ids,
+			JSON:   fetchJSONOverwrite,
+			Images: fetchImagesFill,
+		})
 	}
 }
 
 func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if cfg.Upstream.BaseURL == "" {
-			writeError(w, r, 400, "base_url not configured")
-			return
-		}
-		newIDs := diffTrackerIDs(cfg, dd)
-		if taskLocked() {
-			writeError(w, r, 409, "已有任务正在运行，请等待完成")
-			return
-		}
-		phases := 5
-		if len(newIDs) == 0 {
-			phases = 1
-		}
-		p := newProgress(phases, "fetch_update", "增量更新")
-		log.Info("incremental update", "new_ids", len(newIDs))
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Error("goroutine panic", "panic", r)
-					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
-				}
-			}()
-			if len(newIDs) > 0 {
-				p.SetPhase(1, phases, "拉取动画数据")
-				fetchSubjectList(newIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
-				downloadImagesScoped(dd, bg, p, 2, phases, newIDs, cfg.Server.ConcurrencyImage)
-				p.SetPhase(phases, phases, "建立索引")
-				buildIndexes(dd, p)
-				log.Info("incremental update done", "new_ids", len(newIDs))
-			}
-			p.Send("complete", phases, phases, "")
-			p.Close()
-		}()
-		writeJSON(w, map[string]any{"status": "fetching", "count": len(newIDs), "task_id": p.ID})
+		serveFetchRequest(w, r, cfg, bg, dd, imgDir, fetchRequest{
+			Source: fetchSourceTrackerNew,
+			JSON:   fetchJSONFill,
+			Images: fetchImagesFill,
+		})
 	}
 }
 
@@ -888,140 +846,21 @@ func handleFetchIndex(dd string) http.HandlerFunc {
 
 func handleFetchGap(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if cfg.Upstream.BaseURL == "" {
-			writeError(w, r, 400, "base_url not configured")
-			return
-		}
-		if taskLocked() {
-			writeError(w, r, 409, "已有任务正在运行，请等待完成")
-			return
-		}
-		allIDs := collectAllSubjectIDs(dd)
-		if len(allIDs) == 0 {
-			writeJSON(w, map[string]any{"status": "done", "count": 0})
-			return
-		}
-		p := newProgress(len(allIDs), "fetch_gap", "补充数据")
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Error("goroutine panic", "panic", r)
-					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
-				}
-			}()
-			var done int
-			log.Info("filling data gaps", "subjects", len(allIDs))
-			for _, sid := range allIDs {
-				if subjectCoreIncomplete(dd, sid) {
-					if !fetchAll(sid, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo) {
-						if p != nil {
-							p.SetError(fmt.Sprintf("条目 #%d 修复失败", sid))
-						}
-					}
-				}
-				// 检查角色
-				if data, err := os.ReadFile(filepath.Join(store.Dir(dd), store.Key("subjects", sid, "characters.json"))); err == nil {
-					var chars []struct {
-						ID int `json:"id"`
-					}
-					if json.Unmarshal(data, &chars) == nil {
-						for _, c := range chars {
-							if !store.Has(dd, store.Key("characters", c.ID, "info.json")) {
-								if d, e := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID)); e == nil {
-									putData(dd, store.Key("characters", c.ID, "info.json"), store.StripImages(d), p)
-								} else {
-									log.Warn("gap character fetch failed", "id", c.ID, "err", e)
-									if p != nil {
-										p.SetError(fmt.Sprintf("Character #%d: %v", c.ID, e))
-									}
-								}
-							}
-						}
-					}
-				}
-				// 检查人物
-				if data, err := os.ReadFile(filepath.Join(store.Dir(dd), store.Key("subjects", sid, "persons.json"))); err == nil {
-					var persons []struct {
-						ID int `json:"id"`
-					}
-					if json.Unmarshal(data, &persons) == nil {
-						for _, pp := range persons {
-							if !store.Has(dd, store.Key("persons", pp.ID, "info.json")) {
-								if d, e := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID)); e == nil {
-									putData(dd, store.Key("persons", pp.ID, "info.json"), store.StripImages(d), p)
-								} else {
-									log.Warn("gap person fetch failed", "id", pp.ID, "err", e)
-									if p != nil {
-										p.SetError(fmt.Sprintf("Person #%d: %v", pp.ID, e))
-									}
-								}
-							}
-						}
-					}
-				}
-				done++
-				p.Send("gap", done, len(allIDs), "")
-			}
-			log.Info("data gaps filled", "subjects", len(allIDs))
-			fillImageGaps(dd, bg, p, cfg.Server.ConcurrencyImage)
-			downloadImages(dd, bg, p, 0, 0, cfg.Server.ConcurrencyImage)
-			buildIndexes(dd, p)
-			p.Send("complete", len(allIDs), len(allIDs), "")
-			p.Close()
-		}()
-		writeJSON(w, map[string]any{"status": "fetching", "count": len(allIDs), "task_id": p.ID})
+		serveFetchRequest(w, r, cfg, bg, dd, imgDir, fetchRequest{
+			Source: fetchSourceLocal,
+			JSON:   fetchJSONFill,
+			Images: fetchImagesFill,
+		})
 	}
 }
 
 func handleFetchMeta(cfg *config.Config, bg *bangumi.Client, dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if cfg.Upstream.BaseURL == "" {
-			writeError(w, r, 400, "base_url not configured")
-			return
-		}
-		if taskLocked() {
-			writeError(w, r, 409, "已有任务正在运行，请等待完成")
-			return
-		}
-
-		// 重新拉取全部 tracker 条目，不含图片
-		files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
-		files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
-		files = append(files, files2...)
-		seen := map[int]bool{}
-		var allIDs []int
-		for _, f := range files {
-			for _, sid := range loadTrackerIDs(f) {
-				if !seen[sid] {
-					seen[sid] = true
-					allIDs = append(allIDs, sid)
-				}
-			}
-		}
-		if len(allIDs) == 0 {
-			writeJSON(w, map[string]any{"status": "done", "count": 0})
-			return
-		}
-		log.Info("refreshing metadata", "subjects", len(allIDs))
-		imgDir := filepath.Join(dd, "images")
-		p := newProgress(len(allIDs), "fetch_meta", "刷新元数据")
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Error("goroutine panic", "panic", r)
-					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
-				}
-			}()
-			p.SetPhase(1, 3, "拉取动画数据")
-			fetchSubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
-			p.SetPhase(2, 3, "建立索引")
-			buildIndexes(dd, p)
-			log.Info("metadata refresh done", "subjects", len(allIDs))
-			p.SetPhase(3, 3, "完成")
-			p.Send("complete", len(allIDs), len(allIDs), "")
-			p.Close()
-		}()
-		writeJSON(w, map[string]any{"status": "fetching", "count": len(allIDs), "task_id": p.ID})
+		serveFetchRequest(w, r, cfg, bg, dd, filepath.Join(dd, "images"), fetchRequest{
+			Source: fetchSourceTrackerAll,
+			JSON:   fetchJSONOverwrite,
+			Images: fetchImagesNone,
+		})
 	}
 }
 

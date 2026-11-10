@@ -59,7 +59,7 @@ func TestDLImageOnlyRequestsMissingSizes(t *testing.T) {
 	var requests []string
 	var mu sync.Mutex
 	c := imageTestServer(t, &requests, &mu)
-	dlImage(c, "subject", 51, nil, imgBase, &mu, nil)
+	dlImage(c, "subject", 51, nil, imgBase, &mu, nil, false)
 
 	mu.Lock()
 	defer mu.Unlock()
@@ -79,7 +79,7 @@ func TestDLImageOnlyRequestsMissingSizesFromIndex(t *testing.T) {
 	imgMap := map[int]store.ImageEntry{
 		51: {Large: "large.jpg", Grid: "grid.jpg"},
 	}
-	dlImage(c, "subject", 51, imgMap, imgBase, &mu, nil)
+	dlImage(c, "subject", 51, imgMap, imgBase, &mu, nil, false)
 
 	mu.Lock()
 	defer mu.Unlock()
