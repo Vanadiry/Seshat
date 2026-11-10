@@ -114,6 +114,15 @@ CORS 按监听地址决定，不回显固定自身地址。
 绑定非回环地址后，任意网页都能调用 API。当前没有鉴权，拉取、Tracker 和 ELO 都会改数据。  
 公网暴露需要自行承担风险，CORS 不负责权限控制。
 
+## 能力
+
+`/v0/info` 的 `features` 是描述性的能力清单，前端据此决定功能入口，不用于权限。
+
+- 核心接口始终提供，前端不判断，包括详情、图片、剧集、用户、收藏和搜索
+- feature 为 Seshat 扩展：`elo`、`events`、`fetch`、`lists`、`names`、`stats`、`tags`、`task`、`tracker`
+- 缺失 feature 时隐藏入口，`lists` 和 `names` 退回本机
+- 旧版 Seshat 没有 `features`，按空能力处理，核心接口仍可用
+
 ## 兼容性
 
 镜像端点尽量对齐官方 v0，主要差异如下：
