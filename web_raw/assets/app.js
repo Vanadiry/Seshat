@@ -118,6 +118,10 @@ var CAPS_FAIL_TTL = 30 * 1000;
 var CAPS_KEY = "seshat_caps:" + API;
 var _caps = null;
 var _capsPromise = null;
+var _capsSettled = false;
+var _probeOverlay = null;
+var _probeOverlayAt = 0;
+var _probeShowTimer = null;
 
 // 读取会话缓存，过期返回 null
 function _readCaps() {
@@ -135,11 +139,41 @@ function _readCaps() {
     }
 }
 
+// 探测提示，只在缓存未命中且需要探测时出现
+function _showProbeOverlay() {
+    _probeShowTimer = setTimeout(function () {
+        if (_capsSettled || _probeOverlay) return;
+        var el = document.createElement("div");
+        el.id = "probe-overlay";
+        el.setAttribute("role", "status");
+        el.setAttribute("aria-live", "polite");
+        el.className =
+            "fixed inset-0 z-[200] bg-bg text-text flex items-center justify-center";
+        el.innerHTML =
+            '<div class="text-sm text-sub"><span class="spin"></span>正在连接后端</div>';
+        document.body.appendChild(el);
+        _probeOverlay = el;
+        _probeOverlayAt = Date.now();
+    }, 200);
+}
+
+function _hideProbeOverlay() {
+    clearTimeout(_probeShowTimer);
+    if (!_probeOverlay) return;
+    var wait = Math.max(0, 200 - (Date.now() - _probeOverlayAt));
+    setTimeout(function () {
+        if (!_probeOverlay) return;
+        _probeOverlay.remove();
+        _probeOverlay = null;
+    }, wait);
+}
+
 // 写入会话缓存，失败结果到期后允许重试
 function _saveCaps(caps, ttl) {
     caps.at = Date.now();
     caps.ttl = ttl;
     _caps = caps;
+    _capsSettled = true;
     try {
         sessionStorage.setItem(CAPS_KEY, JSON.stringify(caps));
     } catch (_) {}
@@ -148,10 +182,17 @@ function _saveCaps(caps, ttl) {
             if (_caps === caps) {
                 _caps = null;
                 _capsPromise = null;
+                _capsSettled = false;
             }
         }, ttl);
     }
     return caps;
+}
+
+// 探测失败时提示一次，并写入短缓存
+function _failCaps() {
+    showWarn("后端连接失败，能力相关功能已禁用");
+    return _saveCaps({ seshat: false, features: [] }, CAPS_FAIL_TTL);
 }
 
 // 请求 /v0/info，5 秒超时
@@ -166,7 +207,7 @@ async function _fetchCaps() {
             return _saveCaps({ seshat: false, features: [] }, CAPS_TTL);
         }
         if (!res.ok) {
-            return _saveCaps({ seshat: false, features: [] }, CAPS_FAIL_TTL);
+            return _failCaps();
         }
         var body = await res.json();
         if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -180,7 +221,7 @@ async function _fetchCaps() {
         }
         return _saveCaps({ seshat: true, features: features }, CAPS_TTL);
     } catch (_) {
-        return _saveCaps({ seshat: false, features: [] }, CAPS_FAIL_TTL);
+        return _failCaps();
     } finally {
         clearTimeout(timer);
     }
@@ -191,16 +232,22 @@ function probeCapabilities() {
     if (_capsPromise) return _capsPromise;
     if (!window.BACKEND_URL) {
         _caps = { seshat: true, local: true, features: CAPS_ALL.slice() };
+        _capsSettled = true;
         _capsPromise = Promise.resolve(_caps);
         return _capsPromise;
     }
     var cached = _readCaps();
     if (cached) {
         _caps = cached;
+        _capsSettled = true;
         _capsPromise = Promise.resolve(cached);
         return _capsPromise;
     }
-    _capsPromise = _fetchCaps();
+    _showProbeOverlay();
+    _capsPromise = _fetchCaps().then(function (caps) {
+        _hideProbeOverlay();
+        return caps;
+    });
     return _capsPromise;
 }
 
