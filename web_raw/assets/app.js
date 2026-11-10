@@ -1183,25 +1183,16 @@ document.addEventListener("DOMContentLoaded", () => {
           <a href="/settings" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/settings")}">设置</a>
         </nav>
         <button id="btn-fetch" data-feature-all="fetch,task" class="px-4 py-1.5 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">管理数据</button>
-        <div class="relative shrink-0">
-          <div class="relative group w-8 h-8 shrink-0 cursor-pointer rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-pink" role="button" tabindex="0" aria-label="用户菜单" onclick="toggleUserMenu(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleUserMenu(event)}">
-            <img id="user-avatar" src="" class="w-8 h-8 rounded-lg object-cover bg-surface shrink-0" style="display:none">
-            <div id="user-placeholder" class="w-8 h-8 rounded-lg shrink-0" style="background:linear-gradient(135deg,#ff6b6b,#feca57,#48dbfb,#ff9ff3,#54a0ff);background-size:300% 300%;animation:rainbow 3s ease infinite"></div>
-            <div class="pointer-events-none absolute inset-0 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center justify-center">
-              <svg viewBox="0 0 24 24" class="w-4 h-4 text-white" fill="currentColor" aria-hidden="true">
-                <circle cx="5" cy="12" r="1.7"></circle>
-                <circle cx="12" cy="12" r="1.7"></circle>
-                <circle cx="19" cy="12" r="1.7"></circle>
-              </svg>
-            </div>
-          </div>
-          <div id="user-dropdown" class="absolute right-0 top-full mt-2 bg-surface-raised border border-bord-strong rounded-xl shadow-2xl py-2 w-[180px] z-[300] overflow-hidden" style="opacity:0;pointer-events:none;transition:opacity .2s ease">
-            <div id="user-dropdown-name" class="px-4 pt-1 pb-2 text-sm font-bold text-center" style="display:none"></div>
-            <div id="user-dropdown-name-sep" class="border-t border-bord-light my-1" style="display:none"></div>
-            <a href="#" onclick="location.reload();return false" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">刷新页面</a>
-            <div class="border-t border-bord-light my-1"></div>
-          </div>
-        </div>
+        <button type="button" class="relative group w-8 h-8 shrink-0 cursor-pointer rounded-lg border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-pink" aria-label="刷新页面" onclick="location.reload()">
+          <img id="user-avatar" src="" class="w-8 h-8 rounded-lg object-cover bg-surface shrink-0" style="display:none">
+          <div id="user-placeholder" class="w-8 h-8 rounded-lg shrink-0" style="background:linear-gradient(135deg,#ff6b6b,#feca57,#48dbfb,#ff9ff3,#54a0ff);background-size:300% 300%;animation:rainbow 3s ease infinite"></div>
+          <span class="pointer-events-none absolute inset-0 rounded-lg bg-black/45 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity flex items-center justify-center">
+            <svg viewBox="0 0 24 24" class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+              <path d="M21 3v6h-6"></path>
+            </svg>
+          </span>
+        </button>
       </div>
     </div>
     <style>
@@ -1229,12 +1220,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.USERNAME) {
         api("/v0/users/" + window.USERNAME).then(function (u) {
             if (u && u.id) {
-                var nameEl = document.getElementById("user-dropdown-name");
-                nameEl.textContent = u.nickname || u.username;
-                nameEl.style.display = "";
-                document.getElementById(
-                    "user-dropdown-name-sep"
-                ).style.display = "";
                 var av = document.getElementById("user-avatar");
                 av.onerror = function () {
                     av.style.display = "none";
@@ -1252,19 +1237,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 全局事件总线（SSE）
     initEventBus();
-});
-
-function toggleUserMenu(e) {
-    e.stopPropagation();
-    var dd = document.getElementById("user-dropdown");
-    var show = dd.style.opacity === "0" || dd.style.opacity === "";
-    dd.style.opacity = show ? "1" : "0";
-    dd.style.pointerEvents = show ? "auto" : "none";
-}
-document.addEventListener("click", function () {
-    var dd = document.getElementById("user-dropdown");
-    dd.style.opacity = "0";
-    dd.style.pointerEvents = "none";
 });
 
 // Cmd+R / Ctrl+R 刷新页面
