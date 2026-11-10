@@ -500,12 +500,8 @@
                 // ── 右上右栏：评分面板 ──
                 html +=
                     '<div class="w-full md:w-[230px] shrink-0 self-start bg-surface-alt border border-bord rounded-xl">';
-                // 顶部条
-                html +=
-                    '<div class="bg-surface-alt px-4 py-2 rounded-t-xl"><span class="font-bold">评分</span></div>';
-                html += '<div class="border-t border-bord-mid"></div>';
                 // 内容
-                html += '<div class="px-4 pt-2 pb-2">';
+                html += '<div class="px-4 pt-3 pb-2">';
                 if (eloInfo && eloInfo.rating) {
                     html +=
                         '<div class="text-xs text-sub text-center">ELO Rating</div>';
@@ -530,9 +526,6 @@
                     " 人评分 · 排名 " +
                     rankHtml +
                     "</div>";
-                if (histHtml)
-                    html +=
-                        '<div class="border-t border-bord mt-3 mb-1"></div>';
                 if (histHtml) html += "<div>" + histHtml + "</div>";
                 html += "</div>";
                 html += "</div>";
