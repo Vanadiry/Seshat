@@ -218,6 +218,50 @@ function hasFeature(name) {
 // 页面加载后异步探测，不阻塞渲染
 probeCapabilities();
 
+// 路由分类，feature 缺失时 lists 和 names 退回本机，其余隐藏
+var ROUTE = {
+    settings: "local",
+    "open-url": "local",
+    core: "remote",
+    lists: "fallback-local",
+    names: "fallback-local",
+    elo: "feature",
+    events: "feature",
+    fetch: "feature",
+    stats: "feature",
+    tags: "feature",
+    task: "feature",
+    tracker: "feature"
+};
+
+// 解析请求归属，返回 remote、local 或 hidden
+function resolve(key) {
+    var mode = ROUTE[key];
+    if (!mode) return "hidden";
+    if (!window.BACKEND_URL) return "local";
+    if (mode === "local") return "local";
+    if (mode === "remote") return "remote";
+    if (mode === "fallback-local") {
+        return hasFeature(key) ? "remote" : "local";
+    }
+    return hasFeature(key) ? "remote" : "hidden";
+}
+
+// 按归属请求，隐藏时返回 null
+async function apiFor(key, url) {
+    var mode = ROUTE[key];
+    if (!mode) return null;
+    if (
+        window.BACKEND_URL &&
+        (mode === "feature" || mode === "fallback-local")
+    ) {
+        await capabilitiesReady();
+    }
+    var target = resolve(key);
+    if (target === "hidden") return null;
+    return target === "local" ? apiLocal(url) : api(url);
+}
+
 // 界面文案，弹窗提示在这里修改
 var MSG = {
     // 顶栏
@@ -516,9 +560,9 @@ function loadPersonMap() {
     if (window.AUTO_LINK_NAMES === "false") return Promise.resolve();
     if (_personMap && Object.keys(_personMap).length) return Promise.resolve();
     return Promise.all([
-        api("/v0/subjects/name"),
-        api("/v0/characters/name"),
-        api("/v0/persons/name")
+        apiFor("names", "/v0/subjects/name"),
+        apiFor("names", "/v0/characters/name"),
+        apiFor("names", "/v0/persons/name")
     ]).then(function (results) {
         _subjectMap = invertNameMap(results[0]);
         _charMap = invertNameMap(results[1]);

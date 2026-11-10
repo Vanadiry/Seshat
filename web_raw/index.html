@@ -156,7 +156,10 @@
                 document.getElementById("grid").innerHTML =
                     '<div class="col-span-full text-center py-20 text-sub"><span class="spin"></span>加载中…</div>';
                 try {
-                    var subjectsResp = await apiLocal("/v0/subjects/list");
+                    var subjectsResp = await apiFor(
+                        "lists",
+                        "/v0/subjects/list"
+                    );
                     var subjects = (subjectsResp && subjectsResp.data) || [];
                     // 合并 ELO 与收藏数据
                     Promise.all([

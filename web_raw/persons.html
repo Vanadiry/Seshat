@@ -98,7 +98,7 @@
             }
 
             (async () => {
-                var res = await apiLocal("/v0/persons/list");
+                var res = await apiFor("lists", "/v0/persons/list");
                 allItems = (res && res.data) || [];
                 if (!allItems.length) {
                     document.getElementById("grid").innerHTML =

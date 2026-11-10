@@ -123,7 +123,7 @@
             var _aboutInfo = null;
 
             function loadSettings() {
-                fetch(API + "/v0/settings")
+                fetch("/api/v0/settings")
                     .then(function (r) {
                         return r.json();
                     })
@@ -316,7 +316,7 @@
                         el.type === "checkbox" ? el.checked : el.value;
                 }
                 var msg = document.getElementById("save-msg");
-                fetch(API + "/v0/settings", {
+                fetch("/api/v0/settings", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(updates)
