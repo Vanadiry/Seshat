@@ -179,10 +179,10 @@ func buildRouter(cfg *config.Config, embedFS fs.FS) *router {
 	r.feature("elo", "GET /api/v0/elo/history", handleELOHistory(dd))
 	r.feature("elo", "POST /api/v0/elo/rebuild", handleELORebuild(dd))
 
-	// 搜索
-	r.feature("search.subjects", "POST /api/v0/search/subjects", handleSearchSubjects(dd))
-	r.feature("search.characters", "POST /api/v0/search/characters", handleSearchCharacters(dd))
-	r.feature("search.persons", "POST /api/v0/search/persons", handleSearchPersons(dd))
+	// 搜索，官方 v0 支持
+	r.core("POST /api/v0/search/subjects", handleSearchSubjects(dd))
+	r.core("POST /api/v0/search/characters", handleSearchCharacters(dd))
+	r.core("POST /api/v0/search/persons", handleSearchPersons(dd))
 	r.feature("tags", "POST /api/v0/search/tags", handleSearchTags(dd))
 
 	// 图片 API，兼容官方路径 /v0/subjects/{id}/image?type=large|grid

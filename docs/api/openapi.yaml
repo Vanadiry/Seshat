@@ -1015,9 +1015,6 @@ paths:
                       - fetch
                       - lists
                       - names
-                      - search.characters
-                      - search.persons
-                      - search.subjects
                       - stats
                       - tags
                       - task
