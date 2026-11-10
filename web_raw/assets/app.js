@@ -262,13 +262,26 @@ async function apiFor(key, url) {
     return target === "local" ? apiLocal(url) : api(url);
 }
 
-// 隐藏缺能力的入口
-function applyFeatureVisibility(root) {
-    var nodes = (root || document).querySelectorAll("[data-feature]");
-    for (var i = 0; i < nodes.length; i++) {
-        if (resolve(nodes[i].getAttribute("data-feature")) === "hidden") {
-            nodes[i].style.display = "none";
+// 隐藏缺能力的入口，支持同时要求多个能力
+function featureHidden(node) {
+    var all = node.getAttribute("data-feature-all");
+    if (all) {
+        var keys = all.split(",");
+        for (var i = 0; i < keys.length; i++) {
+            if (resolve(keys[i].trim()) === "hidden") return true;
         }
+        return false;
+    }
+    var one = node.getAttribute("data-feature");
+    return !!one && resolve(one) === "hidden";
+}
+
+function applyFeatureVisibility(root) {
+    var nodes = (root || document).querySelectorAll(
+        "[data-feature], [data-feature-all]"
+    );
+    for (var i = 0; i < nodes.length; i++) {
+        nodes[i].style.display = featureHidden(nodes[i]) ? "none" : "";
     }
 }
 
@@ -1014,7 +1027,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <a href="/rating" data-feature="elo" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/rating")}">评分</a>
           <a href="/search" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/search")}">搜索</a>
         </nav>
-        <button id="btn-fetch" data-feature="fetch" class="px-4 py-1.5 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">管理数据</button>
+        <button id="btn-fetch" data-feature-all="fetch,task" class="px-4 py-1.5 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">管理数据</button>
         <div class="relative shrink-0">
           <div class="relative group w-8 h-8 shrink-0 cursor-pointer rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-pink" role="button" tabindex="0" aria-label="用户菜单" onclick="toggleUserMenu(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleUserMenu(event)}">
             <img id="user-avatar" src="" class="w-8 h-8 rounded-lg object-cover bg-surface shrink-0" style="display:none">
@@ -1061,7 +1074,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // 页面刷新后重新连接进行中的任务
-    api("/v0/tasks").then(function (d) {
+    apiFor("task", "/v0/tasks").then(function (d) {
         if (d && d.data && d.data.length) {
             for (var i = 0; i < d.data.length; i++) {
                 startProgress(d.data[i].id, d.data[i].label);
@@ -1294,10 +1307,10 @@ function initDialog() {
         '" pattern="[0-9, ]*" class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm">' +
         '<button id="btn-do-fetch" class="w-9 h-9 rounded-lg bg-pink text-white font-bold cursor-pointer border-0 hover:opacity-90 flex items-center justify-center" title="拉取">&check;</button></div>' +
         // Tracker 输入行
-        '<label class="text-xs text-sub block mb-1">' +
+        '<label data-feature="tracker" class="text-xs text-sub block mb-1">' +
         MSG.trackerLabel +
         "</label>" +
-        '<div class="flex gap-2 mb-4">' +
+        '<div data-feature="tracker" class="flex gap-2 mb-4">' +
         '<input id="tracker-input" placeholder="' +
         MSG.trackerPlaceholder +
         '" pattern="[a-zA-Z0-9_\\-]*" class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm">' +
@@ -1308,7 +1321,7 @@ function initDialog() {
         '<button id="btn-user" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
         MSG.btnUserFetch +
         "</button>" +
-        '<button id="btn-import-coll" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
+        '<button id="btn-import-coll" data-feature="tracker" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
         MSG.btnImportColl +
         "</button>" +
         '<button id="btn-update" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
@@ -1334,7 +1347,7 @@ function initDialog() {
         '<button id="btn-index" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">' +
         MSG.btnRebuildIndex +
         "</button>" +
-        '<button id="btn-rebuild-elo" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">重建 ELO</button>' +
+        '<button id="btn-rebuild-elo" data-feature="elo" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">重建 ELO</button>' +
         '<button id="btn-deep" class="px-3 py-2 rounded-lg bg-[#dc2626] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">' +
         MSG.btnRebuildAll +
         "</button>" +
@@ -1356,6 +1369,10 @@ function initDialog() {
         if (e.target === dlg) closeFetch();
     });
     document.body.appendChild(dlg);
+    applyFeatureVisibility(dlg);
+    capabilitiesReady().then(function () {
+        applyFeatureVisibility(dlg);
+    });
 
     document
         .getElementById("btn-close-dlg")
@@ -1859,7 +1876,8 @@ function startProgress(taskId, label) {
         cancelBtn.remove();
         evt.close();
     };
-    titleBar.appendChild(cancelBtn);
+    // 远端模式不显示终止，避免杀掉对端进程
+    if (!window.BACKEND_URL) titleBar.appendChild(cancelBtn);
 
     var fill = t.el.querySelector("#pb-fill");
     var detail = t.el.querySelector("#pb-detail");
