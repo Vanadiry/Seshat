@@ -1967,10 +1967,10 @@ var _seenEvents = (function () {
         return {};
     }
 })();
-function _rememberEvent(id) {
-    _seenEvents[id] = 1;
+function _rememberEvent(key) {
+    _seenEvents[key] = 1;
     var keys = Object.keys(_seenEvents);
-    for (var i = 0; i < keys.length - 200; i++) delete _seenEvents[keys[i]];
+    for (var i = 0; i < keys.length - 400; i++) delete _seenEvents[keys[i]];
     try {
         sessionStorage.setItem(
             "seshat_seen_events",
@@ -1978,8 +1978,10 @@ function _rememberEvent(id) {
         );
     } catch (_) {}
 }
-function initEventBus() {
-    var es = new EventSource("/api/v0/events");
+
+// 订阅一路事件，来源写进去重键
+function subscribeEvents(url, source) {
+    var es = new EventSource(url);
     es.onmessage = function (e) {
         var d;
         try {
@@ -1989,14 +1991,29 @@ function initEventBus() {
         }
         // 已处理过的事件（含历史回放）不再弹出；跨翻页/刷新保留
         if (d.id) {
-            if (_seenEvents[d.id]) return;
-            _rememberEvent(d.id);
+            var key = source + ":" + d.id;
+            if (_seenEvents[key]) return;
+            _rememberEvent(key);
         }
-        if (d.type === "error") showError(d.message);
-        if (d.type === "warn") showWarn(d.message);
+        var msg = d.message;
+        if (source === "remote") msg = "远端：" + msg;
+        if (d.type === "error") showError(msg);
+        if (d.type === "warn") showWarn(msg);
     };
     es.onerror = function () {
         es.close();
-        setTimeout(initEventBus, 5000);
+        setTimeout(function () {
+            subscribeEvents(url, source);
+        }, 5000);
     };
+}
+
+function initEventBus() {
+    subscribeEvents("/api/v0/events", "local");
+    if (!window.BACKEND_URL) return;
+    capabilitiesReady().then(function () {
+        if (resolve("events") === "remote") {
+            subscribeEvents(API + "/v0/events", "remote");
+        }
+    });
 }
