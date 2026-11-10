@@ -191,7 +191,7 @@ function _saveCaps(caps, ttl) {
 
 // 探测失败时提示一次，并写入短缓存
 function _failCaps() {
-    showWarn("后端连接失败，能力相关功能已禁用");
+    showConfigFailure();
     return _saveCaps({ seshat: false, features: [] }, CAPS_FAIL_TTL);
 }
 
@@ -346,10 +346,15 @@ async function requireFeature(key) {
 
 // 界面文案，弹窗提示在这里修改
 var MSG = {
-    // 顶栏
-    customBackendWarn: "自定义后端模式，所有数据将从远程获取",
-    fallbackWarn: "回退模式，缺失数据将从回退端点获取",
-    bothWarn: "自定义后端和回退模式，请确保你明白此配置",
+    // 配置提示
+    configWarnBackendTitle: "自定义后端模式",
+    configWarnBackendBody: "数据从自定义后端获取，部分功能按后端能力显示",
+    configWarnFallbackTitle: "回退模式",
+    configWarnFallbackBody: "本地缺失的数据将从回退端点获取",
+    configWarnBothTitle: "自定义后端和回退模式",
+    configWarnBothBody: "数据从自定义后端获取，本地缺失时从回退端点获取",
+    configWarnFailedTitle: "自定义后端连接失败",
+    configWarnFailedBody: "能力相关功能已禁用",
     // 拉取弹窗
     dialogTitle: "管理数据",
     idLabel: "拉取动画",
@@ -461,6 +466,108 @@ var MSG = {
         writer: "作家"
     }
 };
+
+// 配置提示按浏览器会话只显示一次，会话 Cookie 随浏览器关闭失效
+var CONFIG_WARN_KEY = "seshat_config_warn";
+var _configWarnToast = null;
+
+function configWarnMode() {
+    if (window.BACKEND_URL && window.FALLBACK_URL) return "both";
+    if (window.BACKEND_URL) return "backend";
+    if (window.FALLBACK_URL) return "fallback";
+    return "";
+}
+
+function _readCookie(name) {
+    var raw = document.cookie ? document.cookie.split("; ") : [];
+    for (var i = 0; i < raw.length; i++) {
+        var pos = raw[i].indexOf("=");
+        if (pos < 0) continue;
+        if (raw[i].slice(0, pos) === name) {
+            return decodeURIComponent(raw[i].slice(pos + 1));
+        }
+    }
+    return "";
+}
+
+function _writeCookie(name, value) {
+    try {
+        document.cookie =
+            name + "=" + encodeURIComponent(value) + "; path=/; SameSite=Lax";
+    } catch (_) {}
+}
+
+function _configWarnTokens() {
+    var raw = _readCookie(CONFIG_WARN_KEY);
+    if (!raw) {
+        try {
+            raw = sessionStorage.getItem(CONFIG_WARN_KEY) || "";
+        } catch (_) {
+            raw = "";
+        }
+    }
+    if (!raw) return [];
+    try {
+        var list = JSON.parse(raw);
+        return Array.isArray(list) ? list : [];
+    } catch (_) {
+        return [];
+    }
+}
+
+function _configWarnSeen(token) {
+    return _configWarnTokens().indexOf(token) !== -1;
+}
+
+function _markConfigWarn(token) {
+    var list = _configWarnTokens();
+    if (list.indexOf(token) === -1) list.push(token);
+    var raw = JSON.stringify(list);
+    _writeCookie(CONFIG_WARN_KEY, raw);
+    try {
+        sessionStorage.setItem(CONFIG_WARN_KEY, raw);
+    } catch (_) {}
+}
+
+function showConfigWarn() {
+    var mode = configWarnMode();
+    if (!mode) return;
+    var token = location.host + "|" + mode;
+    if (_configWarnSeen(token)) return;
+    _markConfigWarn(token);
+    var title = MSG.configWarnBackendTitle;
+    var body = MSG.configWarnBackendBody;
+    if (mode === "fallback") {
+        title = MSG.configWarnFallbackTitle;
+        body = MSG.configWarnFallbackBody;
+    } else if (mode === "both") {
+        title = MSG.configWarnBothTitle;
+        body = MSG.configWarnBothBody;
+    }
+    _configWarnToast = _makeToast(
+        title,
+        body,
+        "bg-toast-warning",
+        "bg-toast-warning-bg",
+        0,
+        false
+    );
+    // 常驻提示不参与后续 toast 的替换
+    _currentToast = null;
+}
+
+// 连接失败时更新常驻提示，没有提示时退回普通警告
+function showConfigFailure() {
+    if (_configWarnToast && !_configWarnToast.closed()) {
+        _configWarnToast.update(
+            MSG.configWarnFailedTitle,
+            MSG.configWarnFailedBody
+        );
+        return true;
+    }
+    showWarn(MSG.configWarnFailedTitle + "，" + MSG.configWarnFailedBody);
+    return false;
+}
 
 var _remoteURLs = {};
 function isRemote(url) {
@@ -1031,34 +1138,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     tb.style.cssText = "position:sticky;top:0;z-index:50";
-    var custom = !!window.BACKEND_URL;
-    var fallback = !!window.FALLBACK_URL;
-    var both = custom && fallback;
-    var topBg = both
-        ? "bg-warn-bar-purple"
-        : custom
-          ? "bg-warn-bar-red"
-          : fallback
-            ? "bg-warn-bar-amber"
-            : "bg-surface-raised";
-    var topBord = custom || fallback ? "border-bord-strong" : "border-bord";
-    var warnText = both
-        ? MSG.bothWarn
-        : custom
-          ? MSG.customBackendWarn
-          : fallback
-            ? MSG.fallbackWarn
-            : "";
-    var navStyle = function (href) {
-        var c = navCls(href);
-        if (custom || fallback) {
-            if (c.indexOf("bg-") >= 0) return c;
-            return "text-text hover:bg-active";
-        }
-        return c;
-    };
+    var navStyle = navCls;
     tb.innerHTML = `
-    <div class="${topBg} border-b ${topBord}">
+    <div class="bg-surface-raised border-b border-bord">
       <div class="max-w-[1200px] mx-auto px-5 flex items-center gap-3 h-12 relative">
         <h1 class="text-lg font-bold cursor-pointer shrink-0" onclick="location.href='/'">Seshat</h1>
         <nav class="flex gap-1 ml-2 items-center">
@@ -1069,7 +1151,6 @@ document.addEventListener("DOMContentLoaded", () => {
           <a href="/stats" data-feature="stats" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/stats")}">统计</a>
         </nav>
         <div class="flex-1"></div>
-        ${warnText ? '<span class="absolute left-1/2 -translate-x-1/2 text-[#FFCA28] text-sm font-bold pointer-events-none">' + warnText + "</span>" : ""}
         <nav class="flex gap-1 items-center">
           <a href="/rating" data-feature="elo" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/rating")}">评分</a>
           <a href="/search" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/search")}">搜索</a>
@@ -2064,3 +2145,5 @@ function initEventBus() {
         }
     });
 }
+
+showConfigWarn();
