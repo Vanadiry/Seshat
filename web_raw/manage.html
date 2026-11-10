@@ -456,9 +456,10 @@
                     showError(errText(d, res.status));
                     return;
                 }
-                if (d.task_id) startProgress(d.task_id);
-                if (d.count > 0) {
-                    showSuccess("已开始，处理 " + d.count + " 个条目");
+                if (d.task_id) {
+                    startProgress(d.task_id);
+                } else {
+                    showInfo("没有需要处理的条目");
                 }
             }
 

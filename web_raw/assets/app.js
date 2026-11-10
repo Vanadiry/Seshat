@@ -1439,16 +1439,7 @@ function _makeToast(
         }, 50);
         timer = setTimeout(close, autoCloseSec * 1000 + 100);
     }
-    _toastStack.push({
-        el: el,
-        closed: function () {
-            return closed;
-        }
-    });
-    _currentToast = el;
-    _repositionToasts();
-
-    return {
+    var toast = {
         el: el,
         update: function (newTitle, newBody, newTitleBg, newBodyBg) {
             if (closed) return;
@@ -1482,6 +1473,11 @@ function _makeToast(
             return closed;
         }
     };
+    _toastStack.push(toast);
+    _currentToast = toast;
+    _repositionToasts();
+
+    return toast;
 }
 
 function showError(msg) {
@@ -1495,6 +1491,17 @@ function showWarn(msg) {
         "bg-toast-warning",
         "bg-toast-warning-bg",
         8,
+        false
+    );
+}
+
+function showInfo(msg) {
+    _makeToast(
+        "提示",
+        msg,
+        "bg-toast-progress",
+        "bg-toast-progress-bg text-text",
+        5,
         false
     );
 }
