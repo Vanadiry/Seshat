@@ -563,6 +563,80 @@ paths:
               schema:
                 $ref: "#/components/schemas/Paged_SearchItem"
   # 拉取
+  /api/v0/fetch: # 统一拉取
+    post:
+      tags: [拉取]
+      summary: 统一拉取
+      description: |
+        按来源解析 ID 后拉取条目，结束后始终重建索引。
+        返回 `task_id`，进度通过 `GET /api/v0/task/{task_id}` 获取。
+        来源为 `ids` 时，成功的 ID 会写入 `_seshat.json`。
+        来源为 `tracker_names` 时，`names` 中的 Tracker 必须存在且非空。
+        没有待处理 ID 时返回 `status` 为 `done`、`count` 为 0。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source, json, images]
+              properties:
+                source:
+                  type: string
+                  enum: [tracker_new, tracker_all, tracker_names, ids, local]
+                  description: |
+                    `tracker_new` 为所有 Tracker 中本地索引缺少或不完整的 ID。
+                    `tracker_all` 为所有 Tracker 的全部 ID。
+                    `tracker_names` 为 `names` 指定的 Tracker 的全部 ID。
+                    `ids` 为 `ids` 指定的 ID。
+                    `local` 为本地已存在的全部条目 ID。
+                names:
+                  type: array
+                  items: { type: string }
+                  description: Tracker 名称，`source` 为 `tracker_names` 时必填。
+                ids:
+                  type: array
+                  items: { type: integer }
+                  description: 条目 ID，`source` 为 `ids` 时必填，且每个 ID 大于 0。
+                json:
+                  type: string
+                  enum: [fill, overwrite]
+                  description: |
+                    `fill` 为只拉取本地缺失或不完整的条目。
+                    `overwrite` 为全量拉取并覆盖已有 JSON。
+                images:
+                  type: string
+                  enum: [none, fill, overwrite]
+                  description: |
+                    `none` 为跳过图片。
+                    `fill` 为只下载缺失的图片。
+                    `overwrite` 为全量下载并覆盖已有图片。
+            examples:
+              ids:
+                value: { source: ids, ids: [51, 288], json: fill, images: fill }
+              trackerNames:
+                value:
+                  {
+                    source: tracker_names,
+                    names: [user],
+                    json: overwrite,
+                    images: overwrite,
+                  }
+      responses:
+        "200":
+          description: 拉取已开始或没有待处理 ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "fetching" }
+                  count: { type: integer, example: 2 }
+                  task_id: { type: string, example: "ae8687f0" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /api/v0/fetch/subject: # 拉取条目
     post:
       tags: [拉取]
@@ -740,6 +814,18 @@ paths:
       tags: [拉取]
       summary: 重建全部
       description: 清空data目录，重新拉取全部Tracker数据。返回task_id。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirm_clean]
+              properties:
+                confirm_clean:
+                  type: boolean
+                  description: 必须为 `true`，否则返回 400。
+            example: { confirm_clean: true }
       responses:
         "200":
           description: 后台执行
@@ -750,6 +836,10 @@ paths:
                 properties:
                   status: { type: string }
                   task_id: { type: string, example: "ae8687f0" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /api/v0/task/{task_id}: # 任务状态｜SSE
     get:
       tags: [拉取]
