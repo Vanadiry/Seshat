@@ -24,54 +24,10 @@
     <body class="text-text font-[system-ui] min-h-screen">
         <div id="topbar"></div>
         <main class="max-w-[900px] mx-auto p-6">
-            <div class="flex items-center gap-2 mb-3">
-                <span class="w-[3px] h-[18px] bg-pink rounded-sm"></span
-                ><span class="font-bold">条目统计</span>
-            </div>
             <div
                 id="stats-dash"
                 class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 text-xs text-sub"
             ></div>
-            <div class="flex items-center gap-3 mb-4 flex-wrap">
-                <span class="w-[3px] h-[18px] bg-pink rounded-sm"></span>
-                <span class="font-bold">评分</span>
-                <span class="text-xs text-sub" style="margin-left: auto"
-                    >排序</span
-                >
-                <div class="flex gap-1">
-                    <button
-                        id="btn-sort-elo"
-                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-pink bg-pink text-white font-semibold"
-                        onclick="sortBy('elo')"
-                    >
-                        ELO
-                    </button>
-                    <button
-                        id="btn-sort-score"
-                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text"
-                        onclick="sortBy('score')"
-                    >
-                        评分
-                    </button>
-                </div>
-                <span class="text-xs text-sub ml-4">显示</span>
-                <div class="flex gap-1" id="toggles" style="display: none">
-                    <button
-                        id="btn-no-rating"
-                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text"
-                        onclick="toggleNoRating()"
-                    >
-                        无 ELO Rating
-                    </button>
-                    <button
-                        id="btn-orphans"
-                        class="px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text"
-                        onclick="toggleOrphans()"
-                    >
-                        无本地数据
-                    </button>
-                </div>
-            </div>
             <div id="stats-list">
                 <div class="text-center py-20 text-sub">
                     <span class="spin"></span>加载中…
@@ -80,35 +36,42 @@
         </main>
         <script src="assets/app.min.js"></script>
         <script>
-            if (!window.BACKEND_URL)
-                document.getElementById("toggles").style.display = "";
-
             var _entries = [],
                 _noRating = [],
                 _orphans = [];
             var _orphanNames = {};
-            var _showNoRating = false,
-                _showOrphans = false;
             var sortKey = "elo";
+            var sortDir = "desc";
+            var _nameCollator = new Intl.Collator("zh-Hans", {
+                numeric: true,
+                sensitivity: "base"
+            });
 
-            function toggleNoRating() {
-                _showNoRating = !_showNoRating;
-                updateBtn("btn-no-rating", _showNoRating);
+            function sortBy(key) {
+                if (sortKey === key) {
+                    sortDir = sortDir === "asc" ? "desc" : "asc";
+                } else {
+                    sortKey = key;
+                    sortDir = "desc";
+                }
                 render();
             }
-            function toggleOrphans() {
-                _showOrphans = !_showOrphans;
-                updateBtn("btn-orphans", _showOrphans);
-                render();
-            }
-            function updateBtn(id, on) {
-                var b = document.getElementById(id);
-                b.className = on
-                    ? "px-3 py-1 rounded-lg text-xs cursor-pointer border border-pink bg-pink text-white font-semibold"
-                    : "px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text";
-                b.innerHTML =
-                    (on ? "✓ " : "") +
-                    (id === "btn-no-rating" ? "无 ELO Rating" : "无本地数据");
+
+            function sortHeader(label, key, cls) {
+                var active = sortKey === key;
+                var mark = active ? (sortDir === "asc" ? " ↑" : " ↓") : "";
+                return (
+                    '<div class="' +
+                    cls +
+                    " text-center cursor-pointer select-none hover:text-text" +
+                    (active ? " text-pink font-semibold" : "") +
+                    '" title="点击排序" onclick="sortBy(\'' +
+                    key +
+                    "')\">" +
+                    label +
+                    mark +
+                    "</div>"
+                );
             }
 
             function loadStats() {
@@ -145,7 +108,7 @@
                     }
                     if (s.elo_scores != null) {
                         cards.push({
-                            label: "ELO Rating",
+                            label: "ELO 评分",
                             value: s.elo_scores + " / " + s.elo_comparisons,
                             sub: "有评分条目 / 评分次数"
                         });
@@ -188,28 +151,14 @@
                     _entries = data && data.data ? data.data : [];
                     _noRating = data && data.no_rating ? data.no_rating : [];
                     _orphans = data && data.orphans ? data.orphans : [];
-                    sortBy("elo");
+                    render();
                 } catch (e) {
                     document.getElementById("stats-list").innerHTML =
                         '<div class="text-center py-20 text-sub">加载失败</div>';
                 }
             }
 
-            function sortBy(key) {
-                sortKey = key;
-                document.getElementById("btn-sort-elo").className =
-                    key === "elo"
-                        ? "px-3 py-1 rounded-lg text-xs cursor-pointer border border-pink bg-pink text-white font-semibold"
-                        : "px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text";
-                document.getElementById("btn-sort-score").className =
-                    key === "score"
-                        ? "px-3 py-1 rounded-lg text-xs cursor-pointer border border-pink bg-pink text-white font-semibold"
-                        : "px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text";
-                render();
-            }
-
             function render() {
-                var isElo = sortKey === "elo";
                 // 列宽在表头与两种数据行之间共用
                 var COL_ELO = "w-[120px] shrink-0";
                 var COL_BGM = "w-[100px] shrink-0";
@@ -239,106 +188,124 @@
                 var items = [];
                 for (var i = 0; i < _entries.length; i++)
                     items.push(_entries[i]);
-                if (_showNoRating) {
-                    for (var i = 0; i < _noRating.length; i++)
-                        items.push(_noRating[i]);
+                for (var i = 0; i < _noRating.length; i++)
+                    items.push(_noRating[i]);
+
+                var _orphanPromises = [];
+                for (var i = 0; i < _orphans.length; i++) {
+                    var cached = _orphanNames[_orphans[i].id];
+                    items.push({
+                        id: _orphans[i].id,
+                        name: cached ? escapeHtml(cached.name) : undefined,
+                        name_cn: cached
+                            ? escapeHtml(cached.name_cn)
+                            : undefined,
+                        score: cached ? cached.score : undefined,
+                        rating: _orphans[i].rating,
+                        _orphan: true
+                    });
+                    if (!cached) {
+                        (function (id) {
+                            _orphanPromises.push(
+                                api("/v0/subjects/" + id)
+                                    .then(function (s) {
+                                        var score =
+                                            s && s.rating && s.rating.score
+                                                ? s.rating.score
+                                                : null;
+                                        _orphanNames[id] =
+                                            s && s.id
+                                                ? {
+                                                      name:
+                                                          escapeHtml(s.name) ||
+                                                          "",
+                                                      name_cn:
+                                                          escapeHtml(
+                                                              s.name_cn
+                                                          ) || "",
+                                                      score: score
+                                                  }
+                                                : {
+                                                      name: null,
+                                                      name_cn: null,
+                                                      score: null
+                                                  };
+                                    })
+                                    .catch(function () {
+                                        _orphanNames[id] = {
+                                            name: null,
+                                            name_cn: null,
+                                            score: null
+                                        };
+                                    })
+                            );
+                        })(_orphans[i].id);
+                    }
                 }
-                if (_showOrphans) {
-                    var _orphanPromises = [];
-                    for (var i = 0; i < _orphans.length; i++) {
-                        var cached = _orphanNames[_orphans[i].id];
-                        items.push({
-                            id: _orphans[i].id,
-                            name: cached ? escapeHtml(cached.name) : undefined,
-                            name_cn: cached
-                                ? escapeHtml(cached.name_cn)
-                                : undefined,
-                            score: cached ? cached.score : undefined,
-                            rating: _orphans[i].rating,
-                            _orphan: true
-                        });
-                        if (!cached) {
-                            (function (id) {
-                                _orphanPromises.push(
-                                    api("/v0/subjects/" + id)
-                                        .then(function (s) {
-                                            var score =
-                                                s && s.rating && s.rating.score
-                                                    ? s.rating.score
-                                                    : null;
-                                            _orphanNames[id] =
-                                                s && s.id
-                                                    ? {
-                                                          name:
-                                                              escapeHtml(
-                                                                  s.name
-                                                              ) || "",
-                                                          name_cn:
-                                                              escapeHtml(
-                                                                  s.name_cn
-                                                              ) || "",
-                                                          score: score
-                                                      }
-                                                    : {
-                                                          name: null,
-                                                          name_cn: null,
-                                                          score: null
-                                                      };
-                                        })
-                                        .catch(function () {
-                                            _orphanNames[id] = {
-                                                name: null,
-                                                name_cn: null,
-                                                score: null
-                                            };
-                                        })
-                                );
-                            })(_orphans[i].id);
-                        }
+                if (_orphanPromises.length > 0) {
+                    Promise.all(_orphanPromises).then(function () {
+                        render();
+                    });
+                }
+
+                function sortValue(it, key) {
+                    if (key === "elo") {
+                        if (
+                            it.rating == null ||
+                            it.rating === 0 ||
+                            it.rating === ""
+                        )
+                            return null;
+                        return Number(it.rating);
                     }
-                    if (_orphanPromises.length > 0) {
-                        Promise.all(_orphanPromises).then(function () {
-                            if (_showOrphans) render();
-                        });
+                    if (key === "score") {
+                        if (
+                            it.score == null ||
+                            it.score === 0 ||
+                            it.score === ""
+                        )
+                            return null;
+                        return Number(it.score);
                     }
+                    return null;
                 }
                 items.sort(function (a, b) {
-                    if (isElo) {
-                        var ra = a.rating
-                            ? typeof a.rating === "number"
-                                ? a.rating
-                                : a.rating
-                            : 0;
-                        var rb = b.rating
-                            ? typeof b.rating === "number"
-                                ? b.rating
-                                : b.rating
-                            : 0;
-                        var d = rb - ra;
-                        return d !== 0 ? d : (b.score || 0) - (a.score || 0);
-                    } else {
-                        var d = (b.score || 0) - (a.score || 0);
-                        return d !== 0 ? d : (b.rating || 0) - (a.rating || 0);
+                    var av = sortValue(a, sortKey);
+                    var bv = sortValue(b, sortKey);
+                    var am = av === null;
+                    var bm = bv === null;
+                    if (am && !bm) return 1;
+                    if (!am && bm) return -1;
+                    if (!am && !bm && av !== bv) {
+                        return sortDir === "asc" ? av - bv : bv - av;
                     }
+                    var an = primaryName(a.name || "", a.name_cn || "");
+                    var bn = primaryName(b.name || "", b.name_cn || "");
+                    var d = _nameCollator.compare(an, bn);
+                    if (d !== 0) return d;
+                    return (a.id || 0) - (b.id || 0);
                 });
 
                 var html =
-                    '<div class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-bord-light"><div class="w-10 shrink-0 text-center">动画</div><div class="flex-1 min-w-0"></div><div class="' +
-                    COL_ELO +
-                    ' text-center">ELO Rating</div><div class="' +
-                    COL_BGM +
-                    ' text-center">BGM Rank</div><div class="' +
+                    '<div class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-bord-light">' +
+                    '<div class="w-10 shrink-0"></div>' +
+                    '<div class="flex-1 min-w-0">动画</div>' +
+                    sortHeader("ELO 评分", "elo", COL_ELO) +
+                    sortHeader("番组计划评分", "score", COL_BGM) +
+                    '<div class="' +
                     COL_ID +
                     ' text-center">ID</div></div>';
                 for (var i = 0; i < items.length; i++) {
                     var it = items[i];
                     var bg = i % 2 === 0 ? "bg-surface" : "bg-surface-raised";
-                    var eloCls = isElo
-                        ? "text-sm font-semibold"
-                        : "text-sm text-sub";
-                    var bkgCls = isElo
-                        ? "text-sm text-sub"
-                        : "text-sm font-semibold";
+                    var eloCls =
+                        sortKey === "elo"
+                            ? "text-sm font-semibold"
+                            : "text-sm text-sub";
+                    var bkgCls =
+                        sortKey === "score"
+                            ? "text-sm font-semibold"
+                            : "text-sm text-sub";
                     if (it._orphan) {
                         var oTitle = "加载中…",
                             oSub = "";
