@@ -58,8 +58,13 @@
 
         <script src="assets/app.min.js"></script>
         <script>
-            if (window.BACKEND_URL)
-                document.getElementById("opt-tags").style.display = "none";
+            capabilitiesReady().then(function () {
+                if (resolve("tags") !== "hidden") return;
+                var opt = document.getElementById("opt-tags");
+                if (opt) opt.style.display = "none";
+                var sel = document.getElementById("search-type");
+                if (sel && sel.value === "tags") sel.value = "subjects";
+            });
 
             var qp = new URLSearchParams(location.search);
             var initQ = qp.get("q");
