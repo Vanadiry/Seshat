@@ -318,7 +318,10 @@
             <div
                 class="bg-surface-alt border border-bord rounded-lg p-5 w-[340px] max-w-[85vw]"
             >
-                <p id="confirm-msg" class="text-sm mb-4 leading-relaxed"></p>
+                <p
+                    id="confirm-msg"
+                    class="text-sm mb-4 leading-relaxed whitespace-pre-line"
+                ></p>
                 <button
                     id="btn-confirm-exec"
                     class="w-full px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 mb-2"
@@ -370,7 +373,7 @@
                     source === "ids" ? "" : "none";
             }
 
-            async function startFetch() {
+            function buildFetchBody() {
                 var source = radioValue("fetch-source");
                 var body = {
                     source: source,
@@ -383,7 +386,7 @@
                     );
                     if (!body.names.length) {
                         showError("请填写 Tracker 名称");
-                        return;
+                        return null;
                     }
                 }
                 if (source === "ids") {
@@ -392,9 +395,57 @@
                     );
                     if (!body.ids.length) {
                         showError("请填写动画 ID");
-                        return;
+                        return null;
                     }
                 }
+                return body;
+            }
+
+            function fetchSummary(body) {
+                var lines = [
+                    "来源：" +
+                        {
+                            tracker_new: "所有 Tracker 中的新增 ID",
+                            tracker_all: "所有 Tracker",
+                            tracker_names: "指定 Tracker",
+                            ids: "指定 ID",
+                            local: "本地存在的条目"
+                        }[body.source]
+                ];
+                if (body.names && body.names.length) {
+                    lines.push("Tracker：" + body.names.join("、"));
+                }
+                if (body.ids && body.ids.length) {
+                    lines.push("ID：" + body.ids.join("、"));
+                }
+                lines.push(
+                    "JSON：" +
+                        (body.json === "fill" ? "补充缺失" : "全量下载并覆盖")
+                );
+                lines.push(
+                    "图片：" +
+                        {
+                            none: "跳过",
+                            fill: "补充缺失",
+                            overwrite: "全量下载并覆盖"
+                        }[body.images]
+                );
+                lines.push("");
+                lines.push("确定开始拉取？");
+                return lines.join("\n");
+            }
+
+            function requestStartFetch() {
+                var body = buildFetchBody();
+                if (!body) return;
+                confirmAction(fetchSummary(body), function () {
+                    startFetch(body);
+                });
+            }
+
+            async function startFetch(body) {
+                body = body || buildFetchBody();
+                if (!body) return;
                 var res = await fetch(API + "/v0/fetch", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -411,7 +462,7 @@
                 }
             }
 
-            async function addTrackers() {
+            function requestAddTrackers() {
                 var names = splitList(
                     document.getElementById("fetch-names").value
                 );
@@ -425,6 +476,17 @@
                         return;
                     }
                 }
+                confirmAction(
+                    "将创建以下 Tracker：\n" +
+                        names.join("、") +
+                        "\n已存在的会跳过",
+                    function () {
+                        addTrackers(names);
+                    }
+                );
+            }
+
+            async function addTrackers(names) {
                 var created = 0,
                     existed = 0,
                     failed = 0;
@@ -638,9 +700,10 @@
                 }
                 updateFetchRows();
 
-                document.getElementById("btn-page-fetch").onclick = startFetch;
+                document.getElementById("btn-page-fetch").onclick =
+                    requestStartFetch;
                 document.getElementById("btn-add-trackers").onclick =
-                    addTrackers;
+                    requestAddTrackers;
 
                 document.getElementById("btn-page-import").onclick =
                     function () {
