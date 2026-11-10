@@ -62,6 +62,23 @@
                 charCount = 0,
                 persCount = 0;
 
+            function loadCollectionBadge() {
+                if (!window.USERNAME || !SID) return;
+                api(
+                    "/v0/users/" + window.USERNAME + "/collections?view=summary"
+                ).then(function (d) {
+                    if (!d || !d.data) return;
+                    for (var i = 0; i < d.data.length; i++) {
+                        if (String(d.data[i].subject_id) !== String(SID)) {
+                            continue;
+                        }
+                        var el = document.getElementById("subject-coll");
+                        if (el) el.innerHTML = collBadge(d.data[i].type);
+                        return;
+                    }
+                });
+            }
+
             function switchTab(t) {
                 tab = t;
                 history.replaceState({}, "", "?id=" + SID + "&tab=" + t);
@@ -149,6 +166,7 @@
                                       "</span>"
                                 : "";
                         })() +
+                        '<span id="subject-coll" class="shrink-0"></span>' +
                         (escapeHtml(s.platform)
                             ? '<span class="text-sub text-xs shrink-0">｜</span><span class="text-xs text-sub shrink-0">' +
                               escapeHtml(s.platform) +
@@ -161,6 +179,7 @@
                         '<span class="flex gap-0 shrink-0 ml-2">' +
                         tabsHtml() +
                         "</span></div>";
+                    loadCollectionBadge();
                     if (tab === "overview") await overview(s, infoItems);
                     else if (tab === "ep") await episodes();
                     else if (tab === "chars") await characters();

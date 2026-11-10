@@ -569,6 +569,32 @@ function showConfigFailure() {
     return false;
 }
 
+// 收藏类型与徽标
+var COLL_TYPES = {
+    1: "想看",
+    2: "看过",
+    3: "在看",
+    4: "搁置",
+    5: "抛弃"
+};
+var COLL_CLS = {
+    1: "bg-pink-bg text-tier-gold",
+    2: "bg-pink-bg text-tier-green",
+    3: "bg-tier-blue-bg text-tier-blue",
+    4: "bg-surface-raised text-sub",
+    5: "bg-warn-bg text-warn"
+};
+function collBadge(type) {
+    if (!COLL_TYPES[type]) return "";
+    return (
+        '<span class="' +
+        (COLL_CLS[type] || "") +
+        ' px-1.5 py-px rounded text-[10px] font-semibold">' +
+        COLL_TYPES[type] +
+        "</span>"
+    );
+}
+
 var _remoteURLs = {};
 function isRemote(url) {
     return !!_remoteURLs[url];

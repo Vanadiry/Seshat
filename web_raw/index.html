@@ -32,20 +32,6 @@
             }
 
             // 卡片渲染
-            var _collTypes = {
-                1: "想看",
-                2: "看过",
-                3: "在看",
-                4: "搁置",
-                5: "抛弃"
-            };
-            var _collCls = {
-                1: "bg-pink-bg text-tier-gold",
-                2: "bg-pink-bg text-tier-green",
-                3: "bg-tier-blue-bg text-tier-blue",
-                4: "bg-surface-raised text-sub",
-                5: "bg-warn-bg text-warn"
-            };
             function renderItem(s) {
                 var sub = subName(escapeHtml(s.name), escapeHtml(s.name_cn));
                 var badges = "";
@@ -54,13 +40,7 @@
                         '<span class="bg-elo-bg text-elo-text px-1.5 py-px rounded text-[10px] font-semibold">ELO ' +
                         s._elo +
                         "</span>";
-                if (s._coll)
-                    badges +=
-                        '<span class="' +
-                        (_collCls[s._coll] || "") +
-                        ' px-1.5 py-px rounded text-[10px] font-semibold">' +
-                        (_collTypes[s._coll] || "") +
-                        "</span>";
+                if (s._coll) badges += collBadge(s._coll);
                 return (
                     "<div onclick=\"location.href='/subject?id=" +
                     s.id +
