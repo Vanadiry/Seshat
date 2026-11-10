@@ -1200,7 +1200,6 @@ document.addEventListener("DOMContentLoaded", () => {
             <a href="/settings" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">设置</a>
             <a href="#" onclick="location.reload();return false" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">刷新页面</a>
             <div class="border-t border-bord-light my-1"></div>
-            <a id="user-dropdown-github" href="#" onclick="openUrl('https://github.com/Vanadiry/Seshat');return false" class="block no-underline px-4 py-1.5 text-sm text-sub hover:bg-active hover:text-text">项目 GitHub</a>
           </div>
         </div>
       </div>
@@ -1215,16 +1214,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     capabilitiesReady().then(function () {
         applyFeatureVisibility(tb);
-    });
-
-    getInstanceInfo().then(function (info) {
-        if (!info || !info.repository) return;
-        var link = document.getElementById("user-dropdown-github");
-        if (!link) return;
-        link.onclick = function (e) {
-            e.preventDefault();
-            openUrl(info.repository);
-        };
     });
 
     // 页面刷新后重新连接进行中的任务

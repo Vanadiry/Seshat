@@ -139,8 +139,17 @@
 
             function renderAbout(info) {
                 var meta = [];
-                if (info.version) meta.push("版本：" + info.version);
-                if (info.license) meta.push("许可证：" + info.license);
+                if (info.version)
+                    meta.push(escapeHtml("版本：" + info.version));
+                if (info.license)
+                    meta.push(escapeHtml("许可证：" + info.license));
+                if (info.repository) {
+                    meta.push(
+                        '<a href="' +
+                            escapeHtml(info.repository) +
+                            '" onclick="openUrl(this.href);return false" class="text-pink hover:underline">项目储存库</a>'
+                    );
+                }
                 var html =
                     '<div class="border-t border-bord pt-6 text-center">' +
                     '<div class="text-sm text-text">' +
@@ -149,7 +158,7 @@
                 if (meta.length) {
                     html +=
                         '<div class="text-xs text-sub mt-1">' +
-                        escapeHtml(meta.join("｜")) +
+                        meta.join("｜") +
                         "</div>";
                 }
                 var capsText;
