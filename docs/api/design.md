@@ -49,7 +49,7 @@
 
 `users/{username}`、`avatar`、`collections` 校验路径 username，与配置用户不一致或未配置时返回 404。本地为单用户实例。
 
-旧路径 `user/info` 不自动迁移，破坏性变更见 `TODO-BREAK.md`。
+旧路径 `user/info` 不自动迁移，迁移步骤见 [MIGRATION.md](/MIGRATION.md)。
 
 ## 剧集
 
@@ -108,4 +108,4 @@ data/index/*.json
 - 官方没有 `/v0/tags`，非 Seshat 后端需要隐藏标签入口
 - `features` 尚未实现，能力探测在 ENHANCE-1 处理
 
-破坏性变更集中在 `TODO-BREAK.md`。
+破坏性变更与迁移步骤见 [MIGRATION.md](/MIGRATION.md)。

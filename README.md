@@ -21,7 +21,8 @@
 
 ## 使用
 
-请阅读 [docs/guide](/docs/guide.md) 来学习 Seshat 的使用方法。
+请阅读 [docs/guide](/docs/guide.md) 来学习 Seshat 的使用方法。  
+从 1.x 升级请阅读 [迁移说明](/MIGRATION.md)。
 
 Seshat 提供 Desktop 和 Server 两种运行方式。  
 二者功能和行为完全一样，只是 Desktop 版本多了 Tauri 壳，可以作为桌面应用。  
