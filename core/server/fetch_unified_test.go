@@ -152,3 +152,46 @@ func TestFetchDeepRequiresConfirm(t *testing.T) {
 		t.Fatalf("未确认时状态码 = %d", w.Code)
 	}
 }
+
+func TestLegacyFetchWrappers(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("SESHAT_HOME", home)
+	cfg := &config.Config{}
+	cfg.Upstream.BaseURL = "http://127.0.0.1:1"
+	dd := filepath.Join(home, "data")
+	imgDir := filepath.Join(dd, "images")
+	if err := os.MkdirAll(filepath.Join(home, "tracker"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		name string
+		h    http.Handler
+		body string
+		code int
+	}{
+		{"all", handleFetchAll(cfg, nil, dd, imgDir), `{}`, http.StatusOK},
+		{"update", handleFetchUpdate(cfg, nil, dd, imgDir), `{}`, http.StatusOK},
+		{"gap", handleFetchGap(cfg, nil, dd, imgDir), `{}`, http.StatusOK},
+		{"meta", handleFetchMeta(cfg, nil, dd), `{}`, http.StatusOK},
+		{"tracker 不存在", handleFetchTracker(cfg, nil, dd, imgDir), `{"names":["missing"]}`, http.StatusBadRequest},
+		{"subject 为空", handleFetchSubject(cfg, nil, dd, imgDir), `{}`, http.StatusBadRequest},
+	}
+	for _, c := range cases {
+		w := httptest.NewRecorder()
+		c.h.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v0/fetch", strings.NewReader(c.body)))
+		if w.Code != c.code {
+			t.Fatalf("%s 状态码 = %d, body=%s", c.name, w.Code, w.Body.String())
+		}
+		if c.code != http.StatusOK {
+			continue
+		}
+		var body map[string]any
+		if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+			t.Fatal(err)
+		}
+		if body["status"] != "done" || body["count"] != float64(0) {
+			t.Fatalf("%s 响应 = %v", c.name, body)
+		}
+	}
+}
