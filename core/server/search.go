@@ -7,11 +7,14 @@ import (
 	"strings"
 )
 
+const searchLimit = 500
+
 // searchAllJSON 扫描 data/api/{domain} 下的 info.json，按关键词匹配
-func searchAllJSON(dd, domain, q string) []map[string]any {
+func searchAllJSON(dd, domain, q string) ([]map[string]any, int) {
 	q = strings.ToLower(q)
-	var results []map[string]any
+	results := []map[string]any{}
 	seen := map[int]bool{}
+	total := 0
 
 	scanAPIDir(dd, domain, func(path string) {
 		if !strings.HasSuffix(path, "info.json") {
@@ -37,6 +40,10 @@ func searchAllJSON(dd, domain, q string) []map[string]any {
 			return
 		}
 		seen[entry.ID] = true
+		total++
+		if len(results) >= searchLimit {
+			return
+		}
 		item := map[string]any{"id": entry.ID, "name": entry.Name}
 		if domain == "subjects" {
 			if entry.NameCN != "" {
@@ -65,7 +72,20 @@ func searchAllJSON(dd, domain, q string) []map[string]any {
 		}
 		results = append(results, item)
 	})
-	return results
+	return results, total
+}
+
+// writeSearchList 输出搜索结果分页，data 最多 500 条
+func writeSearchList(w http.ResponseWriter, data []map[string]any, total int) {
+	if data == nil {
+		data = []map[string]any{}
+	}
+	writeJSON(w, map[string]any{
+		"total":  total,
+		"limit":  searchLimit,
+		"offset": 0,
+		"data":   data,
+	})
 }
 
 func keywordFromRequest(w http.ResponseWriter, r *http.Request) (string, bool) {
@@ -77,7 +97,7 @@ func keywordFromRequest(w http.ResponseWriter, r *http.Request) (string, bool) {
 		return "", false
 	}
 	if req.Keyword == "" {
-		writeJSON(w, map[string]any{"data": []any{}})
+		writeSearchList(w, nil, 0)
 		return "", false
 	}
 	return req.Keyword, true
@@ -89,7 +109,8 @@ func handleSearchSubjects(dd string) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		writeJSON(w, map[string]any{"data": searchAllJSON(dd, "subjects", keyword)})
+		results, total := searchAllJSON(dd, "subjects", keyword)
+		writeSearchList(w, results, total)
 	}
 }
 
@@ -99,7 +120,8 @@ func handleSearchCharacters(dd string) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		writeJSON(w, map[string]any{"data": searchAllJSON(dd, "characters", keyword)})
+		results, total := searchAllJSON(dd, "characters", keyword)
+		writeSearchList(w, results, total)
 	}
 }
 
@@ -109,7 +131,8 @@ func handleSearchPersons(dd string) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		writeJSON(w, map[string]any{"data": searchAllJSON(dd, "persons", keyword)})
+		results, total := searchAllJSON(dd, "persons", keyword)
+		writeSearchList(w, results, total)
 	}
 }
 
@@ -120,13 +143,19 @@ func handleSearchTags(dd string) http.HandlerFunc {
 			return
 		}
 		tags := loadTags(dd)
-		var results []map[string]any
+		results := []map[string]any{}
 		ql := strings.ToLower(keyword)
+		total := 0
 		for name, info := range tags {
-			if strings.Contains(strings.ToLower(name), ql) {
-				results = append(results, map[string]any{"name": name, "count": info.Count})
+			if !strings.Contains(strings.ToLower(name), ql) {
+				continue
 			}
+			total++
+			if len(results) >= searchLimit {
+				continue
+			}
+			results = append(results, map[string]any{"name": name, "count": info.Count})
 		}
-		writeJSON(w, map[string]any{"data": results})
+		writeSearchList(w, results, total)
 	}
 }

@@ -144,11 +144,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items: { type: object }
+                $ref: "#/components/schemas/Paged_SearchItem"
   /api/v0/episodes: # 条目关联的剧集
     get:
       tags: [条目]
@@ -301,11 +297,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items: { type: object }
+                $ref: "#/components/schemas/Paged_SearchItem"
   # 人物
   /api/v0/persons/list: # 所有人物
     get:
@@ -417,11 +409,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items: { type: object }
+                $ref: "#/components/schemas/Paged_SearchItem"
   # 用户
   /api/v0/users/{username}: # 用户信息
     get:
@@ -573,11 +561,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items: { type: object }
+                $ref: "#/components/schemas/Paged_SearchItem"
   # 拉取
   /api/v0/fetch/subject: # 拉取条目
     post:
@@ -1205,6 +1189,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TrackerItem"
+
+    Paged_SearchItem:
+      type: object
+      properties:
+        total: { type: integer }
+        limit: { type: integer, example: 500 }
+        offset: { type: integer, example: 0 }
+        data:
+          type: array
+          items: { type: object }
 
     Paged_ActiveTask:
       type: object
