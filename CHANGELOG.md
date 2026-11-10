@@ -1,5 +1,31 @@
 # Changelog
 
+## [v2.0.0-dev.1] - 2026-11-10
+
+### Breaking Changes
+
+- 用户数据从 `user/info` 移到 `data/user`
+- 收藏文件改为完整条目结构
+- 错误响应改为 `{title, description, details, request_id}`
+- 私有列表改为 `{total, limit, offset, data}`
+- `/stats` 的 `cache_entries` 改为 `data_entries`
+
+### Added
+
+- 错误响应附带 `X-Request-ID`
+- 剧集端点支持分页
+- 收藏支持摘要视图和筛选
+- 图片按尺寸回退，详情注入 `images`
+- 头像的三个尺寸指向同一张图片
+
+### Changed
+
+- 404 返回 JSON，请求体超限返回 413，ELO 数据不足返回 409
+- `/elo/ranking` 的 `entries` 改为 `data`
+- 用户端点校验路径 username
+- 本地图片接口返回 200 和文件本身
+- 本地数据层包名从 `cache` 改为 `store`
+
 ## [v1.5.0] - 2026-11-09
 
 > 此版本是 1.x 的最后一个版本。
