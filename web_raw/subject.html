@@ -61,22 +61,32 @@
             var epCount = 0,
                 charCount = 0,
                 persCount = 0;
+            var _myColl = null;
+            var _myCollLoaded = false;
 
-            function loadCollectionBadge() {
-                if (!window.USERNAME || !SID) return;
-                api(
-                    "/v0/users/" + window.USERNAME + "/collections?view=summary"
-                ).then(function (d) {
-                    if (!d || !d.data) return;
+            async function loadMyCollection() {
+                if (_myCollLoaded) return _myColl;
+                _myCollLoaded = true;
+                if (!window.USERNAME || !SID) return null;
+                try {
+                    var d = await api(
+                        "/v0/users/" +
+                            window.USERNAME +
+                            "/collections?view=summary"
+                    );
+                    if (!d || !d.data) return null;
                     for (var i = 0; i < d.data.length; i++) {
                         if (String(d.data[i].subject_id) !== String(SID)) {
                             continue;
                         }
-                        var el = document.getElementById("subject-coll");
-                        if (el) el.innerHTML = collBadge(d.data[i].type);
-                        return;
+                        _myColl = {
+                            type: d.data[i].type,
+                            rate: d.data[i].rate
+                        };
+                        break;
                     }
-                });
+                } catch (_) {}
+                return _myColl;
             }
 
             function switchTab(t) {
@@ -166,7 +176,6 @@
                                       "</span>"
                                 : "";
                         })() +
-                        '<span id="subject-coll" class="shrink-0"></span>' +
                         (escapeHtml(s.platform)
                             ? '<span class="text-sub text-xs shrink-0">｜</span><span class="text-xs text-sub shrink-0">' +
                               escapeHtml(s.platform) +
@@ -179,8 +188,9 @@
                         '<span class="flex gap-0 shrink-0 ml-2">' +
                         tabsHtml() +
                         "</span></div>";
-                    loadCollectionBadge();
-                    if (tab === "overview") await overview(s, infoItems);
+                    var myColl = await loadMyCollection();
+                    if (tab === "overview")
+                        await overview(s, infoItems, myColl);
                     else if (tab === "ep") await episodes();
                     else if (tab === "chars") await characters();
                     else if (tab === "persons") await personsList();
@@ -193,7 +203,10 @@
                 }
             }
 
-            async function overview(s, infoItems) {
+            async function overview(s, infoItems, myColl) {
+                var myRate =
+                    myColl && myColl.rate > 0 ? Number(myColl.rate) : 0;
+                var myType = myColl ? COLL_TYPES[myColl.type] || "" : "";
                 var epsRaw = await api("/v0/episodes?subject_id=" + SID);
                 var charsRaw = await api("/v0/subjects/" + SID + "/characters");
                 var relsRaw = await api("/v0/subjects/" + SID + "/subjects");
@@ -389,7 +402,13 @@
                                 : "0.0";
                         histHtml +=
                             '<div class="flex-1 flex flex-col items-center justify-end group relative" style="height:100%">' +
-                            '<span class="block w-full bg-pink rounded-t-sm group-hover:bg-pink transition-colors" style="height:' +
+                            '<span data-score="' +
+                            i +
+                            '" class="block w-full rounded-t-sm transition-colors ' +
+                            (myRate === i
+                                ? "bg-pink"
+                                : "bg-pink/40 group-hover:bg-pink/70") +
+                            '" style="height:' +
                             h +
                             '%"></span>' +
                             '<div class="absolute bottom-full mb-1 hidden group-hover:block z-50">' +
@@ -504,7 +523,7 @@
                 html += '<div class="px-4 pt-3 pb-2">';
                 if (eloInfo && eloInfo.rating) {
                     html +=
-                        '<div class="text-xs text-sub text-center">ELO Rating</div>';
+                        '<div class="text-xs text-sub text-center">ELO 评分</div>';
                     html +=
                         '<div class="flex items-baseline justify-center"><span class="text-3xl font-bold">' +
                         (eloInfo.rating || 0).toFixed(1) +
@@ -514,8 +533,25 @@
                     html +=
                         '<div class="border-t border-bord mt-2 mb-2"></div>';
                 }
+                if (myColl && (myRate > 0 || myType)) {
+                    html +=
+                        '<div class="flex items-center justify-center gap-2">' +
+                        '<span class="text-xs text-sub">我的状态</span>' +
+                        (myType
+                            ? '<span class="text-xs text-sub">' +
+                              myType +
+                              "</span>"
+                            : "") +
+                        "</div>";
+                    html +=
+                        '<div class="flex items-baseline justify-center gap-2 mt-1"><span class="text-3xl font-bold">' +
+                        (myRate > 0 ? myRate : "-") +
+                        '</span><span class="text-xs text-sub">/ 10</span></div>';
+                    html +=
+                        '<div class="border-t border-bord mt-2 mb-2"></div>';
+                }
                 html +=
-                    '<div class="text-xs text-sub text-center">BGM Rank</div>';
+                    '<div class="text-xs text-sub text-center">番组计划评分</div>';
                 html +=
                     '<div class="flex items-baseline justify-center"><span class="text-3xl font-bold">' +
                     scoreHtml +
