@@ -24,6 +24,7 @@ type Progress struct {
 	Phases    int    `json:"phases"` // total number of phases
 	PhaseName string `json:"name"`   // human-readable phase name, e.g. "下载角色图像"
 	started   time.Time
+	closed    bool
 	mu        sync.Mutex
 }
 
@@ -36,9 +37,7 @@ func taskLocked() bool {
 	progressMu.Lock()
 	defer progressMu.Unlock()
 	for _, p := range progressMap {
-		select {
-		case <-p.Channel:
-		default:
+		if !p.Closed() {
 			return true
 		}
 	}
@@ -68,6 +67,13 @@ func newProgress(total int, task, label string) *Progress {
 }
 
 func (p *Progress) Close() {
+	p.mu.Lock()
+	if p.closed {
+		p.mu.Unlock()
+		return
+	}
+	p.closed = true
+	p.mu.Unlock()
 	select {
 	case p.Channel <- `{"step":"done","status":"closed"}`:
 	default:
@@ -78,6 +84,13 @@ func (p *Progress) Close() {
 		delete(progressMap, p.ID)
 		progressMu.Unlock()
 	})
+}
+
+// Closed 返回任务是否已经结束
+func (p *Progress) Closed() bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.closed
 }
 
 func (p *Progress) SetError(msg string) {
@@ -136,10 +149,8 @@ func activeTasks() []map[string]string {
 	defer progressMu.Unlock()
 	var tasks []map[string]string
 	for _, p := range progressMap {
-		select {
-		case <-p.Channel:
+		if p.Closed() {
 			continue
-		default:
 		}
 		tasks = append(tasks, map[string]string{"id": p.ID, "task": p.Task, "label": p.Label})
 	}
