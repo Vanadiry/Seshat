@@ -9,127 +9,281 @@
         <script src="/assets/theme.min.js"></script>
         <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
         <link rel="stylesheet" href="/assets/style.css" />
+        <style>
+            .radio-pink {
+                appearance: none;
+                -webkit-appearance: none;
+                width: 16px;
+                height: 16px;
+                border: 2px solid var(--c-sub);
+                border-radius: 9999px;
+                background: transparent;
+                cursor: pointer;
+                position: relative;
+                flex: none;
+            }
+            .radio-pink:checked {
+                border-color: var(--c-pink);
+            }
+            .radio-pink:checked::after {
+                content: "";
+                position: absolute;
+                inset: 3px;
+                border-radius: 9999px;
+                background: var(--c-pink);
+            }
+            .radio-pink:focus-visible {
+                outline: 2px solid var(--c-pink);
+                outline-offset: 2px;
+            }
+        </style>
     </head>
     <body class="text-text font-[system-ui] min-h-screen">
         <div id="topbar"></div>
 
-        <main class="max-w-[720px] mx-auto p-6">
-            <section class="mb-8">
-                <div class="flex items-center gap-2 mb-3">
-                    <span class="w-[3px] h-[18px] bg-pink rounded-sm"></span>
-                    <h2 class="font-bold text-sm">拉取</h2>
+        <main class="max-w-[1000px] mx-auto p-6">
+            <div class="flex flex-col sm:flex-row gap-8">
+                <div class="flex-1 min-w-0">
+                    <section class="mb-8 sm:mb-0">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span
+                                class="w-[3px] h-[18px] bg-pink rounded-sm"
+                            ></span>
+                            <h2 class="font-bold text-sm">拉取</h2>
+                        </div>
+
+                        <div class="text-xs text-sub mb-2">来源</div>
+                        <div class="flex flex-col gap-2 mb-3">
+                            <label
+                                class="flex items-center gap-2 cursor-pointer"
+                            >
+                                <input
+                                    type="radio"
+                                    name="fetch-source"
+                                    value="tracker_new"
+                                    class="radio-pink"
+                                />
+                                所有 Tracker 中的新增 ID
+                            </label>
+                            <label
+                                class="flex items-center gap-2 cursor-pointer"
+                            >
+                                <input
+                                    type="radio"
+                                    name="fetch-source"
+                                    value="tracker_all"
+                                    class="radio-pink"
+                                />
+                                所有 Tracker
+                            </label>
+                            <label
+                                class="flex items-center gap-2 cursor-pointer"
+                            >
+                                <input
+                                    type="radio"
+                                    name="fetch-source"
+                                    value="tracker_names"
+                                    class="radio-pink"
+                                />
+                                指定 Tracker
+                            </label>
+                            <div
+                                id="row-fetch-names"
+                                style="display: none"
+                                class="ml-6 flex items-stretch gap-2"
+                            >
+                                <input
+                                    id="fetch-names"
+                                    placeholder="Tracker 名称，逗号分隔"
+                                    class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm"
+                                />
+                                <button
+                                    id="btn-add-trackers"
+                                    type="button"
+                                    title="添加 Tracker"
+                                    aria-label="添加 Tracker"
+                                    class="w-9 shrink-0 rounded-lg border border-bord bg-transparent text-sub text-lg leading-none cursor-pointer hover:bg-active hover:text-text flex items-center justify-center"
+                                >
+                                    +
+                                </button>
+                            </div>
+                            <label
+                                class="flex items-center gap-2 cursor-pointer"
+                            >
+                                <input
+                                    type="radio"
+                                    name="fetch-source"
+                                    value="ids"
+                                    checked
+                                    class="radio-pink"
+                                />
+                                指定 ID
+                            </label>
+                            <div
+                                id="row-fetch-ids"
+                                style="display: none"
+                                class="ml-6"
+                            >
+                                <input
+                                    id="fetch-ids"
+                                    placeholder="动画 ID，如 51 或 51, 288"
+                                    class="w-full px-3 py-2 rounded-lg border border-bord bg-input text-sm"
+                                />
+                            </div>
+                            <label
+                                class="flex items-center gap-2 cursor-pointer"
+                            >
+                                <input
+                                    type="radio"
+                                    name="fetch-source"
+                                    value="local"
+                                    class="radio-pink"
+                                />
+                                本地存在的条目
+                            </label>
+                        </div>
+
+                        <div class="text-xs text-sub mb-2">JSON</div>
+                        <div class="flex flex-col gap-2 mb-3">
+                            <label
+                                class="flex items-center gap-2 cursor-pointer"
+                            >
+                                <input
+                                    type="radio"
+                                    name="fetch-json"
+                                    value="fill"
+                                    checked
+                                    class="radio-pink"
+                                />
+                                补充缺失
+                            </label>
+                            <label
+                                class="flex items-center gap-2 cursor-pointer"
+                            >
+                                <input
+                                    type="radio"
+                                    name="fetch-json"
+                                    value="overwrite"
+                                    class="radio-pink"
+                                />
+                                全量下载并覆盖
+                            </label>
+                        </div>
+
+                        <div class="text-xs text-sub mb-2">图片</div>
+                        <div class="flex flex-col gap-2 mb-3">
+                            <label
+                                class="flex items-center gap-2 cursor-pointer"
+                            >
+                                <input
+                                    type="radio"
+                                    name="fetch-images"
+                                    value="none"
+                                    class="radio-pink"
+                                />
+                                跳过
+                            </label>
+                            <label
+                                class="flex items-center gap-2 cursor-pointer"
+                            >
+                                <input
+                                    type="radio"
+                                    name="fetch-images"
+                                    value="fill"
+                                    checked
+                                    class="radio-pink"
+                                />
+                                补充缺失
+                            </label>
+                            <label
+                                class="flex items-center gap-2 cursor-pointer"
+                            >
+                                <input
+                                    type="radio"
+                                    name="fetch-images"
+                                    value="overwrite"
+                                    class="radio-pink"
+                                />
+                                全量下载并覆盖
+                            </label>
+                        </div>
+
+                        <button
+                            id="btn-page-fetch"
+                            class="w-full px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90"
+                        >
+                            开始拉取
+                        </button>
+                    </section>
                 </div>
 
-                <div class="text-xs text-sub mb-2">来源</div>
-                <div class="flex flex-col gap-2 mb-3">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="fetch-source" value="tracker_new" checked class="cursor-pointer" style="accent-color: var(--c-pink)" />
-                        所有 Tracker 的新增 ID
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="fetch-source" value="tracker_all" class="cursor-pointer" style="accent-color: var(--c-pink)" />
-                        全部 Tracker
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="fetch-source" value="tracker_names" class="cursor-pointer" style="accent-color: var(--c-pink)" />
-                        指定 Tracker
-                    </label>
-                    <div id="row-fetch-names" style="display: none" class="ml-6">
-                        <input id="fetch-names" placeholder="Tracker 名称，逗号分隔" class="w-full px-3 py-2 rounded-lg border border-bord bg-input text-sm" />
-                    </div>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="fetch-source" value="ids" class="cursor-pointer" style="accent-color: var(--c-pink)" />
-                        指定 ID
-                    </label>
-                    <div id="row-fetch-ids" style="display: none" class="ml-6">
-                        <input id="fetch-ids" placeholder="动画 ID，如 51 或 51, 288" class="w-full px-3 py-2 rounded-lg border border-bord bg-input text-sm" />
-                    </div>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="fetch-source" value="local" class="cursor-pointer" style="accent-color: var(--c-pink)" />
-                        已有条目补缺
-                    </label>
-                </div>
+                <div class="hidden sm:block w-px bg-bord-light shrink-0"></div>
 
-                <div class="text-xs text-sub mb-2">JSON</div>
-                <div class="flex flex-col gap-2 mb-3">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="fetch-json" value="fill" checked class="cursor-pointer" style="accent-color: var(--c-pink)" />
-                        只补缺失
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="fetch-json" value="overwrite" class="cursor-pointer" style="accent-color: var(--c-pink)" />
-                        覆盖已有
-                    </label>
-                </div>
+                <div class="flex-1 min-w-0">
+                    <section class="mb-8">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span
+                                class="w-[3px] h-[18px] bg-pink rounded-sm"
+                            ></span>
+                            <h2 class="font-bold text-sm">用户数据</h2>
+                        </div>
+                        <p class="text-xs text-sub mb-3">
+                            重新拉取当前用户的信息、头像和收藏，或把收藏导入为
+                            Tracker。
+                        </p>
+                        <div class="flex flex-col gap-2">
+                            <button
+                                id="btn-page-user"
+                                class="w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                            >
+                                刷新用户数据
+                            </button>
+                            <button
+                                id="btn-page-import"
+                                data-feature="tracker"
+                                class="w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                            >
+                                导入收藏为 Tracker
+                            </button>
+                        </div>
+                    </section>
 
-                <div class="text-xs text-sub mb-2">图片</div>
-                <div class="flex flex-col gap-2 mb-3">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="fetch-images" value="none" class="cursor-pointer" style="accent-color: var(--c-pink)" />
-                        不下载
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="fetch-images" value="fill" checked class="cursor-pointer" style="accent-color: var(--c-pink)" />
-                        只补缺失
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="fetch-images" value="overwrite" class="cursor-pointer" style="accent-color: var(--c-pink)" />
-                        覆盖已有
-                    </label>
+                    <section class="mb-8">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span
+                                class="w-[3px] h-[18px] bg-[#dc2626] rounded-sm"
+                            ></span>
+                            <h2 class="font-bold text-sm text-[#dc2626]">
+                                危险区
+                            </h2>
+                        </div>
+                        <p class="text-xs text-sub mb-3">
+                            这些操作会影响大量数据，请先确认。
+                        </p>
+                        <div class="flex flex-col gap-2">
+                            <button
+                                id="btn-page-index"
+                                class="w-full px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                            >
+                                重建索引
+                            </button>
+                            <button
+                                id="btn-page-elo"
+                                data-feature="elo"
+                                class="w-full px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                            >
+                                重建 ELO
+                            </button>
+                            <button
+                                id="btn-page-deep"
+                                class="w-full px-3 py-2 rounded-lg bg-[#dc2626] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90"
+                            >
+                                重建全部
+                            </button>
+                        </div>
+                    </section>
                 </div>
-
-                <p id="fetch-summary" class="text-xs text-sub mb-3"></p>
-                <button id="btn-page-fetch" class="px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">
-                    开始拉取
-                </button>
-            </section>
-
-            <section data-feature="tracker" class="mb-8">
-                <div class="flex items-center gap-2 mb-3">
-                    <span class="w-[3px] h-[18px] bg-pink rounded-sm"></span>
-                    <h2 class="font-bold text-sm">Tracker</h2>
-                </div>
-                <p class="text-xs text-sub mb-3">创建 Tracker，或把用户收藏导入为 Tracker。</p>
-                <div class="flex gap-2 mb-2">
-                    <input id="tracker-create-input" placeholder="Tracker 名称" pattern="[a-zA-Z0-9_\-]*" class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm" />
-                    <button id="btn-page-tracker-create" class="px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">
-                        创建
-                    </button>
-                </div>
-                <button id="btn-page-import" class="px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">
-                    导入收藏为 Tracker
-                </button>
-            </section>
-
-            <section class="mb-8">
-                <div class="flex items-center gap-2 mb-3">
-                    <span class="w-[3px] h-[18px] bg-pink rounded-sm"></span>
-                    <h2 class="font-bold text-sm">用户数据</h2>
-                </div>
-                <p class="text-xs text-sub mb-3">重新拉取当前用户的信息、头像和收藏。</p>
-                <button id="btn-page-user" class="px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">
-                    刷新用户数据
-                </button>
-            </section>
-
-            <section class="mb-8">
-                <div class="flex items-center gap-2 mb-3">
-                    <span class="w-[3px] h-[18px] bg-[#dc2626] rounded-sm"></span>
-                    <h2 class="font-bold text-sm text-[#dc2626]">危险区</h2>
-                </div>
-                <p class="text-xs text-sub mb-3">这些操作会影响大量数据，请先确认。</p>
-                <div class="flex flex-col gap-2">
-                    <button id="btn-page-index" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">
-                        重建索引
-                    </button>
-                    <button id="btn-page-elo" data-feature="elo" class="px-3 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text">
-                        重建 ELO
-                    </button>
-                    <button id="btn-page-deep" class="px-3 py-2 rounded-lg bg-[#dc2626] text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">
-                        重建全部
-                    </button>
-                </div>
-            </section>
+            </div>
         </main>
 
         <div
@@ -137,12 +291,20 @@
             class="fixed inset-0 bg-black/70 flex items-center justify-center z-[400] transition-opacity duration-200"
             style="display: none; opacity: 0"
         >
-            <div class="bg-surface-alt border border-bord rounded-lg p-5 w-[340px] max-w-[85vw]">
+            <div
+                class="bg-surface-alt border border-bord rounded-lg p-5 w-[340px] max-w-[85vw]"
+            >
                 <p id="confirm-msg" class="text-sm mb-4 leading-relaxed"></p>
-                <button id="btn-confirm-exec" class="w-full px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 mb-2">
+                <button
+                    id="btn-confirm-exec"
+                    class="w-full px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 mb-2"
+                >
                     执行
                 </button>
-                <button id="btn-confirm-cancel" class="w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active">
+                <button
+                    id="btn-confirm-cancel"
+                    class="w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active"
+                >
                     取消
                 </button>
             </div>
@@ -182,30 +344,6 @@
                     source === "tracker_names" ? "" : "none";
                 document.getElementById("row-fetch-ids").style.display =
                     source === "ids" ? "" : "none";
-                var sourceLabel = {
-                    tracker_new: "所有 Tracker 的新增 ID",
-                    tracker_all: "全部 Tracker",
-                    tracker_names: "指定 Tracker",
-                    ids: "指定 ID",
-                    local: "已有条目补缺"
-                }[source];
-                var jsonLabel =
-                    radioValue("fetch-json") === "fill"
-                        ? "只补缺失"
-                        : "覆盖已有";
-                var imagesLabel = {
-                    none: "不下载",
-                    fill: "只补缺失",
-                    overwrite: "覆盖已有"
-                }[radioValue("fetch-images")];
-                document.getElementById("fetch-summary").textContent =
-                    "来源：" +
-                    sourceLabel +
-                    "，JSON：" +
-                    jsonLabel +
-                    "，图片：" +
-                    imagesLabel +
-                    "，结束后重建索引";
             }
 
             async function startFetch() {
@@ -249,26 +387,51 @@
                 }
             }
 
-            function createTracker() {
-                var input = document.getElementById("tracker-create-input");
-                var name = input.value.trim();
-                if (!name) return;
-                if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
-                    showError(MSG.errInvalidTrackerName);
+            async function addTrackers() {
+                var names = splitList(
+                    document.getElementById("fetch-names").value
+                );
+                if (!names.length) {
+                    showError("请填写 Tracker 名称");
                     return;
                 }
-                confirmAction(MSG.confirmTrackerCreate(name), function () {
-                    fetch(API + "/v0/tracker/create", {
+                for (var i = 0; i < names.length; i++) {
+                    if (!/^[a-zA-Z0-9_-]+$/.test(names[i])) {
+                        showError(MSG.errInvalidTrackerName);
+                        return;
+                    }
+                }
+                var created = 0,
+                    existed = 0,
+                    failed = 0;
+                for (var i = 0; i < names.length; i++) {
+                    var r = await fetch(API + "/v0/tracker/create", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ name: name })
-                    }).then(function (r) {
-                        return r.json().then(function (d) {
-                            if (!r.ok) showError(errText(d, r.status));
-                            else showSuccess(MSG.trackerCreated(name));
-                        });
+                        body: JSON.stringify({ name: names[i] })
                     });
-                });
+                    if (r.ok) created++;
+                    else if (r.status === 409) existed++;
+                    else failed++;
+                }
+                if (failed > 0) {
+                    showWarn(
+                        "已添加 " +
+                            created +
+                            " 个，已存在 " +
+                            existed +
+                            " 个，失败 " +
+                            failed +
+                            " 个"
+                    );
+                } else {
+                    showSuccess(
+                        "已添加 " +
+                            created +
+                            " 个 Tracker" +
+                            (existed > 0 ? "，已存在 " + existed + " 个" : "")
+                    );
+                }
             }
 
             (async () => {
@@ -291,13 +454,8 @@
                 updateFetchRows();
 
                 document.getElementById("btn-page-fetch").onclick = startFetch;
-                document.getElementById("btn-page-tracker-create").onclick =
-                    createTracker;
-                document
-                    .getElementById("tracker-create-input")
-                    .addEventListener("keydown", function (e) {
-                        if (e.key === "Enter") createTracker();
-                    });
+                document.getElementById("btn-add-trackers").onclick =
+                    addTrackers;
 
                 document.getElementById("btn-page-import").onclick =
                     function () {
@@ -323,10 +481,9 @@
                         doRebuildELO
                     );
                 };
-                document.getElementById("btn-page-deep").onclick =
-                    function () {
-                        confirmAction(MSG.confirmRebuildAll(), doDeepRebuild);
-                    };
+                document.getElementById("btn-page-deep").onclick = function () {
+                    confirmAction(MSG.confirmRebuildAll(), doDeepRebuild);
+                };
                 document.getElementById("btn-confirm-cancel").onclick =
                     closeConfirm;
             })();
