@@ -48,14 +48,6 @@ macOS 和 Windows 建议使用 Desktop。Linux 请使用 Server。
 程序启动后，会自动拉起浏览器。  
 如果浏览器没有自动打开，请访问 `http://127.0.0.1:12500`。
 
-## 构建
+## 贡献
 
-分发包已经转向 GitHub Action。
-
-从源码构建，需要 `go`、`rust`、`pnpm`。
-
-```bash
-pnpm install
-python3 scripts/build.py server    # Seshat Server
-python3 scripts/build.py desktop   # Seshat Desktop
-```
+见 [CONTRIBUTING.md](/CONTRIBUTING.md)。
