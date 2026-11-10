@@ -59,23 +59,49 @@ func handleListPersons(dd string) http.HandlerFunc {
 	}
 }
 
+// dataRelatedFiles 列出兜底读取允许访问的关联文件
+var dataRelatedFiles = map[string]map[string]bool{
+	"subjects": {
+		"characters.json": true,
+		"persons.json":    true,
+		"subjects.json":   true,
+	},
+	"characters": {
+		"persons.json":  true,
+		"subjects.json": true,
+	},
+	"persons": {
+		"characters.json": true,
+		"subjects.json":   true,
+	},
+}
+
 func handleDataReader(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/api/v0/")
 		parts := strings.Split(strings.Trim(path, "/"), "/")
-		if len(parts) < 2 {
+		if len(parts) < 2 || len(parts) > 3 {
 			writeNotFound(w, r, "数据路径不合法")
 			return
 		}
 		domain := parts[0]
+		files, ok := dataRelatedFiles[domain]
+		if !ok {
+			writeNotFound(w, r, "数据路径不合法")
+			return
+		}
 		id, err := strconv.Atoi(parts[1])
-		if err != nil {
+		if err != nil || id <= 0 {
 			writeNotFound(w, r, "条目 ID 不合法")
 			return
 		}
 		file := "info.json"
-		if len(parts) >= 3 {
+		if len(parts) == 3 {
 			file = parts[2] + ".json"
+			if !files[file] {
+				writeNotFound(w, r, "数据路径不合法")
+				return
+			}
 		}
 		data, err := store.Get(dd, store.Key(domain, id, file))
 		if err != nil {
