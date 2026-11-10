@@ -79,6 +79,126 @@ document.addEventListener("dragstart", function (e) {
 
 const API = window.BACKEND_URL || "/api";
 
+// 能力清单，与后端 /v0/info 保持一致
+var CAPS_ALL = [
+    "elo",
+    "events",
+    "fetch",
+    "lists",
+    "names",
+    "search.characters",
+    "search.persons",
+    "search.subjects",
+    "stats",
+    "tags",
+    "task",
+    "tracker"
+];
+var CAPS_TTL = 10 * 60 * 1000;
+var CAPS_FAIL_TTL = 30 * 1000;
+var CAPS_KEY = "seshat_caps:" + API;
+var _caps = null;
+var _capsPromise = null;
+
+// 读取会话缓存，过期返回 null
+function _readCaps() {
+    try {
+        var raw = sessionStorage.getItem(CAPS_KEY);
+        if (!raw) return null;
+        var c = JSON.parse(raw);
+        if (!c || typeof c.at !== "number" || typeof c.ttl !== "number") {
+            return null;
+        }
+        if (Date.now() - c.at > c.ttl) return null;
+        return c;
+    } catch (_) {
+        return null;
+    }
+}
+
+// 写入会话缓存，失败结果到期后允许重试
+function _saveCaps(caps, ttl) {
+    caps.at = Date.now();
+    caps.ttl = ttl;
+    _caps = caps;
+    try {
+        sessionStorage.setItem(CAPS_KEY, JSON.stringify(caps));
+    } catch (_) {}
+    if (ttl === CAPS_FAIL_TTL) {
+        setTimeout(function () {
+            if (_caps === caps) {
+                _caps = null;
+                _capsPromise = null;
+            }
+        }, ttl);
+    }
+    return caps;
+}
+
+// 请求 /v0/info，5 秒超时
+async function _fetchCaps() {
+    var ctl = new AbortController();
+    var timer = setTimeout(function () {
+        ctl.abort();
+    }, 5000);
+    try {
+        var res = await fetch(API + "/v0/info", { signal: ctl.signal });
+        if (res.status === 404) {
+            return _saveCaps({ seshat: false, features: [] }, CAPS_TTL);
+        }
+        if (!res.ok) {
+            return _saveCaps({ seshat: false, features: [] }, CAPS_FAIL_TTL);
+        }
+        var body = await res.json();
+        if (!body || typeof body !== "object" || Array.isArray(body)) {
+            return _saveCaps({ seshat: false, features: [] }, CAPS_TTL);
+        }
+        var features = [];
+        if (Array.isArray(body.features)) {
+            features = body.features.filter(function (f) {
+                return typeof f === "string";
+            });
+        }
+        return _saveCaps({ seshat: true, features: features }, CAPS_TTL);
+    } catch (_) {
+        return _saveCaps({ seshat: false, features: [] }, CAPS_FAIL_TTL);
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+// 探测远端能力，本地直接视为全部可用
+function probeCapabilities() {
+    if (_capsPromise) return _capsPromise;
+    if (!window.BACKEND_URL) {
+        _caps = { seshat: true, local: true, features: CAPS_ALL.slice() };
+        _capsPromise = Promise.resolve(_caps);
+        return _capsPromise;
+    }
+    var cached = _readCaps();
+    if (cached) {
+        _caps = cached;
+        _capsPromise = Promise.resolve(cached);
+        return _capsPromise;
+    }
+    _capsPromise = _fetchCaps();
+    return _capsPromise;
+}
+
+// 等待探测结束
+function capabilitiesReady() {
+    return probeCapabilities();
+}
+
+// 判断能力是否可用，探测完成前返回 false
+function hasFeature(name) {
+    if (!window.BACKEND_URL) return true;
+    return !!(_caps && _caps.seshat && _caps.features.indexOf(name) !== -1);
+}
+
+// 页面加载后异步探测，不阻塞渲染
+probeCapabilities();
+
 // 界面文案，弹窗提示在这里修改
 var MSG = {
     // 顶栏
