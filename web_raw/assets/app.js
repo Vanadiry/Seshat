@@ -262,6 +262,28 @@ async function apiFor(key, url) {
     return target === "local" ? apiLocal(url) : api(url);
 }
 
+// 隐藏缺能力的入口
+function applyFeatureVisibility(root) {
+    var nodes = (root || document).querySelectorAll("[data-feature]");
+    for (var i = 0; i < nodes.length; i++) {
+        if (resolve(nodes[i].getAttribute("data-feature")) === "hidden") {
+            nodes[i].style.display = "none";
+        }
+    }
+}
+
+// 页面能力检查，缺能力时显示提示并返回 false
+async function requireFeature(key) {
+    if (window.BACKEND_URL) await capabilitiesReady();
+    if (resolve(key) !== "hidden") return true;
+    var main = document.querySelector("main");
+    if (main) {
+        main.innerHTML =
+            '<div class="text-center py-24 text-sub">当前后端不支持此功能</div>';
+    }
+    return false;
+}
+
 // 界面文案，弹窗提示在这里修改
 var MSG = {
     // 顶栏
@@ -983,16 +1005,16 @@ document.addEventListener("DOMContentLoaded", () => {
           <a href="/" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/")}">动画</a>
           <a href="/characters" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/characters")}">角色</a>
           <a href="/persons" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/persons")}">人物</a>
-          <a href="/tags" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/tags")}">标签</a>
-          <a href="/stats" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/stats")}">统计</a>
+          <a href="/tags" data-feature="tags" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/tags")}">标签</a>
+          <a href="/stats" data-feature="stats" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/stats")}">统计</a>
         </nav>
         <div class="flex-1"></div>
         ${warnText ? '<span class="absolute left-1/2 -translate-x-1/2 text-[#FFCA28] text-sm font-bold pointer-events-none">' + warnText + "</span>" : ""}
         <nav class="flex gap-1 items-center">
-          <a href="/rating" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/rating")}">评分</a>
+          <a href="/rating" data-feature="elo" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/rating")}">评分</a>
           <a href="/search" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/search")}">搜索</a>
         </nav>
-        <button id="btn-fetch" class="px-4 py-1.5 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">管理数据</button>
+        <button id="btn-fetch" data-feature="fetch" class="px-4 py-1.5 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">管理数据</button>
         <div class="relative shrink-0">
           <div class="relative group w-8 h-8 shrink-0 cursor-pointer rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-pink" role="button" tabindex="0" aria-label="用户菜单" onclick="toggleUserMenu(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleUserMenu(event)}">
             <img id="user-avatar" src="" class="w-8 h-8 rounded-lg object-cover bg-surface shrink-0" style="display:none">
@@ -1023,6 +1045,10 @@ document.addEventListener("DOMContentLoaded", () => {
     </style>`;
 
     document.getElementById("btn-fetch").addEventListener("click", openFetch);
+
+    capabilitiesReady().then(function () {
+        applyFeatureVisibility(tb);
+    });
 
     getInstanceInfo().then(function (info) {
         if (!info || !info.repository) return;

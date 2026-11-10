@@ -79,7 +79,8 @@
             }
 
             (async () => {
-                var res = await api("/v0/tags");
+                if (!(await requireFeature("tags"))) return;
+                var res = await apiFor("tags", "/v0/tags");
                 allItems = (res && res.data) || [];
                 if (!allItems.length) {
                     document.getElementById("tags").innerHTML =

@@ -178,7 +178,7 @@
                 var epsRaw = await api("/v0/episodes?subject_id=" + SID);
                 var charsRaw = await api("/v0/subjects/" + SID + "/characters");
                 var relsRaw = await api("/v0/subjects/" + SID + "/subjects");
-                var eloData = await api("/v0/elo/ranking");
+                var eloData = await apiFor("elo", "/v0/elo/ranking");
                 var eps = Array.isArray(epsRaw)
                     ? epsRaw
                     : epsRaw && epsRaw.data

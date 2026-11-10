@@ -163,7 +163,7 @@
                     var subjects = (subjectsResp && subjectsResp.data) || [];
                     // 合并 ELO 与收藏数据
                     Promise.all([
-                        api("/v0/elo/ranking"),
+                        apiFor("elo", "/v0/elo/ranking"),
                         window.USERNAME
                             ? api(
                                   "/v0/users/" +

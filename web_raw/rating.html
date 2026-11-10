@@ -443,8 +443,11 @@
                 renderHistory();
             }
 
-            loadPair();
-            loadHistory();
+            (async () => {
+                if (!(await requireFeature("elo"))) return;
+                loadPair();
+                loadHistory();
+            })();
         </script>
     </body>
 </html>
