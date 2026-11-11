@@ -175,7 +175,7 @@
                             </label>
                         </div>
 
-                        <div class="text-xs text-sub mb-2">JSON</div>
+                        <div class="text-xs text-sub mb-2">详情数据</div>
                         <div class="flex flex-col gap-2 mb-3">
                             <label
                                 class="flex items-center gap-2 cursor-pointer"
@@ -184,7 +184,6 @@
                                     type="radio"
                                     name="fetch-json"
                                     value="fill"
-                                    checked
                                     class="radio-pink"
                                 />
                                 补充缺失
@@ -196,6 +195,7 @@
                                     type="radio"
                                     name="fetch-json"
                                     value="overwrite"
+                                    checked
                                     class="radio-pink"
                                 />
                                 全量下载并覆盖
@@ -222,7 +222,6 @@
                                     type="radio"
                                     name="fetch-images"
                                     value="fill"
-                                    checked
                                     class="radio-pink"
                                 />
                                 补充缺失
@@ -234,6 +233,7 @@
                                     type="radio"
                                     name="fetch-images"
                                     value="overwrite"
+                                    checked
                                     class="radio-pink"
                                 />
                                 全量下载并覆盖
@@ -709,7 +709,7 @@
                     lines.push("ID：" + body.ids.join("、"));
                 }
                 lines.push(
-                    "JSON：" +
+                    "详情数据：" +
                         (body.json === "fill" ? "补充缺失" : "全量下载并覆盖")
                 );
                 lines.push(
