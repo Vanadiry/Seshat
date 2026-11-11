@@ -203,6 +203,32 @@ html.light {
     background: var(--c-sub) !important;
 }
 
+/* 全局滚动条，与 thin-scroll 保持一致 */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-sub-dim) transparent;
+}
+*::-webkit-scrollbar {
+    height: 4px;
+    width: 4px;
+}
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+    background: var(--c-sub-dim);
+    border-radius: 2px;
+}
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--c-sub);
+}
+*::-webkit-scrollbar-corner {
+    background: transparent;
+}
+*::-webkit-scrollbar-button {
+    display: none;
+}
+
 /* 下拉箭头，深色模式 */
 select:where(.search-type, .custom-select) {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.52)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
