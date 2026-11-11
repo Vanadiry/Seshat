@@ -77,69 +77,85 @@ func loadTrackerName(path string) string {
 	return ""
 }
 
+// allTrackerFiles 返回 Tracker 目录下全部 TOML 和 JSON 文件
+func allTrackerFiles(td string) []string {
+	files, _ := filepath.Glob(filepath.Join(td, "*.json"))
+	files2, _ := filepath.Glob(filepath.Join(td, "*.toml"))
+	return append(files, files2...)
+}
+
+// trackerIDFromPath 返回 Tracker 文件名对应的 id
+func trackerIDFromPath(path string) string {
+	base := filepath.Base(path)
+	return strings.TrimSuffix(strings.TrimSuffix(base, ".json"), ".toml")
+}
+
+// trackerIDsFromPaths 合并多个 Tracker 文件的 ID 并去重
+func trackerIDsFromPaths(paths []string) []int {
+	seen := map[int]bool{}
+	var ids []int
+	for _, path := range paths {
+		for _, sid := range loadTrackerIDs(path) {
+			if sid > 0 && !seen[sid] {
+				seen[sid] = true
+				ids = append(ids, sid)
+			}
+		}
+	}
+	return ids
+}
+
+// trackerIDsByID 返回指定 Tracker id 的全部 ID，同名 TOML 和 JSON 取并集
+func trackerIDsByID(cfg *config.Config, id string) []int {
+	return trackerIDsFromPaths(trackerFilePaths(cfg.TrackerDir(), id))
+}
+
+// allTrackerIDs 返回全部 Tracker 的 ID 并集
+func allTrackerIDs(cfg *config.Config) []int {
+	return trackerIDsFromPaths(allTrackerFiles(cfg.TrackerDir()))
+}
+
 // loadTrackerInfos 扫描并合并同名 TOML 和 JSON，按 id 排序
 func loadTrackerInfos(cfg *config.Config) []trackerInfo {
 	td := cfg.TrackerDir()
-	files, _ := filepath.Glob(filepath.Join(td, "*.json"))
-	files2, _ := filepath.Glob(filepath.Join(td, "*.toml"))
-	files = append(files, files2...)
-
-	type merged struct {
-		ids       map[int]bool
-		jsonName  string
-		tomlName  string
-		hasManual bool
-	}
-	byID := map[string]*merged{}
-	for _, path := range files {
-		base := filepath.Base(path)
-		id := strings.TrimSuffix(strings.TrimSuffix(base, ".json"), ".toml")
+	byID := map[string]bool{}
+	for _, path := range allTrackerFiles(td) {
+		id := trackerIDFromPath(path)
 		if id == "" || strings.HasPrefix(id, ".") {
 			continue
 		}
-		e := byID[id]
-		if e == nil {
-			e = &merged{ids: map[int]bool{}}
-			byID[id] = e
-		}
-		manual := strings.HasSuffix(path, ".toml")
-		if manual {
-			e.hasManual = true
-		}
-		for _, sid := range loadTrackerIDs(path) {
-			if sid > 0 {
-				e.ids[sid] = true
-			}
-		}
-		name := loadTrackerName(path)
-		if name == "" {
-			continue
-		}
-		if manual {
-			e.tomlName = name
-		} else if e.jsonName == "" {
-			e.jsonName = name
-		}
+		byID[id] = true
 	}
 
 	infos := make([]trackerInfo, 0, len(byID))
-	for id, e := range byID {
-		name := e.tomlName
+	for id := range byID {
+		paths := trackerFilePaths(td, id)
+		name := ""
+		typ := trackerTypeAuto
+		for _, path := range paths {
+			if strings.HasSuffix(path, ".toml") {
+				typ = trackerTypeManual
+				if n := loadTrackerName(path); n != "" {
+					name = n
+				}
+			}
+		}
 		if name == "" {
-			name = e.jsonName
+			for _, path := range paths {
+				if strings.HasSuffix(path, ".json") {
+					name = loadTrackerName(path)
+					break
+				}
+			}
 		}
 		if name == "" {
 			name = id
-		}
-		typ := trackerTypeAuto
-		if e.hasManual {
-			typ = trackerTypeManual
 		}
 		infos = append(infos, trackerInfo{
 			ID:    id,
 			Name:  name,
 			Type:  typ,
-			Count: len(e.ids),
+			Count: len(trackerIDsFromPaths(paths)),
 		})
 	}
 	sort.Slice(infos, func(i, j int) bool { return infos[i].ID < infos[j].ID })
@@ -147,32 +163,12 @@ func loadTrackerInfos(cfg *config.Config) []trackerInfo {
 }
 
 func countTrackerTotal(cfg *config.Config) int {
-	files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
-	files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
-	files = append(files, files2...)
-	seen := map[int]bool{}
-	for _, f := range files {
-		for _, sid := range loadTrackerIDs(f) {
-			seen[sid] = true
-		}
-	}
-	return len(seen)
+	return len(allTrackerIDs(cfg))
 }
 
 // countTrackerNames 统计指定 tracker 列表中的条目总数
 func countTrackerNames(cfg *config.Config, names []string) int {
-	td := cfg.TrackerDir()
-	seen := map[int]bool{}
-	for _, name := range names {
-		for _, path := range trackerFilePaths(td, name) {
-			for _, sid := range loadTrackerIDs(path) {
-				if sid > 0 {
-					seen[sid] = true
-				}
-			}
-		}
-	}
-	return len(seen)
+	return len(trackerIDsByNames(cfg, names))
 }
 
 // clearContentData 删除内容数据，保留 data/user
@@ -194,22 +190,10 @@ func forceRefresh(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, p *
 
 // refreshAllTrackers 刷新全部 tracker 列表
 func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, p *Progress) {
-	files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
-	files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
-	files = append(files, files2...)
-	seen := map[int]bool{}
-	var allIDs []int
-	for _, f := range files {
-		for _, sid := range loadTrackerIDs(f) {
-			if !seen[sid] {
-				seen[sid] = true
-				allIDs = append(allIDs, sid)
-			}
-		}
-	}
+	allIDs := allTrackerIDs(cfg)
 	p.SetPhase(1, 5, "拉取动画数据")
 	fetchSubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
-	log.Info("all trackers refreshed", "subjects", len(seen))
+	log.Info("all trackers refreshed", "subjects", len(allIDs))
 	downloadImages(dd, bg, p, 2, 5, cfg.Server.ConcurrencyImage)
 	p.SetPhase(5, 5, "建立索引")
 	buildIndexes(dd, p)
@@ -217,26 +201,14 @@ func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 
 // refreshTrackers 刷新指定 tracker 列表
 func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, names []string, p *Progress) {
-	td := cfg.TrackerDir()
-	seen := map[int]bool{}
-	var allIDs []int
-	for _, name := range names {
-		for _, path := range trackerFilePaths(td, name) {
-			for _, sid := range loadTrackerIDs(path) {
-				if sid > 0 && !seen[sid] {
-					seen[sid] = true
-					allIDs = append(allIDs, sid)
-				}
-			}
-		}
-	}
+	allIDs := trackerIDsByNames(cfg, names)
 	if len(allIDs) == 0 {
 		log.Warn("refreshTrackers: no IDs found", "names", names)
 		return
 	}
 	p.SetPhase(1, 5, "拉取动画数据")
 	fetchSubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
-	log.Info("trackers refreshed", "names", names, "subjects", len(seen))
+	log.Info("trackers refreshed", "names", names, "subjects", len(allIDs))
 	downloadImages(dd, bg, p, 2, 5, cfg.Server.ConcurrencyImage)
 	p.SetPhase(5, 5, "建立索引")
 	buildIndexes(dd, p)
@@ -365,18 +337,7 @@ func parseIDList(s string, ids *[]int) {
 
 // diffTrackerIDs 返回 tracker 中有但本地没有的 ID
 func diffTrackerIDs(cfg *config.Config, dd string) []int {
-	seen := map[int]bool{}
-	var allIDs []int
-	files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
-	files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
-	for _, f := range append(files, files2...) {
-		for _, sid := range loadTrackerIDs(f) {
-			if !seen[sid] {
-				seen[sid] = true
-				allIDs = append(allIDs, sid)
-			}
-		}
-	}
+	allIDs := allTrackerIDs(cfg)
 	// 读取已有条目 ID
 	existing := map[int]bool{}
 	if list, err := loadCachedIndex[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json")); err == nil {

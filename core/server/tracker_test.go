@@ -1,12 +1,14 @@
 package server
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"sort"
 	"testing"
 
 	"github.com/vanadiry/seshat/core/config"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 func TestClearContentDataKeepsUser(t *testing.T) {
@@ -86,6 +88,28 @@ func TestTrackerQueriesMergeFormats(t *testing.T) {
 	}
 	if got := countTrackerNames(cfg, []string{"user"}); got != 3 {
 		t.Fatalf("合并后的条目数 = %d", got)
+	}
+	allIDs := allTrackerIDs(cfg)
+	sort.Ints(allIDs)
+	if len(allIDs) != 3 || allIDs[0] != 1 || allIDs[1] != 2 || allIDs[2] != 3 {
+		t.Fatalf("全部 Tracker 的 ID 不对: %v", allIDs)
+	}
+	if got := countTrackerTotal(cfg); got != 3 {
+		t.Fatalf("全部 Tracker 的条目数 = %d", got)
+	}
+
+	dd := t.TempDir()
+	index, err := json.Marshal([]store.SubjectSummary{{ID: 1}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.WriteAtomic(store.IndexFile(dd, "subjects.json"), index, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	newIDs := diffTrackerIDs(cfg, dd)
+	sort.Ints(newIDs)
+	if len(newIDs) != 2 || newIDs[0] != 2 || newIDs[1] != 3 {
+		t.Fatalf("增量 ID 不对: %v", newIDs)
 	}
 }
 

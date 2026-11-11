@@ -74,34 +74,14 @@ func (r *fetchRequest) validate() error {
 	return nil
 }
 
-func allTrackerIDs(cfg *config.Config) []int {
-	files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
-	files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
-	files = append(files, files2...)
-	seen := map[int]bool{}
-	var ids []int
-	for _, f := range files {
-		for _, sid := range loadTrackerIDs(f) {
-			if !seen[sid] {
-				seen[sid] = true
-				ids = append(ids, sid)
-			}
-		}
-	}
-	return ids
-}
-
 func trackerIDsByNames(cfg *config.Config, names []string) []int {
-	td := cfg.TrackerDir()
 	seen := map[int]bool{}
 	var ids []int
 	for _, name := range names {
-		for _, path := range trackerFilePaths(td, name) {
-			for _, sid := range loadTrackerIDs(path) {
-				if sid > 0 && !seen[sid] {
-					seen[sid] = true
-					ids = append(ids, sid)
-				}
+		for _, sid := range trackerIDsByID(cfg, name) {
+			if !seen[sid] {
+				seen[sid] = true
+				ids = append(ids, sid)
 			}
 		}
 	}
