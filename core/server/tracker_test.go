@@ -260,7 +260,7 @@ func TestImportCollectionsKeepsUserTOML(t *testing.T) {
 
 	code, body := importCollections(t, dd)
 	if code != http.StatusOK || body["count"] != float64(2) {
-		t.Fatalf("导入结果 = %d %v", code, body)
+		t.Fatalf("同步结果 = %d %v", code, body)
 	}
 	data, err := os.ReadFile(filepath.Join(td, "user.toml"))
 	if err != nil {
@@ -303,7 +303,7 @@ func TestImportCollectionsCreatesAutoUserJSON(t *testing.T) {
 
 	code, body := importCollections(t, dd)
 	if code != http.StatusOK || body["count"] != float64(1) {
-		t.Fatalf("导入结果 = %d %v", code, body)
+		t.Fatalf("同步结果 = %d %v", code, body)
 	}
 	infos := loadTrackerInfos(cfg)
 	if len(infos) != 1 || infos[0].ID != "user" || infos[0].Type != trackerTypeAuto || infos[0].Count != 1 {

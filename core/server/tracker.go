@@ -493,7 +493,7 @@ func handleImportCollections(dd string) http.HandlerFunc {
 		trackerData, err := json.Marshal(map[string]any{"name": "user", "subjects": ids})
 		if err != nil {
 			log.Error("import collections marshal", "err", err)
-			events.Bus.Error("收藏列表导入失败")
+			events.Bus.Error("收藏列表同步失败")
 			writeError(w, r, 500, "internal error")
 			return
 		}

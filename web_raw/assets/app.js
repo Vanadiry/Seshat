@@ -358,7 +358,7 @@ var MSG = {
     // 管理操作
     btnCancel: "取消",
     importCollDone: function (n) {
-        return "已将 " + n + " 个条目导入至 tracker/user.json";
+        return "已同步 " + n + " 个条目到 tracker/user.json";
     },
 
     // 确认提示

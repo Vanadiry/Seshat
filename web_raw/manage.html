@@ -260,7 +260,7 @@
                             <h2 class="font-bold text-sm">用户数据</h2>
                         </div>
                         <p class="text-xs text-sub mb-3">
-                            重新拉取当前用户的信息、头像和收藏，或把收藏导入为
+                            重新拉取当前用户的信息、头像和收藏，或把收藏同步到
                             Tracker。
                         </p>
                         <div class="flex flex-col gap-2">
@@ -275,7 +275,7 @@
                                 data-feature="tracker"
                                 class="w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
                             >
-                                导入收藏为 Tracker
+                                同步收藏到 Tracker
                             </button>
                         </div>
                     </section>
@@ -1127,7 +1127,7 @@
                 document.getElementById("btn-page-import").onclick =
                     function () {
                         confirmAction(
-                            "将用户收藏列表导入为 Tracker，之后可参与其他拉取行为。",
+                            "将用当前收藏列表重建 user.json。\nuser.toml 不受影响。\n已取消收藏的条目会从 user.json 移除。",
                             doImportCollections
                         );
                     };

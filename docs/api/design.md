@@ -73,7 +73,7 @@
 - `limit` 范围 1 到 100，不传返回全部
 - `?view=summary` 返回 `{total, data}`
 
-Tracker 导入和统计页只处理 `subject_type=2` 的动画收藏。旧版 `{subjects: {id: type}}` 需要重新执行“刷新用户数据”。
+Tracker 同步和统计页只处理 `subject_type=2` 的动画收藏。旧版 `{subjects: {id: type}}` 需要重新执行“刷新用户数据”。
 
 ## 私有列表
 

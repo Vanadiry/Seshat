@@ -943,14 +943,14 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "409":
           $ref: "#/components/responses/Conflict"
-  /api/v0/tracker/import-collections: # 以用户收藏创建Tracker
+  /api/v0/tracker/import-collections: # 同步收藏到Tracker
     post:
       tags: [Tracker]
-      summary: 以用户收藏创建Tracker
-      description: 将用户收藏的条目创建Tracker。
+      summary: 同步收藏到Tracker
+      description: 用当前用户收藏重建 `tracker/user.json`。`user.toml` 不受影响，已取消收藏的条目会从 `user.json` 移除。
       responses:
         "200":
-          description: 导入成功
+          description: 同步成功
           content:
             application/json:
               schema:
