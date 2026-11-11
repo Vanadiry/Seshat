@@ -460,7 +460,7 @@ func handleImportCollections(dd string) http.HandlerFunc {
 			return
 		}
 		seen := map[int]bool{}
-		var ids []int
+		ids := make([]int, 0, len(coll.Data))
 		for _, item := range coll.Data {
 			if item.SubjectType != 2 || item.SubjectID <= 0 || seen[item.SubjectID] {
 				continue

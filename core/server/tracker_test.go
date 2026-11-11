@@ -229,3 +229,93 @@ func TestTrackerListIgnoresInvalidIDs(t *testing.T) {
 		t.Fatalf("不合法 id 不应出现在列表: %+v", infos)
 	}
 }
+
+func importCollections(t *testing.T, dd string) (int, map[string]any) {
+	t.Helper()
+	w := httptest.NewRecorder()
+	handleImportCollections(dd)(w, httptest.NewRequest(http.MethodPost, "/api/v0/tracker/import-collections", nil))
+	var body map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	return w.Code, body
+}
+
+func TestImportCollectionsKeepsUserTOML(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("SESHAT_HOME", home)
+	cfg := &config.Config{}
+	td := cfg.TrackerDir()
+	original := "# Tracker: user\nname = \"我的追番\"\nids = [1]\n"
+	writeTrackerTestFile(t, td, "user.toml", original)
+
+	dd := filepath.Join(home, "data")
+	writeTrackerTestFile(t, userDir(dd), "collections.json", `{"data":[
+		{"subject_id":2,"subject_type":2},
+		{"subject_id":3,"subject_type":2},
+		{"subject_id":2,"subject_type":2},
+		{"subject_id":4,"subject_type":1},
+		{"subject_id":0,"subject_type":2}
+	]}`)
+
+	code, body := importCollections(t, dd)
+	if code != http.StatusOK || body["count"] != float64(2) {
+		t.Fatalf("导入结果 = %d %v", code, body)
+	}
+	data, err := os.ReadFile(filepath.Join(td, "user.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != original {
+		t.Fatalf("user.toml 被修改: %s", data)
+	}
+	var imported struct {
+		Name     string `json:"name"`
+		Subjects []int  `json:"subjects"`
+	}
+	raw, err := os.ReadFile(filepath.Join(td, "user.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &imported); err != nil {
+		t.Fatal(err)
+	}
+	if imported.Name != "user" || len(imported.Subjects) != 2 || imported.Subjects[0] != 2 || imported.Subjects[1] != 3 {
+		t.Fatalf("user.json 内容不对: %+v", imported)
+	}
+
+	infos := loadTrackerInfos(cfg)
+	if len(infos) != 1 {
+		t.Fatalf("合并后应只有一项: %+v", infos)
+	}
+	got := infos[0]
+	if got.ID != "user" || got.Name != "我的追番" || got.Type != trackerTypeManual || got.Count != 3 {
+		t.Fatalf("合并结果不对: %+v", got)
+	}
+}
+
+func TestImportCollectionsCreatesAutoUserJSON(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("SESHAT_HOME", home)
+	cfg := &config.Config{}
+	dd := filepath.Join(home, "data")
+	writeTrackerTestFile(t, userDir(dd), "collections.json", `{"data":[{"subject_id":9,"subject_type":2}]}`)
+
+	code, body := importCollections(t, dd)
+	if code != http.StatusOK || body["count"] != float64(1) {
+		t.Fatalf("导入结果 = %d %v", code, body)
+	}
+	infos := loadTrackerInfos(cfg)
+	if len(infos) != 1 || infos[0].ID != "user" || infos[0].Type != trackerTypeAuto || infos[0].Count != 1 {
+		t.Fatalf("只有 user.json 时应为自动 Tracker: %+v", infos)
+	}
+}
+
+func TestImportCollectionsRequiresData(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("SESHAT_HOME", home)
+	code, _ := importCollections(t, filepath.Join(home, "data"))
+	if code != http.StatusBadRequest {
+		t.Fatalf("缺少收藏数据时状态码 = %d", code)
+	}
+}
