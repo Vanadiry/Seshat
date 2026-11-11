@@ -229,6 +229,48 @@ html.light {
     display: none;
 }
 
+/* 页面总滚动条，隐藏原生滚动条后自行绘制 */
+@media (pointer: fine) {
+    html {
+        scrollbar-width: none;
+    }
+    html::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+#page-scrollbar {
+    position: fixed;
+    right: 0;
+    width: 12px;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    pointer-events: none;
+}
+#page-scrollbar.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+#page-scrollbar .thumb {
+    position: absolute;
+    right: 4px;
+    width: 4px;
+    min-height: 24px;
+    border-radius: 2px;
+    background: var(--c-sub-dim);
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+#page-scrollbar .thumb:hover {
+    background: var(--c-sub);
+}
+@media print {
+    #page-scrollbar {
+        display: none;
+    }
+}
+
 /* 下拉箭头，深色模式 */
 select:where(.search-type, .custom-select) {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.52)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
