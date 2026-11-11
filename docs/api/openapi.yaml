@@ -907,17 +907,42 @@ paths:
     post:
       tags: [Tracker]
       summary: 创建Tracker
-      description: 创建一个指定名称的空Tracker文件，用户手动填入ID。
+      description: |
+        创建一个手动 Tracker，id 为文件名，name 为展示名称。
+        id 省略时使用 name，name 省略时使用 id。
+        id 不允许使用保留名称。
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
               properties:
-                name: { type: string, example: "kyoani" }
+                id:
+                  {
+                    type: string,
+                    example: "kyoani",
+                    description: "Tracker id，省略时使用 name。",
+                  }
+                name:
+                  {
+                    type: string,
+                    example: "京都动画",
+                    description: "展示名称，省略时使用 id。",
+                  }
       responses:
         "200":
           description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "created" }
+                  id: { type: string, example: "kyoani" }
+                  name: { type: string, example: "京都动画" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "409":
           $ref: "#/components/responses/Conflict"
   /api/v0/tracker/import-collections: # 以用户收藏创建Tracker
@@ -1623,5 +1648,5 @@ components:
         type:
           type: string
           enum: [auto, manual]
-          description: auto 为后端自动记录，manual 为用户手动编辑
+          description: auto 为程序写入的 `_seshat.json` 和 `user.json`，manual 为其他文件
         count: { type: integer, example: 5 }

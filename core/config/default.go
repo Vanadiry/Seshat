@@ -35,6 +35,6 @@ bangumi_access_token = ""
 `, Version)
 
 const TrackerTemplate = `# Tracker: %s
-name = "%s"
+name = %s
 ids = []
 `

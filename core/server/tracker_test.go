@@ -2,9 +2,12 @@ package server
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/vanadiry/seshat/core/config"
@@ -54,12 +57,13 @@ func TestLoadTrackerInfosMergesFormats(t *testing.T) {
 	writeTrackerTestFile(t, td, "user.json", `{"name":"忽略此名","subjects":[2,3]}`)
 	writeTrackerTestFile(t, td, "_seshat.json", `{"name":"seshat","subjects":[9]}`)
 	writeTrackerTestFile(t, td, "empty.toml", "name = \"\"\nids = []\n")
+	writeTrackerTestFile(t, td, "plain.json", `{"name":"普通 JSON","subjects":[5]}`)
 
 	infos := loadTrackerInfos(cfg)
-	if len(infos) != 3 {
-		t.Fatalf("合并后应有 3 个 Tracker，实际 %d", len(infos))
+	if len(infos) != 4 {
+		t.Fatalf("合并后应有 4 个 Tracker，实际 %d", len(infos))
 	}
-	if infos[0].ID != "_seshat" || infos[1].ID != "empty" || infos[2].ID != "user" {
+	if infos[0].ID != "_seshat" || infos[1].ID != "empty" || infos[2].ID != "plain" || infos[3].ID != "user" {
 		t.Fatalf("未按 id 排序: %+v", infos)
 	}
 	if infos[0].Name != "seshat" || infos[0].Type != trackerTypeAuto || infos[0].Count != 1 {
@@ -68,8 +72,22 @@ func TestLoadTrackerInfosMergesFormats(t *testing.T) {
 	if infos[1].Name != "empty" || infos[1].Type != trackerTypeManual || infos[1].Count != 0 {
 		t.Fatalf("空名称回退不对: %+v", infos[1])
 	}
-	if infos[2].Name != "我的追番" || infos[2].Type != trackerTypeManual || infos[2].Count != 3 {
-		t.Fatalf("合并 Tracker 结果不对: %+v", infos[2])
+	if infos[2].Name != "普通 JSON" || infos[2].Type != trackerTypeManual || infos[2].Count != 1 {
+		t.Fatalf("普通 JSON 应为手动 Tracker: %+v", infos[2])
+	}
+	if infos[3].Name != "我的追番" || infos[3].Type != trackerTypeManual || infos[3].Count != 3 {
+		t.Fatalf("合并 Tracker 结果不对: %+v", infos[3])
+	}
+}
+
+func TestUserJSONIsAutoTracker(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("SESHAT_HOME", home)
+	cfg := &config.Config{}
+	writeTrackerTestFile(t, cfg.TrackerDir(), "user.json", `{"name":"user","subjects":[1]}`)
+	infos := loadTrackerInfos(cfg)
+	if len(infos) != 1 || infos[0].Type != trackerTypeAuto {
+		t.Fatalf("user.json 应为自动 Tracker: %+v", infos)
 	}
 }
 
@@ -124,5 +142,44 @@ func TestReservedTrackerID(t *testing.T) {
 		if got := reservedTrackerID(id); got != want {
 			t.Errorf("%s: got %v, want %v", id, got, want)
 		}
+	}
+}
+
+func TestTrackerCreateRestrictions(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("SESHAT_HOME", home)
+	cfg := &config.Config{}
+	td := cfg.TrackerDir()
+	h := handleTrackerCreate(cfg)
+	post := func(body string) int {
+		w := httptest.NewRecorder()
+		h(w, httptest.NewRequest(http.MethodPost, "/api/v0/tracker/create", strings.NewReader(body)))
+		return w.Code
+	}
+
+	if code := post(`{"id":"anime","name":"我的追番"}`); code != http.StatusOK {
+		t.Fatalf("创建 Tracker 状态码 = %d", code)
+	}
+	if name := loadTrackerName(filepath.Join(td, "anime.toml")); name != "我的追番" {
+		t.Fatalf("创建后的名称 = %q", name)
+	}
+	if code := post(`{"id":"anime"}`); code != http.StatusConflict {
+		t.Fatalf("重复创建状态码 = %d", code)
+	}
+	writeTrackerTestFile(t, td, "auto.json", `{"name":"auto","subjects":[]}`)
+	if code := post(`{"id":"auto"}`); code != http.StatusConflict {
+		t.Fatalf("JSON 已存在时状态码 = %d", code)
+	}
+	if code := post(`{"id":"_seshat"}`); code != http.StatusBadRequest {
+		t.Fatalf("保留名状态码 = %d", code)
+	}
+	if code := post(`{"id":"bad name"}`); code != http.StatusBadRequest {
+		t.Fatalf("不合法 id 状态码 = %d", code)
+	}
+	if code := post(`{"name":"legacy"}`); code != http.StatusOK {
+		t.Fatalf("只传 name 状态码 = %d", code)
+	}
+	if name := loadTrackerName(filepath.Join(td, "legacy.toml")); name != "legacy" {
+		t.Fatalf("只传 name 创建后的名称 = %q", name)
 	}
 }

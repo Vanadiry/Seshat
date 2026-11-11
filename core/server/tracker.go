@@ -90,6 +90,15 @@ func trackerIDFromPath(path string) string {
 	return strings.TrimSuffix(strings.TrimSuffix(base, ".json"), ".toml")
 }
 
+// isAutoTrackerFile 返回文件是否由程序写入
+func isAutoTrackerFile(path string) bool {
+	switch filepath.Base(path) {
+	case "_seshat.json", "user.json":
+		return true
+	}
+	return false
+}
+
 // trackerIDsFromPaths 合并多个 Tracker 文件的 ID 并去重
 func trackerIDsFromPaths(paths []string) []int {
 	seen := map[int]bool{}
@@ -133,8 +142,10 @@ func loadTrackerInfos(cfg *config.Config) []trackerInfo {
 		name := ""
 		typ := trackerTypeAuto
 		for _, path := range paths {
-			if strings.HasSuffix(path, ".toml") {
+			if !isAutoTrackerFile(path) {
 				typ = trackerTypeManual
+			}
+			if strings.HasSuffix(path, ".toml") {
 				if n := loadTrackerName(path); n != "" {
 					name = n
 				}
@@ -369,35 +380,78 @@ func validTrackerName(name string) bool {
 	return true
 }
 
+// quoteTOMLString 转义 TOML 基本字符串
+func quoteTOMLString(s string) string {
+	var b strings.Builder
+	b.WriteByte('"')
+	for _, r := range s {
+		switch r {
+		case '\\':
+			b.WriteString(`\\`)
+		case '"':
+			b.WriteString(`\"`)
+		case '\n':
+			b.WriteString(`\n`)
+		case '\r':
+			b.WriteString(`\r`)
+		case '\t':
+			b.WriteString(`\t`)
+		default:
+			if r < 0x20 || r == 0x7f {
+				fmt.Fprintf(&b, `\u%04X`, r)
+			} else {
+				b.WriteRune(r)
+			}
+		}
+	}
+	b.WriteByte('"')
+	return b.String()
+}
+
 func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
+			ID   string `json:"id"`
 			Name string `json:"name"`
 		}
 		limitBody(w, r)
 		if !decodeJSON(w, r, &req) {
 			return
 		}
-		if req.Name == "" || !validTrackerName(req.Name) {
-			writeError(w, r, 400, "tracker name must be alphanumeric, dash, or underscore")
+		id := strings.TrimSpace(req.ID)
+		name := strings.TrimSpace(req.Name)
+		if id == "" {
+			id = name
+		}
+		if id == "" || !validTrackerName(id) {
+			writeError(w, r, 400, "Tracker id 不合法，仅允许大小写字母、数字、短横线和下划线")
 			return
 		}
-		path := filepath.Join(cfg.TrackerDir(), req.Name+".toml")
-		if _, err := os.Stat(path); err == nil {
-			writeError(w, r, 409, "tracker already exists")
+		if reservedTrackerID(id) {
+			writeError(w, r, 400, "Tracker id 为保留名称")
 			return
 		}
-		tmpl := fmt.Sprintf(config.TrackerTemplate, req.Name, req.Name)
-		if err := os.MkdirAll(cfg.TrackerDir(), 0o755); err != nil {
+		td := cfg.TrackerDir()
+		for _, ext := range []string{".toml", ".json"} {
+			if _, err := os.Stat(filepath.Join(td, id+ext)); err == nil {
+				writeError(w, r, 409, "Tracker 已存在")
+				return
+			}
+		}
+		if name == "" {
+			name = id
+		}
+		if err := os.MkdirAll(td, 0o755); err != nil {
 			writeError(w, r, 500, "无法创建 tracker 目录")
 			return
 		}
-		if err := store.WriteAtomic(path, []byte(tmpl), 0o644); err != nil {
+		tmpl := fmt.Sprintf(config.TrackerTemplate, id, quoteTOMLString(name))
+		if err := store.WriteAtomic(filepath.Join(td, id+".toml"), []byte(tmpl), 0o644); err != nil {
 			log.Error("tracker create write", "err", err)
 			writeError(w, r, 500, "无法写入 tracker 文件")
 			return
 		}
-		writeJSON(w, map[string]string{"status": "created", "name": req.Name})
+		writeJSON(w, map[string]string{"status": "created", "id": id, "name": name})
 	}
 }
 
