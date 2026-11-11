@@ -260,7 +260,7 @@
                             <h2 class="font-bold text-sm">上游 ID 搜索</h2>
                         </div>
                         <p class="text-xs text-sub mb-3">
-                            从 Bangumi 搜索动画，找到 ID 后直接拉取。
+                            从 Bangumi 搜索动画，把 ID 添加到“指定 ID”。
                         </p>
                         <div class="flex gap-2 mb-2">
                             <input
@@ -282,7 +282,7 @@
                         ></div>
                         <div
                             id="upstream-search-results"
-                            class="flex flex-col gap-2 mt-2"
+                            class="thin-scroll flex flex-col gap-1.5 mt-2 max-h-80 overflow-y-auto pr-1"
                         ></div>
                     </section>
 
@@ -1104,28 +1104,41 @@
                     " 条";
                 for (var i = 0; i < _searchItems.length; i++) {
                     (function (item) {
-                        var title =
-                            item.name_cn || item.name || "ID " + item.id;
-                        var sub = [];
-                        if (item.name && item.name !== title) {
-                            sub.push(item.name);
-                        }
-                        sub.push("ID " + item.id);
+                        var primary =
+                            primaryName(item.name, item.name_cn) ||
+                            "ID " + item.id;
+                        var secondary = subName(item.name, item.name_cn);
+                        var sub = ["ID " + item.id];
                         if (item.date) sub.push(searchYear(item.date));
                         if (item.platform) sub.push(item.platform);
 
                         var row = document.createElement("div");
                         row.className =
-                            "flex items-center gap-2 px-4 py-2 rounded-lg border border-bord";
+                            "flex items-center gap-2 px-3 py-1.5 rounded-lg border border-bord";
 
                         var meta = document.createElement("div");
                         meta.className = "flex-1 min-w-0";
-                        var name = document.createElement("div");
-                        name.className = "text-sm truncate";
-                        name.textContent = title;
-                        meta.appendChild(name);
+
+                        var titleRow = document.createElement("div");
+                        titleRow.className =
+                            "flex items-baseline gap-1.5 min-w-0";
+                        var name = document.createElement("span");
+                        name.className =
+                            "text-sm leading-tight truncate min-w-0 max-w-[60%]";
+                        name.textContent = primary;
+                        titleRow.appendChild(name);
+                        if (secondary) {
+                            var alt = document.createElement("span");
+                            alt.className =
+                                "text-xs leading-tight text-sub truncate min-w-0 flex-1";
+                            alt.textContent = secondary;
+                            titleRow.appendChild(alt);
+                        }
+                        meta.appendChild(titleRow);
+
                         var desc = document.createElement("div");
-                        desc.className = "text-xs text-sub truncate";
+                        desc.className =
+                            "text-[11px] leading-tight text-sub truncate mt-0.5";
                         desc.textContent = sub.join(" · ");
                         meta.appendChild(desc);
                         row.appendChild(meta);
@@ -1133,10 +1146,12 @@
                         var btn = document.createElement("button");
                         btn.type = "button";
                         btn.className =
-                            "h-10 shrink-0 px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text";
-                        btn.textContent = "拉取";
+                            "h-8 w-8 shrink-0 rounded-lg border border-bord bg-transparent text-sub text-lg leading-none cursor-pointer hover:bg-active hover:text-text flex items-center justify-center";
+                        btn.textContent = "+";
+                        btn.title = "添加到指定 ID";
+                        btn.setAttribute("aria-label", "添加到指定 ID");
                         btn.onclick = function () {
-                            requestPullSearchItem(item);
+                            addSearchResultID(item.id);
                         };
                         row.appendChild(btn);
                         box.appendChild(row);
@@ -1146,7 +1161,7 @@
                     var more = document.createElement("button");
                     more.type = "button";
                     more.className =
-                        "h-10 w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text";
+                        "h-8 w-full px-4 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text";
                     more.textContent = "加载更多";
                     more.onclick = function () {
                         runUpstreamSearch(true);
@@ -1208,16 +1223,25 @@
                 }
             }
 
-            function requestPullSearchItem(item) {
-                var body = {
-                    source: "ids",
-                    ids: [item.id],
-                    json: radioValue("fetch-json"),
-                    images: radioValue("fetch-images")
-                };
-                confirmAction(fetchSummary(body), function () {
-                    startFetch(body);
-                });
+            function addSearchResultID(id) {
+                var input = document.getElementById("fetch-ids");
+                var ids = splitIDs(input.value);
+                var existed = ids.indexOf(id) !== -1;
+                if (!existed) ids.push(id);
+                input.value = ids.join(", ");
+
+                var radio = document.querySelector(
+                    'input[name="fetch-source"][value="ids"]'
+                );
+                if (radio && !radio.checked) radio.checked = true;
+                updateFetchRows();
+
+                var status = document.getElementById("upstream-search-status");
+                if (status) {
+                    status.textContent = existed
+                        ? "#" + id + " 已在指定 ID 中"
+                        : "已添加 #" + id + " 到指定 ID";
+                }
             }
 
             (async () => {
