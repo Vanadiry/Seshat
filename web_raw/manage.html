@@ -252,6 +252,40 @@
                 <div class="hidden sm:block w-px bg-bord-light shrink-0"></div>
 
                 <div class="flex-1 min-w-0">
+                    <section class="mb-8" data-feature="upstream">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span
+                                class="w-[3px] h-[18px] bg-pink rounded-sm"
+                            ></span>
+                            <h2 class="font-bold text-sm">上游 ID 搜索</h2>
+                        </div>
+                        <p class="text-xs text-sub mb-3">
+                            从 Bangumi 搜索动画，找到 ID 后直接拉取。
+                        </p>
+                        <div class="flex gap-2 mb-2">
+                            <input
+                                id="upstream-search-input"
+                                placeholder="关键词，例如 CLANNAD"
+                                class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm"
+                            />
+                            <button
+                                id="btn-upstream-search"
+                                type="button"
+                                class="shrink-0 px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90"
+                            >
+                                搜索
+                            </button>
+                        </div>
+                        <div
+                            id="upstream-search-status"
+                            class="text-xs text-sub"
+                        ></div>
+                        <div
+                            id="upstream-search-results"
+                            class="flex flex-col gap-2 mt-2"
+                        ></div>
+                    </section>
+
                     <section class="mb-8">
                         <div class="flex items-center gap-2 mb-3">
                             <span
@@ -1046,6 +1080,146 @@
                 }
             }
 
+            var _searchItems = [];
+            var _searchTotal = 0;
+            var _searchLoading = false;
+
+            function searchYear(date) {
+                return date ? String(date).slice(0, 4) : "";
+            }
+
+            function renderSearchResults() {
+                var box = document.getElementById("upstream-search-results");
+                var status = document.getElementById("upstream-search-status");
+                box.textContent = "";
+                if (!_searchItems.length) {
+                    status.textContent = "没有找到结果";
+                    return;
+                }
+                status.textContent =
+                    "已显示 " +
+                    _searchItems.length +
+                    " / " +
+                    _searchTotal +
+                    " 条";
+                for (var i = 0; i < _searchItems.length; i++) {
+                    (function (item) {
+                        var title =
+                            item.name_cn || item.name || "ID " + item.id;
+                        var sub = [];
+                        if (item.name && item.name !== title) {
+                            sub.push(item.name);
+                        }
+                        sub.push("ID " + item.id);
+                        if (item.date) sub.push(searchYear(item.date));
+                        if (item.platform) sub.push(item.platform);
+
+                        var row = document.createElement("div");
+                        row.className =
+                            "flex items-center gap-2 px-4 py-2 rounded-lg border border-bord";
+
+                        var meta = document.createElement("div");
+                        meta.className = "flex-1 min-w-0";
+                        var name = document.createElement("div");
+                        name.className = "text-sm truncate";
+                        name.textContent = title;
+                        meta.appendChild(name);
+                        var desc = document.createElement("div");
+                        desc.className = "text-xs text-sub truncate";
+                        desc.textContent = sub.join(" · ");
+                        meta.appendChild(desc);
+                        row.appendChild(meta);
+
+                        var btn = document.createElement("button");
+                        btn.type = "button";
+                        btn.className =
+                            "shrink-0 px-3 py-1.5 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text";
+                        btn.textContent = "拉取";
+                        btn.onclick = function () {
+                            requestPullSearchItem(item);
+                        };
+                        row.appendChild(btn);
+                        box.appendChild(row);
+                    })(_searchItems[i]);
+                }
+                if (_searchItems.length < _searchTotal) {
+                    var more = document.createElement("button");
+                    more.type = "button";
+                    more.className =
+                        "w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text";
+                    more.textContent = "加载更多";
+                    more.onclick = function () {
+                        runUpstreamSearch(true);
+                    };
+                    box.appendChild(more);
+                }
+            }
+
+            async function runUpstreamSearch(append) {
+                if (_searchLoading) return;
+                var input = document.getElementById("upstream-search-input");
+                var keyword = input.value.trim();
+                if (!keyword) {
+                    showError("请输入关键词");
+                    input.focus();
+                    return;
+                }
+                _searchLoading = true;
+                var status = document.getElementById("upstream-search-status");
+                status.textContent = "搜索中...";
+                if (!append) {
+                    _searchItems = [];
+                    _searchTotal = 0;
+                    document.getElementById(
+                        "upstream-search-results"
+                    ).textContent = "";
+                }
+                try {
+                    var res = await fetch(API + "/v0/upstream/search", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            keyword: keyword,
+                            limit: 20,
+                            offset: append ? _searchItems.length : 0
+                        })
+                    });
+                    var d = await readJSON(res);
+                    if (!res.ok || !d) {
+                        showError(errText(d, res.status));
+                        status.textContent = "搜索失败";
+                        return;
+                    }
+                    var page = Array.isArray(d.data) ? d.data : [];
+                    _searchItems = _searchItems.concat(page);
+                    _searchTotal =
+                        typeof d.total === "number"
+                            ? d.total
+                            : _searchItems.length;
+                    if (append && !page.length) {
+                        _searchTotal = _searchItems.length;
+                    }
+                    renderSearchResults();
+                } catch (e) {
+                    showError("搜索失败");
+                    status.textContent = "搜索失败";
+                } finally {
+                    _searchLoading = false;
+                }
+            }
+
+            function requestPullSearchItem(item) {
+                var body = {
+                    source: "ids",
+                    ids: [item.id],
+                    json: radioValue("fetch-json"),
+                    images: radioValue("fetch-images")
+                };
+                confirmAction(fetchSummary(body), function () {
+                    startFetch(body);
+                });
+            }
+
             (async () => {
                 if (!(await requireFeature("fetch"))) return;
                 if (!(await requireFeature("task"))) return;
@@ -1069,6 +1243,18 @@
                     requestStartFetch;
                 document.getElementById("btn-add-trackers").onclick =
                     requestAddTrackers;
+                document.getElementById("btn-upstream-search").onclick =
+                    function () {
+                        runUpstreamSearch(false);
+                    };
+                document
+                    .getElementById("upstream-search-input")
+                    .addEventListener("keydown", function (e) {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            runUpstreamSearch(false);
+                        }
+                    });
                 window.addEventListener("seshat:trackers-changed", function () {
                     loadTrackerList(true);
                 });

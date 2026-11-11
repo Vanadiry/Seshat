@@ -98,6 +98,7 @@ var CAPS_LABELS = {};
 CAPS.forEach(function (c) {
     CAPS_LABELS[c.key] = c.label;
 });
+CAPS_LABELS.upstream = "上游搜索";
 
 // 按能力表顺序输出中文名，未知能力排在后面
 function capLabels(features) {
@@ -278,14 +279,20 @@ var ROUTE = {
     stats: "feature",
     tags: "feature",
     task: "feature",
-    tracker: "feature"
+    tracker: "feature",
+    upstream: "feature"
 };
 
 // 解析请求归属，返回 remote、local 或 hidden
 function resolve(key) {
     var mode = ROUTE[key];
     if (!mode) return "hidden";
-    if (!window.BACKEND_URL) return "local";
+    if (!window.BACKEND_URL) {
+        if (key === "upstream" && window.UPSTREAM_ENABLED === false) {
+            return "hidden";
+        }
+        return "local";
+    }
     if (mode === "local") return "local";
     if (mode === "remote") return "remote";
     if (mode === "fallback-local") {
