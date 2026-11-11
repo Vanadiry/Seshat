@@ -1,6 +1,7 @@
 # Seshat API 设计说明
 
 本文记录 OpenAPI 之外的行为约定，供对接 Seshat 的开发者参考。
+本文由 AI 撰写。
 
 ## 图片
 
@@ -81,6 +82,8 @@ Seshat 自有列表统一返回 `{total, limit, offset, data}`，不分页时 `l
 
 覆盖 `/v0/{subjects,characters,persons}/list`、`/v0/tags`、`/v0/tracker`、`/v0/tasks` 和 `/v0/elo/history`。`elo/ranking` 使用 `data`，另有 `no_rating`、`orphans`、`total_compares`。
 
+`/v0/tracker` 的每项包含 `id`、`name`、`type`、`count`。同名 TOML 和 JSON 会合并，`type` 为 `auto` 或 `manual`。
+
 `subjects/name`、`characters/name`、`persons/name` 为对象映射，不套列表结构。
 
 ## 数据与拉取
@@ -93,11 +96,16 @@ data/index/*.json
 
 `GET /api/v0/` 按路径映射到 `data/api` 下的数据文件。
 
-`_seshat.json` 由 `fetch/subject` 成功后创建，只记录成功 ID，整批拉取结束后写入。前端不提供删除入口。
+`_seshat.json` 由统一拉取的 `source=ids` 成功后写入，只记录成功 ID，整批拉取结束后写入。前端不提供删除入口。
 
 `info.json`、`characters.json`、`persons.json`、`episodes.json`、`subjects.json` 任一失败或写入失败，整个条目失败，不进入 `_seshat.json`。`fetch/gap` 检查核心文件，缺失时重拉。
 
 图片只补缺失的尺寸。“重建全部”删除 `data/api`、`data/images`、`data/index`，保留 `data/user`。
+
+## 上游搜索
+
+`POST /v0/upstream/search` 使用 `[upstream] base_url`、UA、token 和代理请求官方搜索接口。  
+它只返回搜索结果，不写入本地数据。`upstream` 能力缺失时，前端隐藏入口。
 
 ## 跨源
 
@@ -119,7 +127,8 @@ CORS 按监听地址决定，不回显固定自身地址。
 `/v0/info` 的 `features` 是描述性的能力清单，前端据此决定功能入口，不用于权限。
 
 - 核心接口始终提供，前端不判断，包括详情、图片、剧集、用户、收藏和搜索
-- feature 为 Seshat 扩展：`elo`、`events`、`fetch`、`lists`、`names`、`stats`、`tags`、`task`、`tracker`
+- feature 为 Seshat 扩展：`elo`、`events`、`fetch`、`lists`、`names`、`stats`、`tags`、`task`、`tracker`、`upstream`
+- `upstream` 仅在配置 `base_url` 后提供，对应 `POST /v0/upstream/search`
 - 缺失 feature 时隐藏入口，`lists` 和 `names` 退回本机
 - 旧版 Seshat 没有 `features`，按空能力处理，核心接口仍可用
 
