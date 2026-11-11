@@ -73,6 +73,7 @@
                         <div class="text-xs text-sub mb-2">来源</div>
                         <div class="flex flex-col gap-2 mb-3">
                             <label
+                                data-feature="tracker"
                                 class="flex items-center gap-2 cursor-pointer"
                             >
                                 <input
@@ -84,6 +85,7 @@
                                 所有 Tracker 中的新增 ID
                             </label>
                             <label
+                                data-feature="tracker"
                                 class="flex items-center gap-2 cursor-pointer"
                             >
                                 <input
@@ -95,6 +97,7 @@
                                 所有 Tracker
                             </label>
                             <label
+                                data-feature="tracker"
                                 class="flex items-center gap-2 cursor-pointer"
                             >
                                 <input
@@ -107,23 +110,34 @@
                             </label>
                             <div
                                 id="row-fetch-names"
+                                data-feature="tracker"
                                 style="display: none"
-                                class="ml-6 flex items-stretch gap-2"
+                                class="ml-6 flex flex-col gap-2"
                             >
-                                <input
-                                    id="fetch-names"
-                                    placeholder="Tracker 名称，逗号分隔"
-                                    class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm"
-                                />
-                                <button
-                                    id="btn-add-trackers"
-                                    type="button"
-                                    title="添加 Tracker"
-                                    aria-label="添加 Tracker"
-                                    class="w-9 shrink-0 rounded-lg border border-bord bg-transparent text-sub text-lg leading-none cursor-pointer hover:bg-active hover:text-text flex items-center justify-center"
-                                >
-                                    +
-                                </button>
+                                <div
+                                    id="fetch-tracker-status"
+                                    class="text-xs text-sub"
+                                ></div>
+                                <div
+                                    id="fetch-tracker-items"
+                                    class="flex flex-col gap-2 max-h-80 overflow-y-auto"
+                                ></div>
+                                <div class="flex items-stretch gap-2">
+                                    <input
+                                        id="fetch-names"
+                                        placeholder="也可以填写 Tracker id，逗号分隔"
+                                        class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm"
+                                    />
+                                    <button
+                                        id="btn-add-trackers"
+                                        type="button"
+                                        title="添加 Tracker"
+                                        aria-label="添加 Tracker"
+                                        class="w-9 shrink-0 rounded-lg border border-bord bg-transparent text-sub text-lg leading-none cursor-pointer hover:bg-active hover:text-text flex items-center justify-center"
+                                    >
+                                        +
+                                    </button>
+                                </div>
                             </div>
                             <label
                                 class="flex items-center gap-2 cursor-pointer"
@@ -365,12 +379,166 @@
                     });
             }
 
+            var _trackers = [];
+            var _trackerIndex = {};
+            var _selectedTrackerIDs = {};
+            var _trackersLoaded = false;
+            var _trackerLoading = false;
+
+            function trackerLabel(t) {
+                return t.name || t.id;
+            }
+
+            function setTrackerStatus(text, retry) {
+                var el = document.getElementById("fetch-tracker-status");
+                el.textContent = text;
+                if (!retry) return;
+                var btn = document.createElement("button");
+                btn.type = "button";
+                btn.className =
+                    "ml-2 text-pink bg-transparent border-0 p-0 text-xs cursor-pointer";
+                btn.textContent = "重试";
+                btn.onclick = function () {
+                    loadTrackerList(true);
+                };
+                el.appendChild(btn);
+            }
+
+            function updateTrackerSelectionStatus() {
+                if (!_trackers.length) {
+                    setTrackerStatus(
+                        "暂无 Tracker，可以直接填写 id 或用加号创建",
+                        false
+                    );
+                    return;
+                }
+                var available = _trackers.some(function (t) {
+                    return t.count > 0;
+                });
+                if (!available) {
+                    setTrackerStatus(
+                        "暂无可用 Tracker，可以直接填写 id 或用加号创建",
+                        false
+                    );
+                    return;
+                }
+                setTrackerStatus(
+                    "已选择 " + Object.keys(_selectedTrackerIDs).length + " 个",
+                    false
+                );
+            }
+
+            function renderTrackerList() {
+                var box = document.getElementById("fetch-tracker-items");
+                box.textContent = "";
+                for (var id in _selectedTrackerIDs) {
+                    var selected = _trackerIndex[id];
+                    if (!selected || selected.count <= 0) {
+                        delete _selectedTrackerIDs[id];
+                    }
+                }
+                var list = _trackers.slice().sort(function (a, b) {
+                    if (a.type !== b.type) return a.type === "manual" ? -1 : 1;
+                    var an = trackerLabel(a);
+                    var bn = trackerLabel(b);
+                    if (an !== bn) return an.localeCompare(bn, "zh-Hans-CN");
+                    return a.id.localeCompare(b.id);
+                });
+                for (var i = 0; i < list.length; i++) {
+                    (function (t) {
+                        var enabled = t.count > 0;
+                        var label = document.createElement("label");
+                        label.className =
+                            "w-full flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm min-w-0 " +
+                            (enabled
+                                ? "cursor-pointer hover:bg-active hover:text-text"
+                                : "opacity-50");
+                        var cb = document.createElement("input");
+                        cb.type = "checkbox";
+                        cb.className = "w-4 h-4 accent-pink shrink-0";
+                        cb.value = t.id;
+                        cb.checked = !!_selectedTrackerIDs[t.id];
+                        cb.disabled = !enabled;
+                        cb.addEventListener("change", function () {
+                            if (cb.checked) {
+                                _selectedTrackerIDs[t.id] = true;
+                            } else {
+                                delete _selectedTrackerIDs[t.id];
+                            }
+                            updateTrackerSelectionStatus();
+                        });
+                        label.appendChild(cb);
+
+                        var meta = document.createElement("span");
+                        meta.className =
+                            "flex items-center gap-2 flex-1 min-w-0";
+
+                        var name = document.createElement("span");
+                        name.className = "truncate min-w-0";
+                        name.textContent = trackerLabel(t);
+                        meta.appendChild(name);
+
+                        if (t.name && t.name !== t.id) {
+                            var idEl = document.createElement("span");
+                            idEl.className =
+                                "text-xs text-sub font-mono shrink-0";
+                            idEl.textContent = t.id;
+                            meta.appendChild(idEl);
+                        }
+                        label.appendChild(meta);
+
+                        var count = document.createElement("span");
+                        count.className = "ml-auto text-xs text-right shrink-0";
+                        count.textContent = enabled ? t.count + " 条" : "空";
+                        label.appendChild(count);
+
+                        var typeEl = document.createElement("span");
+                        typeEl.className =
+                            "w-7 sm:w-8 text-right text-xs shrink-0";
+                        typeEl.textContent =
+                            t.type === "auto" ? "自动" : "手动";
+                        label.appendChild(typeEl);
+
+                        box.appendChild(label);
+                    })(list[i]);
+                }
+                updateTrackerSelectionStatus();
+            }
+
+            async function loadTrackerList(force) {
+                if (_trackerLoading) return;
+                if (_trackersLoaded && !force) return;
+                _trackerLoading = true;
+                setTrackerStatus("加载中...", false);
+                try {
+                    var res = await fetch(API + "/v0/tracker");
+                    var d = await readJSON(res);
+                    if (!res.ok || !d) {
+                        setTrackerStatus("Tracker 列表加载失败", true);
+                        return;
+                    }
+                    _trackers = Array.isArray(d.data) ? d.data : [];
+                    _trackersLoaded = true;
+                    _trackerIndex = {};
+                    for (var i = 0; i < _trackers.length; i++) {
+                        _trackerIndex[_trackers[i].id] = _trackers[i];
+                    }
+                    renderTrackerList();
+                } catch (e) {
+                    setTrackerStatus("Tracker 列表加载失败", true);
+                } finally {
+                    _trackerLoading = false;
+                }
+            }
+
             function updateFetchRows() {
                 var source = radioValue("fetch-source");
+                var showNames = source === "tracker_names";
                 document.getElementById("row-fetch-names").style.display =
-                    source === "tracker_names" ? "" : "none";
+                    showNames ? "" : "none";
                 document.getElementById("row-fetch-ids").style.display =
                     source === "ids" ? "" : "none";
+                if (showNames) loadTrackerList(false);
             }
 
             function buildFetchBody() {
@@ -381,13 +549,58 @@
                     images: radioValue("fetch-images")
                 };
                 if (source === "tracker_names") {
-                    body.names = splitList(
+                    var names = [];
+                    var seen = {};
+                    var selected = Object.keys(_selectedTrackerIDs);
+                    for (var i = 0; i < selected.length; i++) {
+                        if (!seen[selected[i]]) {
+                            seen[selected[i]] = true;
+                            names.push(selected[i]);
+                        }
+                    }
+                    var manual = splitList(
                         document.getElementById("fetch-names").value
                     );
-                    if (!body.names.length) {
-                        showError("请填写 Tracker 名称");
+                    for (var j = 0; j < manual.length; j++) {
+                        if (!seen[manual[j]]) {
+                            seen[manual[j]] = true;
+                            names.push(manual[j]);
+                        }
+                    }
+                    if (!names.length) {
+                        showError("请选择或填写 Tracker");
                         return null;
                     }
+                    for (var k = 0; k < names.length; k++) {
+                        if (!/^[a-zA-Z0-9_-]+$/.test(names[k])) {
+                            showError(MSG.errInvalidTrackerName);
+                            return null;
+                        }
+                    }
+                    if (_trackersLoaded) {
+                        var missing = [];
+                        for (var m = 0; m < names.length; m++) {
+                            if (!_trackerIndex[names[m]]) {
+                                missing.push(names[m]);
+                            }
+                        }
+                        if (missing.length) {
+                            showError("未找到 Tracker：" + missing.join("、"));
+                            return null;
+                        }
+                        var empty = [];
+                        for (var n = 0; n < names.length; n++) {
+                            var info = _trackerIndex[names[n]];
+                            if (info && info.count === 0) {
+                                empty.push(names[n]);
+                            }
+                        }
+                        if (empty.length) {
+                            showError("Tracker 为空：" + empty.join("、"));
+                            return null;
+                        }
+                    }
+                    body.names = names;
                 }
                 if (source === "ids") {
                     body.ids = splitIDs(
@@ -468,7 +681,7 @@
                     document.getElementById("fetch-names").value
                 );
                 if (!names.length) {
-                    showError("请填写 Tracker 名称");
+                    showError("请填写 Tracker id");
                     return;
                 }
                 for (var i = 0; i < names.length; i++) {
@@ -495,7 +708,7 @@
                     var r = await fetch(API + "/v0/tracker/create", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ name: names[i] })
+                        body: JSON.stringify({ id: names[i] })
                     });
                     if (r.ok) created++;
                     else if (r.status === 409) existed++;
@@ -519,6 +732,7 @@
                             (existed > 0 ? "，已存在 " + existed + " 个" : "")
                     );
                 }
+                loadTrackerList(true);
             }
 
             var _dangerLocks = [];
@@ -705,6 +919,9 @@
                     requestStartFetch;
                 document.getElementById("btn-add-trackers").onclick =
                     requestAddTrackers;
+                window.addEventListener("seshat:trackers-changed", function () {
+                    loadTrackerList(true);
+                });
 
                 document.getElementById("btn-page-import").onclick =
                     function () {

@@ -373,7 +373,7 @@ var MSG = {
 
     // 校验
     errInvalidTrackerName:
-        "Tracker 名称仅允许大小写字母、数字、短横线和下划线。",
+        "Tracker id 仅允许大小写字母、数字、短横线和下划线。",
     errUserFetchFailed: "刷新用户数据失败: ",
     errNoUsername:
         "未在配置中设置用户名（[user] username），无法刷新用户数据。",
@@ -1542,6 +1542,7 @@ async function doImportCollections() {
         return;
     }
     showSuccess(MSG.importCollDone(d.count));
+    window.dispatchEvent(new Event("seshat:trackers-changed"));
 }
 
 async function doRebuildELO() {
