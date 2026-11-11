@@ -59,8 +59,8 @@
     <body class="text-text font-[system-ui] min-h-screen">
         <div id="topbar"></div>
 
-        <main class="max-w-[1000px] mx-auto p-6">
-            <div class="flex flex-col sm:flex-row gap-8">
+        <main class="relative max-w-[1000px] mx-auto p-6">
+            <div id="manage-content" class="flex flex-col sm:flex-row gap-8">
                 <div class="flex-1 min-w-0">
                     <section class="mb-8 sm:mb-0">
                         <div class="flex items-center gap-2 mb-3">
@@ -320,6 +320,49 @@
                             </button>
                         </div>
                     </section>
+                </div>
+            </div>
+
+            <div
+                id="task-overlay"
+                class="fixed inset-x-0 bottom-0 z-20 flex items-center justify-center bg-bg/40 backdrop-blur-xl p-6"
+                style="display: none"
+            >
+                <div
+                    class="w-full max-w-[420px] flex flex-col items-center text-center"
+                >
+                    <p
+                        id="task-overlay-label"
+                        class="text-lg font-bold mb-1"
+                    ></p>
+                    <div
+                        id="task-overlay-phase"
+                        class="text-xs text-sub mb-3"
+                    ></div>
+                    <div
+                        class="w-full h-2 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden mb-2"
+                    >
+                        <div
+                            id="task-overlay-fill"
+                            class="h-full rounded-full"
+                            style="
+                                width: 0;
+                                background: var(--c-toast-progress);
+                                transition: width 0.2s linear;
+                            "
+                        ></div>
+                    </div>
+                    <div
+                        id="task-overlay-detail"
+                        class="text-xs text-sub mb-5"
+                    ></div>
+                    <button
+                        id="btn-task-abort"
+                        type="button"
+                        class="px-5 py-2 rounded-lg border border-[#dc2626] bg-transparent text-[#dc2626] text-sm cursor-pointer hover:bg-pink-bg"
+                    >
+                        中止任务
+                    </button>
                 </div>
             </div>
         </main>
@@ -896,6 +939,113 @@
                     });
             }
 
+            var _activeTaskId = "";
+            var _overlayHideTimer = 0;
+            var _overlayVisible = false;
+            var _bodyOverflow = "";
+
+            function showTaskOverlay(id, label) {
+                if (!id) return;
+                var overlay = document.getElementById("task-overlay");
+                var content = document.getElementById("manage-content");
+                var same = _activeTaskId === id;
+                clearTimeout(_overlayHideTimer);
+                _activeTaskId = id;
+                document.getElementById("task-overlay-label").textContent =
+                    label || "任务进行中";
+                if (!same) {
+                    document.getElementById("task-overlay-phase").textContent =
+                        "";
+                    document.getElementById("task-overlay-detail").textContent =
+                        "";
+                    var fill = document.getElementById("task-overlay-fill");
+                    fill.style.width = "0";
+                    fill.style.background = "var(--c-toast-progress)";
+                }
+                var topbar = document.getElementById("topbar");
+                overlay.style.top =
+                    Math.max(
+                        0,
+                        Math.round(topbar.getBoundingClientRect().bottom)
+                    ) + "px";
+                if (!_overlayVisible) {
+                    _bodyOverflow = document.body.style.overflow;
+                    _overlayVisible = true;
+                }
+                document.body.style.overflow = "hidden";
+                overlay.style.display = "flex";
+                content.inert = true;
+                document.getElementById("btn-task-abort").focus();
+            }
+
+            function hideTaskOverlay() {
+                clearTimeout(_overlayHideTimer);
+                _activeTaskId = "";
+                var overlay = document.getElementById("task-overlay");
+                if (overlay) overlay.style.display = "none";
+                var content = document.getElementById("manage-content");
+                if (content) content.inert = false;
+                if (_overlayVisible) {
+                    document.body.style.overflow = _bodyOverflow;
+                    _overlayVisible = false;
+                }
+            }
+
+            function updateTaskOverlay(detail) {
+                if (!_activeTaskId || detail.id !== _activeTaskId) return;
+                var d = detail.data || {};
+                if (d.label) {
+                    document.getElementById("task-overlay-label").textContent =
+                        d.label;
+                }
+                var fill = document.getElementById("task-overlay-fill");
+                var phase = document.getElementById("task-overlay-phase");
+                var text = document.getElementById("task-overlay-detail");
+                if (d.step === "complete" || d.step === "done") {
+                    phase.textContent = "完成";
+                    text.textContent = "";
+                    fill.style.width = "100%";
+                    fill.style.background = "#22c55e";
+                    var doneId = _activeTaskId;
+                    _overlayHideTimer = setTimeout(function () {
+                        if (_activeTaskId === doneId) hideTaskOverlay();
+                    }, 800);
+                    return;
+                }
+                if (d.step === "cancelled") {
+                    phase.textContent = "任务已终止";
+                    text.textContent = "";
+                    fill.style.width = "100%";
+                    fill.style.background = "var(--c-toast-warning)";
+                    var cancelId = _activeTaskId;
+                    _overlayHideTimer = setTimeout(function () {
+                        if (_activeTaskId === cancelId) hideTaskOverlay();
+                    }, 1200);
+                    return;
+                }
+                var phaseText = d.phase_name || "";
+                if (d.phase && d.phases) {
+                    phaseText +=
+                        (phaseText ? " " : "") +
+                        "(" +
+                        d.phase +
+                        "/" +
+                        d.phases +
+                        ")";
+                }
+                phase.textContent = phaseText;
+                if (typeof d.done === "number" && d.total) {
+                    fill.style.width =
+                        Math.round((d.done / d.total) * 100) + "%";
+                    var parts = [];
+                    parts.push(d.done + "/" + d.total);
+                    if (d.speed) parts.push(d.speed);
+                    text.textContent = parts.join("，");
+                } else if (d.status) {
+                    text.textContent = d.status;
+                }
+            }
+
             (async () => {
                 if (!(await requireFeature("fetch"))) return;
                 if (!(await requireFeature("task"))) return;
@@ -921,6 +1071,57 @@
                     requestAddTrackers;
                 window.addEventListener("seshat:trackers-changed", function () {
                     loadTrackerList(true);
+                });
+                window.addEventListener("seshat:task-start", function (e) {
+                    showTaskOverlay(e.detail.id, e.detail.label);
+                });
+                window.addEventListener("seshat:task-progress", function (e) {
+                    updateTaskOverlay(e.detail);
+                });
+                window.addEventListener("seshat:task-error", function (e) {
+                    if (!_activeTaskId || e.detail.id !== _activeTaskId) return;
+                    document.getElementById("task-overlay-phase").textContent =
+                        "进度连接中断";
+                    document.getElementById("task-overlay-detail").textContent =
+                        "请刷新页面重试";
+                });
+                window.addEventListener("resize", function () {
+                    if (!_activeTaskId) return;
+                    var topbar = document
+                        .getElementById("topbar")
+                        .getBoundingClientRect();
+                    document.getElementById("task-overlay").style.top =
+                        Math.max(0, Math.round(topbar.bottom)) + "px";
+                });
+                document.getElementById("btn-task-abort").onclick =
+                    function () {
+                        confirmAction(
+                            "将终止 Seshat 后端进程，当前任务会中断，已完成的数据保留。",
+                            function () {
+                                fetch(API + "/v0/task/cancel", {
+                                    method: "POST"
+                                }).then(function () {
+                                    showInfo("已发送中止请求");
+                                });
+                            }
+                        );
+                    };
+                apiFor("task", "/v0/tasks").then(function (d) {
+                    if (!d || !d.data || !d.data.length) return;
+                    var task = d.data[0];
+                    showTaskOverlay(task.id, task.label);
+                    updateTaskOverlay({
+                        id: task.id,
+                        data: {
+                            step: "snapshot",
+                            label: task.label,
+                            done: task.done,
+                            total: task.total,
+                            phase: task.phase,
+                            phases: task.phases,
+                            phase_name: task.phase_name
+                        }
+                    });
                 });
 
                 document.getElementById("btn-page-import").onclick =

@@ -1595,7 +1595,13 @@ function onFetchDone() {
 }
 
 // 进度通知横幅（右下角浮动）
+function _dispatchTaskEvent(name, detail) {
+    window.dispatchEvent(new CustomEvent(name, { detail: detail }));
+}
+
 function startProgress(taskId, label) {
+    var taskLabel = label || "";
+    _dispatchTaskEvent("seshat:task-start", { id: taskId, label: taskLabel });
     var bodyHTML =
         '<div id="pb-detail" class="text-[11px] mb-1.5"></div>' +
         '<div class="h-1 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden"><div id="pb-fill" class="h-full rounded-full" style="width:0;background:var(--c-toast-progress)"></div></div>';
@@ -1618,6 +1624,10 @@ function startProgress(taskId, label) {
     cancelBtn.onclick = function (e) {
         e.stopPropagation();
         fetch(API + "/v0/task/cancel", { method: "POST" });
+        _dispatchTaskEvent("seshat:task-progress", {
+            id: taskId,
+            data: { step: "cancelled" }
+        });
         fill.style.transition = "none";
         fill.style.width = "100%";
         fill.style.background = "var(--c-toast-warning)";
@@ -1632,11 +1642,11 @@ function startProgress(taskId, label) {
 
     var fill = t.el.querySelector("#pb-fill");
     var detail = t.el.querySelector("#pb-detail");
-    var taskLabel = label || "";
 
     var evt = new EventSource(API + "/v0/task/" + taskId);
     evt.onmessage = function (e) {
         var d = JSON.parse(e.data);
+        _dispatchTaskEvent("seshat:task-progress", { id: taskId, data: d });
         if (d.label && !taskLabel) {
             taskLabel = d.label;
         }
@@ -1703,6 +1713,7 @@ function startProgress(taskId, label) {
         }
     };
     evt.onerror = function () {
+        _dispatchTaskEvent("seshat:task-error", { id: taskId });
         evt.close();
     };
 }
