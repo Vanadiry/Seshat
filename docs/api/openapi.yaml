@@ -1380,6 +1380,11 @@ components:
         id: { type: string, example: "ae8687f0" }
         task: { type: string, example: "fetch_all" }
         label: { type: string, example: "刷新全部" }
+        done: { type: integer, example: 128 }
+        total: { type: integer, example: 300 }
+        phase: { type: integer, example: 2 }
+        phases: { type: integer, example: 3 }
+        phase_name: { type: string, example: "下载图片" }
 
     TagSubject:
       type: object

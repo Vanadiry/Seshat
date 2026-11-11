@@ -138,21 +138,56 @@ func (p *Progress) Send(step string, done, total int, status string) {
 	}
 }
 
+// Snapshot 返回当前进度的 SSE 数据
+func (p *Progress) Snapshot() string {
+	p.mu.Lock()
+	payload := map[string]any{
+		"step":       "snapshot",
+		"id":         p.ID,
+		"done":       p.Done,
+		"total":      p.Total,
+		"task":       p.Task,
+		"label":      p.Label,
+		"phase":      p.Phase,
+		"phases":     p.Phases,
+		"phase_name": p.PhaseName,
+	}
+	p.mu.Unlock()
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return ""
+	}
+	return string(data)
+}
+
 func getProgress(id string) *Progress {
 	progressMu.Lock()
 	defer progressMu.Unlock()
 	return progressMap[id]
 }
 
-func activeTasks() []map[string]string {
+func activeTasks() []map[string]any {
 	progressMu.Lock()
 	defer progressMu.Unlock()
-	var tasks []map[string]string
+	var tasks []map[string]any
 	for _, p := range progressMap {
 		if p.Closed() {
 			continue
 		}
-		tasks = append(tasks, map[string]string{"id": p.ID, "task": p.Task, "label": p.Label})
+		p.mu.Lock()
+		done, total := p.Done, p.Total
+		phase, phases, phaseName := p.Phase, p.Phases, p.PhaseName
+		p.mu.Unlock()
+		tasks = append(tasks, map[string]any{
+			"id":         p.ID,
+			"task":       p.Task,
+			"label":      p.Label,
+			"done":       done,
+			"total":      total,
+			"phase":      phase,
+			"phases":     phases,
+			"phase_name": phaseName,
+		})
 	}
 	return tasks
 }
@@ -173,6 +208,10 @@ func handleProgress(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		return
+	}
+	if snapshot := p.Snapshot(); snapshot != "" {
+		fmt.Fprintf(w, "data: %s\n\n", snapshot)
+		flusher.Flush()
 	}
 	for event := range p.Channel {
 		fmt.Fprintf(w, "data: %s\n\n", event)
