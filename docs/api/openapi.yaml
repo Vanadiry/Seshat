@@ -572,6 +572,7 @@ paths:
         返回 `task_id`，进度通过 `GET /api/v0/task/{task_id}` 获取。
         来源为 `ids` 时，成功的 ID 会写入 `_seshat.json`。
         来源为 `tracker_names` 时，`names` 中的 Tracker 必须存在且非空。
+        任意一个不存在时返回 400，不启动任务。
         没有待处理 ID 时返回 `status` 为 `done`、`count` 为 0。
       requestBody:
         required: true
