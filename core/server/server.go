@@ -69,7 +69,7 @@ func buildRouter(cfg *config.Config, embedFS fs.FS) *router {
 		if cfg.Frontend.BackendURL != "" || cfg.Frontend.FallbackURL != "" {
 			token = cfg.Access.Token
 		}
-		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.SUBJECT_SORT=%q;\nwindow.AUTO_LINK_NAMES=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\nwindow.ACCESS_TOKEN=%q;\n", cfg.Frontend.BackendURL, pref.PreferLang, pref.Username, pref.SubjectSort, pref.AutoLinkNames, cfg.Frontend.FallbackURL, config.Dir(), token)
+		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.SUBJECT_SORT=%q;\nwindow.AUTO_LINK_NAMES=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\nwindow.ACCESS_TOKEN=%q;\nwindow.UPSTREAM_ENABLED=%t;\n", cfg.Frontend.BackendURL, pref.PreferLang, pref.Username, pref.SubjectSort, pref.AutoLinkNames, cfg.Frontend.FallbackURL, config.Dir(), token, cfg.Upstream.BaseURL != "")
 		data, err := fs.ReadFile(embedFS, "web/assets/app.min.js")
 		if err != nil {
 			writeError(w, r, http.StatusInternalServerError, "app bundle not found")
@@ -182,6 +182,9 @@ func buildRouter(cfg *config.Config, embedFS fs.FS) *router {
 
 	// 搜索，官方 v0 支持
 	r.core("POST /api/v0/search/subjects", handleSearchSubjects(dd))
+	if cfg.Upstream.BaseURL != "" {
+		r.feature("upstream", "POST /api/v0/upstream/search", handleUpstreamSearch(cfg, bg))
+	}
 	r.core("POST /api/v0/search/characters", handleSearchCharacters(dd))
 	r.core("POST /api/v0/search/persons", handleSearchPersons(dd))
 	r.feature("tags", "POST /api/v0/search/tags", handleSearchTags(dd))

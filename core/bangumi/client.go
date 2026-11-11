@@ -1,6 +1,8 @@
 package bangumi
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -132,6 +134,62 @@ func (c *Client) doGetRaw(url string) ([]byte, error) {
 	}
 	req.Header.Set("User-Agent", c.ua)
 	req.Header.Set("Accept", "application/json")
+	c.setAuth(req)
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, readErr := io.ReadAll(io.LimitReader(resp.Body, 512))
+		if readErr != nil {
+			body = []byte(fmt.Sprintf("(read body: %v)", readErr))
+		}
+		err := fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+		if resp.StatusCode == http.StatusUnauthorized && c.tokenFunc != nil && c.tokenFunc() != "" {
+			err = fmt.Errorf("你设置了令牌，但已失效。请终止任务并退出程序，检查令牌后重试。")
+		}
+		return nil, err
+	}
+	return io.ReadAll(resp.Body)
+}
+
+// PostRaw 提交 JSON 请求，瞬时错误自动重试 3 次，404/400 不重试
+func (c *Client) PostRaw(urlPath string, body any) ([]byte, error) {
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+	url := fmt.Sprintf("%s/%s", c.baseURL, urlPath)
+	var lastErr error
+	for attempt := 0; attempt < 4; attempt++ {
+		if attempt > 0 {
+			log.Debug("retrying API request", "path", urlPath, "attempt", attempt)
+			time.Sleep(time.Duration(attempt) * time.Second)
+		}
+		data, err := c.doPostRaw(url, payload)
+		if err == nil {
+			return data, nil
+		}
+		lastErr = err
+		if strings.Contains(err.Error(), "HTTP 404") || strings.Contains(err.Error(), "HTTP 400") {
+			return nil, err
+		}
+		if strings.Contains(err.Error(), "令牌") {
+			return nil, err
+		}
+	}
+	return nil, fmt.Errorf("%w (retried 3 times)", lastErr)
+}
+
+func (c *Client) doPostRaw(url string, payload []byte) ([]byte, error) {
+	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("User-Agent", c.ua)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
 	c.setAuth(req)
 	resp, err := c.http.Do(req)
 	if err != nil {

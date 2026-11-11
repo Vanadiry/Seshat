@@ -14,6 +14,7 @@ tags:
   - name: 人物
   - name: 用户
   - name: 标签
+  - name: 搜索
   - name: 拉取
   - name: Tracker
   - name: ELO
@@ -562,6 +563,49 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Paged_SearchItem"
+  # 上游搜索
+  /api/v0/upstream/search: # 上游 ID 搜索
+    post:
+      tags: [搜索]
+      summary: 上游 ID 搜索
+      description: |
+        使用配置的 `upstream.base_url` 搜索动画，不写入本地数据。
+        `upstream.base_url` 为空时不注册此接口。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keyword]
+              properties:
+                keyword: { type: string, example: "CLANNAD" }
+                limit:
+                  {
+                    type: integer,
+                    example: 20,
+                    description: "默认 20，最大 50。",
+                  }
+                offset: { type: integer, example: 0 }
+      responses:
+        "200":
+          description: 搜索结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer, example: 12 }
+                  limit: { type: integer, example: 20 }
+                  offset: { type: integer, example: 0 }
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UpstreamSearchItem"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "502":
+          $ref: "#/components/responses/BadGateway"
   # 拉取
   /api/v0/fetch: # 统一拉取
     post:
@@ -1199,6 +1243,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorDetail"
+    BadGateway:
+      description: 上游请求失败
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorDetail"
     Conflict:
       description: 状态冲突
       content:
@@ -1636,6 +1686,15 @@ components:
         winner: { type: integer, example: 51 }
         loser: { type: integer, example: 68 }
         time: { type: string, example: "2026-05-14T12:00:00Z" }
+
+    UpstreamSearchItem:
+      type: object
+      properties:
+        id: { type: integer, example: 51 }
+        name: { type: string, example: "CLANNAD" }
+        name_cn: { type: string, example: "CLANNAD" }
+        date: { type: string, example: "2007-10-04" }
+        platform: { type: string, example: "TV" }
 
     TrackerItem:
       type: object
