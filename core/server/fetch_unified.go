@@ -96,18 +96,12 @@ func trackerIDsByNames(cfg *config.Config, names []string) []int {
 	seen := map[int]bool{}
 	var ids []int
 	for _, name := range names {
-		var path string
-		if _, err := os.Stat(filepath.Join(td, name+".json")); err == nil {
-			path = filepath.Join(td, name+".json")
-		} else if _, err := os.Stat(filepath.Join(td, name+".toml")); err == nil {
-			path = filepath.Join(td, name+".toml")
-		} else {
-			continue
-		}
-		for _, sid := range loadTrackerIDs(path) {
-			if !seen[sid] {
-				seen[sid] = true
-				ids = append(ids, sid)
+		for _, path := range trackerFilePaths(td, name) {
+			for _, sid := range loadTrackerIDs(path) {
+				if sid > 0 && !seen[sid] {
+					seen[sid] = true
+					ids = append(ids, sid)
+				}
 			}
 		}
 	}

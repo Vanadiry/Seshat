@@ -895,6 +895,7 @@ paths:
     get:
       tags: [Tracker]
       summary: 所有Tracker
+      description: 返回合并同名 TOML 和 JSON 后的 Tracker 列表，按 id 排序。
       responses:
         "200":
           description: Tracker列表
@@ -1611,5 +1612,16 @@ components:
     TrackerItem:
       type: object
       properties:
-        name: { type: string, example: "_seshat" }
+        id:
+          type: string
+          example: "_seshat"
+          description: 文件名去掉扩展名的稳定标识
+        name:
+          type: string
+          example: "seshat"
+          description: 展示名称，为空时回退到 id
+        type:
+          type: string
+          enum: [auto, manual]
+          description: auto 为后端自动记录，manual 为用户手动编辑
         count: { type: integer, example: 5 }

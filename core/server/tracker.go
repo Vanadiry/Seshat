@@ -6,9 +6,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/BurntSushi/toml"
 
 	"github.com/vanadiry/seshat/core/bangumi"
 	"github.com/vanadiry/seshat/core/config"
@@ -19,6 +22,129 @@ import (
 
 // seshatTrackerMu 串行化 _seshat.json 的读改写，避免并发追加互相覆盖
 var seshatTrackerMu sync.Mutex
+
+const (
+	trackerTypeAuto   = "auto"
+	trackerTypeManual = "manual"
+)
+
+// trackerInfo 为合并同名文件后的 Tracker 视图
+type trackerInfo struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Type  string `json:"type"`
+	Count int    `json:"count"`
+}
+
+// reservedTrackerID 返回 id 是否保留给内部 Tracker
+func reservedTrackerID(id string) bool {
+	return strings.HasPrefix(id, "_")
+}
+
+// trackerFilePaths 返回指定 id 实际存在的 TOML 和 JSON 文件
+func trackerFilePaths(td, id string) []string {
+	var paths []string
+	for _, ext := range []string{".toml", ".json"} {
+		path := filepath.Join(td, id+ext)
+		if _, err := os.Stat(path); err == nil {
+			paths = append(paths, path)
+		}
+	}
+	return paths
+}
+
+// loadTrackerName 读取 Tracker 文件中的展示名称
+func loadTrackerName(path string) string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	if strings.HasSuffix(path, ".json") {
+		var v struct {
+			Name string `json:"name"`
+		}
+		if json.Unmarshal(data, &v) == nil {
+			return strings.TrimSpace(v.Name)
+		}
+		return ""
+	}
+	var v struct {
+		Name string `toml:"name"`
+	}
+	if _, err := toml.Decode(string(data), &v); err == nil {
+		return strings.TrimSpace(v.Name)
+	}
+	return ""
+}
+
+// loadTrackerInfos 扫描并合并同名 TOML 和 JSON，按 id 排序
+func loadTrackerInfos(cfg *config.Config) []trackerInfo {
+	td := cfg.TrackerDir()
+	files, _ := filepath.Glob(filepath.Join(td, "*.json"))
+	files2, _ := filepath.Glob(filepath.Join(td, "*.toml"))
+	files = append(files, files2...)
+
+	type merged struct {
+		ids       map[int]bool
+		jsonName  string
+		tomlName  string
+		hasManual bool
+	}
+	byID := map[string]*merged{}
+	for _, path := range files {
+		base := filepath.Base(path)
+		id := strings.TrimSuffix(strings.TrimSuffix(base, ".json"), ".toml")
+		if id == "" || strings.HasPrefix(id, ".") {
+			continue
+		}
+		e := byID[id]
+		if e == nil {
+			e = &merged{ids: map[int]bool{}}
+			byID[id] = e
+		}
+		manual := strings.HasSuffix(path, ".toml")
+		if manual {
+			e.hasManual = true
+		}
+		for _, sid := range loadTrackerIDs(path) {
+			if sid > 0 {
+				e.ids[sid] = true
+			}
+		}
+		name := loadTrackerName(path)
+		if name == "" {
+			continue
+		}
+		if manual {
+			e.tomlName = name
+		} else if e.jsonName == "" {
+			e.jsonName = name
+		}
+	}
+
+	infos := make([]trackerInfo, 0, len(byID))
+	for id, e := range byID {
+		name := e.tomlName
+		if name == "" {
+			name = e.jsonName
+		}
+		if name == "" {
+			name = id
+		}
+		typ := trackerTypeAuto
+		if e.hasManual {
+			typ = trackerTypeManual
+		}
+		infos = append(infos, trackerInfo{
+			ID:    id,
+			Name:  name,
+			Type:  typ,
+			Count: len(e.ids),
+		})
+	}
+	sort.Slice(infos, func(i, j int) bool { return infos[i].ID < infos[j].ID })
+	return infos
+}
 
 func countTrackerTotal(cfg *config.Config) int {
 	files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
@@ -38,16 +164,12 @@ func countTrackerNames(cfg *config.Config, names []string) int {
 	td := cfg.TrackerDir()
 	seen := map[int]bool{}
 	for _, name := range names {
-		var path string
-		if _, err := os.Stat(filepath.Join(td, name+".json")); err == nil {
-			path = filepath.Join(td, name+".json")
-		} else if _, err := os.Stat(filepath.Join(td, name+".toml")); err == nil {
-			path = filepath.Join(td, name+".toml")
-		} else {
-			continue
-		}
-		for _, sid := range loadTrackerIDs(path) {
-			seen[sid] = true
+		for _, path := range trackerFilePaths(td, name) {
+			for _, sid := range loadTrackerIDs(path) {
+				if sid > 0 {
+					seen[sid] = true
+				}
+			}
 		}
 	}
 	return len(seen)
@@ -99,18 +221,12 @@ func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, 
 	seen := map[int]bool{}
 	var allIDs []int
 	for _, name := range names {
-		var path string
-		if _, err := os.Stat(filepath.Join(td, name+".json")); err == nil {
-			path = filepath.Join(td, name+".json")
-		} else if _, err := os.Stat(filepath.Join(td, name+".toml")); err == nil {
-			path = filepath.Join(td, name+".toml")
-		} else {
-			continue
-		}
-		for _, sid := range loadTrackerIDs(path) {
-			if !seen[sid] {
-				seen[sid] = true
-				allIDs = append(allIDs, sid)
+		for _, path := range trackerFilePaths(td, name) {
+			for _, sid := range loadTrackerIDs(path) {
+				if sid > 0 && !seen[sid] {
+					seen[sid] = true
+					allIDs = append(allIDs, sid)
+				}
 			}
 		}
 	}
@@ -326,20 +442,7 @@ func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 
 func handleTrackerList(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
-		files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
-		files = append(files, files2...)
-		type tinfo struct {
-			Name  string `json:"name"`
-			Count int    `json:"count"`
-		}
-		var list []tinfo
-		for _, f := range files {
-			name := strings.TrimSuffix(filepath.Base(f), ".json")
-			name = strings.TrimSuffix(name, ".toml")
-			list = append(list, tinfo{Name: name, Count: len(loadTrackerIDs(f))})
-		}
-		writeList(w, list)
+		writeList(w, loadTrackerInfos(cfg))
 	}
 }
 
