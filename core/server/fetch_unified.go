@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/vanadiry/seshat/core/bangumi"
 	"github.com/vanadiry/seshat/core/config"
@@ -108,9 +109,12 @@ func resolveFetchIDs(cfg *config.Config, dd string, req fetchRequest) ([]int, er
 	case fetchSourceTrackerAll:
 		return allTrackerIDs(cfg), nil
 	case fetchSourceTrackerNames:
+		if missing := missingTrackerNames(cfg, req.Names); len(missing) > 0 {
+			return nil, fmt.Errorf("未找到 Tracker：%s", strings.Join(missing, "、"))
+		}
 		ids := trackerIDsByNames(cfg, req.Names)
 		if len(ids) == 0 {
-			return nil, fmt.Errorf("Tracker 不存在或为空")
+			return nil, fmt.Errorf("Tracker 为空")
 		}
 		return ids, nil
 	case fetchSourceIDs:

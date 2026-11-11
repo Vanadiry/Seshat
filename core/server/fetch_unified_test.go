@@ -195,3 +195,29 @@ func TestLegacyFetchWrappers(t *testing.T) {
 		}
 	}
 }
+
+func TestFetchUnifiedRejectsMissingTracker(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("SESHAT_HOME", home)
+	cfg := &config.Config{}
+	cfg.Upstream.BaseURL = "http://127.0.0.1:1"
+	td := cfg.TrackerDir()
+	if err := os.MkdirAll(td, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(td, "user.toml"), []byte("name = \"user\"\nids = [1]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	dd := filepath.Join(home, "data")
+	h := handleFetchUnified(cfg, nil, dd, filepath.Join(dd, "images"))
+	w := httptest.NewRecorder()
+	h(w, httptest.NewRequest(http.MethodPost, "/api/v0/fetch", strings.NewReader(
+		`{"source":"tracker_names","names":["user","missing"],"json":"fill","images":"none"}`,
+	)))
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("缺少 Tracker 时状态码 = %d, body=%s", w.Code, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "missing") {
+		t.Fatalf("错误信息未包含缺失项: %s", w.Body.String())
+	}
+}

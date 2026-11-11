@@ -128,6 +128,23 @@ func trackerIDsByID(cfg *config.Config, id string) []int {
 	return trackerIDsFromPaths(trackerFilePaths(cfg.TrackerDir(), id))
 }
 
+// missingTrackerNames 返回不存在的 Tracker id
+func missingTrackerNames(cfg *config.Config, names []string) []string {
+	td := cfg.TrackerDir()
+	seen := map[string]bool{}
+	var missing []string
+	for _, name := range names {
+		if seen[name] {
+			continue
+		}
+		seen[name] = true
+		if len(trackerFilePaths(td, name)) == 0 {
+			missing = append(missing, name)
+		}
+	}
+	return missing
+}
+
 // allTrackerIDs 返回全部 Tracker 的 ID 并集
 func allTrackerIDs(cfg *config.Config) []int {
 	return trackerIDsFromPaths(allTrackerFiles(cfg.TrackerDir()))
