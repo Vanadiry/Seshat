@@ -43,6 +43,9 @@ func reservedTrackerID(id string) bool {
 
 // trackerFilePaths 返回指定 id 实际存在的 TOML 和 JSON 文件
 func trackerFilePaths(td, id string) []string {
+	if !validTrackerName(id) {
+		return nil
+	}
 	var paths []string
 	for _, ext := range []string{".toml", ".json"} {
 		path := filepath.Join(td, id+ext)
@@ -77,11 +80,17 @@ func loadTrackerName(path string) string {
 	return ""
 }
 
-// allTrackerFiles 返回 Tracker 目录下全部 TOML 和 JSON 文件
+// allTrackerFiles 返回 Tracker 目录下 id 合法的 TOML 和 JSON 文件
 func allTrackerFiles(td string) []string {
 	files, _ := filepath.Glob(filepath.Join(td, "*.json"))
 	files2, _ := filepath.Glob(filepath.Join(td, "*.toml"))
-	return append(files, files2...)
+	var out []string
+	for _, path := range append(files, files2...) {
+		if validTrackerName(trackerIDFromPath(path)) {
+			out = append(out, path)
+		}
+	}
+	return out
 }
 
 // trackerIDFromPath 返回 Tracker 文件名对应的 id
@@ -380,34 +389,6 @@ func validTrackerName(name string) bool {
 	return true
 }
 
-// quoteTOMLString 转义 TOML 基本字符串
-func quoteTOMLString(s string) string {
-	var b strings.Builder
-	b.WriteByte('"')
-	for _, r := range s {
-		switch r {
-		case '\\':
-			b.WriteString(`\\`)
-		case '"':
-			b.WriteString(`\"`)
-		case '\n':
-			b.WriteString(`\n`)
-		case '\r':
-			b.WriteString(`\r`)
-		case '\t':
-			b.WriteString(`\t`)
-		default:
-			if r < 0x20 || r == 0x7f {
-				fmt.Fprintf(&b, `\u%04X`, r)
-			} else {
-				b.WriteRune(r)
-			}
-		}
-	}
-	b.WriteByte('"')
-	return b.String()
-}
-
 func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
@@ -445,7 +426,7 @@ func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 			writeError(w, r, 500, "无法创建 tracker 目录")
 			return
 		}
-		tmpl := fmt.Sprintf(config.TrackerTemplate, id, quoteTOMLString(name))
+		tmpl := config.TrackerFileContent(id, name)
 		if err := store.WriteAtomic(filepath.Join(td, id+".toml"), []byte(tmpl), 0o644); err != nil {
 			log.Error("tracker create write", "err", err)
 			writeError(w, r, 500, "无法写入 tracker 文件")

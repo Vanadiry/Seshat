@@ -173,13 +173,59 @@ func TestTrackerCreateRestrictions(t *testing.T) {
 	if code := post(`{"id":"_seshat"}`); code != http.StatusBadRequest {
 		t.Fatalf("保留名状态码 = %d", code)
 	}
-	if code := post(`{"id":"bad name"}`); code != http.StatusBadRequest {
-		t.Fatalf("不合法 id 状态码 = %d", code)
+	for _, body := range []string{
+		`{"id":"bad name"}`,
+		`{"id":"中文"}`,
+		`{"id":"../evil"}`,
+		`{"id":"a/b"}`,
+		`{"id":"a.b"}`,
+	} {
+		if code := post(body); code != http.StatusBadRequest {
+			t.Fatalf("不合法 id 状态码 = %d: %s", code, body)
+		}
+	}
+	if code := post(`{"id":"special","name":"我的 \"追番\" \\ 2026"}`); code != http.StatusOK {
+		t.Fatalf("特殊名称创建状态码 = %d", code)
+	}
+	if name := loadTrackerName(filepath.Join(td, "special.toml")); name != "我的 \"追番\" \\ 2026" {
+		t.Fatalf("特殊名称 = %q", name)
 	}
 	if code := post(`{"name":"legacy"}`); code != http.StatusOK {
 		t.Fatalf("只传 name 状态码 = %d", code)
 	}
 	if name := loadTrackerName(filepath.Join(td, "legacy.toml")); name != "legacy" {
 		t.Fatalf("只传 name 创建后的名称 = %q", name)
+	}
+}
+
+func TestTrackerIDValidation(t *testing.T) {
+	valid := []string{"a", "Z", "0", "a-b_c", "A0_-"}
+	for _, id := range valid {
+		if !validTrackerName(id) {
+			t.Errorf("%q 应当合法", id)
+		}
+	}
+	invalid := []string{"", "中文", "a b", "a.b", "a/b", "../a", "a\\b", "a\tb"}
+	for _, id := range invalid {
+		if validTrackerName(id) {
+			t.Errorf("%q 应当不合法", id)
+		}
+	}
+	if paths := trackerFilePaths(t.TempDir(), "../evil"); len(paths) != 0 {
+		t.Fatalf("不合法 id 不应拼接路径: %v", paths)
+	}
+}
+
+func TestTrackerListIgnoresInvalidIDs(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("SESHAT_HOME", home)
+	cfg := &config.Config{}
+	td := cfg.TrackerDir()
+	writeTrackerTestFile(t, td, "good.toml", "name = \"good\"\nids = [1]\n")
+	writeTrackerTestFile(t, td, "中文.toml", "name = \"中文\"\nids = [2]\n")
+	writeTrackerTestFile(t, td, "bad name.toml", "name = \"bad\"\nids = [3]\n")
+	infos := loadTrackerInfos(cfg)
+	if len(infos) != 1 || infos[0].ID != "good" {
+		t.Fatalf("不合法 id 不应出现在列表: %+v", infos)
 	}
 }

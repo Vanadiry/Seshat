@@ -1,6 +1,9 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 var DefaultConfigTOML = fmt.Sprintf(`# Seshat 配置
 # 要修改此处内容，建议先阅读文档
@@ -34,7 +37,35 @@ fallback_url = ""
 bangumi_access_token = ""
 `, Version)
 
-const TrackerTemplate = `# Tracker: %s
-name = %s
-ids = []
-`
+// TrackerFileContent 生成空 Tracker 的 TOML 内容
+func TrackerFileContent(id, name string) string {
+	return fmt.Sprintf("# Tracker: %s\nname = %s\nids = []\n", id, quoteTOMLString(name))
+}
+
+// quoteTOMLString 转义 TOML 基本字符串
+func quoteTOMLString(s string) string {
+	var b strings.Builder
+	b.WriteByte('"')
+	for _, r := range s {
+		switch r {
+		case '\\':
+			b.WriteString(`\\`)
+		case '"':
+			b.WriteString(`\"`)
+		case '\n':
+			b.WriteString(`\n`)
+		case '\r':
+			b.WriteString(`\r`)
+		case '\t':
+			b.WriteString(`\t`)
+		default:
+			if r < 0x20 || r == 0x7f {
+				fmt.Fprintf(&b, `\u%04X`, r)
+			} else {
+				b.WriteRune(r)
+			}
+		}
+	}
+	b.WriteByte('"')
+	return b.String()
+}

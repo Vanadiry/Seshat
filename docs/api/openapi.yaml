@@ -919,17 +919,14 @@ paths:
               type: object
               properties:
                 id:
-                  {
-                    type: string,
-                    example: "kyoani",
-                    description: "Tracker id，省略时使用 name。",
-                  }
+                  type: string
+                  example: "kyoani"
+                  pattern: "^[A-Za-z0-9_-]+$"
+                  description: Tracker id，只允许大小写字母、数字、连字符和下划线，省略时使用 name。
                 name:
-                  {
-                    type: string,
-                    example: "京都动画",
-                    description: "展示名称，省略时使用 id。",
-                  }
+                  type: string
+                  example: "京都动画"
+                  description: 展示名称，允许任意字符，省略时使用 id。
       responses:
         "200":
           description: 创建成功
@@ -1640,11 +1637,12 @@ components:
         id:
           type: string
           example: "_seshat"
-          description: 文件名去掉扩展名的稳定标识
+          pattern: "^[A-Za-z0-9_-]+$"
+          description: 文件名去掉扩展名的稳定标识，只允许大小写字母、数字、连字符和下划线
         name:
           type: string
           example: "seshat"
-          description: 展示名称，为空时回退到 id
+          description: 展示名称，允许任意字符，为空时回退到 id
         type:
           type: string
           enum: [auto, manual]
