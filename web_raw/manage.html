@@ -126,14 +126,14 @@
                                     <input
                                         id="fetch-names"
                                         placeholder="也可以填写 Tracker id，逗号分隔"
-                                        class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm"
+                                        class="h-10 flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm"
                                     />
                                     <button
                                         id="btn-add-trackers"
                                         type="button"
                                         title="添加 Tracker"
                                         aria-label="添加 Tracker"
-                                        class="w-9 shrink-0 rounded-lg border border-bord bg-transparent text-sub text-lg leading-none cursor-pointer hover:bg-active hover:text-text flex items-center justify-center"
+                                        class="h-10 w-10 shrink-0 rounded-lg border border-bord bg-transparent text-sub text-lg leading-none cursor-pointer hover:bg-active hover:text-text flex items-center justify-center"
                                     >
                                         +
                                     </button>
@@ -159,7 +159,7 @@
                                 <input
                                     id="fetch-ids"
                                     placeholder="动画 ID，如 51 或 51, 288"
-                                    class="w-full px-3 py-2 rounded-lg border border-bord bg-input text-sm"
+                                    class="h-10 w-full px-3 py-2 rounded-lg border border-bord bg-input text-sm"
                                 />
                             </div>
                             <label
@@ -242,7 +242,7 @@
 
                         <button
                             id="btn-page-fetch"
-                            class="w-full px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90"
+                            class="h-10 w-full px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90"
                         >
                             开始拉取
                         </button>
@@ -266,12 +266,12 @@
                             <input
                                 id="upstream-search-input"
                                 placeholder="关键词，例如 CLANNAD"
-                                class="flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm"
+                                class="h-10 flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm"
                             />
                             <button
                                 id="btn-upstream-search"
                                 type="button"
-                                class="shrink-0 px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90"
+                                class="h-10 shrink-0 px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90"
                             >
                                 搜索
                             </button>
@@ -300,14 +300,14 @@
                         <div class="flex flex-col gap-2">
                             <button
                                 id="btn-page-user"
-                                class="w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                                class="h-10 w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
                             >
                                 刷新用户数据
                             </button>
                             <button
                                 id="btn-page-import"
                                 data-feature="tracker"
-                                class="w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                                class="h-10 w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
                             >
                                 同步收藏到 Tracker
                             </button>
@@ -330,7 +330,7 @@
                             <button
                                 id="btn-page-index"
                                 data-lock-kind="index"
-                                class="danger-lock w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text select-none"
+                                class="h-10 danger-lock w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text select-none"
                             >
                                 <span class="lock-fill"></span>
                                 <span class="lock-label">重建索引</span>
@@ -339,7 +339,7 @@
                                 id="btn-page-elo"
                                 data-feature="elo"
                                 data-lock-kind="elo"
-                                class="danger-lock w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text select-none"
+                                class="h-10 danger-lock w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text select-none"
                             >
                                 <span class="lock-fill"></span>
                                 <span class="lock-label">重建 ELO</span>
@@ -347,7 +347,7 @@
                             <button
                                 id="btn-page-deep"
                                 data-lock-kind="deep"
-                                class="danger-lock w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text select-none"
+                                class="h-10 danger-lock w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text select-none"
                             >
                                 <span class="lock-fill"></span>
                                 <span class="lock-label">重建全部</span>
@@ -393,7 +393,7 @@
                     <button
                         id="btn-task-abort"
                         type="button"
-                        class="px-5 py-2 rounded-lg border border-[#dc2626] bg-transparent text-[#dc2626] text-sm cursor-pointer hover:bg-pink-bg"
+                        class="h-10 px-5 py-2 rounded-lg border border-[#dc2626] bg-transparent text-[#dc2626] text-sm cursor-pointer hover:bg-pink-bg"
                     >
                         中止任务
                     </button>
@@ -415,13 +415,13 @@
                 ></p>
                 <button
                     id="btn-confirm-exec"
-                    class="w-full px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 mb-2"
+                    class="h-10 w-full px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 mb-2"
                 >
                     执行
                 </button>
                 <button
                     id="btn-confirm-cancel"
-                    class="w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active"
+                    class="h-10 w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active"
                 >
                     取消
                 </button>
@@ -526,7 +526,7 @@
                         var enabled = t.count > 0;
                         var label = document.createElement("label");
                         label.className =
-                            "w-full flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm min-w-0 " +
+                            "h-10 w-full flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm min-w-0 " +
                             (enabled
                                 ? "cursor-pointer hover:bg-active hover:text-text"
                                 : "opacity-50");
@@ -1133,7 +1133,7 @@
                         var btn = document.createElement("button");
                         btn.type = "button";
                         btn.className =
-                            "shrink-0 px-3 py-1.5 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text";
+                            "h-10 shrink-0 px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text";
                         btn.textContent = "拉取";
                         btn.onclick = function () {
                             requestPullSearchItem(item);
@@ -1146,7 +1146,7 @@
                     var more = document.createElement("button");
                     more.type = "button";
                     more.className =
-                        "w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text";
+                        "h-10 w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text";
                     more.textContent = "加载更多";
                     more.onclick = function () {
                         runUpstreamSearch(true);
