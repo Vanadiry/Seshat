@@ -147,6 +147,12 @@ html.light {
 .select-text * {
     user-select: text;
 }
+/* 表单控件允许选中 */
+input,
+textarea,
+select {
+    user-select: text;
+}
 
 /* 加载条 */
 #load-bar {
