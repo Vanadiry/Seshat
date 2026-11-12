@@ -18,7 +18,7 @@ web/assets/theme.min.js
 web/assets/style.css
 web/assets/subject.js
 web/assets/character.js
-web/assets/shared.js
+web/assets/person.js
 web/**.html
 
 # Tauri
