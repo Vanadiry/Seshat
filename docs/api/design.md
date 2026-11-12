@@ -107,6 +107,11 @@ data/index/*.json
 `POST /v0/upstream/search` 使用 `[upstream] base_url`、UA、token 和代理请求官方搜索接口。  
 它只返回搜索结果，不写入本地数据。`upstream` 能力缺失时，前端隐藏入口。
 
+## 数据包
+
+`POST /v0/bundle/export` 把一组本地条目的一跳数据导出为 tar，不联网拉取。  
+manifest 只记录包内的实体和图片，不记录来源；缺失数据在导出响应的 `missing` 中返回。
+
 ## 跨源
 
 CORS 按监听地址决定，不回显固定自身地址。
@@ -127,7 +132,7 @@ CORS 按监听地址决定，不回显固定自身地址。
 `/v0/info` 的 `features` 是描述性的能力清单，前端据此决定功能入口，不用于权限。
 
 - 核心接口始终提供，前端不判断，包括详情、图片、剧集、用户、收藏和搜索
-- feature 为 Seshat 扩展：`elo`、`events`、`fetch`、`lists`、`names`、`stats`、`tags`、`task`、`tracker`、`upstream`
+- feature 为 Seshat 扩展：`elo`、`events`、`fetch`、`lists`、`names`、`stats`、`tags`、`task`、`tracker`、`upstream`、`bundle`
 - `upstream` 仅在配置 `base_url` 后提供，对应 `POST /v0/upstream/search`
 - 缺失 feature 时隐藏入口，`lists` 和 `names` 退回本机
 - 旧版 Seshat 没有 `features`，按空能力处理，核心接口仍可用

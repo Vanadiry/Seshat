@@ -89,7 +89,8 @@ var CAPS = [
     { key: "tags", label: "标签" },
     { key: "stats", label: "统计" },
     { key: "task", label: "任务" },
-    { key: "events", label: "事件通知" }
+    { key: "events", label: "事件通知" },
+    { key: "bundle", label: "数据包" }
 ];
 var CAPS_ALL = CAPS.map(function (c) {
     return c.key;
@@ -280,7 +281,8 @@ var ROUTE = {
     tags: "feature",
     task: "feature",
     tracker: "feature",
-    upstream: "feature"
+    upstream: "feature",
+    bundle: "feature"
 };
 
 // 解析请求归属，返回 remote、local 或 hidden

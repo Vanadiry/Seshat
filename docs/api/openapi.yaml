@@ -17,6 +17,7 @@ tags:
   - name: 搜索
   - name: 拉取
   - name: Tracker
+  - name: 数据包
   - name: ELO
   - name: 事件
   - name: 其他
@@ -606,6 +607,45 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "502":
           $ref: "#/components/responses/BadGateway"
+  # 数据包
+  /api/v0/bundle/export: # 导出数据包
+    post:
+      tags: [数据包]
+      summary: 导出数据包
+      description: |
+        导出一组本地条目的一跳数据为 tar 文件，不联网拉取。
+        支持按 ID 或 Tracker 导出，多个来源合并去重。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source]
+              properties:
+                source: { type: string, enum: [ids, trackers] }
+                ids:
+                  type: array
+                  items: { type: integer }
+                  description: source 为 ids 时必填。
+                trackers:
+                  type: array
+                  items: { type: string }
+                  description: source 为 trackers 时必填。
+                description: { type: string, description: 用户填写的描述。 }
+      responses:
+        "200":
+          description: 导出成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BundleExport"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   # 拉取
   /api/v0/fetch: # 统一拉取
     post:
@@ -1695,6 +1735,37 @@ components:
         name_cn: { type: string, example: "CLANNAD" }
         date: { type: string, example: "2007-10-04" }
         platform: { type: string, example: "TV" }
+
+    BundleExport:
+      type: object
+      properties:
+        status: { type: string, example: ok }
+        path:
+          {
+            type: string,
+            example: "/home/user/.vSoft/Seshat/exports/seshat-export-20261112-100000.tar",
+          }
+        filename: { type: string, example: "seshat-export-20261112-100000.tar" }
+        size: { type: integer, example: 12345678 }
+        counts:
+          type: object
+          properties:
+            subjects: { type: integer, example: 2 }
+            characters: { type: integer, example: 30 }
+            persons: { type: integer, example: 60 }
+            images: { type: integer, example: 270 }
+        missing:
+          type: array
+          items:
+            $ref: "#/components/schemas/BundleMissing"
+
+    BundleMissing:
+      type: object
+      properties:
+        kind: { type: string, enum: [subjects, characters, persons, images] }
+        entity: { type: string, example: subjects }
+        id: { type: integer, example: 51 }
+        size: { type: string, example: small }
 
     TrackerItem:
       type: object

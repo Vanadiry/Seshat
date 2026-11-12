@@ -15,6 +15,7 @@ func TestFeaturesFixedList(t *testing.T) {
 	r := buildRouter(&config.Config{}, nil)
 
 	want := []string{
+		"bundle",
 		"elo",
 		"events",
 		"fetch",
