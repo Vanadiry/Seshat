@@ -1,8 +1,15 @@
 <script>
     import SectionTitle from "../subject/SectionTitle.svelte";
+    import CreditList from "./CreditList.svelte";
     import { imgFallback } from "../lib/img.js";
 
-    let { person = {}, cn = "", infoItems = [] } = $props();
+    let {
+        person = {},
+        cn = "",
+        infoItems = [],
+        characters = [],
+        subjects = []
+    } = $props();
 
     let career = $derived.by(() => {
         var value = person.career;
@@ -106,17 +113,17 @@
             {/if}
         {/if}
 
-        <div id="chars-section">
-            <SectionTitle
-                text="出演角色"
-                extra={'<span class="text-xs text-sub"><span class="spin"></span>加载中…</span>'}
-            />
-        </div>
-        <div id="subjects-section">
-            <SectionTitle
-                text="参与制作"
-                extra={'<span class="text-xs text-sub"><span class="spin"></span>加载中…</span>'}
-            />
-        </div>
+        <CreditList
+            items={characters}
+            title="出演角色"
+            kind="chars"
+            id={person.id}
+        />
+        <CreditList
+            items={subjects}
+            title="参与制作"
+            kind="subjects"
+            id={person.id}
+        />
     </div>
 </div>
