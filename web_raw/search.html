@@ -114,6 +114,7 @@
             };
             var _searchAbort = null;
             var _searchSeq = 0;
+            var _searchKeyword = "";
 
             function selectedTypes() {
                 var out = [];
@@ -179,13 +180,64 @@
                 });
             }
 
+            // 高亮关键词，先分段转义再拼标记
+            function highlightText(text, keyword) {
+                var s = String(text == null ? "" : text);
+                var q = String(keyword || "");
+                if (!q) return escapeHtml(s);
+                var rs = Array.from(s);
+                var rq = Array.from(q.toLowerCase());
+                var out = "";
+                var buf = "";
+                for (var i = 0; i < rs.length; ) {
+                    var matched = true;
+                    for (var j = 0; j < rq.length; j++) {
+                        if (
+                            i + j >= rs.length ||
+                            rs[i + j].toLowerCase() !== rq[j]
+                        ) {
+                            matched = false;
+                            break;
+                        }
+                    }
+                    if (matched) {
+                        out += escapeHtml(buf);
+                        out +=
+                            '<mark class="bg-pink-bg text-pink rounded px-0.5">' +
+                            escapeHtml(rs.slice(i, i + rq.length).join("")) +
+                            "</mark>";
+                        buf = "";
+                        i += rq.length;
+                    } else {
+                        buf += rs[i];
+                        i++;
+                    }
+                }
+                return out + escapeHtml(buf);
+            }
+
+            // 信息栏和简介的命中片段
+            function matchExtra(it) {
+                var m = it.match;
+                if (!m) return "";
+                if (m.field !== "infobox" && m.field !== "summary") return "";
+                var label = m.field === "summary" ? "简介" : m.key || "信息";
+                return (
+                    '<div class="text-xs text-sub truncate mt-0.5">' +
+                    escapeHtml(label) +
+                    "：" +
+                    highlightText(m.text || "", _searchKeyword) +
+                    "</div>"
+                );
+            }
+
             function renderItem(type, it) {
                 if (type === "tags") {
                     return (
                         '<a href="/tag?tag=' +
                         encodeURIComponent(escapeHtml(it.name)) +
                         '" class="fade-in no-underline flex gap-3 items-center bg-surface border border-bord-mid rounded-lg py-1.5 px-2 cursor-pointer hover:border-pink"><div class="text-sm font-semibold">' +
-                        escapeHtml(it.name) +
+                        highlightText(it.name, _searchKeyword) +
                         '</div><div class="text-xs text-sub">' +
                         it.count +
                         " 个条目</div></a>"
@@ -204,13 +256,14 @@
                     ' class="w-10 h-10 rounded-lg object-cover bg-surface shrink-0">' +
                     '<div class="flex-1 min-w-0">' +
                     '<div class="text-sm font-semibold truncate">' +
-                    escapeHtml(it.name) +
+                    highlightText(it.name, _searchKeyword) +
                     "</div>" +
                     (escapeHtml(it.name_cn)
                         ? '<div class="text-xs text-sub truncate mt-0.5">' +
-                          escapeHtml(it.name_cn) +
+                          highlightText(it.name_cn, _searchKeyword) +
                           "</div>"
                         : "") +
+                    matchExtra(it) +
                     "</div>" +
                     '<div class="text-xs text-sub shrink-0">#' +
                     it.id +
@@ -241,6 +294,7 @@
             async function doSearch() {
                 var keyword = document.getElementById("q").value.trim();
                 if (!keyword) return;
+                _searchKeyword = keyword;
                 var types = selectedTypes();
                 if (!types.length) return;
                 document.getElementById("search-area").style.marginTop = "0";
