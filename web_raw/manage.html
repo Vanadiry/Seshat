@@ -322,8 +322,66 @@
                             <h2 class="font-bold text-sm">数据包</h2>
                         </div>
                         <p class="text-xs text-sub mb-3">
-                            导入 tar 数据包，会覆盖同名文件并重建索引。
+                            导出本地数据包，或导入 tar 数据包。
                         </p>
+
+                        <div class="text-xs text-sub mb-2">导出</div>
+                        <div class="flex flex-col gap-2 mb-2">
+                            <label
+                                class="flex items-center gap-2 cursor-pointer"
+                            >
+                                <input
+                                    type="radio"
+                                    name="bundle-source"
+                                    value="ids"
+                                    checked
+                                    class="radio-pink"
+                                />
+                                指定 ID
+                            </label>
+                            <label
+                                class="flex items-center gap-2 cursor-pointer"
+                            >
+                                <input
+                                    type="radio"
+                                    name="bundle-source"
+                                    value="trackers"
+                                    class="radio-pink"
+                                />
+                                指定 Tracker
+                            </label>
+                        </div>
+                        <div class="flex flex-col gap-2 mb-2">
+                            <input
+                                id="bundle-export-ids"
+                                placeholder="动画 ID，逗号分隔"
+                                class="h-10 w-full px-3 py-2 rounded-lg border border-bord bg-input text-sm"
+                            />
+                            <input
+                                id="bundle-export-trackers"
+                                placeholder="Tracker id，逗号分隔"
+                                style="display: none"
+                                class="h-10 w-full px-3 py-2 rounded-lg border border-bord bg-input text-sm"
+                            />
+                            <input
+                                id="bundle-export-description"
+                                placeholder="描述，可选"
+                                class="h-10 w-full px-3 py-2 rounded-lg border border-bord bg-input text-sm"
+                            />
+                            <button
+                                id="btn-bundle-export"
+                                type="button"
+                                class="h-10 w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                            >
+                                导出数据包
+                            </button>
+                            <div
+                                id="bundle-export-status"
+                                class="text-xs text-sub whitespace-pre-line break-all"
+                            ></div>
+                        </div>
+
+                        <div class="text-xs text-sub mb-2">导入</div>
                         <input
                             id="bundle-file"
                             type="file"
@@ -1285,6 +1343,105 @@
                 }
             }
 
+            function updateBundleExportRows() {
+                var source = radioValue("bundle-source");
+                document.getElementById("bundle-export-ids").style.display =
+                    source === "ids" ? "" : "none";
+                document.getElementById(
+                    "bundle-export-trackers"
+                ).style.display = source === "trackers" ? "" : "none";
+            }
+
+            function requestBundleExport() {
+                var source = radioValue("bundle-source");
+                var body = {
+                    source: source,
+                    description: document
+                        .getElementById("bundle-export-description")
+                        .value.trim()
+                };
+                var lines = [
+                    "来源：" + (source === "ids" ? "指定 ID" : "指定 Tracker")
+                ];
+                if (source === "ids") {
+                    body.ids = splitIDs(
+                        document.getElementById("bundle-export-ids").value
+                    );
+                    if (!body.ids.length) {
+                        showError("请填写动画 ID");
+                        return;
+                    }
+                    lines.push("ID：" + body.ids.join("、"));
+                } else {
+                    body.trackers = splitList(
+                        document.getElementById("bundle-export-trackers").value
+                    );
+                    if (!body.trackers.length) {
+                        showError("请填写 Tracker id");
+                        return;
+                    }
+                    for (var i = 0; i < body.trackers.length; i++) {
+                        if (!/^[a-zA-Z0-9_-]+$/.test(body.trackers[i])) {
+                            showError(MSG.errInvalidTrackerName);
+                            return;
+                        }
+                    }
+                    lines.push("Tracker：" + body.trackers.join("、"));
+                }
+                if (body.description) {
+                    lines.push("描述：" + body.description);
+                }
+                lines.push("只导出本地已有数据，缺失内容会记录在导出响应中。");
+                lines.push("确定导出？");
+                confirmAction(lines.join("\n"), function () {
+                    doBundleExport(body);
+                });
+            }
+
+            async function doBundleExport(body) {
+                var btn = document.getElementById("btn-bundle-export");
+                var status = document.getElementById("bundle-export-status");
+                if (btn) btn.disabled = true;
+                status.textContent = "导出中...";
+                try {
+                    var res = await fetch(API + "/v0/bundle/export", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(body)
+                    });
+                    var d = await readJSON(res);
+                    if (!res.ok || !d) {
+                        showError(errText(d, res.status));
+                        status.textContent = "导出失败";
+                        return;
+                    }
+                    var lines = ["已导出 " + d.filename];
+                    if (d.counts) {
+                        lines.push(
+                            "条目 " +
+                                d.counts.subjects +
+                                "，角色 " +
+                                d.counts.characters +
+                                "，人物 " +
+                                d.counts.persons +
+                                "，图片 " +
+                                d.counts.images
+                        );
+                    }
+                    if (d.missing && d.missing.length) {
+                        lines.push("缺失 " + d.missing.length + " 项");
+                    }
+                    lines.push("路径：" + d.path);
+                    status.textContent = lines.join("\n");
+                    showSuccess("已导出 " + d.filename);
+                } catch (e) {
+                    showError("导出失败");
+                    status.textContent = "导出失败";
+                } finally {
+                    if (btn) btn.disabled = false;
+                }
+            }
+
             function setBundleStatus(text) {
                 var el = document.getElementById("bundle-file-status");
                 if (el) el.textContent = text;
@@ -1345,6 +1502,18 @@
                     requestStartFetch;
                 document.getElementById("btn-add-trackers").onclick =
                     requestAddTrackers;
+                var bundleSourceRadios = document.querySelectorAll(
+                    'input[name="bundle-source"]'
+                );
+                for (var bi = 0; bi < bundleSourceRadios.length; bi++) {
+                    bundleSourceRadios[bi].addEventListener(
+                        "change",
+                        updateBundleExportRows
+                    );
+                }
+                updateBundleExportRows();
+                document.getElementById("btn-bundle-export").onclick =
+                    requestBundleExport;
                 var bundleInput = document.getElementById("bundle-file");
                 document.getElementById("btn-bundle-import").onclick =
                     function () {

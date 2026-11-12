@@ -1353,6 +1353,7 @@ function confirmAction(msg, cb) {
     confirmCb = cb;
     document.getElementById("btn-confirm-exec").style.display = "block";
     document.getElementById("btn-confirm-cancel").textContent = MSG.btnCancel;
+    document.getElementById("btn-confirm-cancel").onclick = closeConfirm;
     document.getElementById("btn-confirm-exec").onclick = function () {
         closeConfirm();
         cb();
