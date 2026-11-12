@@ -25,7 +25,6 @@
         <script>
             (async () => {
                 const ID = new URLSearchParams(location.search).get("id");
-                window._persId = ID;
                 if (!ID) {
                     document.getElementById("view").innerHTML =
                         '<p class="text-sub text-center py-20">缺少人物 ID</p>';
@@ -68,287 +67,63 @@
                 loadSubjectSection(ID);
             })();
 
-            // ── 出演角色 ──
-            var _charsAll = [],
-                _charsShowing = 0;
             function loadCharSection(ID) {
                 api("/v0/persons/" + ID + "/characters")
                     .then(function (data) {
-                        _charsAll = Array.isArray(data) ? data : [];
-                        _charsAll.sort(function (a, b) {
-                            var o = { 2: 0, 4: 1, 1: 2, 3: 3, 6: 4 };
-                            return (
-                                (o[a.subject_type] != null
-                                    ? o[a.subject_type]
-                                    : 5) -
-                                (o[b.subject_type] != null
-                                    ? o[b.subject_type]
-                                    : 5)
-                            );
-                        });
-                        _charsShowing = 0;
-                        renderCharSection();
+                        var items = Array.isArray(data) ? data : [];
+                        var section = document.getElementById("chars-section");
+                        if (!section) return;
+                        if (!items.length) {
+                            section.innerHTML = "";
+                            return;
+                        }
+                        section.innerHTML =
+                            '<div id="person-characters"></div>';
+                        window.dispatchEvent(
+                            new CustomEvent("seshat:person-characters", {
+                                detail: {
+                                    items: items,
+                                    title: "出演角色",
+                                    kind: "chars",
+                                    id: ID
+                                }
+                            })
+                        );
                     })
                     .catch(function () {
-                        document.getElementById("chars-section").innerHTML = "";
+                        var section = document.getElementById("chars-section");
+                        if (section) section.innerHTML = "";
                     });
             }
-            function renderCharSection() {
-                var section = document.getElementById("chars-section");
-                if (!_charsAll.length) {
-                    section.innerHTML = "";
-                    return;
-                }
-                var end = Math.min(_charsShowing + 10, _charsAll.length);
-                var items = _charsAll.slice(0, end);
-                var typeCls = {
-                    1: "bg-tier-gold-bg text-tier-gold",
-                    2: "bg-tier-blue-bg text-tier-blue",
-                    3: "bg-tier-purple-bg text-tier-purple",
-                    4: "bg-tier-green-bg text-tier-green",
-                    6: "bg-surface-alt text-sub"
-                };
-                var cards = [];
-                for (var i = 0; i < items.length; i++) {
-                    var item = items[i];
-                    var typeLabel = MSG.subjectTypes[item.subject_type] || "";
-                    cards.push(
-                        '<div tabindex="0" role="link" data-href="/subject?id=' +
-                            item.subject_id +
-                            '" onkeydown="cardKeyNav(event)" onclick="location.href=\'/subject?id=' +
-                            item.subject_id +
-                            '\'" class="border-t border-bord-light overflow-hidden cursor-pointer" style="height:80px">' +
-                            '<div class="flex items-center gap-3 h-full">' +
-                            '<div class="relative shrink-0 rounded overflow-hidden bg-surface cursor-pointer" style="width:64px;aspect-ratio:1" onclick="location.href=\'/subject?id=' +
-                            item.subject_id +
-                            "'\">" +
-                            '<img alt="" src="' +
-                            img("subject", item.subject_id, "grid") +
-                            '" ' +
-                            imgOnError("subject", item.subject_id, "grid") +
-                            ' class="w-full h-full object-cover">' +
-                            (typeLabel
-                                ? '<span class="absolute top-0.5 right-0.5 text-[9px] font-semibold ' +
-                                  typeCls[item.subject_type] +
-                                  ' px-1 py-px rounded">' +
-                                  typeLabel +
-                                  "</span>"
-                                : "") +
-                            "</div>" +
-                            '<div class="flex-1 min-w-0">' +
-                            '<div class="font-semibold text-[14px] cursor-pointer hover:text-pink truncate" onclick="location.href=\'/subject?id=' +
-                            item.subject_id +
-                            "'\">" +
-                            primaryName(
-                                item.subject_name,
-                                item.subject_name_cn || ""
-                            ) +
-                            "</div>" +
-                            (function () {
-                                var sub = subName(
-                                    item.subject_name,
-                                    item.subject_name_cn || ""
-                                );
-                                return sub
-                                    ? '<div class="text-xs text-sub truncate mt-0.5">' +
-                                          sub +
-                                          "</div>"
-                                    : "";
-                            })() +
-                            '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1"><span class="bg-pink-solid text-white px-1.5 py-px rounded text-[11px] font-semibold">' +
-                            (item.staff || "") +
-                            "</span></div>" +
-                            "</div>" +
-                            '<div tabindex="0" role="link" data-href="/character?id=' +
-                            item.id +
-                            '" onkeydown="cardKeyNav(event)" class="flex items-start gap-2 shrink-0 cursor-pointer self-start mt-2" onclick="event.stopPropagation();location.href=\'/character?id=' +
-                            item.id +
-                            "'\">" +
-                            '<span class="text-[14px] font-semibold hover:text-pink">' +
-                            escapeHtml(item.name) +
-                            "</span>" +
-                            '<img alt="" src="' +
-                            img("character", item.id, "grid") +
-                            '" ' +
-                            imgOnError("character", item.id, "grid") +
-                            ' class="w-10 h-10 rounded-lg object-cover bg-surface">' +
-                            "</div>" +
-                            "</div></div>"
-                    );
-                }
-                var html = "";
-                for (var i = 0; i < cards.length; i += 2) {
-                    html +=
-                        '<div class="flex gap-4"><div class="flex-1 min-w-0">' +
-                        cards[i] +
-                        '</div><div class="flex-1 min-w-0">' +
-                        (cards[i + 1] || "") +
-                        "</div></div>";
-                }
-                var remoteIcon = isRemote(
-                    "/v0/persons/" + window._persId + "/characters"
-                )
-                    ? globeIcon("w-4 h-4")
-                    : "";
-                var titleHtml = sectionTitle("出演角色", { extra: remoteIcon });
-                var pagerHtml = "";
-                _charsShowing = end;
-                if (_charsAll.length > 10) {
-                    pagerHtml =
-                        '<div class="mt-3 text-center"><span class="text-xs text-sub">共 ' +
-                        _charsAll.length +
-                        " 个条目</span>";
-                    if (_charsShowing < _charsAll.length) {
-                        var remaining = _charsAll.length - _charsShowing;
-                        pagerHtml +=
-                            ' <button onclick="showMoreChars()" class="ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开更多</button>';
-                        if (remaining > 10)
-                            pagerHtml +=
-                                ' <button onclick="showAllChars()" class="ml-2 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开全部</button>';
-                    }
-                    pagerHtml += "</div>";
-                }
-                section.innerHTML = titleHtml + html + pagerHtml;
-            }
-            function showMoreChars() {
-                renderCharSection();
-            }
-            function showAllChars() {
-                _charsShowing = _charsAll.length;
-                renderCharSection();
-            }
 
-            // ── 参与制作 ──
-            var _subjAll = [],
-                _subjShowing = 0;
             function loadSubjectSection(ID) {
                 api("/v0/persons/" + ID + "/subjects")
                     .then(function (data) {
-                        _subjAll = Array.isArray(data) ? data : [];
-                        _subjAll.sort(function (a, b) {
-                            var o = { 2: 0, 4: 1, 1: 2, 3: 3, 6: 4 };
-                            return (
-                                (o[a.type] != null ? o[a.type] : 5) -
-                                (o[b.type] != null ? o[b.type] : 5)
-                            );
-                        });
-                        _subjShowing = 0;
-                        renderSubjectSection();
+                        var items = Array.isArray(data) ? data : [];
+                        var section =
+                            document.getElementById("subjects-section");
+                        if (!section) return;
+                        if (!items.length) {
+                            section.innerHTML = "";
+                            return;
+                        }
+                        section.innerHTML = '<div id="person-subjects"></div>';
+                        window.dispatchEvent(
+                            new CustomEvent("seshat:person-subjects", {
+                                detail: {
+                                    items: items,
+                                    title: "参与制作",
+                                    kind: "subjects",
+                                    id: ID
+                                }
+                            })
+                        );
                     })
                     .catch(function () {
-                        document.getElementById("subjects-section").innerHTML =
-                            "";
+                        var section =
+                            document.getElementById("subjects-section");
+                        if (section) section.innerHTML = "";
                     });
-            }
-            function renderSubjectSection() {
-                var section = document.getElementById("subjects-section");
-                if (!_subjAll.length) {
-                    section.innerHTML = "";
-                    return;
-                }
-                var end = Math.min(_subjShowing + 10, _subjAll.length);
-                var items = _subjAll.slice(0, end);
-                var typeCls = {
-                    1: "bg-tier-gold-bg text-tier-gold",
-                    2: "bg-tier-blue-bg text-tier-blue",
-                    3: "bg-tier-purple-bg text-tier-purple",
-                    4: "bg-tier-green-bg text-tier-green",
-                    6: "bg-surface-alt text-sub"
-                };
-                var cards = [];
-                for (var i = 0; i < items.length; i++) {
-                    var item = items[i];
-                    var typeLabel = MSG.subjectTypes[item.type] || "";
-                    cards.push(
-                        '<div tabindex="0" role="link" data-href="/subject?id=' +
-                            item.id +
-                            '" onkeydown="cardKeyNav(event)" onclick="location.href=\'/subject?id=' +
-                            item.id +
-                            '\'" class="border-t border-bord-light overflow-hidden cursor-pointer" style="height:80px">' +
-                            '<div class="flex items-center gap-3 h-full">' +
-                            '<div class="relative shrink-0 rounded overflow-hidden bg-surface cursor-pointer" style="width:64px;aspect-ratio:1" onclick="location.href=\'/subject?id=' +
-                            item.id +
-                            "'\">" +
-                            '<img alt="" src="' +
-                            img("subject", item.id, "grid") +
-                            '" ' +
-                            imgOnError("subject", item.id, "grid") +
-                            ' class="w-full h-full object-cover">' +
-                            (typeLabel
-                                ? '<span class="absolute top-0.5 right-0.5 text-[9px] font-semibold ' +
-                                  typeCls[item.type] +
-                                  ' px-1 py-px rounded">' +
-                                  typeLabel +
-                                  "</span>"
-                                : "") +
-                            "</div>" +
-                            '<div class="flex-1 min-w-0">' +
-                            '<div class="font-semibold text-[14px] cursor-pointer hover:text-pink truncate" onclick="location.href=\'/subject?id=' +
-                            item.id +
-                            "'\">" +
-                            primaryName(
-                                escapeHtml(item.name),
-                                escapeHtml(item.name_cn) || ""
-                            ) +
-                            "</div>" +
-                            (function () {
-                                var sub = subName(
-                                    escapeHtml(item.name),
-                                    escapeHtml(item.name_cn) || ""
-                                );
-                                return sub
-                                    ? '<div class="text-xs text-sub truncate mt-0.5">' +
-                                          sub +
-                                          "</div>"
-                                    : "";
-                            })() +
-                            '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1"><span class="bg-pink-solid text-white px-1.5 py-px rounded text-[11px] font-semibold">' +
-                            (item.staff || "") +
-                            "</span></div>" +
-                            "</div>" +
-                            "</div></div>"
-                    );
-                }
-                var html = "";
-                for (var i = 0; i < cards.length; i += 2) {
-                    html +=
-                        '<div class="flex gap-4"><div class="flex-1 min-w-0">' +
-                        cards[i] +
-                        '</div><div class="flex-1 min-w-0">' +
-                        (cards[i + 1] || "") +
-                        "</div></div>";
-                }
-                var remoteIcon = isRemote(
-                    "/v0/persons/" + window._persId + "/subjects"
-                )
-                    ? globeIcon("w-4 h-4")
-                    : "";
-                var titleHtml = sectionTitle("参与制作", { extra: remoteIcon });
-                var pagerHtml = "";
-                _subjShowing = end;
-                if (_subjAll.length > 10) {
-                    pagerHtml =
-                        '<div class="mt-3 text-center"><span class="text-xs text-sub">共 ' +
-                        _subjAll.length +
-                        " 个条目</span>";
-                    if (_subjShowing < _subjAll.length) {
-                        var remaining = _subjAll.length - _subjShowing;
-                        pagerHtml +=
-                            ' <button onclick="showMoreSubjs()" class="ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开更多</button>';
-                        if (remaining > 10)
-                            pagerHtml +=
-                                ' <button onclick="showAllSubjs()" class="ml-2 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开全部</button>';
-                    }
-                    pagerHtml += "</div>";
-                }
-                section.innerHTML = titleHtml + html + pagerHtml;
-            }
-            function showMoreSubjs() {
-                renderSubjectSection();
-            }
-            function showAllSubjs() {
-                _subjShowing = _subjAll.length;
-                renderSubjectSection();
             }
         </script>
     </body>
