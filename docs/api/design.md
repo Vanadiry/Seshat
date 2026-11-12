@@ -109,7 +109,7 @@ data/index/*.json
 
 ## 数据包
 
-`POST /v0/bundle/export` 把一组本地条目的一跳数据导出为 tar，不联网拉取。  
+`POST /v0/bundle/export` 把一组本地条目的一跳数据导出为 tar。  
 manifest 只记录包内的实体和图片，不记录来源；缺失数据在导出响应的 `missing` 中返回。
 
 `POST /v0/bundle/import` 接收 raw tar，上限 1 GiB。导入期间注册 task，其他任务返回 409。  

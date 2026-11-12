@@ -94,7 +94,7 @@
             function exportSubjectBundle() {
                 if (!SID) return;
                 confirmAction(
-                    "导出 #" + SID + " 的本地数据包？不会联网拉取。",
+                    "导出 #" + SID + " 的本地数据包？",
                     async function () {
                         var btn = document.getElementById("btn-export-bundle");
                         if (btn) btn.disabled = true;

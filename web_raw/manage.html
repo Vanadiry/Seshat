@@ -1489,7 +1489,6 @@
                 if (body.description) {
                     lines.push("描述：" + body.description);
                 }
-                lines.push("只导出本地已有数据。");
                 lines.push("确定导出？");
                 confirmAction(lines.join("\n"), function () {
                     doBundleExport(body);

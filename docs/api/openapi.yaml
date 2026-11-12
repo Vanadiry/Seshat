@@ -613,7 +613,7 @@ paths:
       tags: [数据包]
       summary: 导出数据包
       description: |
-        导出一组本地条目的一跳数据为 tar 文件，不联网拉取。
+        导出一组本地条目的一跳数据为 tar 文件。
         支持按 ID 或 Tracker 导出，多个来源合并去重。
       requestBody:
         required: true
