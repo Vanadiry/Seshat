@@ -11,11 +11,12 @@
         <link rel="stylesheet" href="/assets/style.css" />
     </head>
     <body class="text-text font-[system-ui] min-h-screen">
-        <div class="sticky top-0 z-50"><div id="topbar"></div>
-        <div
-            id="detail-header"
-            class="bg-surface-raised border-b border-bord"
-        ></div>
+        <div class="sticky top-0 z-50">
+            <div id="topbar"></div>
+            <div
+                id="detail-header"
+                class="bg-surface-raised border-b border-bord"
+            ></div>
         </div>
         <main id="view" class="max-w-[1200px] mx-auto p-6"></main>
 
@@ -242,17 +243,23 @@
                             '<div class="font-semibold text-[14px] cursor-pointer hover:text-pink truncate" onclick="location.href=\'/subject?id=' +
                             item.id +
                             "'\">" +
-                            primaryName(escapeHtml(item.name), escapeHtml(item.name_cn)) +
+                            primaryName(
+                                escapeHtml(item.name),
+                                escapeHtml(item.name_cn)
+                            ) +
                             "</div>" +
                             (function () {
-                                var sub = subName(escapeHtml(item.name), escapeHtml(item.name_cn));
+                                var sub = subName(
+                                    escapeHtml(item.name),
+                                    escapeHtml(item.name_cn)
+                                );
                                 return sub
                                     ? '<div class="text-xs text-sub truncate mt-0.5">' +
                                           sub +
                                           "</div>"
                                     : "";
                             })() +
-                            '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1"><span class="bg-pink text-white px-1.5 py-px rounded text-[11px] font-semibold">' +
+                            '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1"><span class="bg-pink-solid text-white px-1.5 py-px rounded text-[11px] font-semibold">' +
                             (item.staff || "") +
                             "</span></div>" +
                             "</div>" +

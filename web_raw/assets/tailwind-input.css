@@ -17,6 +17,7 @@
     --c-bord-strong: rgba(255, 255, 255, 0.15);
     --c-bord-xstrong: rgba(255, 255, 255, 0.4);
     --c-pink: #fe8a95;
+    --c-pink-solid: #cf3f56;
     --c-pink-bg: #403638;
     /* 档位颜色，用于章节类型和评分等级 */
     --c-tier-gold: #d4a040;
@@ -64,6 +65,7 @@ html.light {
     --c-bord-strong: rgba(0, 0, 0, 0.13);
     --c-bord-xstrong: rgba(0, 0, 0, 0.25);
     --c-pink: #fe8a95;
+    --c-pink-solid: #b83f54;
     --c-pink-bg: #fce4e8;
     /* 档位颜色，浅色背景和深色文字，保证对比度 */
     --c-tier-gold: #b8860b;
@@ -110,6 +112,7 @@ html.light {
     --color-bord-strong: var(--c-bord-strong);
     --color-bord-xstrong: var(--c-bord-xstrong);
     --color-pink: var(--c-pink);
+    --color-pink-solid: var(--c-pink-solid);
     --color-pink-bg: var(--c-pink-bg);
     --color-warn: var(--c-warn);
     --color-warn-bg: var(--c-warn-bg);
