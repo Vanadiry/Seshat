@@ -93,7 +93,7 @@ func TestBundleImportRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	if resp.Status != "importing" || resp.TaskID == "" {
-		t.Fatalf("导入响应不对: %+v", resp)
+		t.Fatalf("导入响应应为 importing 且带 task_id，实际为 %+v", resp)
 	}
 	waitBundleTask(t, resp.TaskID)
 
@@ -128,6 +128,90 @@ func TestBundleImportRoundTrip(t *testing.T) {
 	}
 	if !bytes.Contains(index, []byte(`"id": 51`)) && !bytes.Contains(index, []byte(`"id":51`)) {
 		t.Fatalf("索引没有包含导入条目: %s", index)
+	}
+}
+
+func TestBundleImportPhasePlan(t *testing.T) {
+	specs := bundleImportPhasePlan()
+	if len(specs) != 3 {
+		t.Fatalf("阶段数应为 3，实际为 %d", len(specs))
+	}
+	if specs[2].Name != "重建索引" || specs[2].Start != 95 || specs[2].End != 100 {
+		t.Fatalf("索引阶段应占 5%%: %v", specs[2])
+	}
+}
+
+func TestBundleImportProgress(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("SESHAT_HOME", home)
+	cfg := &config.Config{}
+	tarPath := filepath.Join(t.TempDir(), "bundle.tar")
+	writeTestTar(t, tarPath, []testTarEntry{
+		{name: "manifest.json", data: `{"format":"seshat-bundle"}`},
+		{name: "api/subjects/1/51/info.json", data: `{"id":51,"name":"a"}`},
+		{name: "api/subjects/1/511/info.json", data: `{"id":511,"name":"b"}`},
+		{name: "api/subjects/1/521/info.json", data: `{"id":521,"name":"c"}`},
+	})
+	f, err := os.Open(tarPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	stat, err := f.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/v0/bundle/import", f)
+	req.ContentLength = stat.Size()
+	w := httptest.NewRecorder()
+	handleBundleImport(cfg)(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("导入状态码 = %d, body=%s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		TaskID string `json:"task_id"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	p := getProgress(resp.TaskID)
+	if p == nil {
+		t.Fatal("找不到导入任务")
+	}
+
+	var percents []int
+	phases := map[int]bool{}
+	sawComplete := false
+	for msg := range p.Channel {
+		var ev struct {
+			Step    string `json:"step"`
+			Percent *int   `json:"percent"`
+			Phase   int    `json:"phase"`
+		}
+		if err := json.Unmarshal([]byte(msg), &ev); err != nil {
+			t.Fatalf("进度事件 JSON 不合法: %s", msg)
+		}
+		if ev.Step == "progress" && ev.Percent != nil {
+			percents = append(percents, *ev.Percent)
+			phases[ev.Phase] = true
+		}
+		if ev.Step == "complete" {
+			sawComplete = true
+		}
+	}
+	if !sawComplete {
+		t.Fatal("缺少完成事件")
+	}
+	if len(percents) < 2 {
+		t.Fatalf("进度事件至少 2 条，实际为 %d 条", len(percents))
+	}
+	for i := 1; i < len(percents); i++ {
+		if percents[i] < percents[i-1] {
+			t.Fatalf("进度百分比应单调不减，实际为 %v", percents)
+		}
+	}
+	if !phases[1] || !phases[2] || !phases[3] {
+		t.Fatalf("缺少阶段事件: %v", phases)
 	}
 }
 
@@ -193,7 +277,7 @@ func TestExtractBundleTarRejectsUnsafeEntries(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			tarPath := filepath.Join(t.TempDir(), "bundle.tar")
 			writeTestTar(t, tarPath, c.entries)
-			if err := extractBundleTar(tarPath, t.TempDir()); err == nil {
+			if err := extractBundleTar(tarPath, t.TempDir(), nil); err == nil {
 				t.Fatal("应当拒绝不安全的数据包")
 			}
 		})
@@ -211,7 +295,7 @@ func TestExtractBundleTarRejectsOversizedFile(t *testing.T) {
 	if err := os.WriteFile(tarPath, buf.Bytes(), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := extractBundleTar(tarPath, t.TempDir()); err == nil || !strings.Contains(err.Error(), "文件过大") {
+	if err := extractBundleTar(tarPath, t.TempDir(), nil); err == nil || !strings.Contains(err.Error(), "文件过大") {
 		t.Fatalf("超限文件应被拒绝: %v", err)
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/vanadiry/seshat/core/config"
 	"github.com/vanadiry/seshat/core/store"
@@ -33,8 +34,8 @@ func handleBundleImport(cfg *config.Config) http.HandlerFunc {
 			writeError(w, r, http.StatusConflict, "数据包操作正在进行")
 			return
 		}
-		p := newProgress(5, "bundle_import", "导入数据包")
-		p.SetPhase(1, 5, "上传")
+		p := newProgress(100, "bundle_import", "导入数据包")
+		p.SetPlan(bundleImportPhasePlan())
 		ok := false
 		defer func() {
 			if !ok {
@@ -79,7 +80,6 @@ func handleBundleImport(cfg *config.Config) http.HandlerFunc {
 		}
 
 		ok = true
-		p.SetPhase(2, 5, "校验")
 		go processBundleImport(cfg, tmpPath, p)
 		writeJSON(w, map[string]any{"status": "importing", "task_id": p.ID})
 	}
@@ -103,31 +103,91 @@ func processBundleImport(cfg *config.Config, tarPath string, p *Progress) {
 	}
 	defer os.RemoveAll(staging)
 
-	p.SetPhase(2, 5, "校验")
-	if err := extractBundleTar(tarPath, staging); err != nil {
+	specs := bundleImportPhasePlan()
+	p.BeginPhase(1)
+	extractLast := -1
+	if err := extractBundleTar(tarPath, staging, func(read, total int64) {
+		percent := specs[0].Start
+		if total > 0 {
+			span := int64(specs[0].End - specs[0].Start)
+			percent += int(read * span / total)
+		}
+		if percent == extractLast {
+			return
+		}
+		extractLast = percent
+		p.SendPercent(percent, "")
+	}); err != nil {
 		p.Send("error", 0, 0, err.Error())
 		return
 	}
-	p.SetPhase(3, 5, "解包")
-	p.SetPhase(4, 5, "写入")
-	if _, err := commitBundle(staging, cfg.DataDir()); err != nil {
+
+	p.BeginPhase(2)
+	commitLast := -1
+	if _, err := commitBundle(staging, cfg.DataDir(), func(done, total int) {
+		percent := specs[1].Start
+		if total > 0 {
+			percent += done * (specs[1].End - specs[1].Start) / total
+		}
+		if percent == commitLast {
+			return
+		}
+		commitLast = percent
+		p.SendPercent(percent, "")
+	}); err != nil {
 		buildIndexes(cfg.DataDir(), nil)
 		p.Send("error", 0, 0, err.Error())
 		return
 	}
-	p.SetPhase(5, 5, "重建索引")
-	buildIndexes(cfg.DataDir(), nil)
-	p.Send("complete", 5, 5, "")
+
+	p.BeginPhase(3)
+	buildIndexes(cfg.DataDir(), p)
+	p.Send("complete", 100, 100, "")
 }
 
-func extractBundleTar(tarPath, staging string) error {
+func bundleImportPhasePlan() []phaseSpec {
+	specs := splitPhaseRanges(0, 95, "解包", "写入")
+	return append(specs, phaseSpec{Name: "重建索引", Start: 95, End: 100})
+}
+
+type countingReader struct {
+	r io.Reader
+	n int64
+}
+
+func (c *countingReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.n += int64(n)
+	return n, err
+}
+
+func extractBundleTar(tarPath, staging string, progress func(read, total int64)) error {
 	f, err := os.Open(tarPath)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	tr := tar.NewReader(f)
+	stat, err := f.Stat()
+	if err != nil {
+		return err
+	}
+	tarSize := stat.Size()
+	cr := &countingReader{r: f}
+	lastReport := time.Time{}
+	report := func(force bool) {
+		if progress == nil {
+			return
+		}
+		now := time.Now()
+		if !force && now.Sub(lastReport) < 100*time.Millisecond {
+			return
+		}
+		lastReport = now
+		progress(cr.n, tarSize)
+	}
+
+	tr := tar.NewReader(cr)
 	seen := map[string]bool{}
 	var total int64
 	files := 0
@@ -197,7 +257,9 @@ func extractBundleTar(tarPath, staging string) error {
 		if err := out.Close(); err != nil {
 			return err
 		}
+		report(false)
 	}
+	report(true)
 	if !hasManifest {
 		return fmt.Errorf("缺少 manifest.json")
 	}
@@ -287,7 +349,22 @@ func pathWithin(root, target string) bool {
 	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
-func commitBundle(staging, dd string) (int, error) {
+func commitBundle(staging, dd string, progress func(done, total int)) (int, error) {
+	total := 0
+	_ = filepath.WalkDir(staging, func(path string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(staging, path)
+		if err != nil {
+			return nil
+		}
+		if filepath.ToSlash(rel) != "manifest.json" {
+			total++
+		}
+		return nil
+	})
+
 	count := 0
 	err := filepath.WalkDir(staging, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -316,10 +393,13 @@ func commitBundle(staging, dd string) (int, error) {
 		if err != nil {
 			return err
 		}
-		if err := store.WriteAtomic(target, data, 0o644); err != nil {
+		if err := store.WriteAtomicFast(target, data, 0o644); err != nil {
 			return err
 		}
 		count++
+		if progress != nil {
+			progress(count, total)
+		}
 		return nil
 	})
 	return count, err

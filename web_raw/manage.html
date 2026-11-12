@@ -1542,27 +1542,55 @@
                 if (el) el.textContent = text;
             }
 
+            function uploadBundle(file) {
+                return new Promise(function (resolve, reject) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("POST", API + "/v0/bundle/import");
+                    xhr.setRequestHeader("Content-Type", "application/x-tar");
+                    xhr.upload.onprogress = function (e) {
+                        if (!e.lengthComputable || !e.total) return;
+                        setBundleStatus(
+                            "上传中 " +
+                                Math.round((e.loaded / e.total) * 100) +
+                                "%"
+                        );
+                    };
+                    xhr.onload = function () {
+                        var d = null;
+                        try {
+                            d = JSON.parse(xhr.responseText);
+                        } catch (_) {
+                            d = null;
+                        }
+                        resolve({
+                            ok: xhr.status >= 200 && xhr.status < 300,
+                            status: xhr.status,
+                            data: d
+                        });
+                    };
+                    xhr.onerror = function () {
+                        reject(new Error("network"));
+                    };
+                    xhr.send(file);
+                });
+            }
+
             async function startBundleImport(file) {
                 var btn = document.getElementById("btn-bundle-import");
                 if (btn) btn.disabled = true;
-                setBundleStatus("上传中...");
+                setBundleStatus("上传中 0%");
                 try {
-                    var res = await fetch(API + "/v0/bundle/import", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/x-tar" },
-                        body: file
-                    });
-                    var d = await readJSON(res);
-                    if (!res.ok || !d) {
-                        showError(errText(d, res.status));
+                    var res = await uploadBundle(file);
+                    if (!res.ok || !res.data) {
+                        showError(errText(res.data, res.status));
                         setBundleStatus("导入失败");
                         if (btn) btn.disabled = false;
                         return;
                     }
-                    if (d.task_id) {
-                        _bundleTaskId = d.task_id;
-                        setBundleStatus("导入中...");
-                        startProgress(d.task_id);
+                    if (res.data.task_id) {
+                        _bundleTaskId = res.data.task_id;
+                        setBundleStatus("导入中");
+                        startProgress(res.data.task_id);
                     } else {
                         setBundleStatus("导入已开始");
                         if (btn) btn.disabled = false;

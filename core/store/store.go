@@ -50,6 +50,33 @@ func WriteAtomic(path string, data []byte, perm os.FileMode) error {
 	}
 	return os.Rename(tmp, path)
 }
+
+// WriteAtomicFast 与 WriteAtomic 相同，但跳过 fsync。
+// 用于批量导入这类可重试、更看重速度的场景。
+func WriteAtomicFast(path string, data []byte, perm os.FileMode) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	f, err := os.CreateTemp(dir, ".tmp-*")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	defer os.Remove(tmp)
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmp, perm); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
+}
+
 func Has(dataDir, key string) bool {
 	_, err := os.Stat(filepath.Join(Dir(dataDir), key))
 	return err == nil
