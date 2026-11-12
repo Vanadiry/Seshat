@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@source "../src";
+
 /* 深色模式，默认 */
 :root {
     --c-bg: #1d1d1d;

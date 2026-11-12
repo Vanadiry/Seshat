@@ -16,6 +16,7 @@ build/
 web/assets/app.min.js
 web/assets/theme.min.js
 web/assets/style.css
+web/assets/subject.js
 web/**.html
 
 # Tauri
