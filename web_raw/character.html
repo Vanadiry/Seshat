@@ -67,29 +67,25 @@
                 loadAppearances(ID);
             })();
 
-            var _appearAll = [],
-                _appearShowing = 0;
             function loadAppearances(ID) {
                 Promise.all([
                     api("/v0/characters/" + ID + "/subjects"),
                     api("/v0/characters/" + ID + "/persons")
                 ])
                     .then(function (results) {
-                        console.log("Appearances API results:", results);
                         var subjects = Array.isArray(results[0])
                             ? results[0]
                             : [];
                         var persons = Array.isArray(results[1])
                             ? results[1]
                             : [];
-                        // 合并条目，persons 的 subject_id 匹配 subjects 的 id，persons 优先
                         var map = {};
                         for (var i = 0; i < subjects.length; i++) {
                             var s = subjects[i];
                             map[s.id] = {
                                 id: s.id,
-                                name: escapeHtml(s.name) || "",
-                                name_cn: escapeHtml(s.name_cn) || "",
+                                name: s.name || "",
+                                name_cn: s.name_cn || "",
                                 staff: s.staff || "",
                                 type: s.type || 0,
                                 person_id: 0,
@@ -105,168 +101,43 @@
                                 staff: p.staff || "",
                                 type: p.subject_type || 0,
                                 person_id: p.id || 0,
-                                person_name: escapeHtml(p.name) || ""
+                                person_name: p.name || ""
                             };
                         }
-                        _appearAll = [];
-                        for (var k in map) {
-                            _appearAll.push(map[k]);
-                        }
-                        _appearAll.sort(function (a, b) {
+                        var appearAll = [];
+                        for (var k in map) appearAll.push(map[k]);
+                        appearAll.sort(function (a, b) {
                             var o = { 2: 0, 4: 1, 1: 2, 3: 3, 6: 4 };
                             return (
                                 (o[a.type] != null ? o[a.type] : 5) -
                                 (o[b.type] != null ? o[b.type] : 5)
                             );
                         });
-                        _appearShowing = 0;
-                        renderAppearances();
-                    })
-                    .catch(function (err) {
-                        console.error("loadAppearances failed:", err);
-                        document.getElementById(
+                        var section = document.getElementById(
                             "appearances-section"
-                        ).innerHTML = "";
+                        );
+                        if (!section) return;
+                        if (!appearAll.length) {
+                            section.innerHTML = "";
+                            return;
+                        }
+                        section.innerHTML =
+                            '<div id="character-appearances"></div>';
+                        window.dispatchEvent(
+                            new CustomEvent("seshat:character-appearances", {
+                                detail: {
+                                    items: appearAll,
+                                    id: ID
+                                }
+                            })
+                        );
+                    })
+                    .catch(function () {
+                        var section = document.getElementById(
+                            "appearances-section"
+                        );
+                        if (section) section.innerHTML = "";
                     });
-            }
-
-            function renderAppearances() {
-                var section = document.getElementById("appearances-section");
-                if (!_appearAll.length) {
-                    section.innerHTML = "";
-                    return;
-                }
-                var end = Math.min(_appearShowing + 10, _appearAll.length);
-                var items = _appearAll.slice(0, end);
-                var typeCls = {
-                    1: "bg-tier-gold-bg text-tier-gold",
-                    2: "bg-tier-blue-bg text-tier-blue",
-                    3: "bg-tier-purple-bg text-tier-purple",
-                    4: "bg-tier-green-bg text-tier-green",
-                    6: "bg-surface-alt text-sub"
-                };
-                var cards = [];
-                for (var i = 0; i < items.length; i++) {
-                    var item = items[i];
-                    var typeLabel = MSG.subjectTypes[item.type] || "";
-                    cards.push(
-                        '<div tabindex="0" role="link" data-href="/subject?id=' +
-                            item.id +
-                            '" onkeydown="cardKeyNav(event)" onclick="location.href=\'/subject?id=' +
-                            item.id +
-                            '\'" class="border-t border-bord-light overflow-hidden cursor-pointer" style="height:80px">' +
-                            '<div class="flex items-center gap-3 h-full">' +
-                            // 条目图片和类型徽章
-                            '<div class="relative shrink-0 rounded overflow-hidden bg-surface cursor-pointer" style="width:64px;aspect-ratio:1" onclick="location.href=\'/subject?id=' +
-                            item.id +
-                            "'\">" +
-                            '<img alt="" src="' +
-                            img("subject", item.id, "grid") +
-                            '" ' +
-                            imgOnError("subject", item.id, "grid") +
-                            ' class="w-full h-full object-cover">' +
-                            (typeLabel
-                                ? '<span class="absolute top-0.5 right-0.5 text-[9px] font-semibold ' +
-                                  typeCls[item.type] +
-                                  ' px-1 py-px rounded">' +
-                                  typeLabel +
-                                  "</span>"
-                                : "") +
-                            "</div>" +
-                            // 文本区
-                            '<div class="flex-1 min-w-0">' +
-                            '<div class="font-semibold text-[14px] cursor-pointer hover:text-pink truncate" onclick="location.href=\'/subject?id=' +
-                            item.id +
-                            "'\">" +
-                            primaryName(
-                                escapeHtml(item.name),
-                                escapeHtml(item.name_cn)
-                            ) +
-                            "</div>" +
-                            (function () {
-                                var sub = subName(
-                                    escapeHtml(item.name),
-                                    escapeHtml(item.name_cn)
-                                );
-                                return sub
-                                    ? '<div class="text-xs text-sub truncate mt-0.5">' +
-                                          sub +
-                                          "</div>"
-                                    : "";
-                            })() +
-                            '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1"><span class="bg-pink-solid text-white px-1.5 py-px rounded text-[11px] font-semibold">' +
-                            (item.staff || "") +
-                            "</span></div>" +
-                            "</div>" +
-                            // 人物区
-                            (item.person_id
-                                ? '<div tabindex="0" role="link" data-href="/person?id=' +
-                                  item.person_id +
-                                  '" onkeydown="cardKeyNav(event)" class="flex items-start gap-2 shrink-0 cursor-pointer self-start mt-2" onclick="event.stopPropagation();location.href=\'/person?id=' +
-                                  item.person_id +
-                                  "'\">" +
-                                  '<span class="text-[14px] font-semibold hover:text-pink">' +
-                                  item.person_name +
-                                  "</span>" +
-                                  '<img alt="" src="' +
-                                  img("person", item.person_id, "grid") +
-                                  '" ' +
-                                  imgOnError("person", item.person_id, "grid") +
-                                  ' class="w-10 h-10 rounded-lg object-cover bg-surface">' +
-                                  "</div>"
-                                : "") +
-                            "</div></div>"
-                    );
-                }
-                // 两列配对
-                var html = "";
-                for (var i = 0; i < cards.length; i += 2) {
-                    html +=
-                        '<div class="flex gap-4">' +
-                        '<div class="flex-1 min-w-0">' +
-                        cards[i] +
-                        "</div>" +
-                        '<div class="flex-1 min-w-0">' +
-                        (cards[i + 1] || "") +
-                        "</div>" +
-                        "</div>";
-                }
-                // 标题行和地球标记
-                var remoteIcon =
-                    isRemote(
-                        "/v0/characters/" + window._charId + "/subjects"
-                    ) ||
-                    isRemote("/v0/characters/" + window._charId + "/persons")
-                        ? globeIcon("w-4 h-4")
-                        : "";
-                var titleHtml = sectionTitle("出演", { extra: remoteIcon });
-                // 分页
-                var pagerHtml = "";
-                _appearShowing = end;
-                if (_appearAll.length > 10) {
-                    pagerHtml =
-                        '<div class="mt-3 text-center"><span class="text-xs text-sub">共 ' +
-                        _appearAll.length +
-                        " 个条目</span>";
-                    if (_appearShowing < _appearAll.length) {
-                        var remaining = _appearAll.length - _appearShowing;
-                        pagerHtml +=
-                            ' <button onclick="showMoreAppearances()" class="ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开更多</button>';
-                        if (remaining > 10)
-                            pagerHtml +=
-                                ' <button onclick="showAllAppearances()" class="ml-2 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开全部</button>';
-                    }
-                    pagerHtml += "</div>";
-                }
-                section.innerHTML = titleHtml + html + pagerHtml;
-            }
-
-            function showMoreAppearances() {
-                renderAppearances();
-            }
-            function showAllAppearances() {
-                _appearShowing = _appearAll.length;
-                renderAppearances();
             }
         </script>
     </body>
