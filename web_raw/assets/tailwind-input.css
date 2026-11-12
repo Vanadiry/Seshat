@@ -139,6 +139,14 @@ html.light {
     --color-toast-warning-bg: var(--c-toast-warning-bg);
 }
 
+/* 键盘焦点样式 */
+@layer base {
+    :focus-visible {
+        outline: 2px solid var(--c-pink);
+        outline-offset: 2px;
+    }
+}
+
 /* 全局禁用文本选中，通过 .select-text 开白名单 */
 * {
     user-select: none;

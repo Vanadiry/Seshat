@@ -30,9 +30,9 @@
             // ── 卡片渲染：左侧正方形头像 + 右侧两行（原名/中文名）──
             function renderItem(p) {
                 return (
-                    "<div onclick=\"location.href='/person?id=" +
+                    '<a href="/person?id=' +
                     p.id +
-                    '\'" class="flex items-center gap-3 bg-surface rounded-lg overflow-hidden cursor-pointer border border-bord hover:border-pink hover:-translate-y-0.5 transition-all h-[72px]">' +
+                    '" class="flex items-center gap-3 bg-surface rounded-lg overflow-hidden cursor-pointer border border-bord hover:border-pink hover:-translate-y-0.5 transition-all h-[72px] no-underline">' +
                     '<img src="' +
                     img("person", p.id, "grid") +
                     '" loading=\"lazy\" ' +
@@ -53,7 +53,7 @@
                                   "</div>"
                             : "";
                     })() +
-                    "</div></div>"
+                    "</div></a>"
                 );
             }
 

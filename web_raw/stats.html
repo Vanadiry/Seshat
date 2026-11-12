@@ -438,9 +438,9 @@
                                 ? it.rank_pct.toFixed(1) + "%"
                                 : "";
                         html +=
-                            "<div onclick=\"location.href='/subject?id=" +
+                            '<a href="/subject?id=' +
                             it.id +
-                            '\'" class="flex items-center gap-4 px-3 py-1.5 cursor-pointer hover:border-pink border border-transparent ' +
+                            '" class="flex items-center gap-4 px-3 py-1.5 cursor-pointer hover:border-pink border border-transparent no-underline ' +
                             bg +
                             '">' +
                             '<img src="' +
@@ -482,7 +482,7 @@
                             COL_ID +
                             ' text-center font-mono">#' +
                             it.id +
-                            "</span></div>";
+                            "</span></a>";
                     }
                 }
                 document.getElementById("stats-list").innerHTML = html;

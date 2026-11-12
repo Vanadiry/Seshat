@@ -33,9 +33,9 @@
 
             function renderItem(s) {
                 return (
-                    "<div onclick=\"location.href='/subject?id=" +
+                    '<a href="/subject?id=' +
                     s.id +
-                    '\'" class="bg-surface rounded-xl overflow-hidden cursor-pointer border border-bord hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">' +
+                    '" class="block no-underline bg-surface rounded-xl overflow-hidden cursor-pointer border border-bord hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">' +
                     '<img src="' +
                     img("subject", s.id, "small") +
                     '" loading=\"lazy\" ' +
@@ -55,7 +55,7 @@
                           escapeHtml(s.platform) +
                           "</span>"
                         : "") +
-                    "</div></div></div>"
+                    "</div></div></a>"
                 );
             }
 

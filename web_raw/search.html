@@ -196,10 +196,10 @@
                 }
                 var kind = TYPE_IMAGES[type];
                 return (
-                    "<div onclick=\"location.href='" +
+                    '<a href="' +
                     TYPE_LINKS[type] +
                     it.id +
-                    '\'" class="flex gap-3 items-center bg-surface border border-bord-mid rounded-lg py-1.5 px-2 cursor-pointer hover:border-pink">' +
+                    '" class="flex gap-3 items-center bg-surface border border-bord-mid rounded-lg py-1.5 px-2 cursor-pointer hover:border-pink no-underline">' +
                     '<img src="' +
                     img(kind, it.id, "grid") +
                     '" ' +
@@ -218,7 +218,7 @@
                     '<div class="text-xs text-sub shrink-0">#' +
                     it.id +
                     "</div>" +
-                    "</div>"
+                    "</a>"
                 );
             }
 
