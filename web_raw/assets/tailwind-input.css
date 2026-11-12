@@ -222,10 +222,38 @@ select {
     }
 }
 @media (prefers-reduced-motion: reduce) {
+    #load-bar {
+        transition: none !important;
+    }
     #load-bar.active::before {
         animation: none;
         transform: none;
         width: 100%;
+    }
+    .spin,
+    #user-placeholder {
+        animation: none !important;
+    }
+    .hover\:-translate-y-0\.5:hover,
+    .hover\:-translate-y-1:hover {
+        transform: none;
+    }
+    #pk-left,
+    #pk-right,
+    #pk-left::after,
+    #pk-right::after,
+    .confirm-bar,
+    .cancel-hint {
+        transition: none !important;
+    }
+    #page-scrollbar,
+    #page-scrollbar .thumb {
+        transition: none !important;
+    }
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation: none !important;
     }
 }
 

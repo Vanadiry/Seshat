@@ -26,6 +26,11 @@ function clickKeyNav(e) {
     e.currentTarget.click();
 }
 
+// 是否减少动态效果
+function prefersReducedMotion() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 // 卡片键盘导航
 function cardKeyNav(e) {
     if (e.target !== e.currentTarget) return;
@@ -1250,10 +1255,12 @@ var confirmCb = null;
 function showLightbox(src) {
     var el = document.getElementById("lightbox");
     if (el) el.remove();
+    var reduceMotion = prefersReducedMotion();
     var overlay = document.createElement("div");
     overlay.id = "lightbox";
     overlay.style.cssText =
-        "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;transition:background .25s ease";
+        "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;" +
+        (reduceMotion ? "" : "transition:background .25s ease");
     overlay.onclick = function (e) {
         if (e.target === overlay) closeLightbox();
     };
@@ -1263,11 +1270,15 @@ function showLightbox(src) {
     var img = document.createElement("img");
     img.src = src;
     img.style.cssText =
-        "max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;opacity:0;transform:scale(.95);transition:opacity .25s ease,transform .25s ease";
+        "max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;opacity:0;transform:scale(.95);" +
+        (reduceMotion
+            ? ""
+            : "transition:opacity .25s ease,transform .25s ease");
     wrap.appendChild(img);
     var bar = document.createElement("div");
     bar.style.cssText =
-        "position:fixed;top:16px;left:16px;z-index:10;opacity:0;transition:opacity .25s ease";
+        "position:fixed;top:16px;left:16px;z-index:10;opacity:0;" +
+        (reduceMotion ? "" : "transition:opacity .25s ease");
     var closeBtn = document.createElement("button");
     closeBtn.textContent = "关闭";
     closeBtn.style.cssText =
@@ -1292,9 +1303,12 @@ function showLightbox(src) {
         img.style.opacity = "0";
         img.style.transform = "scale(.95)";
         bar.style.opacity = "0";
-        setTimeout(function () {
-            overlay.remove();
-        }, 250);
+        setTimeout(
+            function () {
+                overlay.remove();
+            },
+            reduceMotion ? 0 : 250
+        );
     }
     document.addEventListener("keydown", function handler(e) {
         if (e.key === "Escape") {
@@ -1415,9 +1429,11 @@ function _makeToast(
         _currentToast.close();
         _currentToast = null;
     }
+    var reduceMotion = prefersReducedMotion();
     var el = document.createElement("div");
     el.className =
-        "fixed right-4 z-[300] rounded-lg shadow-2xl transition-all duration-300 max-w-[60vw] min-w-[280px]";
+        "fixed right-4 z-[300] rounded-lg shadow-2xl max-w-[60vw] min-w-[280px]" +
+        (reduceMotion ? "" : " transition-all duration-300");
     el.style.bottom = "16px";
     el.style.opacity = "0";
     el.style.transform = "translateY(8px)";
@@ -1484,7 +1500,9 @@ function _makeToast(
             barFill.style.transition = "none";
             barFill.style.width = "100%";
             void barFill.offsetWidth;
-            barFill.style.transition = "width " + autoCloseSec + "s linear";
+            barFill.style.transition = reduceMotion
+                ? "none"
+                : "width " + autoCloseSec + "s linear";
             barFill.style.width = "0";
         }
         timer = setTimeout(close, autoCloseSec * 1000 + 100);
@@ -1494,9 +1512,11 @@ function _makeToast(
         bar.className =
             "h-1 rounded-full bg-[rgba(128,128,128,.2)] overflow-hidden mt-1.5";
         bar.innerHTML =
-            '<div class="h-full rounded-full" style="width:100%;background:var(--c-toast-success);transition:width ' +
-            autoCloseSec +
-            's linear"></div>';
+            '<div class="h-full rounded-full" style="width:100%;background:var(--c-toast-success);' +
+            (reduceMotion
+                ? ""
+                : "transition:width " + autoCloseSec + "s linear") +
+            '"></div>';
         var bodyEl = el.querySelector("div:last-child");
         if (bodyEl) bodyEl.appendChild(bar);
         barFill = bar.querySelector("div");
@@ -1511,7 +1531,7 @@ function _makeToast(
             countEl.style.display = "";
         }
         if (autoCloseSec > 0) armAutoClose();
-        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        if (!prefersReducedMotion()) {
             el.animate(
                 [
                     { transform: "translateX(0)" },
