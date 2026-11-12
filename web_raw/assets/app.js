@@ -1475,6 +1475,19 @@ function _makeToast(
     }
     var closeBtn = el.querySelector("span[class*='cursor-pointer']");
     if (closeBtn) closeBtn.onclick = close;
+    var barFill = null;
+    function armAutoClose() {
+        if (autoCloseSec <= 0) return;
+        if (timer) clearTimeout(timer);
+        if (barFill) {
+            barFill.style.transition = "none";
+            barFill.style.width = "100%";
+            void barFill.offsetWidth;
+            barFill.style.transition = "width " + autoCloseSec + "s linear";
+            barFill.style.width = "0";
+        }
+        timer = setTimeout(close, autoCloseSec * 1000 + 100);
+    }
     if (autoCloseSec > 0) {
         var bar = document.createElement("div");
         bar.className =
@@ -1485,10 +1498,8 @@ function _makeToast(
             's linear"></div>';
         var bodyEl = el.querySelector("div:last-child");
         if (bodyEl) bodyEl.appendChild(bar);
-        setTimeout(function () {
-            bar.querySelector("div").style.width = "0";
-        }, 50);
-        timer = setTimeout(close, autoCloseSec * 1000 + 100);
+        barFill = bar.querySelector("div");
+        armAutoClose();
     }
     var count = 1;
     var countEl = merge ? el.querySelector(".toast-count") : null;
@@ -1498,6 +1509,7 @@ function _makeToast(
             countEl.textContent = "×" + count;
             countEl.style.display = "";
         }
+        if (autoCloseSec > 0) armAutoClose();
         if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
             el.animate(
                 [
