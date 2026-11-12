@@ -2,8 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const { minify } = require("html-minifier-terser");
 
-const SRC_DIR = path.join(__dirname, "../web_raw");
-const DEST_DIR = path.join(__dirname, "../web");
+const SRC_DIR = path.join(__dirname, "../web");
+const DEST_DIR = path.join(__dirname, "../web-dist");
 
 const FILES = [
     "character.html",
@@ -20,6 +20,8 @@ const FILES = [
     "tag.html",
     "tags.html"
 ];
+
+const STATIC_FILES = ["favicon.svg", "global.svg", "link.svg", "no-image.png"];
 
 async function processFile(file) {
     const srcPath = path.join(SRC_DIR, file);
@@ -39,10 +41,20 @@ async function processFile(file) {
     fs.writeFileSync(destPath, result, "utf-8");
 }
 
-async function main() {
-    for (const file of FILES) {
-        await processFile(file);
+function copyStatic() {
+    const destDir = path.join(DEST_DIR, "assets");
+    fs.mkdirSync(destDir, { recursive: true });
+    for (const file of STATIC_FILES) {
+        fs.copyFileSync(
+            path.join(SRC_DIR, "assets", file),
+            path.join(destDir, file)
+        );
     }
+}
+
+async function main() {
+    await Promise.all(FILES.map(processFile));
+    copyStatic();
 }
 
 main();

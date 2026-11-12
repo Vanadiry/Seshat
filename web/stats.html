@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN" class="bg-bg">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="view-transition" content="same-origin" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>统计 | Seshat</title>
+
+        <script src="/assets/theme.min.js"></script>
+        <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+        <link rel="stylesheet" href="/assets/style.css" />
+        <style>
+            .sn {
+                font-variant-numeric: tabular-nums;
+            }
+            /* 表头补齐透明边框，与数据行同宽 */
+            #stats-list > div:first-child {
+                border-top: 1px solid transparent;
+                border-left: 1px solid transparent;
+                border-right: 1px solid transparent;
+            }
+        </style>
+    </head>
+    <body class="text-text font-[system-ui] min-h-screen">
+        <div id="topbar"></div>
+        <main id="view" class="max-w-[900px] mx-auto p-6"></main>
+
+        <script src="assets/app.min.js"></script>
+        <script type="module" src="assets/stats.js"></script>
+    </body>
+</html>

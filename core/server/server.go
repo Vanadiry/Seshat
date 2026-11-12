@@ -55,7 +55,7 @@ func buildRouter(cfg *config.Config, embedFS fs.FS) *router {
 			return
 		}
 		w.Header().Set("Cache-Control", "no-store")
-		http.ServeFileFS(w, r, embedFS, "web/"+page+".html")
+		http.ServeFileFS(w, r, embedFS, "web-dist/"+page+".html")
 	})
 	// 注入配置的 app.min.js
 	r.page("GET /assets/app.min.js", func(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +70,7 @@ func buildRouter(cfg *config.Config, embedFS fs.FS) *router {
 			token = cfg.Access.Token
 		}
 		fmt.Fprintf(w, "window.BACKEND_URL=%q;\nwindow.PREFER_LANG=%q;\nwindow.USERNAME=%q;\nwindow.SUBJECT_SORT=%q;\nwindow.AUTO_LINK_NAMES=%q;\nwindow.FALLBACK_URL=%q;\nwindow.SESHAT_HOME=%q;\nwindow.ACCESS_TOKEN=%q;\nwindow.UPSTREAM_ENABLED=%t;\n", cfg.Frontend.BackendURL, pref.PreferLang, pref.Username, pref.SubjectSort, pref.AutoLinkNames, cfg.Frontend.FallbackURL, config.Dir(), token, cfg.Upstream.BaseURL != "")
-		data, err := fs.ReadFile(embedFS, "web/assets/app.min.js")
+		data, err := fs.ReadFile(embedFS, "web-dist/assets/app.min.js")
 		if err != nil {
 			writeError(w, r, http.StatusInternalServerError, "app bundle not found")
 			return
@@ -80,7 +80,7 @@ func buildRouter(cfg *config.Config, embedFS fs.FS) *router {
 	// 其他静态资源
 	r.page("GET /assets/{path...}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
-		http.ServeFileFS(w, r, embedFS, "web/assets/"+r.PathValue("path"))
+		http.ServeFileFS(w, r, embedFS, "web-dist/assets/"+r.PathValue("path"))
 	})
 	r.page("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -92,7 +92,7 @@ func buildRouter(cfg *config.Config, embedFS fs.FS) *router {
 			return
 		}
 		w.Header().Set("Cache-Control", "no-store")
-		http.ServeFileFS(w, r, embedFS, "web/index.html")
+		http.ServeFileFS(w, r, embedFS, "web-dist/index.html")
 	})
 
 	// SSE 事件
