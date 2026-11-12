@@ -465,7 +465,7 @@
                         '<div class="flex items-end gap-px mt-2" style="height:80px">';
                     for (var i = 10; i >= 1; i--) {
                         var v = cnt[String(i)] || 0;
-                        var h = Math.max((v / max) * 100, 4);
+                        var h = v > 0 ? Math.max((v / max) * 100, 4) : 0;
                         var pct =
                             totalVotes > 0
                                 ? ((v / totalVotes) * 100).toFixed(1)
