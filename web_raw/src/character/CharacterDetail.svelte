@@ -21,6 +21,7 @@
 
 <div class="fade-in flex flex-col md:flex-row gap-6">
     <div class="w-full md:w-[260px] shrink-0">
+        <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
         <img
             alt=""
             src={posterSrc}
