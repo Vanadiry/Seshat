@@ -102,6 +102,27 @@ data/index/*.json
 
 图片只补缺失的尺寸。“重建全部”删除 `data/api`、`data/images`、`data/index`，保留 `data/user`。
 
+## 本地搜索
+
+`POST /v0/search/{subjects,characters,persons,tags}` 扫描本地 `info.json`，最多返回 500 条，`total` 为命中总数。
+
+只匹配人类可读字段：
+
+- `name`
+- `name_cn`
+- `infobox` 的值
+- `summary`
+
+标签按名称匹配。JSON 键名、图片地址和链接值不参与匹配。
+
+结果可选带 `match`：
+
+- `field` 为 `name`、`name_cn`、`infobox` 或 `summary`
+- `infobox` 带 `key`
+- `infobox` 和 `summary` 带 `text`
+
+`text` 为第一个命中位置前后各 30 字，截断时补省略号。
+
 ## 上游搜索
 
 `POST /v0/upstream/search` 使用 `[upstream] base_url`、UA、token 和代理请求官方搜索接口。  
