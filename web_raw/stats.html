@@ -56,6 +56,10 @@
                     sortDir = "desc";
                 }
                 render();
+                var head = document.querySelector(
+                    '[data-sort-key="' + key + '"]'
+                );
+                if (head) head.focus();
             }
 
             function sortHeader(label, key, cls) {
@@ -66,7 +70,9 @@
                     cls +
                     " text-center cursor-pointer select-none hover:text-text" +
                     (active ? " text-pink font-semibold" : "") +
-                    '" title="点击排序" onclick="sortBy(\'' +
+                    '" data-sort-key="' +
+                    key +
+                    '" title="点击排序" role="button" tabindex="0" onkeydown="clickKeyNav(event)" onclick="sortBy(\'' +
                     key +
                     "')\">" +
                     label +

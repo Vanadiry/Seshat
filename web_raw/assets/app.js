@@ -49,6 +49,14 @@ function cardKeyNav(e) {
     location.href = href;
 }
 
+// 其它可点击元素用键盘触发
+function clickKeyNav(e) {
+    if (e.target !== e.currentTarget) return;
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    e.currentTarget.click();
+}
+
 // 主题跟随系统，值为 auto 时生效
 var _themeMedia = window.matchMedia("(prefers-color-scheme: light)");
 _themeMedia.addEventListener("change", function (e) {
@@ -1153,7 +1161,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tb.innerHTML = `
     <div class="bg-surface-raised border-b border-bord">
       <div class="max-w-[1200px] mx-auto px-6 flex items-center gap-3 h-12 relative overflow-x-auto">
-        <h1 class="text-lg font-bold cursor-pointer shrink-0" onclick="location.href='/'">Seshat</h1>
+        <h1 class="text-lg font-bold shrink-0"><a href="/" class="no-underline">Seshat</a></h1>
         <nav class="flex gap-1 ml-2 items-center">
           <a href="/" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/")}">动画</a>
           <a href="/characters" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/characters")}">角色</a>
