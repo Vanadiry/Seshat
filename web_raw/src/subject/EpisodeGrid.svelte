@@ -1,6 +1,18 @@
 <script>
     let { eps = [] } = $props();
 
+    let pinned = $state(null);
+    let hovered = $state(null);
+
+    function isOpen(index) {
+        return pinned === index || (pinned === null && hovered === index);
+    }
+
+    function toggle(index) {
+        pinned = pinned === index ? null : index;
+        hovered = null;
+    }
+
     const epCls = {
         0: "bg-surface-alt text-sub",
         1: "bg-tier-gold-bg text-tier-gold",
@@ -79,7 +91,7 @@
 
 {#if rows.length}
     <div class="flex flex-wrap gap-1.5">
-        {#each rows as row}
+        {#each rows as row, index}
             {#if row.kind === "sep"}
                 {@const st = sepStyle(row.type)}
                 <span
@@ -90,16 +102,40 @@
                     ></span>{row.label}</span
                 >
             {:else}
-                <div class="relative ep-cell">
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                    class="relative ep-cell"
+                    onmouseenter={() => (hovered = index)}
+                    onmouseleave={() => {
+                        if (hovered === index) hovered = null;
+                    }}
+                >
                     <span
                         tabindex="0"
                         role="button"
-                        class="ep-num w-8 h-8 flex items-center justify-center rounded text-xs font-semibold cursor-pointer {row.cls}"
-                        >{row.num}</span
+                        class="ep-num w-8 h-8 flex items-center justify-center rounded text-xs font-semibold cursor-pointer {row.cls} {pinned ===
+                        index
+                            ? 'ring-1 ring-pink'
+                            : ''}"
+                        onclick={(e) => {
+                            e.stopPropagation();
+                            toggle(index);
+                        }}
+                        onkeydown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                toggle(index);
+                            }
+                        }}>{row.num}</span
                     >
                     <div
                         class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 ep-tip z-50"
-                        style="display:none"
+                        aria-hidden={!isOpen(index)}
+                        style="opacity:{isOpen(index)
+                            ? 1
+                            : 0};pointer-events:{isOpen(index)
+                            ? 'auto'
+                            : 'none'}"
                     >
                         <div
                             class="select-text bg-surface-raised border border-bord-strong rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-lg relative"
@@ -120,6 +156,15 @@
                             {/if}
                             {#if row.duration}
                                 <div class="text-sub">时长: {row.duration}</div>
+                            {/if}
+                            {#if pinned === index}
+                                <button
+                                    class="ep-close"
+                                    onclick={(e) => {
+                                        e.stopPropagation();
+                                        pinned = null;
+                                    }}>×</button
+                                >
                             {/if}
                         </div>
                     </div>

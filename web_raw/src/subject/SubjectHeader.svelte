@@ -1,5 +1,5 @@
 <script>
-    import { headerState } from "./store.js";
+    import { subjectState, switchTab, exportBundle } from "./state.js";
 
     const tabs = [
         ["overview", "概览"],
@@ -10,12 +10,16 @@
 
     function goTab(key, e) {
         e.preventDefault();
-        window.switchTab(key);
+        switchTab(key);
+    }
+
+    async function onExport() {
+        await exportBundle();
     }
 </script>
 
-{#if $headerState.subject}
-    {@const subject = $headerState.subject}
+{#if $subjectState.subject}
+    {@const subject = $subjectState.subject}
     {@const sub = window.subName(subject.name, subject.name_cn)}
     <div
         class="max-w-[1200px] mx-auto px-6 h-12 py-0 flex items-center gap-3 overflow-x-auto"
@@ -26,7 +30,7 @@
             class="w-7 h-7 rounded-full border border-bord-strong flex items-center justify-center text-sub hover:text-text hover:border-bord-xstrong shrink-0 no-underline text-xs"
             title="返回">←</a
         >
-        {#if window.isRemote("/v0/subjects/" + $headerState.sid)}
+        {#if window.isRemote("/v0/subjects/" + $subjectState.sid)}
             {@html window.globeIcon("w-6 h-6")}
         {/if}
         {#if subject.nsfw}
@@ -50,13 +54,14 @@
         {/if}
         <span class="text-sub text-xs shrink-0">｜</span><span
             class="select-text text-xs text-sub shrink-0"
-            >ID: {$headerState.sid}</span
+            >ID: {$subjectState.sid}</span
         >
         <span class="flex-1"></span>
-        {#if $headerState.showBundle}
+        {#if $subjectState.showBundle}
             <button
                 type="button"
-                onclick={() => window.exportSubjectBundle()}
+                onclick={onExport}
+                disabled={$subjectState.exporting}
                 class="w-7 h-7 rounded-full border border-bord-strong flex items-center justify-center text-sub hover:text-text hover:border-bord-xstrong shrink-0 cursor-pointer bg-transparent"
                 title="导出数据包"
                 aria-label="导出数据包"
@@ -77,15 +82,15 @@
         {/if}
         <span class="flex gap-0 shrink-0 ml-2">
             {#each tabs as [key, label]}
-                {@const count = $headerState.counts[key] || 0}
+                {@const count = $subjectState.counts[key] || 0}
                 <a
-                    href={"?id=" + $headerState.sid + "&tab=" + key}
+                    href={"?id=" + $subjectState.sid + "&tab=" + key}
                     id={"tab-" + key}
                     onclick={(e) => goTab(key, e)}
-                    class="{$headerState.tab === key
+                    class="{$subjectState.tab === key
                         ? 'text-text border-b-2 border-pink'
                         : 'text-sub hover:text-text'} no-underline px-3 py-1 text-sm inline-block whitespace-nowrap"
-                    >{label}{#if count && $headerState.tab === key}
+                    >{label}{#if count && $subjectState.tab === key}
                         ({count}){/if}</a
                 >
             {/each}
