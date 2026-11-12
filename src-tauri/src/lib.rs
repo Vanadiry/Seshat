@@ -73,7 +73,7 @@ fn setup_desktop(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let win = WebviewWindowBuilder::new(app, "main", WebviewUrl::External(blank))
         .title("Seshat")
         .inner_size(1200.0, 800.0)
-        .min_inner_size(1000.0, 600.0)
+        .min_inner_size(900.0, 600.0)
         .center()
         .resizable(true)
         .fullscreen(false)
