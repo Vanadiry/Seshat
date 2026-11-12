@@ -53,6 +53,33 @@
         </div>
         <main id="view" class="max-w-[1200px] mx-auto p-6"></main>
 
+        <div
+            id="confirm-overlay"
+            class="fixed inset-0 bg-black/70 flex items-center justify-center z-[400] transition-opacity duration-200"
+            style="display: none; opacity: 0"
+        >
+            <div
+                class="bg-surface-alt border border-bord rounded-lg p-5 w-[340px] max-w-[85vw]"
+            >
+                <p
+                    id="confirm-msg"
+                    class="text-sm mb-4 leading-relaxed whitespace-pre-line"
+                ></p>
+                <button
+                    id="btn-confirm-exec"
+                    class="h-10 w-full px-4 py-2 rounded-lg bg-pink text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 mb-2"
+                >
+                    执行
+                </button>
+                <button
+                    id="btn-confirm-cancel"
+                    class="h-10 w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active"
+                >
+                    取消
+                </button>
+            </div>
+        </div>
+
         <script src="assets/app.min.js"></script>
         <script>
             var SID = new URLSearchParams(location.search).get("id");
@@ -63,6 +90,46 @@
                 persCount = 0;
             var _myColl = null;
             var _myCollLoaded = false;
+
+            function exportSubjectBundle() {
+                if (!SID) return;
+                confirmAction(
+                    "导出 #" +
+                        SID +
+                        " 的本地数据包？不会联网拉取，缺失内容会记录在响应中。",
+                    async function () {
+                        var btn = document.getElementById("btn-export-bundle");
+                        if (btn) btn.disabled = true;
+                        showInfo("正在导出数据包...");
+                        try {
+                            var res = await fetch(API + "/v0/bundle/export", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    source: "ids",
+                                    ids: [parseInt(SID, 10)]
+                                })
+                            });
+                            var d = await readJSON(res);
+                            if (!res.ok || !d) {
+                                showError(errText(d, res.status));
+                                return;
+                            }
+                            showSuccess(
+                                "已导出 " +
+                                    escapeHtml(d.filename) +
+                                    "<br><span class='text-xs'>路径：" +
+                                    escapeHtml(d.path) +
+                                    "</span>"
+                            );
+                        } catch (e) {
+                            showError("导出失败");
+                        } finally {
+                            if (btn) btn.disabled = false;
+                        }
+                    }
+                );
+            }
 
             async function loadMyCollection() {
                 if (_myCollLoaded) return _myColl;
@@ -185,6 +252,11 @@
                         SID +
                         "</span>" +
                         '<span class="flex-1"></span>' +
+                        (resolve("bundle") !== "hidden"
+                            ? '<button id="btn-export-bundle" type="button" onclick="exportSubjectBundle()" class="w-7 h-7 rounded-full border border-bord-strong flex items-center justify-center text-sub hover:text-text hover:border-bord-xstrong shrink-0 cursor-pointer bg-transparent" title="导出数据包" aria-label="导出数据包">' +
+                              '<svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>' +
+                              "</button>"
+                            : "") +
                         '<span class="flex gap-0 shrink-0 ml-2">' +
                         tabsHtml() +
                         "</span></div>";
