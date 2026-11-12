@@ -13,7 +13,8 @@ const ENTRIES = {
     home: "web/src/home/main.js",
     rating: "web/src/rating/main.js",
     stats: "web/src/stats/main.js",
-    search: "web/src/search/main.js"
+    search: "web/src/search/main.js",
+    settings: "web/src/settings/main.js"
 };
 
 export default defineConfig(({ mode }) => {
