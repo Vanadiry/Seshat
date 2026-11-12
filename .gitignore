@@ -9,7 +9,6 @@ config.yaml
 .vscode/
 TODO*.md
 node_modules/
-pnpm-workspace.yaml
 /Dev/
 
 # Build
