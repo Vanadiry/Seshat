@@ -356,7 +356,9 @@
                               ? subName(n, escapeHtml(no.name_cn) || "")
                               : "";
                     return (
-                        '<div style="flex:1 1 50%;max-width:50%;overflow:hidden" class="flex items-center gap-3 py-1.5 pl-2">' +
+                        '<a href="/subject?id=' +
+                        id +
+                        '" style="flex:1 1 50%;max-width:50%;overflow:hidden" class="flex items-center gap-3 py-1.5 pl-2 pr-2 no-underline hover:bg-active transition-colors">' +
                         '<img src="' +
                         img("subject", id, "grid") +
                         '" ' +
@@ -373,7 +375,7 @@
                         "</div>" +
                         '<span class="text-xs text-sub shrink-0">#' +
                         id +
-                        "</span></div>"
+                        "</span></a>"
                     );
                 }
 
