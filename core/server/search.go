@@ -144,7 +144,7 @@ func entryNameCN(entry searchEntry) string {
 }
 
 // findSearchMatch 按名称、中文名、信息栏、简介的顺序找命中
-func findSearchMatch(entry searchEntry, nameCN, q string) *searchMatch {
+func findSearchMatch(entry searchEntry, nameCN, q string, withText bool) *searchMatch {
 	if containsFold(entry.Name, q) {
 		return &searchMatch{Field: "name"}
 	}
@@ -166,15 +166,23 @@ func findSearchMatch(entry searchEntry, nameCN, q string) *searchMatch {
 			if key == "" {
 				key = ib.Key
 			}
+			text := ""
+			if withText {
+				text = snippet(value.Value, q)
+			}
 			return &searchMatch{
 				Field: "infobox",
 				Key:   key,
-				Text:  snippet(value.Value, q),
+				Text:  text,
 			}
 		}
 	}
 	if containsFold(entry.Summary, q) {
-		return &searchMatch{Field: "summary", Text: snippet(entry.Summary, q)}
+		text := ""
+		if withText {
+			text = snippet(entry.Summary, q)
+		}
+		return &searchMatch{Field: "summary", Text: text}
 	}
 	return nil
 }
@@ -205,7 +213,7 @@ func searchAllJSON(dd, domain, q string) ([]map[string]any, int) {
 			return
 		}
 		nameCN := entryNameCN(entry)
-		match := findSearchMatch(entry, nameCN, q)
+		match := findSearchMatch(entry, nameCN, q, len(results) < searchLimit)
 		if match == nil {
 			return
 		}
