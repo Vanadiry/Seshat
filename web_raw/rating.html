@@ -41,8 +41,9 @@
                 inset: 0;
                 z-index: 20;
                 display: flex;
-                align-items: center;
+                align-items: flex-start;
                 justify-content: center;
+                padding-top: 12px;
                 font-size: 13px;
                 color: rgba(255, 255, 255, 0.85);
                 pointer-events: none;
@@ -54,11 +55,23 @@
                 opacity: 1;
             }
             .confirm-bar {
+                background: linear-gradient(
+                    to bottom,
+                    var(--c-active),
+                    transparent
+                );
+                padding-top: 12px;
                 transition: opacity 0.35s ease;
                 opacity: 0;
             }
             .confirm-bar.show {
                 opacity: 1;
+            }
+            #pk-area.pk-picked #pk-left-name,
+            #pk-area.pk-picked #pk-right-name,
+            #pk-area.pk-picked #pk-left-sub,
+            #pk-area.pk-picked #pk-right-sub {
+                text-overflow: clip;
             }
         </style>
     </head>
@@ -76,10 +89,11 @@
                     刷新
                 </button>
             </div>
-            <div id="pk-area" class="flex gap-2 mb-6" style="min-height: 280px">
+            <div id="pk-area" class="flex gap-2 mb-6" style="min-height: 240px">
                 <div
                     id="pk-left"
                     class="flex-1 bg-surface border border-bord-mid rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer relative"
+                    style="height: 298px"
                     tabindex="0"
                     role="button"
                     aria-label="选择左侧条目"
@@ -89,7 +103,7 @@
                     <div
                         id="pk-left-img"
                         class="relative shrink-0 rounded-lg overflow-hidden bg-input"
-                        style="width: 100px; aspect-ratio: 1"
+                        style="width: 140px; aspect-ratio: 1/1.414"
                     >
                         <img
                             id="pk-left-img-el"
@@ -103,15 +117,15 @@
                     </div>
                     <div
                         id="pk-left-name"
-                        class="text-sm font-semibold mt-3 text-center"
+                        class="text-sm font-semibold mt-3 text-center truncate w-full"
                     ></div>
                     <div
                         id="pk-left-sub"
-                        class="text-xs text-sub mt-0.5 text-center"
+                        class="text-xs text-sub mt-0.5 text-center truncate w-full"
                     ></div>
                     <div
                         id="pk-left-confirm"
-                        class="confirm-bar absolute bottom-0 left-0 right-0 flex justify-center pb-3"
+                        class="confirm-bar absolute top-0 left-0 right-0 h-[40%] flex items-start justify-center"
                     >
                         <span class="text-pink font-semibold text-sm"
                             >再次点击以确认该条目胜出</span
@@ -122,6 +136,7 @@
                 <div
                     id="pk-right"
                     class="flex-1 bg-surface border border-bord-mid rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer relative"
+                    style="height: 298px"
                     tabindex="0"
                     role="button"
                     aria-label="选择右侧条目"
@@ -131,7 +146,7 @@
                     <div
                         id="pk-right-img"
                         class="relative shrink-0 rounded-lg overflow-hidden bg-input"
-                        style="width: 100px; aspect-ratio: 1"
+                        style="width: 140px; aspect-ratio: 1/1.414"
                     >
                         <img
                             id="pk-right-img-el"
@@ -145,15 +160,15 @@
                     </div>
                     <div
                         id="pk-right-name"
-                        class="text-sm font-semibold mt-3 text-center"
+                        class="text-sm font-semibold mt-3 text-center truncate w-full"
                     ></div>
                     <div
                         id="pk-right-sub"
-                        class="text-xs text-sub mt-0.5 text-center"
+                        class="text-xs text-sub mt-0.5 text-center truncate w-full"
                     ></div>
                     <div
                         id="pk-right-confirm"
-                        class="confirm-bar absolute bottom-0 left-0 right-0 flex justify-center pb-3"
+                        class="confirm-bar absolute top-0 left-0 right-0 h-[40%] flex items-start justify-center"
                     >
                         <span class="text-pink font-semibold text-sm"
                             >再次点击以确认该条目胜出</span
@@ -213,7 +228,7 @@
                     var imgEl = document.getElementById(
                         "pk-" + side + "-img-el"
                     );
-                    imgEl.src = img("subject", it.id, "grid");
+                    imgEl.src = img("subject", it.id, "medium");
                     attachImgFallback(imgEl, "subject", it.id, "grid");
                     document.getElementById("pk-" + side + "-id").textContent =
                         "#" + it.id;
@@ -240,6 +255,9 @@
             }
 
             function resetPKStyles() {
+                document
+                    .getElementById("pk-area")
+                    .classList.remove("pk-picked");
                 ["left", "right"].forEach(function (s) {
                     var el = document.getElementById("pk-" + s);
                     el.classList.remove("shrunk");
@@ -273,6 +291,9 @@
                         .classList.add("show");
                     loser.style.flex = "0 0 200px";
                     loser.classList.add("shrunk");
+                    document
+                        .getElementById("pk-area")
+                        .classList.add("pk-picked");
                 } else if (_state === side) {
                     // 确认并提交
                     var loserSide = side === "left" ? "right" : "left";
