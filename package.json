@@ -1,6 +1,6 @@
 {
     "scripts": {
-        "build:svelte": "vite build --mode subject && vite build --mode character && vite build --mode person",
+        "build:svelte": "vite build --mode subject && vite build --mode character && vite build --mode person && vite build --mode tag",
         "build:css": "pnpm tailwindcss -i assets/tailwind-input.css -o ../web/assets/style.css --minify --cwd web_raw",
         "build:js": "pnpm terser web_raw/assets/app.js -o web/assets/app.min.js -c -m && pnpm terser web_raw/assets/theme.js -o web/assets/theme.min.js -c -m",
         "build:html": "node scripts/minify-html.js",
