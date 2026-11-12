@@ -158,6 +158,29 @@ func buildNameIndex(dd, domain string) {
 
 // buildIndexes 扫描已保存的 API JSON，重建列表、标签和名称索引
 func buildIndexes(dd string, p *Progress) {
+	buildIndexesWithSteps(dd, func(step, total int, name string) {
+		if p != nil {
+			p.SendPhaseStep(step, total, name)
+		}
+	})
+}
+
+// buildIndexesPhased 把索引重建的每个步骤作为独立阶段上报
+func buildIndexesPhased(dd string, p *Progress) {
+	buildIndexesWithSteps(dd, func(step, total int, name string) {
+		if p != nil {
+			p.BeginPhase(step + 1)
+		}
+	})
+}
+
+// buildIndexesWithSteps 与 buildIndexes 相同，但通过 report 上报阶段进度
+func buildIndexesWithSteps(dd string, report func(step, total int, name string)) {
+	reportStep := func(step, total int, name string) {
+		if report != nil {
+			report(step, total, name)
+		}
+	}
 	log.Info("rebuilding indexes from scan")
 	if err := os.MkdirAll(store.IndexDir(dd), 0o755); err != nil {
 		log.Error("index dir mkdir failed", "err", err)
@@ -169,9 +192,7 @@ func buildIndexes(dd string, p *Progress) {
 	tags := map[string]tagInfo{}
 
 	// 扫描条目
-	if p != nil {
-		p.Send("phase", 0, 4, "scanning subjects")
-	}
+	reportStep(0, 5, "扫描条目")
 	scanAPIDir(dd, "subjects", func(path string) {
 		if !strings.HasSuffix(path, "info.json") {
 			return
@@ -204,9 +225,7 @@ func buildIndexes(dd string, p *Progress) {
 	saveJSON(store.IndexFile(dd, "subjects.json"), subjects)
 
 	// 扫描角色
-	if p != nil {
-		p.Send("phase", 1, 4, "scanning characters")
-	}
+	reportStep(1, 5, "扫描角色")
 	scanAPIDir(dd, "characters", func(path string) {
 		if !strings.HasSuffix(path, "info.json") {
 			return
@@ -237,9 +256,7 @@ func buildIndexes(dd string, p *Progress) {
 	saveJSON(store.IndexFile(dd, "characters.json"), chars)
 
 	// 扫描人物
-	if p != nil {
-		p.Send("phase", 2, 4, "scanning persons")
-	}
+	reportStep(2, 5, "扫描人物")
 	scanAPIDir(dd, "persons", func(path string) {
 		if !strings.HasSuffix(path, "info.json") {
 			return
@@ -270,18 +287,14 @@ func buildIndexes(dd string, p *Progress) {
 	saveJSON(store.IndexFile(dd, "persons.json"), persons)
 
 	// 保存标签
-	if p != nil {
-		p.Send("phase", 3, 5, "saving tags")
-	}
+	reportStep(3, 5, "保存标签")
 	saveJSON(store.IndexFile(dd, "tags.json"), tags)
 	buildNameIndex(dd, "subjects")
 	buildNameIndex(dd, "characters")
 	buildPersonNames(dd)
 
 	// 从磁盘重建图片索引
-	if p != nil {
-		p.Send("phase", 4, 5, "rebuilding image index")
-	}
+	reportStep(4, 5, "重建图片索引")
 	RebuildImageIndex(dd)
 
 	log.Info("rebuild complete", "subjects", len(subjects), "chars", len(chars), "persons", len(persons), "tags", len(tags))

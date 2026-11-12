@@ -388,7 +388,7 @@ var MSG = {
         "未在配置中设置用户名（[user] username），无法刷新用户数据。",
 
     // 进度
-    progressConnecting: "连接中...",
+    progressConnecting: "连接中",
     progressDone: "完成",
 
     // 信息栏
@@ -1641,7 +1641,7 @@ function startProgress(taskId, label) {
         fill.style.transition = "none";
         fill.style.width = "100%";
         fill.style.background = "var(--c-toast-warning)";
-        if (detail) detail.textContent = "任务已终止，请重新启动 Seshat 后端。";
+        if (detail) detail.textContent = "任务已终止，后端进程已退出";
         t.update(taskLabel, null, "bg-toast-warning", "bg-toast-warning-bg");
         t.addClose();
         cancelBtn.remove();
@@ -1721,11 +1721,29 @@ function startProgress(taskId, label) {
             }, 5100);
             return;
         }
+        // start 事件只用于标记任务开始，进度以连接时的 snapshot 为准
+        if (d.step === "start") return;
         var title = taskLabel;
-        if (d.phase && d.phases) title += " (" + d.phase + "/" + d.phases + ")";
+        if (d.phase && d.phases) title += " " + d.phase + "/" + d.phases;
         if (title !== taskLabel || (d.label && !label)) t.update(title);
 
-        if (typeof d.done === "number" && d.total && d.step !== "subject") {
+        if (typeof d.percent === "number") {
+            fill.style.width = Math.max(0, Math.min(100, d.percent)) + "%";
+            var percentParts = [];
+            if (d.phase_name) percentParts.push(d.phase_name);
+            if (typeof d.done === "number" && d.total) {
+                var count = d.done + "/" + d.total;
+                if (d.speed) count += "，" + d.speed;
+                percentParts.push(count);
+            }
+            if (d.status) percentParts.push(d.status);
+            percentParts.push(d.percent + "%");
+            if (detail) detail.textContent = percentParts.join("，");
+        } else if (
+            typeof d.done === "number" &&
+            d.total &&
+            d.step !== "subject"
+        ) {
             fill.style.width = Math.round((d.done / d.total) * 100) + "%";
             var parts = [];
             if (d.phase_name) parts.push(d.phase_name);

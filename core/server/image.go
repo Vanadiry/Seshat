@@ -16,21 +16,21 @@ import (
 	"github.com/vanadiry/seshat/core/store"
 )
 
-func downloadImages(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases, concurrency int) {
-	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, nil, concurrency, false)
+func downloadImages(dd string, bg *bangumi.Client, p *Progress, phaseBase, concurrency int) {
+	downloadImagesWithPhase(dd, bg, p, phaseBase, nil, concurrency, false)
 }
 
 // downloadImagesScoped 仅下载指定条目及其关联角色/人物的图像
-func downloadImagesScoped(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectIDs []int, concurrency int) {
-	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, subjectIDs, concurrency, false)
+func downloadImagesScoped(dd string, bg *bangumi.Client, p *Progress, phaseBase int, subjectIDs []int, concurrency int) {
+	downloadImagesWithPhase(dd, bg, p, phaseBase, subjectIDs, concurrency, false)
 }
 
 // downloadImagesScopedForce 覆盖指定条目及其关联角色/人物的全部图像
-func downloadImagesScopedForce(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectIDs []int, concurrency int) {
-	downloadImagesWithPhase(dd, bg, p, phaseBase, totalPhases, subjectIDs, concurrency, true)
+func downloadImagesScopedForce(dd string, bg *bangumi.Client, p *Progress, phaseBase int, subjectIDs []int, concurrency int) {
+	downloadImagesWithPhase(dd, bg, p, phaseBase, subjectIDs, concurrency, true)
 }
 
-func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBase, totalPhases int, subjectFilter []int, concurrency int, force bool) {
+func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBase int, subjectFilter []int, concurrency int, force bool) {
 	log.Info("downloading images")
 	if err := os.MkdirAll(store.IndexDir(dd), 0o755); err != nil {
 		log.Error("index dir mkdir failed", "err", err)
@@ -89,29 +89,23 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 	}
 
 	// 条目
-	if p != nil && totalPhases > 0 {
-		p.SetPhase(phaseBase, totalPhases, "下载条目图像")
-	}
 	if p != nil {
-		p.Send("images_subjects", 0, len(subjIDs), "downloading")
+		p.BeginPhase(phaseBase)
+		p.SendPhaseProgress(0, len(subjIDs), "")
 	}
 	dlImageList(subjIDs, "subject", nil, imgBase, bg, p, "images_subjects", concurrency, force)
 
 	// 角色
-	if p != nil && totalPhases > 0 {
-		p.SetPhase(phaseBase+1, totalPhases, "下载角色图像")
-	}
 	if p != nil {
-		p.Send("images_characters", 0, len(charIDs), "downloading")
+		p.BeginPhase(phaseBase + 1)
+		p.SendPhaseProgress(0, len(charIDs), "")
 	}
 	dlImageList(charIDs, "character", nil, imgBase, bg, p, "images_characters", concurrency, force)
 
 	// 人物
-	if p != nil && totalPhases > 0 {
-		p.SetPhase(phaseBase+2, totalPhases, "下载人物图像")
-	}
 	if p != nil {
-		p.Send("images_persons", 0, len(persIDs), "downloading")
+		p.BeginPhase(phaseBase + 2)
+		p.SendPhaseProgress(0, len(persIDs), "")
 	}
 	dlImageList(persIDs, "person", nil, imgBase, bg, p, "images_persons", concurrency, force)
 
@@ -153,7 +147,11 @@ func dlImageList(ids []int, kind string, imgMap map[int]store.ImageEntry, imgBas
 			if p != nil {
 				mu.Lock()
 				done++
-				p.Send(stage, done, len(ids), "")
+				if p.HasPhaseRange() {
+					p.SendPhaseProgress(done, len(ids), "")
+				} else {
+					p.Send(stage, done, len(ids), "")
+				}
 				mu.Unlock()
 			}
 		}(id)

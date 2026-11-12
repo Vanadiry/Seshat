@@ -138,8 +138,11 @@ func fetchSubjectListFill(ids []int, bg *bangumi.Client, dd, imgDir string, p *P
 			success = append(success, sid)
 		}
 		if p != nil {
-			p.Send("subjects", i+1, len(ids), "")
+			p.SendPhaseProgress(i+1, len(ids), "")
 		}
+	}
+	if p != nil {
+		p.SendPhaseStatus("补齐关联数据")
 	}
 	fillRelatedGaps(dd, bg, ids, p)
 	return success
@@ -213,6 +216,16 @@ func serveFetchRequest(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	writeJSON(w, resp)
 }
 
+func fetchPhasePlan(withImages bool) []phaseSpec {
+	var specs []phaseSpec
+	if withImages {
+		specs = splitPhaseRanges(0, 95, "拉取条目", "下载条目图像", "下载角色图像", "下载人物图像")
+	} else {
+		specs = splitPhaseRanges(0, 95, "拉取条目")
+	}
+	return append(specs, phaseSpec{Name: "重建索引", Start: 95, End: 100})
+}
+
 func dispatchFetch(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, req fetchRequest) (map[string]any, int, error) {
 	if cfg.Upstream.BaseURL == "" {
 		return nil, http.StatusBadRequest, fmt.Errorf("base_url 未配置")
@@ -231,7 +244,8 @@ func dispatchFetch(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, re
 		return map[string]any{"status": "done", "count": 0}, http.StatusOK, nil
 	}
 
-	p := newProgress(len(ids), "fetch", "拉取数据")
+	p := newProgress(100, "fetch", "拉取数据")
+	p.SetPlan(fetchPhasePlan(req.Images != fetchImagesNone))
 	log.Info("unified fetch", "source", req.Source, "count", len(ids), "json", req.JSON, "images", req.Images)
 	go func() {
 		defer func() {
@@ -240,7 +254,7 @@ func dispatchFetch(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, re
 				events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
 			}
 		}()
-		p.SetPhase(1, 3, "拉取条目")
+		p.BeginPhase(1)
 		var success []int
 		if req.JSON == fetchJSONOverwrite {
 			success = fetchSubjectList(ids, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
@@ -249,22 +263,21 @@ func dispatchFetch(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, re
 		}
 
 		if req.Images != fetchImagesNone {
-			p.SetPhase(2, 3, "下载图片")
 			if req.Images == fetchImagesOverwrite {
-				downloadImagesScopedForce(dd, bg, p, 2, 3, ids, cfg.Server.ConcurrencyImage)
+				downloadImagesScopedForce(dd, bg, p, 2, ids, cfg.Server.ConcurrencyImage)
 			} else {
-				downloadImagesScoped(dd, bg, p, 2, 3, ids, cfg.Server.ConcurrencyImage)
+				downloadImagesScoped(dd, bg, p, 2, ids, cfg.Server.ConcurrencyImage)
 			}
 		}
 
-		p.SetPhase(3, 3, "重建索引")
+		p.BeginPhase(p.Phases)
 		buildIndexes(dd, p)
 		if req.Source == fetchSourceIDs {
 			for _, sid := range success {
 				addToSeshatTracker(sid)
 			}
 		}
-		p.Send("complete", len(ids), len(ids), "")
+		p.Send("complete", 100, 100, "")
 		p.Close()
 	}()
 	return map[string]any{"status": "fetching", "count": len(ids), "task_id": p.ID}, http.StatusOK, nil

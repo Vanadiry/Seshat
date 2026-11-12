@@ -57,7 +57,7 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 			if p != nil {
 				mu.Lock()
 				done++
-				p.Send("subjects", done, len(ids), "")
+				p.SendPhaseProgress(done, len(ids), "")
 				mu.Unlock()
 			}
 		}(sid)
@@ -234,7 +234,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			if !putData(dd, key, store.StripImages(data), p) {
 				writeFailed.Store(true)
 			}
-		}, nil, "", concurrency)
+		}, nil, concurrency)
 	}()
 
 	// 人物详情
@@ -281,7 +281,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			if !putData(dd, key, store.StripImages(data), p) {
 				writeFailed.Store(true)
 			}
-		}, nil, "", concurrency)
+		}, nil, concurrency)
 	}()
 
 	// 角色出演条目
@@ -305,7 +305,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			if !putData(dd, key, store.StripImages(data), p) {
 				writeFailed.Store(true)
 			}
-		}, nil, "", concurrency)
+		}, nil, concurrency)
 	}()
 
 	// 角色相关人员
@@ -329,7 +329,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			if !putData(dd, key, store.StripImages(data), p) {
 				writeFailed.Store(true)
 			}
-		}, nil, "", concurrency)
+		}, nil, concurrency)
 	}()
 
 	// 人物参与条目
@@ -353,7 +353,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			if !putData(dd, key, store.StripImages(data), p) {
 				writeFailed.Store(true)
 			}
-		}, nil, "", concurrency)
+		}, nil, concurrency)
 	}()
 
 	// 人物出演角色
@@ -377,7 +377,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			if !putData(dd, key, store.StripImages(data), p) {
 				writeFailed.Store(true)
 			}
-		}, nil, "", concurrency)
+		}, nil, concurrency)
 	}()
 
 	// 剧集
@@ -624,12 +624,12 @@ func fetchUserAvatar(username string, bg *bangumi.Client, dd string) error {
 }
 
 // countTrackerTotal 统计全部 tracker 中的条目总数
-func fetchConcurrent[T any](items []T, fn func(T), p *Progress, stage string, concurrency int) {
+func fetchConcurrent[T any](items []T, fn func(T), p *Progress, concurrency int) {
 	if len(items) == 0 {
 		return
 	}
 	if p != nil {
-		p.Send(stage, 0, len(items), "fetching")
+		p.SendPhaseProgress(0, len(items), "fetching")
 	}
 	sem := make(chan struct{}, concurrency)
 	var wg sync.WaitGroup
@@ -650,7 +650,7 @@ func fetchConcurrent[T any](items []T, fn func(T), p *Progress, stage string, co
 			if p != nil {
 				mu.Lock()
 				done++
-				p.Send(stage, done, len(items), "")
+				p.SendPhaseProgress(done, len(items), "")
 				mu.Unlock()
 			}
 		}(item)
@@ -691,7 +691,7 @@ func handleFetchDeep(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 			writeError(w, r, 409, "已有任务正在运行，请等待完成")
 			return
 		}
-		p := newProgress(countTrackerTotal(cfg), "rebuild_all", "重建全部")
+		p := newProgress(100, "rebuild_all", "重建全部")
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
@@ -700,7 +700,7 @@ func handleFetchDeep(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 				}
 			}()
 			forceRefresh(cfg, bg, dd, imgDir, p)
-			p.Send("complete", p.Total, p.Total, "")
+			p.Send("complete", 100, 100, "")
 			p.Close()
 		}()
 		writeJSON(w, map[string]any{"status": "deep refresh", "task_id": p.ID})
@@ -744,7 +744,8 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 			writeError(w, r, 409, "已有任务正在运行，请等待完成")
 			return
 		}
-		p := newProgress(3, "fetch_user", "拉取用户数据")
+		p := newProgress(100, "fetch_user", "拉取用户数据")
+		p.SetPlan(splitPhaseRanges(0, 100, "拉取用户信息", "拉取用户头像", "拉取用户收藏"))
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
@@ -752,37 +753,37 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
 				}
 			}()
-			p.SetPhase(1, 3, "拉取用户信息")
-			p.Send("user_info", 0, 1, "")
+			p.BeginPhase(1)
+			p.SendPhaseStep(0, 1, "")
 			if err := fetchUserInfo(uname, bg, dd); err != nil {
 				log.Warn("user info fetch failed", "user", uname, "err", err)
 				p.SetError("用户信息拉取失败")
-				p.Send("user_info", 1, 1, "error")
+				p.SendPhaseStep(1, 1, "失败")
 			} else {
-				p.Send("user_info", 1, 1, "")
+				p.SendPhaseStep(1, 1, "")
 			}
 
-			p.SetPhase(2, 3, "拉取用户头像")
-			p.Send("user_avatar", 0, 1, "")
+			p.BeginPhase(2)
+			p.SendPhaseStep(0, 1, "")
 			if err := fetchUserAvatar(uname, bg, dd); err != nil {
 				log.Warn("user avatar fetch failed", "user", uname, "err", err)
 				p.SetError("用户头像拉取失败")
-				p.Send("user_avatar", 1, 1, "error")
+				p.SendPhaseStep(1, 1, "失败")
 			} else {
-				p.Send("user_avatar", 1, 1, "")
+				p.SendPhaseStep(1, 1, "")
 			}
 
-			p.SetPhase(3, 3, "拉取用户收藏")
-			p.Send("user_collections", 0, 1, "")
+			p.BeginPhase(3)
+			p.SendPhaseStep(0, 1, "")
 			if err := fetchUserCollections(uname, bg, dd); err != nil {
 				log.Warn("user collections fetch failed", "user", uname, "err", err)
 				p.SetError("收藏列表拉取失败")
-				p.Send("user_collections", 1, 1, "error")
+				p.SendPhaseStep(1, 1, "失败")
 			} else {
-				p.Send("user_collections", 1, 1, "")
+				p.SendPhaseStep(1, 1, "")
 			}
 
-			p.Send("complete", 3, 3, "")
+			p.Send("complete", 100, 100, "")
 			p.Close()
 		}()
 		writeJSON(w, map[string]any{"status": "fetching", "username": uname, "task_id": p.ID})
@@ -828,7 +829,14 @@ func handleFetchIndex(dd string) http.HandlerFunc {
 			writeError(w, r, 409, "已有任务正在运行，请等待完成")
 			return
 		}
-		p := newProgress(5, "rebuild_index", "重建索引")
+		p := newProgress(100, "rebuild_index", "重建索引")
+		p.SetPlan([]phaseSpec{
+			{Name: "扫描条目", Start: 0, End: 40},
+			{Name: "扫描角色", Start: 40, End: 55},
+			{Name: "扫描人物", Start: 55, End: 70},
+			{Name: "保存标签和名称索引", Start: 70, End: 80},
+			{Name: "重建图片索引", Start: 80, End: 100},
+		})
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
@@ -836,8 +844,8 @@ func handleFetchIndex(dd string) http.HandlerFunc {
 					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
 				}
 			}()
-			buildIndexes(dd, p)
-			p.Send("complete", 5, 5, "")
+			buildIndexesPhased(dd, p)
+			p.Send("complete", 100, 100, "")
 			p.Close()
 		}()
 		writeJSON(w, map[string]any{"status": "rebuilding", "task_id": p.ID})

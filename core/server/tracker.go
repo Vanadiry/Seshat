@@ -225,14 +225,20 @@ func forceRefresh(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, p *
 	refreshAllTrackers(cfg, bg, dd, imgDir, p)
 }
 
+func trackerPhasePlan() []phaseSpec {
+	specs := splitPhaseRanges(0, 95, "拉取动画数据", "下载条目图像", "下载角色图像", "下载人物图像")
+	return append(specs, phaseSpec{Name: "建立索引", Start: 95, End: 100})
+}
+
 // refreshAllTrackers 刷新全部 tracker 列表
 func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	allIDs := allTrackerIDs(cfg)
-	p.SetPhase(1, 5, "拉取动画数据")
+	p.SetPlan(trackerPhasePlan())
+	p.BeginPhase(1)
 	fetchSubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
 	log.Info("all trackers refreshed", "subjects", len(allIDs))
-	downloadImages(dd, bg, p, 2, 5, cfg.Server.ConcurrencyImage)
-	p.SetPhase(5, 5, "建立索引")
+	downloadImages(dd, bg, p, 2, cfg.Server.ConcurrencyImage)
+	p.BeginPhase(5)
 	buildIndexes(dd, p)
 }
 
@@ -243,11 +249,12 @@ func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, 
 		log.Warn("refreshTrackers: no IDs found", "names", names)
 		return
 	}
-	p.SetPhase(1, 5, "拉取动画数据")
+	p.SetPlan(trackerPhasePlan())
+	p.BeginPhase(1)
 	fetchSubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
 	log.Info("trackers refreshed", "names", names, "subjects", len(allIDs))
-	downloadImages(dd, bg, p, 2, 5, cfg.Server.ConcurrencyImage)
-	p.SetPhase(5, 5, "建立索引")
+	downloadImages(dd, bg, p, 2, cfg.Server.ConcurrencyImage)
+	p.BeginPhase(5)
 	buildIndexes(dd, p)
 }
 
