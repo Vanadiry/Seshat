@@ -1120,7 +1120,7 @@ document.addEventListener("DOMContentLoaded", () => {
     var navStyle = navCls;
     tb.innerHTML = `
     <div class="bg-surface-raised border-b border-bord">
-      <div class="max-w-[1200px] mx-auto px-6 flex items-center gap-3 h-12 relative overflow-x-auto thin-scroll">
+      <div class="max-w-[1200px] mx-auto px-6 flex items-center gap-3 h-12 relative overflow-x-auto">
         <h1 class="text-lg font-bold cursor-pointer shrink-0" onclick="location.href='/'">Seshat</h1>
         <nav class="flex gap-1 ml-2 items-center">
           <a href="/" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/")}">动画</a>
