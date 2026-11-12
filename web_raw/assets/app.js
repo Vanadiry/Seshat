@@ -1527,7 +1527,7 @@ function _makeToast(
         : "";
     var closeHTML =
         closable !== false
-            ? '<span class="cursor-pointer opacity-60 hover:opacity-100 text-lg leading-none shrink-0 ml-3">✕</span>'
+            ? '<button type="button" data-toast-close aria-label="关闭" class="cursor-pointer opacity-60 hover:opacity-100 text-lg leading-none shrink-0 ml-3 border-0 bg-transparent p-0 text-inherit font-[inherit]">✕</button>'
             : "";
     var rightHTML =
         countHTML || closeHTML
@@ -1575,7 +1575,7 @@ function _makeToast(
             _repositionToasts();
         }, 300);
     }
-    var closeBtn = el.querySelector("span[class*='cursor-pointer']");
+    var closeBtn = el.querySelector("[data-toast-close]");
     if (closeBtn) closeBtn.onclick = close;
     var barFill = null;
     function armAutoClose() {
@@ -1653,10 +1653,13 @@ function _makeToast(
         },
         addClose: function () {
             var titleBar = el.querySelector("div:first-child");
-            if (!titleBar.querySelector("span[class*='cursor-pointer']")) {
-                var xBtn = document.createElement("span");
+            if (!titleBar.querySelector("[data-toast-close]")) {
+                var xBtn = document.createElement("button");
+                xBtn.type = "button";
+                xBtn.setAttribute("data-toast-close", "");
+                xBtn.setAttribute("aria-label", "关闭");
                 xBtn.className =
-                    "cursor-pointer opacity-60 hover:opacity-100 text-lg leading-none shrink-0 ml-3";
+                    "cursor-pointer opacity-60 hover:opacity-100 text-lg leading-none shrink-0 ml-3 border-0 bg-transparent p-0 text-inherit font-[inherit]";
                 xBtn.textContent = "✕";
                 xBtn.onclick = close;
                 titleBar.appendChild(xBtn);
@@ -1832,9 +1835,10 @@ function startProgress(taskId, label) {
 
     // 添加终止按钮
     var titleBar = t.el.querySelector("div:first-child");
-    var cancelBtn = document.createElement("span");
+    var cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
     cancelBtn.className =
-        "cursor-pointer opacity-60 hover:opacity-100 text-[12px] font-normal shrink-0 ml-3";
+        "cursor-pointer opacity-60 hover:opacity-100 text-[12px] font-normal shrink-0 ml-3 border-0 bg-transparent p-0 text-inherit font-[inherit]";
     cancelBtn.textContent = "终止";
     cancelBtn.onclick = function (e) {
         e.stopPropagation();
