@@ -5,16 +5,189 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"unicode"
 )
 
 const searchLimit = 500
+const searchSnippetRadius = 30
+
+// searchMatch 记录命中字段，供前端高亮
+type searchMatch struct {
+	Field string `json:"field"`
+	Key   string `json:"key,omitempty"`
+	Text  string `json:"text,omitempty"`
+}
+
+// infoboxEntry 为 info.json 的信息栏字段
+type infoboxEntry struct {
+	Key   string          `json:"key"`
+	Value json.RawMessage `json:"value"`
+}
+
+// searchEntry 为搜索需要读取的 info.json 字段
+type searchEntry struct {
+	ID      int            `json:"id"`
+	Name    string         `json:"name"`
+	NameCN  string         `json:"name_cn"`
+	Infobox []infoboxEntry `json:"infobox"`
+	Summary string         `json:"summary"`
+}
+
+// matchRunes 返回 q 在 s 中首次出现的位置，忽略大小写
+func matchRunes(s, q string) int {
+	rs := []rune(s)
+	rq := []rune(q)
+	if len(rq) == 0 || len(rq) > len(rs) {
+		return -1
+	}
+	for i := 0; i+len(rq) <= len(rs); i++ {
+		matched := true
+		for j := 0; j < len(rq); j++ {
+			if unicode.ToLower(rs[i+j]) != unicode.ToLower(rq[j]) {
+				matched = false
+				break
+			}
+		}
+		if matched {
+			return i
+		}
+	}
+	return -1
+}
+
+// containsFold 判断 s 是否包含 q，忽略大小写
+func containsFold(s, q string) bool {
+	return matchRunes(s, q) >= 0
+}
+
+// snippet 截取命中位置前后的内容
+func snippet(text, q string) string {
+	rs := []rune(text)
+	pos := matchRunes(text, q)
+	if pos < 0 {
+		return ""
+	}
+	start := pos - searchSnippetRadius
+	if start < 0 {
+		start = 0
+	}
+	end := pos + len([]rune(q)) + searchSnippetRadius
+	if end > len(rs) {
+		end = len(rs)
+	}
+	out := strings.Join(strings.Fields(string(rs[start:end])), " ")
+	if start > 0 {
+		out = "…" + out
+	}
+	if end < len(rs) {
+		out += "…"
+	}
+	return out
+}
+
+// infoboxValue 为展开后的信息栏值
+type infoboxValue struct {
+	Key   string
+	Value string
+}
+
+// infoboxValues 展开信息栏的字符串、字符串数组和键值对数组
+func infoboxValues(raw json.RawMessage) []infoboxValue {
+	var text string
+	if json.Unmarshal(raw, &text) == nil {
+		return []infoboxValue{{Value: text}}
+	}
+	var items []json.RawMessage
+	if json.Unmarshal(raw, &items) != nil {
+		return nil
+	}
+	out := make([]infoboxValue, 0, len(items))
+	for _, item := range items {
+		if json.Unmarshal(item, &text) == nil {
+			out = append(out, infoboxValue{Value: text})
+			continue
+		}
+		var kv struct {
+			K string `json:"k"`
+			V string `json:"v"`
+		}
+		if json.Unmarshal(item, &kv) == nil && (kv.K != "" || kv.V != "") {
+			out = append(out, infoboxValue{Key: kv.K, Value: kv.V})
+		}
+	}
+	return out
+}
+
+// looksLikeURL 判断信息栏值是否为链接
+func looksLikeURL(s string) bool {
+	lower := strings.ToLower(s)
+	return strings.HasPrefix(lower, "http://") ||
+		strings.HasPrefix(lower, "https://")
+}
+
+// entryNameCN 取顶层中文名，缺失时读信息栏的简体中文名
+func entryNameCN(entry searchEntry) string {
+	if entry.NameCN != "" {
+		return entry.NameCN
+	}
+	for _, ib := range entry.Infobox {
+		if ib.Key != "简体中文名" {
+			continue
+		}
+		for _, value := range infoboxValues(ib.Value) {
+			if value.Value != "" {
+				return value.Value
+			}
+		}
+	}
+	return ""
+}
+
+// findSearchMatch 按名称、中文名、信息栏、简介的顺序找命中
+func findSearchMatch(entry searchEntry, nameCN, q string) *searchMatch {
+	if containsFold(entry.Name, q) {
+		return &searchMatch{Field: "name"}
+	}
+	if nameCN != "" && containsFold(nameCN, q) {
+		return &searchMatch{Field: "name_cn"}
+	}
+	for _, ib := range entry.Infobox {
+		for _, value := range infoboxValues(ib.Value) {
+			if value.Value == "" || looksLikeURL(value.Value) {
+				continue
+			}
+			if !containsFold(value.Value, q) {
+				continue
+			}
+			if ib.Key == "简体中文名" {
+				return &searchMatch{Field: "name_cn"}
+			}
+			key := value.Key
+			if key == "" {
+				key = ib.Key
+			}
+			return &searchMatch{
+				Field: "infobox",
+				Key:   key,
+				Text:  snippet(value.Value, q),
+			}
+		}
+	}
+	if containsFold(entry.Summary, q) {
+		return &searchMatch{Field: "summary", Text: snippet(entry.Summary, q)}
+	}
+	return nil
+}
 
 // searchAllJSON 扫描 data/api/{domain} 下的 info.json，按关键词匹配
 func searchAllJSON(dd, domain, q string) ([]map[string]any, int) {
-	q = strings.ToLower(q)
 	results := []map[string]any{}
 	seen := map[int]bool{}
 	total := 0
+	if q == "" {
+		return results, total
+	}
+	qLower := strings.ToLower(q)
 
 	scanAPIDir(dd, domain, func(path string) {
 		if !strings.HasSuffix(path, "info.json") {
@@ -24,19 +197,16 @@ func searchAllJSON(dd, domain, q string) ([]map[string]any, int) {
 		if err != nil || len(data) < 4 {
 			return
 		}
-		if !strings.Contains(strings.ToLower(string(data)), q) {
+		if !strings.Contains(strings.ToLower(string(data)), qLower) {
 			return
 		}
-		var entry struct {
-			ID      int    `json:"id"`
-			Name    string `json:"name"`
-			NameCN  string `json:"name_cn"`
-			Infobox []struct {
-				Key   string          `json:"key"`
-				Value json.RawMessage `json:"value"`
-			} `json:"infobox"`
-		}
+		var entry searchEntry
 		if json.Unmarshal(data, &entry) != nil || entry.ID == 0 || seen[entry.ID] {
+			return
+		}
+		nameCN := entryNameCN(entry)
+		match := findSearchMatch(entry, nameCN, q)
+		if match == nil {
 			return
 		}
 		seen[entry.ID] = true
@@ -44,31 +214,13 @@ func searchAllJSON(dd, domain, q string) ([]map[string]any, int) {
 		if len(results) >= searchLimit {
 			return
 		}
-		item := map[string]any{"id": entry.ID, "name": entry.Name}
-		if domain == "subjects" {
-			if entry.NameCN != "" {
-				item["name_cn"] = entry.NameCN
-			} else {
-				for _, ib := range entry.Infobox {
-					if ib.Key == "简体中文名" {
-						var s string
-						if json.Unmarshal(ib.Value, &s) == nil && s != "" {
-							item["name_cn"] = s
-						}
-						break
-					}
-				}
-			}
-		} else {
-			for _, ib := range entry.Infobox {
-				if ib.Key == "简体中文名" {
-					var s string
-					if json.Unmarshal(ib.Value, &s) == nil && s != "" {
-						item["name_cn"] = s
-					}
-					break
-				}
-			}
+		item := map[string]any{
+			"id":    entry.ID,
+			"name":  entry.Name,
+			"match": match,
+		}
+		if nameCN != "" {
+			item["name_cn"] = nameCN
 		}
 		results = append(results, item)
 	})
