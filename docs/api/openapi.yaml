@@ -1422,6 +1422,29 @@ components:
           items:
             $ref: "#/components/schemas/TrackerItem"
 
+    SearchMatch:
+      type: object
+      properties:
+        field:
+          {
+            type: string,
+            enum: [name, name_cn, infobox, summary, tag],
+            description: 命中字段,
+          }
+        key: { type: string, description: 信息栏字段名，仅 infobox 出现 }
+        text:
+          type: string
+          description: 命中位置前后的片段，仅 infobox 和 summary 出现
+
+    SearchItem:
+      type: object
+      properties:
+        id: { type: integer, example: 51 }
+        name: { type: string, example: "CLANNAD" }
+        name_cn: { type: string, nullable: true, example: "CLANNAD" }
+        count: { type: integer, description: 标签结果包含的条目数 }
+        match: { $ref: "#/components/schemas/SearchMatch" }
+
     Paged_SearchItem:
       type: object
       properties:
@@ -1430,7 +1453,7 @@ components:
         offset: { type: integer, example: 0 }
         data:
           type: array
-          items: { type: object }
+          items: { $ref: "#/components/schemas/SearchItem" }
 
     Paged_ActiveTask:
       type: object
