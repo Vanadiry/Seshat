@@ -49,12 +49,120 @@ function cardKeyNav(e) {
     location.href = href;
 }
 
-// 其它可点击元素用键盘触发
-function clickKeyNav(e) {
-    if (e.target !== e.currentTarget) return;
-    if (e.key !== "Enter" && e.key !== " ") return;
-    e.preventDefault();
-    e.currentTarget.click();
+// 列表分页：追加渲染 + 展开更多 / 展开全部
+function createPager(opts) {
+    var container = document.getElementById(opts.containerId);
+    var pager = document.getElementById("pager");
+    var pageSize = opts.pageSize || 100;
+    var unit = opts.unit || "个项目";
+    var getItems = opts.getItems;
+    var renderItem = opts.renderItem;
+    var showing = 0;
+
+    function more(n) {
+        var items = getItems();
+        var end = Math.min(showing + n, items.length);
+        var html = "";
+        for (var i = showing; i < end; i++) html += renderItem(items[i]);
+        container.insertAdjacentHTML("beforeend", html);
+        showing = end;
+        update();
+    }
+
+    function all() {
+        more(getItems().length - showing);
+    }
+
+    function update() {
+        var items = getItems();
+        if (items.length <= pageSize) {
+            pager.innerHTML =
+                '<span class="text-xs text-sub">共 ' +
+                items.length +
+                " " +
+                unit +
+                "</span>";
+            return;
+        }
+        var html =
+            '<span class="text-xs text-sub">当前展示 ' +
+            showing +
+            "，共 " +
+            items.length +
+            " " +
+            unit +
+            "</span>";
+        if (showing < items.length) {
+            html +=
+                ' <button type="button" data-pager="more" class="ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开更多</button>';
+            html +=
+                ' <button type="button" data-pager="all" class="ml-2 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开全部</button>';
+        }
+        pager.innerHTML = html;
+    }
+
+    function reset() {
+        showing = 0;
+        container.innerHTML = "";
+        pager.innerHTML = "";
+        more(pageSize);
+    }
+
+    pager.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-pager]");
+        if (!btn) return;
+        if (btn.getAttribute("data-pager") === "more") more(pageSize);
+        else all();
+    });
+
+    return { reset: reset, more: more, all: all };
+}
+
+// 区块标题：竖条 + 标题 + 可选附加内容
+function sectionTitle(text, opts) {
+    opts = opts || {};
+    return (
+        '<div class="flex items-center ' +
+        (opts.gap || "gap-2") +
+        " " +
+        (opts.outer || "mb-3") +
+        '">' +
+        '<span class="section-bar"></span>' +
+        '<span class="font-bold' +
+        (opts.label ? " " + opts.label : "") +
+        '">' +
+        text +
+        "</span>" +
+        (opts.extra || "") +
+        "</div>"
+    );
+}
+
+// 角色和人物列表卡片
+function entityCard(kind, item) {
+    var name = escapeHtml(item.name);
+    var nameCn = escapeHtml(item.name_cn);
+    var sub = subName(name, nameCn);
+    return (
+        '<a href="/' +
+        kind +
+        "?id=" +
+        item.id +
+        '" class="fade-in flex items-center gap-3 bg-surface rounded-lg overflow-hidden cursor-pointer border border-bord hover:border-pink hover:-translate-y-0.5 transition-all h-[72px] no-underline">' +
+        '<img alt="" src="' +
+        img(kind, item.id, "grid") +
+        '" loading="lazy" ' +
+        imgOnError(kind, item.id, "grid") +
+        ' class="w-[72px] h-[72px] object-cover bg-surface shrink-0">' +
+        '<div class="flex-1 min-w-0 pr-3 py-1">' +
+        '<div class="text-sm font-semibold truncate">' +
+        primaryName(name, nameCn) +
+        "</div>" +
+        (sub
+            ? '<div class="text-xs text-sub truncate mt-0.5">' + sub + "</div>"
+            : "") +
+        "</div></a>"
+    );
 }
 
 // 主题跟随系统，值为 auto 时生效

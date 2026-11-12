@@ -23,79 +23,22 @@
 
         <script src="assets/app.min.js"></script>
         <script>
-            var pageSize = 100;
             var allItems = [];
-            var showing = 0;
 
             // ── 卡片渲染：左侧正方形头像 + 右侧两行（原名/中文名）──
             function renderItem(p) {
-                return (
-                    '<a href="/person?id=' +
-                    p.id +
-                    '" class="fade-in flex items-center gap-3 bg-surface rounded-lg overflow-hidden cursor-pointer border border-bord hover:border-pink hover:-translate-y-0.5 transition-all h-[72px] no-underline">' +
-                    '<img alt="" src="' +
-                    img("person", p.id, "grid") +
-                    '" loading=\"lazy\" ' +
-                    imgOnError("person", p.id, "grid") +
-                    ' class="w-[72px] h-[72px] object-cover bg-surface shrink-0">' +
-                    '<div class="flex-1 min-w-0 pr-3 py-1">' +
-                    '<div class="text-sm font-semibold truncate">' +
-                    primaryName(escapeHtml(p.name), escapeHtml(p.name_cn)) +
-                    "</div>" +
-                    (function () {
-                        var sub = subName(
-                            escapeHtml(p.name),
-                            escapeHtml(p.name_cn)
-                        );
-                        return sub
-                            ? '<div class="text-xs text-sub truncate mt-0.5">' +
-                                  sub +
-                                  "</div>"
-                            : "";
-                    })() +
-                    "</div></a>"
-                );
+                return entityCard("person", p);
             }
 
-            function showMore(n) {
-                var grid = document.getElementById("grid");
-                var end = Math.min(showing + n, allItems.length);
-                var html = "";
-                for (var i = showing; i < end; i++) {
-                    html += renderItem(allItems[i]);
-                }
-                grid.insertAdjacentHTML("beforeend", html);
-                showing = end;
-                updatePager();
-            }
-            function showAll() {
-                showMore(allItems.length - showing);
-            }
-            function updatePager() {
-                var pager = document.getElementById("pager");
-                if (allItems.length <= pageSize) {
-                    pager.innerHTML =
-                        '<span class="text-xs text-sub">共 ' +
-                        allItems.length +
-                        " 人</span>";
-                    return;
-                }
-                var html =
-                    '<span class="text-xs text-sub">当前展示 ' +
-                    showing +
-                    "，共 " +
-                    allItems.length +
-                    " 人</span>";
-                if (showing < allItems.length) {
-                    html +=
-                        ' <button onclick="showMore(' +
-                        pageSize +
-                        ')" class="ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开更多</button>';
-                    html +=
-                        ' <button onclick="showAll()" class="ml-2 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开全部</button>';
-                }
-                pager.innerHTML = html;
-            }
+            var pager = createPager({
+                containerId: "grid",
+                unit: "人",
+                pageSize: 100,
+                getItems: function () {
+                    return allItems;
+                },
+                renderItem: renderItem
+            });
 
             (async () => {
                 var res = await apiFor("lists", "/v0/persons/list");
@@ -105,8 +48,7 @@
                         '<div class="col-span-full text-center py-20 text-sub">暂无数据</div>';
                     return;
                 }
-                showing = 0;
-                showMore(pageSize);
+                pager.reset();
             })();
         </script>
     </body>

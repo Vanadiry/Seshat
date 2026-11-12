@@ -98,7 +98,8 @@
                     (escapeHtml(c.summary) || (c.stat && c.stat.collects)
                         ? '<div class="flex flex-col md:flex-row gap-4"><div class="flex-1 min-w-0">' +
                           (escapeHtml(c.summary)
-                              ? '<div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">简介</span></div><p class="select-text text-[14px] leading-relaxed text-sub">' +
+                              ? sectionTitle("简介") +
+                                '<p class="select-text text-[14px] leading-relaxed text-sub">' +
                                 formatSummary(escapeHtml(c.summary)) +
                                 "</p>"
                               : "") +
@@ -111,11 +112,12 @@
                           "</div>"
                         : "") +
                     (c.actors && c.actors.length
-                        ? '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">声优</span>' +
-                          (isRemote("/v0/characters/" + ID)
-                              ? globeIcon("w-4 h-4")
-                              : "") +
-                          "</div>" +
+                        ? "<div>" +
+                          sectionTitle("声优", {
+                              extra: isRemote("/v0/characters/" + ID)
+                                  ? globeIcon("w-4 h-4")
+                                  : ""
+                          }) +
                           '<div class="flex flex-wrap gap-2">' +
                           c.actors
                               .map(function (a) {
@@ -130,7 +132,11 @@
                               .join("") +
                           "</div></div>"
                         : "") +
-                    '<div id="appearances-section"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">出演</span><span class="text-xs text-sub"><span class="spin"></span>加载中…</span></div></div>' +
+                    '<div id="appearances-section">' +
+                    sectionTitle("出演", {
+                        extra: '<span class="text-xs text-sub"><span class="spin"></span>加载中…</span>'
+                    }) +
+                    "</div>" +
                     "</div></div>";
 
                 loadAppearances(ID);
@@ -308,10 +314,7 @@
                     isRemote("/v0/characters/" + window._charId + "/persons")
                         ? globeIcon("w-4 h-4")
                         : "";
-                var titleHtml =
-                    '<div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">出演</span>' +
-                    remoteIcon +
-                    "</div>";
+                var titleHtml = sectionTitle("出演", { extra: remoteIcon });
                 // 分页
                 var pagerHtml = "";
                 _appearShowing = end;

@@ -569,24 +569,28 @@
                 html += '<div class="flex-1 min-w-0">';
                 if (epGrid)
                     html +=
-                        '<div class="mb-4"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">剧集</span>' +
-                        (isRemote("/v0/episodes?subject_id=" + SID)
-                            ? globeIcon("w-4 h-4")
-                            : "") +
-                        '<span class="text-xs text-sub">(' +
-                        eps.length +
-                        ")</span></div>" +
+                        '<div class="mb-4">' +
+                        sectionTitle("剧集", {
+                            outer: "mb-2",
+                            extra:
+                                (isRemote("/v0/episodes?subject_id=" + SID)
+                                    ? globeIcon("w-4 h-4")
+                                    : "") +
+                                '<span class="text-xs text-sub">(' +
+                                eps.length +
+                                ")</span>"
+                        }) +
                         epGrid +
                         "</div>";
-                html +=
-                    '<div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">简介</span></div>';
+                html += sectionTitle("简介", { outer: "mb-2" });
                 html +=
                     '<p class="select-text text-[14px] leading-relaxed text-sub mb-4">' +
                     formatSummary(escapeHtml(s.summary) || "暂无简介") +
                     "</p>";
                 if (tagsHtml)
                     html +=
-                        '<div class="mb-2"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">标签</span></div>' +
+                        '<div class="mb-2">' +
+                        sectionTitle("标签", { outer: "mb-2" }) +
                         tagsHtml +
                         "</div>";
                 html += "</div>";
@@ -644,11 +648,14 @@
                 // ── 右下栏：主要角色 + 关联条目 ──
                 if (mainChars.length) {
                     html +=
-                        '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">主要角色</span>' +
-                        (isRemote("/v0/subjects/" + SID + "/characters")
-                            ? globeIcon("w-4 h-4")
-                            : "") +
-                        '<a href="javascript:switchTab(\'chars\')" class="text-pink text-xs ml-auto no-underline">更多角色 &raquo;</a></div>';
+                        "<div>" +
+                        sectionTitle("主要角色", {
+                            extra:
+                                (isRemote("/v0/subjects/" + SID + "/characters")
+                                    ? globeIcon("w-4 h-4")
+                                    : "") +
+                                '<a href="javascript:switchTab(\'chars\')" class="text-pink text-xs ml-auto no-underline">更多角色 &raquo;</a>'
+                        });
                     html +=
                         '<div class="flex gap-3 overflow-x-auto pb-2 thin-scroll" style="padding-top:4px">';
                     for (var i = 0; i < mainChars.length; i++) {
@@ -709,11 +716,13 @@
                         return 0;
                     });
                     html +=
-                        '<div><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">关联条目</span>' +
-                        (isRemote("/v0/subjects/" + SID + "/subjects")
-                            ? globeIcon("w-4 h-4")
-                            : "") +
-                        '</div><div class="flex items-start gap-3 overflow-x-auto pb-2 thin-scroll" style="padding-top:4px">';
+                        "<div>" +
+                        sectionTitle("关联条目", {
+                            extra: isRemote("/v0/subjects/" + SID + "/subjects")
+                                ? globeIcon("w-4 h-4")
+                                : ""
+                        }) +
+                        '<div class="flex items-start gap-3 overflow-x-auto pb-2 thin-scroll" style="padding-top:4px">';
                     var relLastRel = "";
                     for (var i = 0; i < rels.length; i++) {
                         var r = rels[i];
@@ -1145,11 +1154,14 @@
                     mainHtml +=
                         '<div class="mb-4 bg-surface-alt rounded-lg p-3 scroll-mt-28" id="g-' +
                         i +
-                        '" style="break-inside:avoid"><div class="flex items-center gap-2 mb-2"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">' +
-                        k +
-                        '</span><span class="text-xs text-sub">(' +
-                        v.length +
-                        ")</span></div>" +
+                        '" style="break-inside:avoid">' +
+                        sectionTitle(k, {
+                            outer: "mb-2",
+                            extra:
+                                '<span class="text-xs text-sub">(' +
+                                v.length +
+                                ")</span>"
+                        }) +
                         nameHtml +
                         "</div>";
                 }

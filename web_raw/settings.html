@@ -214,15 +214,10 @@
                 });
             }
 
-            function sectionTitle(title) {
-                return (
-                    '<div class="flex items-center gap-2 mt-6 mb-3 first:mt-0 ">' +
-                    '<span class="w-[3px] h-[18px] bg-pink rounded-sm"></span>' +
-                    '<span class="font-bold text-sm">' +
-                    title +
-                    "</span></div>"
-                );
-            }
+            var SETTINGS_TITLE_OPTS = {
+                outer: "mt-6 mb-3 first:mt-0",
+                label: "text-sm"
+            };
 
             function renderLeft() {
                 var sections = {};
@@ -237,7 +232,7 @@
                 var secNames = Object.keys(sections);
                 for (var s = 0; s < secNames.length; s++) {
                     var sec = secNames[s];
-                    html += sectionTitle(sec);
+                    html += sectionTitle(sec, SETTINGS_TITLE_OPTS);
                     for (var i = 0; i < sections[sec].length; i++) {
                         var d = sections[sec][i];
                         var val =
@@ -297,7 +292,7 @@
                     '<p class="text-xs text-sub mb-4">此处内容需修改 config.toml 并重启应用</p>';
                 for (var s = 0; s < _configSectionDefs.length; s++) {
                     var sec = _configSectionDefs[s];
-                    html += sectionTitle(sec.title);
+                    html += sectionTitle(sec.title, SETTINGS_TITLE_OPTS);
                     for (var i = 0; i < sec.keys.length; i++) {
                         var k = sec.keys[i];
                         html +=

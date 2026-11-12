@@ -20,9 +20,7 @@
 
         <script src="assets/app.min.js"></script>
         <script>
-            var pageSize = 200;
             var allItems = [];
-            var showing = 0;
 
             function renderItem(t) {
                 return (
@@ -36,47 +34,15 @@
                 );
             }
 
-            function showMore(n) {
-                var el = document.getElementById("tags");
-                var end = Math.min(showing + n, allItems.length);
-                var html = "";
-                for (var i = showing; i < end; i++) {
-                    html += renderItem(allItems[i]);
-                }
-                el.insertAdjacentHTML("beforeend", html);
-                showing = end;
-                updatePager();
-            }
-
-            function showAll() {
-                showMore(allItems.length - showing);
-            }
-
-            function updatePager() {
-                var pager = document.getElementById("pager");
-                if (allItems.length <= pageSize) {
-                    pager.innerHTML =
-                        '<span class="text-xs text-sub">共 ' +
-                        allItems.length +
-                        " 个标签</span>";
-                    return;
-                }
-                var html =
-                    '<span class="text-xs text-sub">当前展示 ' +
-                    showing +
-                    "，共 " +
-                    allItems.length +
-                    " 个标签</span>";
-                if (showing < allItems.length) {
-                    html +=
-                        ' <button onclick="showMore(' +
-                        pageSize +
-                        ')" class="ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开更多</button>';
-                    html +=
-                        ' <button onclick="showAll()" class="ml-2 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开全部</button>';
-                }
-                pager.innerHTML = html;
-            }
+            var pager = createPager({
+                containerId: "tags",
+                unit: "个标签",
+                pageSize: 200,
+                getItems: function () {
+                    return allItems;
+                },
+                renderItem: renderItem
+            });
 
             (async () => {
                 if (!(await requireFeature("tags"))) return;
@@ -87,8 +53,7 @@
                         '<span class="text-sub text-sm">暂无标签</span>';
                     return;
                 }
-                showing = 0;
-                showMore(pageSize);
+                pager.reset();
             })();
         </script>
     </body>

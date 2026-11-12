@@ -23,9 +23,7 @@
 
         <script src="assets/app.min.js"></script>
         <script>
-            var pageSize = 100;
             var allItems = [];
-            var showing = 0;
 
             function onFetchDone() {
                 load();
@@ -85,47 +83,15 @@
                 );
             }
 
-            function showMore(n) {
-                var grid = document.getElementById("grid");
-                var end = Math.min(showing + n, allItems.length);
-                var html = "";
-                for (var i = showing; i < end; i++) {
-                    html += renderItem(allItems[i]);
-                }
-                grid.insertAdjacentHTML("beforeend", html);
-                showing = end;
-                updatePager();
-            }
-
-            function showAll() {
-                showMore(allItems.length - showing);
-            }
-
-            function updatePager() {
-                var pager = document.getElementById("pager");
-                if (allItems.length <= pageSize) {
-                    pager.innerHTML =
-                        '<span class="text-xs text-sub">共 ' +
-                        allItems.length +
-                        " 个项目</span>";
-                    return;
-                }
-                var html =
-                    '<span class="text-xs text-sub">当前展示 ' +
-                    showing +
-                    "，共 " +
-                    allItems.length +
-                    " 个项目</span>";
-                if (showing < allItems.length) {
-                    html +=
-                        ' <button onclick="showMore(' +
-                        pageSize +
-                        ')" class="ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开更多</button>';
-                    html +=
-                        ' <button onclick="showAll()" class="ml-2 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text">展开全部</button>';
-                }
-                pager.innerHTML = html;
-            }
+            var pager = createPager({
+                containerId: "grid",
+                unit: "个项目",
+                pageSize: 100,
+                getItems: function () {
+                    return allItems;
+                },
+                renderItem: renderItem
+            });
 
             async function load() {
                 var q = new URLSearchParams(location.search).get("q");
@@ -273,9 +239,7 @@
                         return Math.random() - 0.5;
                     });
                 }
-                document.getElementById("grid").innerHTML = "";
-                showing = 0;
-                showMore(pageSize);
+                pager.reset();
             }
 
             async function searchLoad(q) {
@@ -299,9 +263,7 @@
                         document.getElementById("pager").innerHTML = "";
                         return;
                     }
-                    document.getElementById("grid").innerHTML = "";
-                    showing = 0;
-                    showMore(pageSize);
+                    pager.reset();
                 } catch (e) {
                     document.getElementById("grid").innerHTML =
                         '<div class="col-span-full text-center py-20 text-sub">无法连接</div>';

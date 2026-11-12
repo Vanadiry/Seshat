@@ -359,6 +359,14 @@ html.light select:where(.search-type, .custom-select) {
 }
 
 /* 加载动画 */
+.section-bar {
+    width: 3px;
+    height: 18px;
+    border-radius: 2px;
+    background: var(--c-pink);
+    flex-shrink: 0;
+}
+
 .spin {
     display: inline-block;
     width: 14px;

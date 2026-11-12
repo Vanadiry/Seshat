@@ -173,13 +173,10 @@
 
             function sectionHeader(type, total, dataLen) {
                 var count = total > dataLen ? "500+" : String(total);
-                return (
-                    '<div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">' +
-                    TYPE_LABELS[type] +
-                    '</span><span class="text-xs text-sub">(' +
-                    count +
-                    ")</span></div>"
-                );
+                return sectionTitle(TYPE_LABELS[type], {
+                    extra:
+                        '<span class="text-xs text-sub">(' + count + ")</span>"
+                });
             }
 
             function renderItem(type, it) {
@@ -235,9 +232,9 @@
 
             function renderErrorSection(type) {
                 return (
-                    '<div class="mb-6"><div class="flex items-center gap-2 mb-3"><span class="w-[3px] h-[18px] bg-pink rounded-sm"></span><span class="font-bold">' +
-                    TYPE_LABELS[type] +
-                    '</span></div><div class="text-center py-6 text-sub">搜索出错</div></div>'
+                    '<div class="mb-6">' +
+                    sectionTitle(TYPE_LABELS[type]) +
+                    '<div class="text-center py-6 text-sub">搜索出错</div></div>'
                 );
             }
 
