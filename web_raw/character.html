@@ -219,7 +219,11 @@
                     var item = items[i];
                     var typeLabel = MSG.subjectTypes[item.type] || "";
                     cards.push(
-                        '<div class="border-t border-bord-light overflow-hidden" style="height:80px">' +
+                        '<div tabindex="0" role="link" data-href="/subject?id=' +
+                            item.id +
+                            '" onkeydown="cardKeyNav(event)" onclick="location.href=\'/subject?id=' +
+                            item.id +
+                            '\'" class="border-t border-bord-light overflow-hidden cursor-pointer" style="height:80px">' +
                             '<div class="flex items-center gap-3 h-full">' +
                             // 条目图片和类型徽章
                             '<div class="relative shrink-0 rounded overflow-hidden bg-surface cursor-pointer" style="width:64px;aspect-ratio:1" onclick="location.href=\'/subject?id=' +
@@ -265,7 +269,9 @@
                             "</div>" +
                             // 人物区
                             (item.person_id
-                                ? '<div class="flex items-start gap-2 shrink-0 cursor-pointer self-start mt-2" onclick="event.stopPropagation();location.href=\'/person?id=' +
+                                ? '<div tabindex="0" role="link" data-href="/person?id=' +
+                                  item.person_id +
+                                  '" onkeydown="cardKeyNav(event)" class="flex items-start gap-2 shrink-0 cursor-pointer self-start mt-2" onclick="event.stopPropagation();location.href=\'/person?id=' +
                                   item.person_id +
                                   "'\">" +
                                   '<span class="text-[14px] font-semibold hover:text-pink">' +

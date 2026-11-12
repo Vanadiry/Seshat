@@ -18,6 +18,24 @@ function openUrl(url) {
     });
 }
 
+// 可点击元素的键盘激活
+function clickKeyNav(e) {
+    if (e.target !== e.currentTarget) return;
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    e.currentTarget.click();
+}
+
+// 卡片键盘导航
+function cardKeyNav(e) {
+    if (e.target !== e.currentTarget) return;
+    if (e.key !== "Enter" && e.key !== " ") return;
+    var href = e.currentTarget.getAttribute("data-href");
+    if (!href) return;
+    e.preventDefault();
+    location.href = href;
+}
+
 // 主题跟随系统，值为 auto 时生效
 var _themeMedia = window.matchMedia("(prefers-color-scheme: light)");
 _themeMedia.addEventListener("change", function (e) {

@@ -396,7 +396,7 @@
                         );
                         epGrid +=
                             '<div class="relative ep-cell">' +
-                            '<span class="ep-num w-8 h-8 flex items-center justify-center rounded text-xs font-semibold cursor-pointer ' +
+                            '<span tabindex="0" role="button" class="ep-num w-8 h-8 flex items-center justify-center rounded text-xs font-semibold cursor-pointer ' +
                             cls +
                             '">' +
                             num +
@@ -652,7 +652,9 @@
                         var actorName =
                             c.actors && c.actors.length ? c.actors[0].name : "";
                         html +=
-                            "<div onclick=\"location.href='/character?id=" +
+                            '<div tabindex="0" role="link" data-href="/character?id=' +
+                            c.id +
+                            '" onkeydown="cardKeyNav(event)" onclick="location.href=\'/character?id=' +
                             c.id +
                             '\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">' +
                             // 图片和浮动徽章
@@ -717,7 +719,9 @@
                         }
                         relLastRel = rel;
                         html +=
-                            "<div onclick=\"location.href='/subject?id=" +
+                            '<div tabindex="0" role="link" data-href="/subject?id=' +
+                            r.id +
+                            '" onkeydown="cardKeyNav(event)" onclick="location.href=\'/subject?id=' +
                             r.id +
                             '\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">' +
                             // 图片和浮动徽章
@@ -809,6 +813,11 @@
                                 };
                                 tip.firstElementChild.appendChild(closeBtn);
                             }
+                        });
+                        num.addEventListener("keydown", function (e) {
+                            if (e.key !== "Enter" && e.key !== " ") return;
+                            e.preventDefault();
+                            num.click();
                         });
                         cell.addEventListener("mouseenter", show);
                         cell.addEventListener("mouseleave", hide);
@@ -937,7 +946,7 @@
                     curFilter = active;
                     var html = '<div class="flex flex-wrap gap-1.5 mb-3">';
                     html +=
-                        '<span onclick="window.filterChars(\'all\')" class="px-3 py-1 rounded-full text-xs cursor-pointer ' +
+                        '<span tabindex="0" role="button" onkeydown="clickKeyNav(event)" onclick="window.filterChars(\'all\')" class="px-3 py-1 rounded-full text-xs cursor-pointer ' +
                         (active === "all"
                             ? "bg-pink-solid text-white"
                             : "bg-surface-alt text-sub hover:text-text") +
@@ -947,7 +956,7 @@
                     for (var k = 0; k < relKeys.length; k++) {
                         var rk = relKeys[k];
                         html +=
-                            "<span onclick=\"window.filterChars('" +
+                            '<span tabindex="0" role="button" onkeydown="clickKeyNav(event)" onclick="window.filterChars(\'' +
                             rk +
                             '\')" class="px-3 py-1 rounded-full text-xs cursor-pointer ' +
                             (active === rk
@@ -974,7 +983,9 @@
                             for (var j = 0; j < c.actors.length; j++) {
                                 var a = c.actors[j];
                                 actorsHtml +=
-                                    '<div class="flex items-center gap-2 cursor-pointer hover:opacity-80 shrink-0" onclick="event.stopPropagation();location.href=\'/person?id=' +
+                                    '<div tabindex="0" role="link" data-href="/person?id=' +
+                                    a.id +
+                                    '" onkeydown="cardKeyNav(event)" class="flex items-center gap-2 cursor-pointer hover:opacity-80 shrink-0" onclick="event.stopPropagation();location.href=\'/person?id=' +
                                     a.id +
                                     "'\">" +
                                     '<img src="' +
@@ -1010,7 +1021,11 @@
                             } catch (e) {}
                         }
                         cards.push(
-                            '<div class="border-t border-bord-light" style="height:128px">' +
+                            '<div tabindex="0" role="link" data-href="/character?id=' +
+                                c.id +
+                                '" onkeydown="cardKeyNav(event)" onclick="location.href=\'/character?id=' +
+                                c.id +
+                                '\'" class="border-t border-bord-light cursor-pointer" style="height:128px">' +
                                 '<div class="flex items-center gap-3 h-full">' +
                                 '<img src="' +
                                 img("character", c.id, "small") +
@@ -1110,16 +1125,16 @@
                     for (var j = 0; j < v.length; j++) {
                         var p = v[j];
                         nameHtml +=
-                            "<div onclick=\"location.href='/person?id=" +
+                            '<a href="/person?id=' +
                             p.id +
-                            '\'" class="flex items-center gap-2 py-1 border-b border-bord-light cursor-pointer hover:text-pink text-sm truncate">' +
+                            '" class="flex items-center gap-2 py-1 border-b border-bord-light cursor-pointer hover:text-pink text-sm truncate no-underline">' +
                             escapeHtml(p.name) +
                             (p.eps
                                 ? '<span class="text-xs text-sub ml-1 shrink-0">(' +
                                   p.eps +
                                   ")</span>"
                                 : "") +
-                            "</div>";
+                            "</a>";
                     }
                     nameHtml += "</div>";
                     mainHtml +=

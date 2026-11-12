@@ -80,6 +80,10 @@
                 <div
                     id="pk-left"
                     class="flex-1 bg-surface border border-bord-mid rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer relative"
+                    tabindex="0"
+                    role="button"
+                    aria-label="选择左侧条目"
+                    onkeydown="pkKeyNav(event, 'left')"
                     onclick="handlePK('left')"
                 >
                     <div
@@ -118,6 +122,10 @@
                 <div
                     id="pk-right"
                     class="flex-1 bg-surface border border-bord-mid rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer relative"
+                    tabindex="0"
+                    role="button"
+                    aria-label="选择右侧条目"
+                    onkeydown="pkKeyNav(event, 'right')"
                     onclick="handlePK('right')"
                 >
                     <div
@@ -241,6 +249,12 @@
                         .getElementById("pk-" + s + "-confirm")
                         .classList.remove("show");
                 });
+            }
+
+            function pkKeyNav(e, side) {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                e.preventDefault();
+                handlePK(side);
             }
 
             function handlePK(side) {

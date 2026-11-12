@@ -240,7 +240,7 @@
                         var val =
                             _prefs[d.key] !== undefined ? _prefs[d.key] : "";
                         html +=
-                            '<div class="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg transition-colors duration-200 hover:bg-active">';
+                            '<div class="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg transition-colors duration-200 hover:bg-active focus-within:bg-active">';
                         html +=
                             '<div class="flex-1 min-w-0"><div class="text-sm text-text truncate" title="' +
                             d.label.replace(/"/g, "&quot;") +
@@ -298,7 +298,7 @@
                     for (var i = 0; i < sec.keys.length; i++) {
                         var k = sec.keys[i];
                         html +=
-                            '<div class="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg transition-colors duration-200 hover:bg-active">' +
+                            '<div class="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg transition-colors duration-200 hover:bg-active focus-visible:bg-active" tabindex="0">' +
                             '<div class="flex-1 min-w-0"><div class="text-sm text-text truncate" title="' +
                             (sec.labels[k] || k).replace(/"/g, "&quot;") +
                             '">' +
