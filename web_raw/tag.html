@@ -35,12 +35,12 @@
                 return (
                     '<a href="/subject?id=' +
                     s.id +
-                    '" class="block no-underline bg-surface rounded-xl overflow-hidden cursor-pointer border border-bord hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-transform">' +
+                    '" class="block no-underline bg-surface rounded-xl overflow-hidden cursor-pointer border border-bord hover:border-pink hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(254,138,149,.1)] transition-all">' +
                     '<img src="' +
                     img("subject", s.id, "small") +
                     '" loading=\"lazy\" ' +
                     imgOnError("subject", s.id, "small") +
-                    ' class="w-full aspect-[3/4] object-cover bg-surface">' +
+                    ' class="w-full object-cover bg-surface" style="aspect-ratio:1/1.414">' +
                     '<div class="p-2.5"><div class="text-sm font-semibold truncate">' +
                     primaryName(escapeHtml(s.name), escapeHtml(s.name_cn)) +
                     "</div>" +
