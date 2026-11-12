@@ -9,7 +9,8 @@ const ENTRIES = {
     tag: "web/src/tag/main.js",
     characters: "web/src/characters/main.js",
     persons: "web/src/persons/main.js",
-    tags: "web/src/tags/main.js"
+    tags: "web/src/tags/main.js",
+    home: "web/src/home/main.js"
 };
 
 export default defineConfig(({ mode }) => {
