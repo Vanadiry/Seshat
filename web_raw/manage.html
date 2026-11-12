@@ -314,6 +314,35 @@
                         </div>
                     </section>
 
+                    <section class="mb-8" data-feature="bundle">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span
+                                class="w-[3px] h-[18px] bg-pink rounded-sm"
+                            ></span>
+                            <h2 class="font-bold text-sm">数据包</h2>
+                        </div>
+                        <p class="text-xs text-sub mb-3">
+                            导入 tar 数据包，会覆盖同名文件并重建索引。
+                        </p>
+                        <input
+                            id="bundle-file"
+                            type="file"
+                            accept=".tar,application/x-tar"
+                            class="hidden"
+                        />
+                        <button
+                            id="btn-bundle-import"
+                            type="button"
+                            class="h-10 w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
+                        >
+                            导入数据包
+                        </button>
+                        <div
+                            id="bundle-file-status"
+                            class="text-xs text-sub mt-2"
+                        ></div>
+                    </section>
+
                     <section class="mb-8">
                         <div class="flex items-center gap-2 mb-3">
                             <span
@@ -974,6 +1003,7 @@
             }
 
             var _activeTaskId = "";
+            var _bundleTaskId = "";
             var _overlayHideTimer = 0;
             var _overlayVisible = false;
             var _bodyOverflow = "";
@@ -1044,6 +1074,17 @@
                     _overlayHideTimer = setTimeout(function () {
                         if (_activeTaskId === doneId) hideTaskOverlay();
                     }, 800);
+                    return;
+                }
+                if (d.step === "error") {
+                    phase.textContent = "任务失败";
+                    text.textContent = d.status || "";
+                    fill.style.width = "100%";
+                    fill.style.background = "var(--c-toast-error)";
+                    var errId = _activeTaskId;
+                    _overlayHideTimer = setTimeout(function () {
+                        if (_activeTaskId === errId) hideTaskOverlay();
+                    }, 2500);
                     return;
                 }
                 if (d.step === "cancelled") {
@@ -1244,6 +1285,43 @@
                 }
             }
 
+            function setBundleStatus(text) {
+                var el = document.getElementById("bundle-file-status");
+                if (el) el.textContent = text;
+            }
+
+            async function startBundleImport(file) {
+                var btn = document.getElementById("btn-bundle-import");
+                if (btn) btn.disabled = true;
+                setBundleStatus("上传中...");
+                try {
+                    var res = await fetch(API + "/v0/bundle/import", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-tar" },
+                        body: file
+                    });
+                    var d = await readJSON(res);
+                    if (!res.ok || !d) {
+                        showError(errText(d, res.status));
+                        setBundleStatus("导入失败");
+                        if (btn) btn.disabled = false;
+                        return;
+                    }
+                    if (d.task_id) {
+                        _bundleTaskId = d.task_id;
+                        setBundleStatus("导入中...");
+                        startProgress(d.task_id);
+                    } else {
+                        setBundleStatus("导入已开始");
+                        if (btn) btn.disabled = false;
+                    }
+                } catch (e) {
+                    showError("导入失败");
+                    setBundleStatus("导入失败");
+                    if (btn) btn.disabled = false;
+                }
+            }
+
             (async () => {
                 if (!(await requireFeature("fetch"))) return;
                 if (!(await requireFeature("task"))) return;
@@ -1267,6 +1345,34 @@
                     requestStartFetch;
                 document.getElementById("btn-add-trackers").onclick =
                     requestAddTrackers;
+                var bundleInput = document.getElementById("bundle-file");
+                document.getElementById("btn-bundle-import").onclick =
+                    function () {
+                        bundleInput.click();
+                    };
+                bundleInput.addEventListener("change", function () {
+                    var file = this.files && this.files[0];
+                    if (!file) return;
+                    if (!/\.tar$/i.test(file.name)) {
+                        showError("请选择 .tar 文件");
+                        this.value = "";
+                        return;
+                    }
+                    if (file.size > 1024 * 1024 * 1024) {
+                        showError("数据包不能超过 1 GiB");
+                        this.value = "";
+                        return;
+                    }
+                    setBundleStatus(
+                        file.name + " · " + Math.round(file.size / 1024) + " KB"
+                    );
+                    confirmAction(
+                        "将导入 " + file.name + "，覆盖同名文件并重建索引。",
+                        function () {
+                            startBundleImport(file);
+                        }
+                    );
+                });
                 document.getElementById("btn-upstream-search").onclick =
                     function () {
                         runUpstreamSearch(false);
@@ -1287,8 +1393,36 @@
                 });
                 window.addEventListener("seshat:task-progress", function (e) {
                     updateTaskOverlay(e.detail);
+                    if (!_bundleTaskId || e.detail.id !== _bundleTaskId) {
+                        return;
+                    }
+                    var d = e.detail.data || {};
+                    var btn = document.getElementById("btn-bundle-import");
+                    if (
+                        d.step === "complete" ||
+                        d.step === "done" ||
+                        d.step === "error" ||
+                        d.step === "cancelled"
+                    ) {
+                        setBundleStatus(
+                            d.step === "error"
+                                ? "导入失败"
+                                : d.step === "cancelled"
+                                  ? "导入已终止"
+                                  : "导入完成"
+                        );
+                        _bundleTaskId = "";
+                        if (btn) btn.disabled = false;
+                    }
                 });
                 window.addEventListener("seshat:task-error", function (e) {
+                    if (_bundleTaskId && e.detail.id === _bundleTaskId) {
+                        setBundleStatus("导入失败");
+                        _bundleTaskId = "";
+                        var bundleBtn =
+                            document.getElementById("btn-bundle-import");
+                        if (bundleBtn) bundleBtn.disabled = false;
+                    }
                     if (!_activeTaskId || e.detail.id !== _activeTaskId) return;
                     document.getElementById("task-overlay-phase").textContent =
                         "进度连接中断";

@@ -1659,6 +1659,20 @@ function startProgress(taskId, label) {
         if (d.label && !taskLabel) {
             taskLabel = d.label;
         }
+        if (d.step === "error") {
+            fill.style.transition = "none";
+            fill.style.width = "100%";
+            fill.style.background = "var(--c-toast-error)";
+            if (detail) detail.textContent = d.status || "任务失败";
+            t.update(taskLabel, null, "bg-toast-error", "bg-toast-error-bg");
+            t.addClose();
+            cancelBtn.remove();
+            evt.close();
+            setTimeout(function () {
+                t.close();
+            }, 5100);
+            return;
+        }
         if (d.step === "cancelled") {
             fill.style.transition = "none";
             fill.style.width = "100%";
