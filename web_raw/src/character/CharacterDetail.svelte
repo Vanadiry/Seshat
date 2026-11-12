@@ -1,8 +1,14 @@
 <script>
     import SectionTitle from "../subject/SectionTitle.svelte";
+    import AppearanceList from "./AppearanceList.svelte";
     import { imgFallback } from "../lib/img.js";
 
-    let { character = {}, cn = "", infoItems = [] } = $props();
+    let {
+        character = {},
+        cn = "",
+        infoItems = [],
+        appearances = []
+    } = $props();
 
     let posterSrc = $derived(window.img("character", character.id, "large"));
 
@@ -96,6 +102,6 @@
             </div>
         {/if}
 
-        <div id="appearances-section"></div>
+        <AppearanceList items={appearances} id={character.id} />
     </div>
 </div>

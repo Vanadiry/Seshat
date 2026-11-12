@@ -1,39 +1,16 @@
-import { mount, unmount } from "svelte";
+import { mount } from "svelte";
 import CharacterHeader from "./CharacterHeader.svelte";
-import CharacterDetail from "./CharacterDetail.svelte";
-import AppearanceList from "./AppearanceList.svelte";
+import CharacterContent from "./CharacterContent.svelte";
+import { initCharacter } from "./state.js";
 
-let currentHeader = null;
-let currentDetail = null;
+var headerTarget = document.getElementById("detail-header");
+var viewTarget = document.getElementById("view");
 
-window.addEventListener("seshat:character-header", function (e) {
-    var target = document.getElementById("character-header");
-    if (!target) return;
-    if (currentHeader) unmount(currentHeader);
-    currentHeader = mount(CharacterHeader, {
-        target: target,
-        props: e.detail
-    });
-});
+if (headerTarget) {
+    mount(CharacterHeader, { target: headerTarget });
+}
+if (viewTarget) {
+    mount(CharacterContent, { target: viewTarget });
+}
 
-window.addEventListener("seshat:character-detail", function (e) {
-    var target = document.getElementById("character-detail");
-    if (!target) return;
-    if (currentDetail) unmount(currentDetail);
-    currentDetail = mount(CharacterDetail, {
-        target: target,
-        props: e.detail
-    });
-});
-
-let currentAppearances = null;
-
-window.addEventListener("seshat:character-appearances", function (e) {
-    var target = document.getElementById("character-appearances");
-    if (!target) return;
-    if (currentAppearances) unmount(currentAppearances);
-    currentAppearances = mount(AppearanceList, {
-        target: target,
-        props: e.detail
-    });
-});
+initCharacter();
