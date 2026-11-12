@@ -223,7 +223,7 @@
                 if (m.field !== "infobox" && m.field !== "summary") return "";
                 var label = m.field === "summary" ? "简介" : m.key || "信息";
                 return (
-                    '<div class="text-xs text-sub truncate mt-0.5">' +
+                    '<div class="text-xs text-sub truncate leading-tight mt-0.5">' +
                     escapeHtml(label) +
                     "：" +
                     highlightText(m.text || "", _searchKeyword) +
@@ -255,14 +255,16 @@
                     imgOnError(kind, it.id, "grid") +
                     ' class="w-10 h-10 rounded-lg object-cover bg-surface shrink-0">' +
                     '<div class="flex-1 min-w-0">' +
-                    '<div class="text-sm font-semibold truncate">' +
+                    '<div class="flex items-baseline gap-2 min-w-0">' +
+                    '<span class="text-sm font-semibold truncate">' +
                     highlightText(it.name, _searchKeyword) +
-                    "</div>" +
+                    "</span>" +
                     (escapeHtml(it.name_cn)
-                        ? '<div class="text-xs text-sub truncate mt-0.5">' +
+                        ? '<span class="text-xs text-sub truncate max-w-[45%]">' +
                           highlightText(it.name_cn, _searchKeyword) +
-                          "</div>"
+                          "</span>"
                         : "") +
+                    "</div>" +
                     matchExtra(it) +
                     "</div>" +
                     '<div class="text-xs text-sub shrink-0">#' +
