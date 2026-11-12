@@ -97,6 +97,8 @@ html.light {
 }
 
 @theme {
+    /* 桌面应用最小宽度 900，布局在 720 以上按桌面处理 */
+    --breakpoint-md: 720px;
     --color-bg: var(--c-bg);
     --color-surface: var(--c-surface);
     --color-surface-alt: var(--c-surface-alt);
@@ -137,6 +139,13 @@ html.light {
     --color-toast-error-bg: var(--c-toast-error-bg);
     --color-toast-warning: var(--c-toast-warning);
     --color-toast-warning-bg: var(--c-toast-warning-bg);
+}
+
+/* 顶栏导航保持单行，宽度不足时由容器横向滚动 */
+#topbar nav,
+#topbar nav a {
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 /* 吸顶高度，页面内容统一避开顶栏 */
