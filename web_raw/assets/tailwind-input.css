@@ -139,6 +139,19 @@ html.light {
     --color-toast-warning-bg: var(--c-toast-warning-bg);
 }
 
+/* 吸顶高度，页面内容统一避开顶栏 */
+:root {
+    --topbar-h: 48px;
+    --detail-header-h: calc(var(--topbar-h) * 2);
+    --sticky-gap: 16px;
+}
+.sticky-below-topbar {
+    top: calc(var(--topbar-h) + var(--sticky-gap));
+}
+.sticky-below-detail-header {
+    top: calc(var(--detail-header-h) + var(--sticky-gap));
+}
+
 /* 键盘焦点样式 */
 @layer base {
     :focus-visible {
