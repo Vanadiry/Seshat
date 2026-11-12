@@ -282,31 +282,7 @@
                         ></div>
                     </section>
 
-                    <section class="mb-8">
-                        <div class="flex items-center gap-2 mb-3">
-                            <span class="section-bar"></span>
-                            <h2 class="font-bold text-sm">用户数据</h2>
-                        </div>
-                        <p class="text-xs text-sub mb-3">
-                            重新拉取当前用户的信息、头像和收藏，或把收藏同步到
-                            Tracker。
-                        </p>
-                        <div class="flex flex-col gap-2">
-                            <button
-                                id="btn-page-user"
-                                class="h-10 w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
-                            >
-                                刷新用户数据
-                            </button>
-                            <button
-                                id="btn-page-import"
-                                data-feature="tracker"
-                                class="h-10 w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
-                            >
-                                同步收藏到 Tracker
-                            </button>
-                        </div>
-                    </section>
+                    <div id="manage-user"></div>
 
                     <section class="mb-8" data-feature="bundle">
                         <div class="flex items-center gap-2 mb-3">
@@ -407,46 +383,7 @@
                         ></div>
                     </section>
 
-                    <section class="mb-8">
-                        <div class="flex items-center gap-2 mb-3">
-                            <span
-                                class="w-[3px] h-[18px] bg-[#dc2626] rounded-sm"
-                            ></span>
-                            <h2 class="font-bold text-sm text-[#dc2626]">
-                                危险区
-                            </h2>
-                        </div>
-                        <p class="text-xs text-sub mb-3">
-                            这些操作会影响大量数据，请先确认。
-                        </p>
-                        <div class="flex flex-col gap-2">
-                            <button
-                                id="btn-page-index"
-                                data-lock-kind="index"
-                                class="h-10 danger-lock w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text select-none"
-                            >
-                                <span class="lock-fill"></span>
-                                <span class="lock-label">重建索引</span>
-                            </button>
-                            <button
-                                id="btn-page-elo"
-                                data-feature="elo"
-                                data-lock-kind="elo"
-                                class="h-10 danger-lock w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text select-none"
-                            >
-                                <span class="lock-fill"></span>
-                                <span class="lock-label">重建 ELO</span>
-                            </button>
-                            <button
-                                id="btn-page-deep"
-                                data-lock-kind="deep"
-                                class="h-10 danger-lock w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text select-none"
-                            >
-                                <span class="lock-fill"></span>
-                                <span class="lock-label">重建全部</span>
-                            </button>
-                        </div>
-                    </section>
+                    <div id="manage-danger"></div>
                 </div>
             </div>
 
@@ -525,6 +462,7 @@
         </div>
 
         <script src="assets/app.min.js"></script>
+        <script type="module" src="assets/manage.js"></script>
         <script>
             function radioValue(name) {
                 var el = document.querySelector(
@@ -959,167 +897,6 @@
                     );
                 }
                 loadTrackerList(true);
-            }
-
-            var _dangerLocks = [];
-
-            function setupDangerLock(btn, onComplete) {
-                var label = btn.querySelector(".lock-label");
-                var fill = btn.querySelector(".lock-fill");
-                var original = label.textContent;
-                var state = "idle";
-                var holdStart = 0;
-                var raf = 0;
-                var armTimer = 0;
-                var highlightTimer = 0;
-                var completeTimer = 0;
-                var suppressClick = false;
-
-                function setFill(pct) {
-                    fill.style.width = pct + "%";
-                }
-                function cancelTimers() {
-                    cancelAnimationFrame(raf);
-                    clearTimeout(armTimer);
-                    clearTimeout(highlightTimer);
-                    clearTimeout(completeTimer);
-                }
-                function reset() {
-                    cancelTimers();
-                    state = "idle";
-                    label.textContent = original;
-                    label.classList.remove("text-pink");
-                    setFill(0);
-                }
-                function arm() {
-                    if (state !== "idle") return;
-                    for (var i = 0; i < _dangerLocks.length; i++) {
-                        if (_dangerLocks[i] !== controller) {
-                            _dangerLocks[i].reset();
-                        }
-                    }
-                    state = "armed";
-                    label.textContent = "按住来应用此项";
-                    label.classList.add("text-pink");
-                    highlightTimer = setTimeout(function () {
-                        label.classList.remove("text-pink");
-                    }, 900);
-                    armTimer = setTimeout(function () {
-                        if (state === "armed") reset();
-                    }, 5000);
-                }
-                function cancelHold() {
-                    if (state !== "holding") return;
-                    cancelAnimationFrame(raf);
-                    setFill(0);
-                    state = "armed";
-                    label.textContent = "按住来应用此项";
-                    label.classList.add("text-pink");
-                    clearTimeout(highlightTimer);
-                    highlightTimer = setTimeout(function () {
-                        label.classList.remove("text-pink");
-                    }, 900);
-                    clearTimeout(armTimer);
-                    armTimer = setTimeout(function () {
-                        if (state === "armed") reset();
-                    }, 5000);
-                }
-                function startHold(e) {
-                    if (state !== "idle" && state !== "armed") return;
-                    if (e) e.preventDefault();
-                    if (state === "idle") {
-                        for (var i = 0; i < _dangerLocks.length; i++) {
-                            if (_dangerLocks[i] !== controller) {
-                                _dangerLocks[i].reset();
-                            }
-                        }
-                    }
-                    state = "holding";
-                    clearTimeout(armTimer);
-                    clearTimeout(highlightTimer);
-                    label.textContent = "按住来应用此项";
-                    label.classList.remove("text-pink");
-                    holdStart = performance.now();
-                    function frame(now) {
-                        if (state !== "holding") return;
-                        var pct = Math.min(
-                            100,
-                            ((now - holdStart) / 1500) * 100
-                        );
-                        setFill(pct);
-                        if (pct >= 100) {
-                            state = "idle";
-                            suppressClick = true;
-                            setFill(100);
-                            clearTimeout(armTimer);
-                            clearTimeout(highlightTimer);
-                            completeTimer = setTimeout(function () {
-                                reset();
-                                onComplete();
-                                setTimeout(function () {
-                                    suppressClick = false;
-                                }, 500);
-                            }, 120);
-                            return;
-                        }
-                        raf = requestAnimationFrame(frame);
-                    }
-                    raf = requestAnimationFrame(frame);
-                }
-
-                btn.addEventListener("click", function () {
-                    if (suppressClick) {
-                        suppressClick = false;
-                        return;
-                    }
-                    if (state === "idle") arm();
-                });
-                btn.addEventListener("pointerdown", startHold);
-                btn.addEventListener("pointerup", cancelHold);
-                btn.addEventListener("pointercancel", cancelHold);
-                btn.addEventListener("pointerleave", function () {
-                    if (state === "holding") cancelHold();
-                });
-                btn.addEventListener("keydown", function (e) {
-                    if (e.key !== " " && e.key !== "Enter") return;
-                    if (state === "idle" || state === "armed") {
-                        e.preventDefault();
-                        startHold(e);
-                    }
-                });
-                btn.addEventListener("keyup", function (e) {
-                    if (e.key !== " " && e.key !== "Enter") return;
-                    if (state === "holding") {
-                        e.preventDefault();
-                        cancelHold();
-                    }
-                });
-                btn.addEventListener("blur", function () {
-                    if (state === "armed" || state === "holding") reset();
-                });
-
-                var controller = { reset: reset };
-                _dangerLocks.push(controller);
-                return controller;
-            }
-
-            function confirmDeepDanger() {
-                api("/v0/tracker")
-                    .then(function (d) {
-                        var msg = MSG.confirmRebuildAll().replace(/。$/, "");
-                        if (d && typeof d.total === "number") {
-                            msg += "，Tracker 数量：" + d.total;
-                        }
-                        msg += "，此操作不可恢复";
-                        confirmAction(msg, doDeepRebuild);
-                    })
-                    .catch(function () {
-                        confirmAction(
-                            MSG.confirmRebuildAll().replace(/。$/, "") +
-                                "，此操作不可恢复",
-                            doDeepRebuild
-                        );
-                    });
             }
 
             var _activeTaskId = "";
@@ -1754,39 +1531,6 @@
                     });
                 });
 
-                document.getElementById("btn-page-import").onclick =
-                    function () {
-                        confirmAction(
-                            "将用当前收藏列表重建 user.json。\nuser.toml 不受影响。\n已取消收藏的条目会从 user.json 移除。",
-                            doImportCollections
-                        );
-                    };
-                document.getElementById("btn-page-user").onclick = function () {
-                    if (!window.USERNAME) {
-                        showError(MSG.errNoUsername);
-                        return;
-                    }
-                    confirmAction(MSG.confirmUserFetch(), doUserFetch);
-                };
-                setupDangerLock(
-                    document.getElementById("btn-page-index"),
-                    function () {
-                        confirmAction(MSG.confirmRebuildIndex, doFetchIndex);
-                    }
-                );
-                setupDangerLock(
-                    document.getElementById("btn-page-elo"),
-                    function () {
-                        confirmAction(
-                            "将清空当前 ELO 分数并从对战历史完整重建",
-                            doRebuildELO
-                        );
-                    }
-                );
-                setupDangerLock(
-                    document.getElementById("btn-page-deep"),
-                    confirmDeepDanger
-                );
                 document.getElementById("btn-confirm-cancel").onclick =
                     closeConfirm;
             })();
