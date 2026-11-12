@@ -1265,8 +1265,12 @@ function showLightbox(src) {
     var el = document.getElementById("lightbox");
     if (el) el.remove();
     var reduceMotion = prefersReducedMotion();
+    var returnFocus = document.activeElement;
     var overlay = document.createElement("div");
     overlay.id = "lightbox";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-label", "图片预览");
     overlay.style.cssText =
         "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;" +
         (reduceMotion ? "" : "transition:background .25s ease");
@@ -1298,6 +1302,7 @@ function showLightbox(src) {
     overlay.appendChild(bar);
     overlay.appendChild(wrap);
     document.body.appendChild(overlay);
+    closeBtn.focus();
     // 入场动画
     requestAnimationFrame(function () {
         overlay.style.background = "rgba(0,0,0,.85)";
@@ -1308,7 +1313,22 @@ function showLightbox(src) {
     setTimeout(function () {
         img.style.transition = "";
     }, 300);
+    var lightboxClosed = false;
+    function handleLightboxKey(e) {
+        if (e.key === "Escape") {
+            e.preventDefault();
+            closeLightbox();
+            return;
+        }
+        if (e.key === "Tab") {
+            e.preventDefault();
+            closeBtn.focus();
+        }
+    }
     function closeLightbox() {
+        if (lightboxClosed) return;
+        lightboxClosed = true;
+        document.removeEventListener("keydown", handleLightboxKey);
         overlay.style.background = "rgba(0,0,0,0)";
         img.style.opacity = "0";
         img.style.transform = "scale(.95)";
@@ -1316,16 +1336,18 @@ function showLightbox(src) {
         setTimeout(
             function () {
                 overlay.remove();
+                if (
+                    returnFocus &&
+                    document.contains(returnFocus) &&
+                    typeof returnFocus.focus === "function"
+                ) {
+                    returnFocus.focus();
+                }
             },
             reduceMotion ? 0 : 250
         );
     }
-    document.addEventListener("keydown", function handler(e) {
-        if (e.key === "Escape") {
-            closeLightbox();
-            document.removeEventListener("keydown", handler);
-        }
-    });
+    document.addEventListener("keydown", handleLightboxKey);
     // 缩放和拖拽
     var scale = 1,
         tx = 0,
@@ -1386,7 +1408,49 @@ function showLightbox(src) {
     });
 }
 
+var confirmReturnFocus = null;
+
+// 确认弹窗内循环 Tab，Esc 关闭
+function confirmKeydown(e) {
+    if (e.key === "Escape") {
+        e.preventDefault();
+        closeConfirm();
+        return;
+    }
+    if (e.key !== "Tab") return;
+    var dialog = document.querySelector('#confirm-overlay [role="dialog"]');
+    if (!dialog) return;
+    var nodes = Array.prototype.slice
+        .call(
+            dialog.querySelectorAll(
+                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            )
+        )
+        .filter(function (node) {
+            return !node.disabled && node.offsetParent !== null;
+        });
+    if (!nodes.length) {
+        e.preventDefault();
+        return;
+    }
+    var first = nodes[0];
+    var last = nodes[nodes.length - 1];
+    if (!dialog.contains(document.activeElement)) {
+        e.preventDefault();
+        first.focus();
+        return;
+    }
+    if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+    }
+}
+
 function confirmAction(msg, cb) {
+    confirmReturnFocus = document.activeElement;
     document.getElementById("confirm-msg").textContent = msg;
     var el = document.getElementById("confirm-overlay");
     el.style.display = "flex";
@@ -1401,6 +1465,9 @@ function confirmAction(msg, cb) {
         closeConfirm();
         cb();
     };
+    document.removeEventListener("keydown", confirmKeydown, true);
+    document.addEventListener("keydown", confirmKeydown, true);
+    document.getElementById("btn-confirm-cancel").focus();
 }
 // 通知组件（统一右下角）
 var _toastStack = [];
@@ -1656,6 +1723,16 @@ function showSuccess(msg) {
 function closeConfirm() {
     var el = document.getElementById("confirm-overlay");
     el.style.opacity = "0";
+    document.removeEventListener("keydown", confirmKeydown, true);
+    var target = confirmReturnFocus;
+    confirmReturnFocus = null;
+    if (
+        target &&
+        document.contains(target) &&
+        typeof target.focus === "function"
+    ) {
+        target.focus();
+    }
     setTimeout(function () {
         el.style.display = "none";
     }, 200);
