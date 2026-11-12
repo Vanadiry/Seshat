@@ -180,8 +180,21 @@ select {
     position: fixed;
     top: 0;
     left: 0;
+    width: 100%;
     height: 2px;
     z-index: 9999;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+#load-bar::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40%;
+    height: 100%;
     background: linear-gradient(
         90deg,
         transparent,
@@ -189,26 +202,30 @@ select {
         var(--c-pink),
         transparent
     );
-    opacity: 0;
-    transition: opacity 0.2s;
-    pointer-events: none;
+    transform-origin: left center;
 }
 #load-bar.active {
     opacity: 1;
+}
+#load-bar.active::before {
     animation: loadBarShimmer 1.5s ease-in-out infinite;
 }
 @keyframes loadBarShimmer {
     0% {
-        left: -30%;
-        width: 30%;
+        transform: translateX(-100%) scaleX(0.75);
     }
     50% {
-        left: 50%;
-        width: 40%;
+        transform: translateX(125%) scaleX(1);
     }
     100% {
-        left: 100%;
-        width: 30%;
+        transform: translateX(250%) scaleX(0.75);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    #load-bar.active::before {
+        animation: none;
+        transform: none;
+        width: 100%;
     }
 }
 
