@@ -26,6 +26,14 @@ function clickKeyNav(e) {
     e.currentTarget.click();
 }
 
+// 返回按钮：有历史时回退，否则走 href
+function backNav(e) {
+    if (history.length > 1) {
+        e.preventDefault();
+        history.back();
+    }
+}
+
 // 是否减少动态效果
 function prefersReducedMotion() {
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;

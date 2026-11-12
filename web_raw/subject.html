@@ -220,7 +220,7 @@
                     var hdr = document.getElementById("subject-header");
                     hdr.innerHTML =
                         '<div class="max-w-[1200px] mx-auto px-6 h-12 py-0 flex items-center gap-3 overflow-x-auto">' +
-                        '<a href="javascript:history.back()" class="w-7 h-7 rounded-full border border-bord-strong flex items-center justify-center text-sub hover:text-text hover:border-bord-xstrong shrink-0 no-underline text-xs" title="返回">←</a>' +
+                        '<a href="/" onclick="backNav(event)" class="w-7 h-7 rounded-full border border-bord-strong flex items-center justify-center text-sub hover:text-text hover:border-bord-xstrong shrink-0 no-underline text-xs" title="返回">←</a>' +
                         (isRemote("/v0/subjects/" + SID)
                             ? globeIcon("w-6 h-6")
                             : "") +
