@@ -703,7 +703,7 @@ function attachImgFallback(el, kind, id, size) {
 // globeIcon 返回地球标记的 img 标签，用于标题和分区标题
 function globeIcon(cls) {
     return (
-        '<img src="/assets/global.svg" class="' +
+        '<img alt="" src="/assets/global.svg" class="' +
         (cls || "w-5 h-5") +
         ' shrink-0" title="此数据来自远程">'
     );
@@ -722,6 +722,7 @@ function addRemoteGlobe(el) {
     el.parentNode.insertBefore(wrap, el);
     wrap.appendChild(el);
     var globe = document.createElement("img");
+    globe.alt = "";
     globe.src = "/assets/global.svg";
     globe.style.cssText =
         "position:absolute;top:4px;left:4px;z-index:10;width:20px;height:20px;pointer-events:none;";
@@ -962,7 +963,7 @@ function linkifyURL(text) {
         if (parts[i].indexOf("<a") === 0) continue;
         parts[i] = parts[i].replace(
             /(https?:\/\/[^\s<]+)/g,
-            '<a href="$1" target="_blank" rel="noopener" class="text-pink hover:underline break-all"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">$1</a>'
+            '<a href="$1" target="_blank" rel="noopener" class="text-pink hover:underline break-all"><img alt="" src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">$1</a>'
         );
     }
     return parts.join("");
@@ -986,7 +987,7 @@ function linkifyBBCode(text) {
             return (
                 '<a href="' +
                 url +
-                '" target="_blank" rel="noopener" class="text-pink hover:underline"><img src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">' +
+                '" target="_blank" rel="noopener" class="text-pink hover:underline"><img alt="" src="/assets/link.svg" class="w-3.5 h-3.5 inline-block mr-0.5 align-text-bottom">' +
                 inner +
                 "</a>"
             );
@@ -1168,7 +1169,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <a id="btn-fetch" href="/manage" data-feature-all="fetch,task" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/manage")}">管理数据</a>
         </nav>
         <button type="button" class="relative group w-8 h-8 shrink-0 cursor-pointer rounded-lg border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-pink" aria-label="刷新页面" onclick="location.reload()">
-          <img id="user-avatar" src="" class="w-8 h-8 rounded-lg object-cover bg-surface shrink-0" style="display:none">
+          <img alt="" id="user-avatar" src="" class="w-8 h-8 rounded-lg object-cover bg-surface shrink-0" style="display:none">
           <div id="user-placeholder" class="w-8 h-8 rounded-lg shrink-0" style="background:linear-gradient(135deg,#ff6b6b,#feca57,#48dbfb,#ff9ff3,#54a0ff);background-size:300% 300%;animation:rainbow 3s ease infinite"></div>
           <span class="pointer-events-none absolute inset-0 rounded-lg bg-black/45 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity flex items-center justify-center">
             <svg viewBox="0 0 24 24" class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1276,6 +1277,7 @@ function showLightbox(src) {
     wrap.style.cssText =
         "position:relative;display:inline-block;max-width:90vw;max-height:90vh";
     var img = document.createElement("img");
+    img.alt = "";
     img.src = src;
     img.style.cssText =
         "max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;opacity:0;transform:scale(.95);" +

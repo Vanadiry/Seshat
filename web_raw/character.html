@@ -83,7 +83,7 @@
                 document.getElementById("view").innerHTML =
                     '<div class="fade-in flex flex-col md:flex-row gap-6">' +
                     '<div class="w-full md:w-[260px] shrink-0">' +
-                    '<img src="' +
+                    '<img alt="" src="' +
                     img("character", c.id, "large") +
                     '" ' +
                     imgOnError("character", c.id, "large") +
@@ -229,7 +229,7 @@
                             '<div class="relative shrink-0 rounded overflow-hidden bg-surface cursor-pointer" style="width:64px;aspect-ratio:1" onclick="location.href=\'/subject?id=' +
                             item.id +
                             "'\">" +
-                            '<img src="' +
+                            '<img alt="" src="' +
                             img("subject", item.id, "grid") +
                             '" ' +
                             imgOnError("subject", item.id, "grid") +
@@ -277,7 +277,7 @@
                                   '<span class="text-[14px] font-semibold hover:text-pink">' +
                                   item.person_name +
                                   "</span>" +
-                                  '<img src="' +
+                                  '<img alt="" src="' +
                                   img("person", item.person_id, "grid") +
                                   '" ' +
                                   imgOnError("person", item.person_id, "grid") +

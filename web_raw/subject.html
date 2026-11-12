@@ -546,7 +546,7 @@
                 // ── 左栏：海报 + infobox ──
                 html += '<div class="w-full md:w-[260px] shrink-0">';
                 html +=
-                    '<img src="' +
+                    '<img alt="" src="' +
                     img("subject", SID, "large") +
                     '" ' +
                     imgOnError("subject", SID, "large") +
@@ -660,7 +660,7 @@
                             '\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">' +
                             // 图片和浮动徽章
                             '<div class="relative rounded-lg overflow-hidden bg-surface" style="aspect-ratio:1/1.414">' +
-                            '<img src="' +
+                            '<img alt="" src="' +
                             img("character", c.id, "small") +
                             '" ' +
                             imgOnError("character", c.id, "small") +
@@ -728,7 +728,7 @@
                             '\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">' +
                             // 图片和浮动徽章
                             '<div class="relative rounded-lg overflow-hidden bg-surface aspect-square">' +
-                            '<img src="' +
+                            '<img alt="" src="' +
                             img("subject", r.id, "small") +
                             '" ' +
                             imgOnError("subject", r.id, "small") +
@@ -990,7 +990,7 @@
                                     '" onkeydown="cardKeyNav(event)" class="flex items-center gap-2 cursor-pointer hover:opacity-80 shrink-0" onclick="event.stopPropagation();location.href=\'/person?id=' +
                                     a.id +
                                     "'\">" +
-                                    '<img src="' +
+                                    '<img alt="" src="' +
                                     img("person", a.id, "grid") +
                                     '" ' +
                                     imgOnError("person", a.id, "grid") +
@@ -1029,7 +1029,7 @@
                                 c.id +
                                 '\'" class="border-t border-bord-light cursor-pointer" style="height:128px">' +
                                 '<div class="flex items-center gap-3 h-full">' +
-                                '<img src="' +
+                                '<img alt="" src="' +
                                 img("character", c.id, "small") +
                                 '" ' +
                                 imgOnError("character", c.id, "small") +
