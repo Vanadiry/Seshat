@@ -13,14 +13,8 @@ node_modules/
 
 # Build
 build/
-web/assets/app.min.js
-web/assets/theme.min.js
-web/assets/style.css
-web/assets/subject.js
-web/assets/character.js
-web/assets/person.js
-web/assets/tag.js
-web/**.html
+web-dist/*
+!web-dist/.gitkeep
 
 # Tauri
 /src-tauri/target/

@@ -1,10 +1,11 @@
 {
     "scripts": {
+        "build:clean": "node scripts/clean-dist.js",
         "build:svelte": "vite build --mode subject && vite build --mode character && vite build --mode person && vite build --mode tag",
-        "build:css": "pnpm tailwindcss -i assets/tailwind-input.css -o ../web/assets/style.css --minify --cwd web_raw",
-        "build:js": "pnpm terser web_raw/assets/app.js -o web/assets/app.min.js -c -m && pnpm terser web_raw/assets/theme.js -o web/assets/theme.min.js -c -m",
+        "build:css": "pnpm tailwindcss -i assets/tailwind-input.css -o ../web-dist/assets/style.css --minify --cwd web",
+        "build:js": "pnpm terser web/assets/app.js -o web-dist/assets/app.min.js -c -m && pnpm terser web/assets/theme.js -o web-dist/assets/theme.min.js -c -m",
         "build:html": "node scripts/minify-html.js",
-        "build": "pnpm run build:svelte && pnpm run build:css && pnpm run build:js && pnpm run build:html"
+        "build": "pnpm run build:clean && pnpm run build:svelte && pnpm run build:css && pnpm run build:js && pnpm run build:html"
     },
     "dependencies": {
         "@tailwindcss/cli": "^4.3.5",

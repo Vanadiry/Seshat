@@ -3,10 +3,10 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { resolve } from "node:path";
 
 const ENTRIES = {
-    subject: "web_raw/src/subject/main.js",
-    character: "web_raw/src/character/main.js",
-    person: "web_raw/src/person/main.js",
-    tag: "web_raw/src/tag/main.js"
+    subject: "web/src/subject/main.js",
+    character: "web/src/character/main.js",
+    person: "web/src/person/main.js",
+    tag: "web/src/tag/main.js"
 };
 
 export default defineConfig(({ mode }) => {
@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
     return {
         plugins: [svelte()],
         build: {
-            outDir: "web/assets",
+            outDir: "web-dist/assets",
             emptyOutDir: false,
             lib: {
                 entry: resolve(ENTRIES[name]),
