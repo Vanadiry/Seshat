@@ -53,9 +53,7 @@ function copyStatic() {
 }
 
 async function main() {
-    for (const file of FILES) {
-        await processFile(file);
-    }
+    await Promise.all(FILES.map(processFile));
     copyStatic();
 }
 

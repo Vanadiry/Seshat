@@ -18,18 +18,25 @@ const ENTRIES = {
     manage: "web/src/manage/main.js"
 };
 
-export default defineConfig(({ mode }) => {
-    const name = ENTRIES[mode] ? mode : "subject";
-    return {
-        plugins: [svelte()],
-        build: {
-            outDir: "web-dist/assets",
-            emptyOutDir: false,
-            lib: {
-                entry: resolve(ENTRIES[name]),
-                formats: ["es"],
-                fileName: () => `${name}.js`
+export default defineConfig({
+    plugins: [svelte()],
+    build: {
+        outDir: "web-dist/assets",
+        emptyOutDir: true,
+        lib: {
+            entry: Object.fromEntries(
+                Object.entries(ENTRIES).map(function ([name, path]) {
+                    return [name, resolve(path)];
+                })
+            ),
+            formats: ["es"],
+            fileName: (format, entryName) => `${entryName}.js`
+        },
+        rollupOptions: {
+            output: {
+                chunkFileNames: "shared-[name].js",
+                assetFileNames: "[name][extname]"
             }
         }
-    };
+    }
 });
