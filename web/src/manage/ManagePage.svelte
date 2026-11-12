@@ -188,7 +188,7 @@
 </script>
 
 {#if capsReady}
-    <div id="manage-content" class="flex flex-col sm:flex-row gap-8">
+    <div id="manage-content" class="fade-in flex flex-col sm:flex-row gap-8">
         <div class="flex-1 min-w-0">
             <FetchSection />
         </div>

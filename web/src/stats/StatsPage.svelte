@@ -267,176 +267,185 @@
 {/snippet}
 
 {#if !blocked}
-    <div
-        id="stats-dash"
-        class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 text-xs text-sub"
-    >
-        {#each cards as c}
-            <div
-                class="bg-surface border border-bord-light rounded-xl p-3 flex items-center"
-                style="max-width:260px;max-height:100px"
-            >
-                <div class="min-w-0 flex-1">
-                    <div class="text-sub truncate">{c.label}</div>
-                    <div class="text-lg font-bold mt-1 truncate">
-                        {c.value}
-                    </div>
-                    {#if c.sub}
-                        <div class="text-xs text-sub mt-0.5 truncate">
-                            {c.sub}
+    <div class="fade-in">
+        <div
+            id="stats-dash"
+            class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 text-xs text-sub"
+        >
+            {#each cards as c}
+                <div
+                    class="bg-surface border border-bord-light rounded-xl p-3 flex items-center"
+                    style="max-width:260px;max-height:100px"
+                >
+                    <div class="min-w-0 flex-1">
+                        <div class="text-sub truncate">{c.label}</div>
+                        <div class="text-lg font-bold mt-1 truncate">
+                            {c.value}
                         </div>
-                    {/if}
-                </div>
-            </div>
-        {/each}
-    </div>
-
-    <div id="stats-list" class="thin-scroll overflow-x-auto">
-        {#if loading}
-            <div class="text-center py-20 text-sub">
-                <span class="spin"></span>加载中…
-            </div>
-        {:else if error}
-            <div class="text-center py-20 text-sub">{error}</div>
-        {:else}
-            <div
-                class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-bord-light"
-            >
-                <div class="w-10 shrink-0"></div>
-                <div class="flex-1 min-w-0">动画</div>
-                {@render sortHeader("ELO 评分", "elo", COL_ELO)}
-                {@render sortHeader("我的评分", "my", COL_MY)}
-                {@render sortHeader("番组计划评分", "score", COL_BGM)}
-                <div class="{COL_ID} text-center">ID</div>
-            </div>
-            {#each sorted as it, i (it.id + (it._orphan ? "-o" : ""))}
-                {@const bg = i % 2 === 0 ? "bg-surface" : "bg-surface-raised"}
-                {@const eloCls =
-                    sortKey === "elo"
-                        ? "text-sm font-semibold"
-                        : "text-sm text-sub"}
-                {@const myCls =
-                    sortKey === "my"
-                        ? "text-sm font-semibold"
-                        : "text-sm text-sub"}
-                {@const bkgCls =
-                    sortKey === "score"
-                        ? "text-sm font-semibold"
-                        : "text-sm text-sub"}
-                {#if it._orphan}
-                    {@const entry = orphanNames[it.id]}
-                    {@const ratingVal = it.rating
-                        ? it.rating.toFixed(1)
-                        : "1500"}
-                    {@const pctVal =
-                        it.rank_pct != null ? it.rank_pct.toFixed(1) + "%" : ""}
-                    <div
-                        id={"orphan-" + it.id}
-                        class="flex items-center gap-4 px-3 py-1.5 border border-transparent {bg}"
-                    >
-                        <img
-                            alt=""
-                            src={window.img("subject", it.id, "grid")}
-                            use:imgFallback={{
-                                kind: "subject",
-                                id: it.id,
-                                size: "grid"
-                            }}
-                            class="w-10 h-10 rounded object-cover bg-input shrink-0"
-                        />
-                        <div class="flex-1 min-w-0">
-                            <div
-                                class="text-sm font-semibold truncate {entry &&
-                                entry.name
-                                    ? ''
-                                    : 'text-sub'}"
-                            >
-                                {#if entry === undefined}
-                                    加载中…
-                                {:else if entry && entry.name}
-                                    {window.primaryName(
-                                        entry.name,
-                                        entry.name_cn
-                                    )}
-                                {:else}
-                                    无标题
-                                {/if}
+                        {#if c.sub}
+                            <div class="text-xs text-sub mt-0.5 truncate">
+                                {c.sub}
                             </div>
-                            {#if entry !== undefined && entry && entry.name}
-                                {#if window.subName(entry.name, entry.name_cn)}
-                                    <div class="text-xs text-sub truncate">
-                                        {window.subName(
+                        {/if}
+                    </div>
+                </div>
+            {/each}
+        </div>
+
+        <div id="stats-list" class="thin-scroll overflow-x-auto">
+            {#if loading}
+                <div class="text-center py-20 text-sub">
+                    <span class="spin"></span>加载中…
+                </div>
+            {:else if error}
+                <div class="text-center py-20 text-sub">{error}</div>
+            {:else}
+                <div
+                    class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-bord-light"
+                >
+                    <div class="w-10 shrink-0"></div>
+                    <div class="flex-1 min-w-0">动画</div>
+                    {@render sortHeader("ELO 评分", "elo", COL_ELO)}
+                    {@render sortHeader("我的评分", "my", COL_MY)}
+                    {@render sortHeader("番组计划评分", "score", COL_BGM)}
+                    <div class="{COL_ID} text-center">ID</div>
+                </div>
+                {#each sorted as it, i (it.id + (it._orphan ? "-o" : ""))}
+                    {@const bg =
+                        i % 2 === 0 ? "bg-surface" : "bg-surface-raised"}
+                    {@const eloCls =
+                        sortKey === "elo"
+                            ? "text-sm font-semibold"
+                            : "text-sm text-sub"}
+                    {@const myCls =
+                        sortKey === "my"
+                            ? "text-sm font-semibold"
+                            : "text-sm text-sub"}
+                    {@const bkgCls =
+                        sortKey === "score"
+                            ? "text-sm font-semibold"
+                            : "text-sm text-sub"}
+                    {#if it._orphan}
+                        {@const entry = orphanNames[it.id]}
+                        {@const ratingVal = it.rating
+                            ? it.rating.toFixed(1)
+                            : "1500"}
+                        {@const pctVal =
+                            it.rank_pct != null
+                                ? it.rank_pct.toFixed(1) + "%"
+                                : ""}
+                        <div
+                            id={"orphan-" + it.id}
+                            class="flex items-center gap-4 px-3 py-1.5 border border-transparent {bg}"
+                        >
+                            <img
+                                alt=""
+                                src={window.img("subject", it.id, "grid")}
+                                use:imgFallback={{
+                                    kind: "subject",
+                                    id: it.id,
+                                    size: "grid"
+                                }}
+                                class="w-10 h-10 rounded object-cover bg-input shrink-0"
+                            />
+                            <div class="flex-1 min-w-0">
+                                <div
+                                    class="text-sm font-semibold truncate {entry &&
+                                    entry.name
+                                        ? ''
+                                        : 'text-sub'}"
+                                >
+                                    {#if entry === undefined}
+                                        加载中…
+                                    {:else if entry && entry.name}
+                                        {window.primaryName(
                                             entry.name,
                                             entry.name_cn
                                         )}
+                                    {:else}
+                                        无标题
+                                    {/if}
+                                </div>
+                                {#if entry !== undefined && entry && entry.name}
+                                    {#if window.subName(entry.name, entry.name_cn)}
+                                        <div class="text-xs text-sub truncate">
+                                            {window.subName(
+                                                entry.name,
+                                                entry.name_cn
+                                            )}
+                                        </div>
+                                    {/if}
+                                {:else if entry !== undefined}
+                                    <div class="text-xs text-sub truncate">
+                                        未能获取此条目的数据，可能是未储存此条目，或数据端点异常
                                     </div>
                                 {/if}
-                            {:else if entry !== undefined}
-                                <div class="text-xs text-sub truncate">
-                                    未能获取此条目的数据，可能是未储存此条目，或数据端点异常
-                                </div>
-                            {/if}
-                        </div>
-                        {@render eloCell(ratingVal, pctVal, eloCls)}
-                        <span class="{myCls} {COL_MY} text-center font-mono"
-                            >{myRates[it.id] || "-"}</span
-                        >
-                        <span class="{bkgCls} {COL_BGM} text-center font-mono"
-                            >{entry && entry.score != null
-                                ? entry.score.toFixed(1)
-                                : "-"}</span
-                        >
-                        <span
-                            class="text-xs text-sub {COL_ID} text-center font-mono"
-                            >#{it.id}</span
-                        >
-                    </div>
-                {:else}
-                    {@const ratingVal = it.rating
-                        ? typeof it.rating === "number"
-                            ? it.rating.toFixed(1)
-                            : it.rating
-                        : ""}
-                    {@const pctVal =
-                        it.rank_pct != null ? it.rank_pct.toFixed(1) + "%" : ""}
-                    <a
-                        href={"/subject?id=" + it.id}
-                        class="flex items-center gap-4 px-3 py-1.5 cursor-pointer hover:border-pink border border-transparent no-underline {bg}"
-                    >
-                        <img
-                            alt=""
-                            src={window.img("subject", it.id, "grid")}
-                            use:imgFallback={{
-                                kind: "subject",
-                                id: it.id,
-                                size: "grid"
-                            }}
-                            class="w-10 h-10 rounded object-cover bg-input shrink-0"
-                        />
-                        <div class="flex-1 min-w-0">
-                            <div class="text-sm font-semibold truncate">
-                                {window.primaryName(it.name, it.name_cn)}
                             </div>
-                            {#if window.subName(it.name, it.name_cn)}
-                                <div class="text-xs text-sub truncate">
-                                    {window.subName(it.name, it.name_cn)}
-                                </div>
-                            {/if}
+                            {@render eloCell(ratingVal, pctVal, eloCls)}
+                            <span class="{myCls} {COL_MY} text-center font-mono"
+                                >{myRates[it.id] || "-"}</span
+                            >
+                            <span
+                                class="{bkgCls} {COL_BGM} text-center font-mono"
+                                >{entry && entry.score != null
+                                    ? entry.score.toFixed(1)
+                                    : "-"}</span
+                            >
+                            <span
+                                class="text-xs text-sub {COL_ID} text-center font-mono"
+                                >#{it.id}</span
+                            >
                         </div>
-                        {@render eloCell(ratingVal, pctVal, eloCls)}
-                        <span class="{myCls} {COL_MY} text-center font-mono"
-                            >{myRates[it.id] || "-"}</span
+                    {:else}
+                        {@const ratingVal = it.rating
+                            ? typeof it.rating === "number"
+                                ? it.rating.toFixed(1)
+                                : it.rating
+                            : ""}
+                        {@const pctVal =
+                            it.rank_pct != null
+                                ? it.rank_pct.toFixed(1) + "%"
+                                : ""}
+                        <a
+                            href={"/subject?id=" + it.id}
+                            class="flex items-center gap-4 px-3 py-1.5 cursor-pointer hover:border-pink border border-transparent no-underline {bg}"
                         >
-                        <span class="{bkgCls} {COL_BGM} text-center font-mono"
-                            >{it.score ? it.score.toFixed(1) : "-"}</span
-                        >
-                        <span
-                            class="text-xs text-sub {COL_ID} text-center font-mono"
-                            >#{it.id}</span
-                        >
-                    </a>
-                {/if}
-            {/each}
-        {/if}
+                            <img
+                                alt=""
+                                src={window.img("subject", it.id, "grid")}
+                                use:imgFallback={{
+                                    kind: "subject",
+                                    id: it.id,
+                                    size: "grid"
+                                }}
+                                class="w-10 h-10 rounded object-cover bg-input shrink-0"
+                            />
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm font-semibold truncate">
+                                    {window.primaryName(it.name, it.name_cn)}
+                                </div>
+                                {#if window.subName(it.name, it.name_cn)}
+                                    <div class="text-xs text-sub truncate">
+                                        {window.subName(it.name, it.name_cn)}
+                                    </div>
+                                {/if}
+                            </div>
+                            {@render eloCell(ratingVal, pctVal, eloCls)}
+                            <span class="{myCls} {COL_MY} text-center font-mono"
+                                >{myRates[it.id] || "-"}</span
+                            >
+                            <span
+                                class="{bkgCls} {COL_BGM} text-center font-mono"
+                                >{it.score ? it.score.toFixed(1) : "-"}</span
+                            >
+                            <span
+                                class="text-xs text-sub {COL_ID} text-center font-mono"
+                                >#{it.id}</span
+                            >
+                        </a>
+                    {/if}
+                {/each}
+            {/if}
+        </div>
     </div>
 {/if}

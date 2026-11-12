@@ -184,168 +184,174 @@
 {/snippet}
 
 {#if !blocked}
-    <div class="flex items-center gap-3 mb-4">
-        <span class="section-bar"></span>
-        <span class="font-bold">评分</span>
-        <button
-            type="button"
-            onclick={loadPair}
-            class="ml-2 px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text"
-        >
-            刷新
-        </button>
-    </div>
-
-    {#if loading}
-        <div id="pk-loading" class="text-center py-20 text-sub">加载中…</div>
-    {:else if !pair}
-        <div id="pk-loading" class="text-center py-20 text-sub">
-            {message}
-        </div>
-    {:else}
-        <div
-            id="pk-area"
-            class="flex gap-2 mb-6"
-            class:pk-picked={pkState !== "idle"}
-            style="min-height: 240px"
-        >
-            {#each ["left", "right"] as side, i}
-                {@const item = pair[i]}
-                {@const winner = pkState === side}
-                {@const loser = pkState !== "idle" && pkState !== side}
-                <div
-                    id={"pk-" + side}
-                    class="flex-1 bg-surface border border-bord-mid rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer relative"
-                    class:shrunk={loser}
-                    style="height: 298px; flex: {winner
-                        ? '1.2'
-                        : loser
-                          ? '0 0 200px'
-                          : '1'}"
-                    tabindex="0"
-                    role="button"
-                    aria-label={"选择" +
-                        (side === "left" ? "左" : "右") +
-                        "侧条目"}
-                    onkeydown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handlePK(side);
-                        }
-                    }}
-                    onclick={() => handlePK(side)}
-                >
-                    <div
-                        id={"pk-" + side + "-img"}
-                        class="relative shrink-0 rounded-lg overflow-hidden bg-input"
-                        style="width: 140px; aspect-ratio: 1/1.414"
-                    >
-                        <img
-                            alt=""
-                            id={"pk-" + side + "-img-el"}
-                            src={window.img("subject", item.id, "medium")}
-                            use:imgFallback={{
-                                kind: "subject",
-                                id: item.id,
-                                size: "grid"
-                            }}
-                            class="w-full h-full object-cover"
-                        />
-                        <span
-                            id={"pk-" + side + "-id"}
-                            class="absolute top-0.5 right-0.5 text-[9px] font-semibold bg-black/60 text-white px-1 py-px rounded"
-                            >#{item.id}</span
-                        >
-                    </div>
-                    <div
-                        id={"pk-" + side + "-name"}
-                        class="text-sm font-semibold mt-3 text-center truncate w-full"
-                    >
-                        {window.primaryName(item.name, item.name_cn)}
-                    </div>
-                    {#if window.subName(item.name, item.name_cn)}
-                        <div
-                            id={"pk-" + side + "-sub"}
-                            class="text-xs text-sub mt-0.5 text-center truncate w-full"
-                        >
-                            {window.subName(item.name, item.name_cn)}
-                        </div>
-                    {/if}
-                    <div
-                        id={"pk-" + side + "-confirm"}
-                        class="confirm-bar absolute top-0 left-0 right-0 h-[40%] flex items-start justify-center"
-                        class:show={winner}
-                    >
-                        <span class="text-pink font-semibold text-sm"
-                            >再次点击以确认该条目胜出</span
-                        >
-                    </div>
-                    <div class="cancel-hint">点击此处取消</div>
-                </div>
-            {/each}
-        </div>
-    {/if}
-
-    <div class="flex items-center gap-2 mb-3">
-        <span class="section-bar"></span><span class="font-bold">历史</span>
-    </div>
-
-    {#if historyLoading}
-        <div class="text-center py-10 text-sub">
-            <span class="spin"></span>加载中…
-        </div>
-    {:else if history.length}
-        <div id="history-area">
-            <div
-                class="flex gap-7 text-xs text-sub font-semibold mb-1 border-b border-bord-light pb-1"
+    <div class="fade-in">
+        <div class="flex items-center gap-3 mb-4">
+            <span class="section-bar"></span>
+            <span class="font-bold">评分</span>
+            <button
+                type="button"
+                onclick={loadPair}
+                class="ml-2 px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text"
             >
-                <div class="flex-1 text-center">胜</div>
-                <div class="flex-1 text-center">负</div>
-                <div class="w-[100px] shrink-0 text-center">时间</div>
-            </div>
-            {#each history.slice(0, histShowing) as row, i}
-                <div
-                    class="flex gap-7 border border-transparent {i % 2 === 0
-                        ? 'bg-surface'
-                        : 'bg-surface-raised'}"
-                >
-                    {@render sideCard(row.winner)}
-                    {@render sideCard(row.loser)}
-                    {#if row.time}
-                        <div
-                            class="w-[100px] shrink-0 flex flex-col items-center justify-center py-1.5"
-                        >
-                            <div class="text-sm text-sub">
-                                {dateText(row.time)}
-                            </div>
-                            <div class="text-xs text-sub">
-                                {timeText(row.time)}
-                            </div>
-                        </div>
-                    {/if}
-                </div>
-            {/each}
+                刷新
+            </button>
         </div>
-        <div id="history-pager" class="mt-3 text-center">
-            {#if history.length > 10}
-                <span class="text-xs text-sub"
-                    >当前展示 {Math.min(histShowing, history.length)}，共 {history.length}
-                    条记录</span
+
+        {#if loading}
+            <div id="pk-loading" class="text-center py-20 text-sub">
+                加载中…
+            </div>
+        {:else if !pair}
+            <div id="pk-loading" class="text-center py-20 text-sub">
+                {message}
+            </div>
+        {:else}
+            <div
+                id="pk-area"
+                class="flex gap-2 mb-6"
+                class:pk-picked={pkState !== "idle"}
+                style="min-height: 240px"
+            >
+                {#each ["left", "right"] as side, i}
+                    {@const item = pair[i]}
+                    {@const winner = pkState === side}
+                    {@const loser = pkState !== "idle" && pkState !== side}
+                    <div
+                        id={"pk-" + side}
+                        class="flex-1 bg-surface border border-bord-mid rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer relative"
+                        class:shrunk={loser}
+                        style="height: 298px; flex: {winner
+                            ? '1.2'
+                            : loser
+                              ? '0 0 200px'
+                              : '1'}"
+                        tabindex="0"
+                        role="button"
+                        aria-label={"选择" +
+                            (side === "left" ? "左" : "右") +
+                            "侧条目"}
+                        onkeydown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handlePK(side);
+                            }
+                        }}
+                        onclick={() => handlePK(side)}
+                    >
+                        <div
+                            id={"pk-" + side + "-img"}
+                            class="relative shrink-0 rounded-lg overflow-hidden bg-input"
+                            style="width: 140px; aspect-ratio: 1/1.414"
+                        >
+                            <img
+                                alt=""
+                                id={"pk-" + side + "-img-el"}
+                                src={window.img("subject", item.id, "medium")}
+                                use:imgFallback={{
+                                    kind: "subject",
+                                    id: item.id,
+                                    size: "grid"
+                                }}
+                                class="w-full h-full object-cover"
+                            />
+                            <span
+                                id={"pk-" + side + "-id"}
+                                class="absolute top-0.5 right-0.5 text-[9px] font-semibold bg-black/60 text-white px-1 py-px rounded"
+                                >#{item.id}</span
+                            >
+                        </div>
+                        <div
+                            id={"pk-" + side + "-name"}
+                            class="text-sm font-semibold mt-3 text-center truncate w-full"
+                        >
+                            {window.primaryName(item.name, item.name_cn)}
+                        </div>
+                        {#if window.subName(item.name, item.name_cn)}
+                            <div
+                                id={"pk-" + side + "-sub"}
+                                class="text-xs text-sub mt-0.5 text-center truncate w-full"
+                            >
+                                {window.subName(item.name, item.name_cn)}
+                            </div>
+                        {/if}
+                        <div
+                            id={"pk-" + side + "-confirm"}
+                            class="confirm-bar absolute top-0 left-0 right-0 h-[40%] flex items-start justify-center"
+                            class:show={winner}
+                        >
+                            <span class="text-pink font-semibold text-sm"
+                                >再次点击以确认该条目胜出</span
+                            >
+                        </div>
+                        <div class="cancel-hint">点击此处取消</div>
+                    </div>
+                {/each}
+            </div>
+        {/if}
+
+        <div class="flex items-center gap-2 mb-3">
+            <span class="section-bar"></span><span class="font-bold">历史</span>
+        </div>
+
+        {#if historyLoading}
+            <div class="text-center py-10 text-sub">
+                <span class="spin"></span>加载中…
+            </div>
+        {:else if history.length}
+            <div id="history-area">
+                <div
+                    class="flex gap-7 text-xs text-sub font-semibold mb-1 border-b border-bord-light pb-1"
                 >
-                {#if histShowing < history.length}
-                    <button
-                        type="button"
-                        onclick={showMoreHistory}
-                        class="ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text"
-                        >展开更多 10 条</button
+                    <div class="flex-1 text-center">胜</div>
+                    <div class="flex-1 text-center">负</div>
+                    <div class="w-[100px] shrink-0 text-center">时间</div>
+                </div>
+                {#each history.slice(0, histShowing) as row, i}
+                    <div
+                        class="flex gap-7 border border-transparent {i % 2 === 0
+                            ? 'bg-surface'
+                            : 'bg-surface-raised'}"
+                    >
+                        {@render sideCard(row.winner)}
+                        {@render sideCard(row.loser)}
+                        {#if row.time}
+                            <div
+                                class="w-[100px] shrink-0 flex flex-col items-center justify-center py-1.5"
+                            >
+                                <div class="text-sm text-sub">
+                                    {dateText(row.time)}
+                                </div>
+                                <div class="text-xs text-sub">
+                                    {timeText(row.time)}
+                                </div>
+                            </div>
+                        {/if}
+                    </div>
+                {/each}
+            </div>
+            <div id="history-pager" class="mt-3 text-center">
+                {#if history.length > 10}
+                    <span class="text-xs text-sub"
+                        >当前展示 {Math.min(histShowing, history.length)}，共 {history.length}
+                        条记录</span
+                    >
+                    {#if histShowing < history.length}
+                        <button
+                            type="button"
+                            onclick={showMoreHistory}
+                            class="ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text"
+                            >展开更多 10 条</button
+                        >
+                    {/if}
+                {:else}
+                    <span class="text-xs text-sub"
+                        >共 {history.length} 条记录</span
                     >
                 {/if}
-            {:else}
-                <span class="text-xs text-sub">共 {history.length} 条记录</span>
-            {/if}
-        </div>
-    {:else}
-        <div id="history-area"></div>
-        <div id="history-pager"></div>
-    {/if}
+            </div>
+        {:else}
+            <div id="history-area"></div>
+            <div id="history-pager"></div>
+        {/if}
+    </div>
 {/if}

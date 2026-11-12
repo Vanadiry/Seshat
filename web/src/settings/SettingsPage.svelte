@@ -235,126 +235,128 @@
     </div>
 {/snippet}
 
-<div class="flex flex-col min-[720px]:flex-row gap-8">
-    <div class="flex-1 min-w-0">
-        <div id="settings-form">
-            {#if !loaded}
-                <div class="text-center py-20 text-sub">
-                    <span class="spin"></span>加载中…
-                </div>
-            {:else}
-                <h2 class="text-lg font-bold text-text mb-1">前端设置</h2>
+<div class="fade-in">
+    <div class="flex flex-col min-[720px]:flex-row gap-8">
+        <div class="flex-1 min-w-0">
+            <div id="settings-form">
+                {#if !loaded}
+                    <div class="text-center py-20 text-sub">
+                        <span class="spin"></span>加载中…
+                    </div>
+                {:else}
+                    <h2 class="text-lg font-bold text-text mb-1">前端设置</h2>
+                    <p class="text-xs text-sub mb-4">
+                        修改后刷新页面即可生效，无需重启后端
+                    </p>
+                    {#each sections as [section, defs]}
+                        <SectionTitle
+                            text={section}
+                            outer="mt-6 mb-3 first:mt-0"
+                            label="text-sm"
+                        />
+                        {#each defs as d}
+                            {@render prefRow(d)}
+                        {/each}
+                    {/each}
+                    <button
+                        type="button"
+                        onclick={saveSettings}
+                        disabled={saving}
+                        class="w-full mt-6 px-4 py-2.5 rounded-xl bg-pink-solid text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 transition-all active:scale-[0.98]"
+                    >
+                        保存设置
+                    </button>
+                    <p id="save-msg" class="text-xs text-sub mt-3 text-center">
+                        {saveMsg}
+                    </p>
+                {/if}
+            </div>
+        </div>
+
+        <div class="hidden min-[720px]:block w-px bg-bord-light shrink-0"></div>
+
+        <div
+            class="flex-1 min-w-0 border-t border-bord-light pt-8 min-[720px]:border-0 min-[720px]:pt-0"
+        >
+            <div id="settings-sidebar" class="sticky sticky-below-topbar">
+                <h2 class="text-lg font-bold text-text mb-1">后端设置</h2>
                 <p class="text-xs text-sub mb-4">
-                    修改后刷新页面即可生效，无需重启后端
+                    此处内容需修改 config.toml 并重启应用
                 </p>
-                {#each sections as [section, defs]}
+                {#each CONFIG_SECTIONS as sec}
                     <SectionTitle
-                        text={section}
+                        text={sec.title}
                         outer="mt-6 mb-3 first:mt-0"
                         label="text-sm"
                     />
-                    {#each defs as d}
-                        {@render prefRow(d)}
+                    {#each sec.keys as k}
+                        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                        <div
+                            class="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg transition-colors duration-200 hover:bg-active focus-visible:bg-active"
+                            tabindex="0"
+                        >
+                            <div class="flex-1 min-w-0">
+                                <div
+                                    class="text-sm text-text truncate"
+                                    title={sec.labels[k] || k}
+                                >
+                                    {sec.labels[k] || k}
+                                </div>
+                                <div
+                                    class="text-[11px] text-sub truncate mt-0.5"
+                                    title={k}
+                                >
+                                    {k}
+                                </div>
+                            </div>
+                            <div
+                                class="text-sm text-text font-mono shrink-0 text-right max-w-[50%] truncate"
+                                title={config[k] ? String(config[k]) : ""}
+                            >
+                                {#if config[k]}
+                                    {String(config[k])}
+                                {:else}
+                                    <span class="italic text-sub">未设置</span>
+                                {/if}
+                            </div>
+                        </div>
                     {/each}
                 {/each}
-                <button
-                    type="button"
-                    onclick={saveSettings}
-                    disabled={saving}
-                    class="w-full mt-6 px-4 py-2.5 rounded-xl bg-pink-solid text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 transition-all active:scale-[0.98]"
-                >
-                    保存设置
-                </button>
-                <p id="save-msg" class="text-xs text-sub mt-3 text-center">
-                    {saveMsg}
-                </p>
-            {/if}
-        </div>
-    </div>
-
-    <div class="hidden min-[720px]:block w-px bg-bord-light shrink-0"></div>
-
-    <div
-        class="flex-1 min-w-0 border-t border-bord-light pt-8 min-[720px]:border-0 min-[720px]:pt-0"
-    >
-        <div id="settings-sidebar" class="sticky sticky-below-topbar">
-            <h2 class="text-lg font-bold text-text mb-1">后端设置</h2>
-            <p class="text-xs text-sub mb-4">
-                此处内容需修改 config.toml 并重启应用
-            </p>
-            {#each CONFIG_SECTIONS as sec}
-                <SectionTitle
-                    text={sec.title}
-                    outer="mt-6 mb-3 first:mt-0"
-                    label="text-sm"
-                />
-                {#each sec.keys as k}
-                    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-                    <div
-                        class="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg transition-colors duration-200 hover:bg-active focus-visible:bg-active"
-                        tabindex="0"
-                    >
-                        <div class="flex-1 min-w-0">
-                            <div
-                                class="text-sm text-text truncate"
-                                title={sec.labels[k] || k}
-                            >
-                                {sec.labels[k] || k}
-                            </div>
-                            <div
-                                class="text-[11px] text-sub truncate mt-0.5"
-                                title={k}
-                            >
-                                {k}
-                            </div>
-                        </div>
-                        <div
-                            class="text-sm text-text font-mono shrink-0 text-right max-w-[50%] truncate"
-                            title={config[k] ? String(config[k]) : ""}
-                        >
-                            {#if config[k]}
-                                {String(config[k])}
-                            {:else}
-                                <span class="italic text-sub">未设置</span>
-                            {/if}
-                        </div>
-                    </div>
-                {/each}
-            {/each}
-        </div>
-    </div>
-</div>
-
-<div id="about" class="mt-10 scroll-mt-20">
-    {#if about}
-        <div class="border-t border-bord pt-6 text-center">
-            <div class="text-sm text-text">{about.name || "Seshat"}</div>
-            {#if about.version || about.license || about.repository}
-                <div class="text-xs text-sub mt-1">
-                    {#if about.version}版本：{about.version}{/if}
-                    {#if about.version && (about.license || about.repository)}
-                        ｜
-                    {/if}
-                    {#if about.license}许可证：{about.license}{/if}
-                    {#if about.license && about.repository}｜{/if}
-                    {#if about.repository}
-                        <a
-                            href={about.repository}
-                            onclick={(e) => {
-                                e.preventDefault();
-                                window.openUrl(about.repository);
-                            }}
-                            class="text-pink hover:underline">项目储存库</a
-                        >
-                    {/if}
-                </div>
-            {/if}
-            <div class="text-xs text-sub mt-1 leading-relaxed">
-                {window.BACKEND_URL ? "远端能力：" : "能力："}{capsText}
             </div>
-            {#if about.copyright}
-                <div class="text-xs text-sub mt-1">{about.copyright}</div>
-            {/if}
         </div>
-    {/if}
+    </div>
+
+    <div id="about" class="mt-10 scroll-mt-20">
+        {#if about}
+            <div class="border-t border-bord pt-6 text-center">
+                <div class="text-sm text-text">{about.name || "Seshat"}</div>
+                {#if about.version || about.license || about.repository}
+                    <div class="text-xs text-sub mt-1">
+                        {#if about.version}版本：{about.version}{/if}
+                        {#if about.version && (about.license || about.repository)}
+                            ｜
+                        {/if}
+                        {#if about.license}许可证：{about.license}{/if}
+                        {#if about.license && about.repository}｜{/if}
+                        {#if about.repository}
+                            <a
+                                href={about.repository}
+                                onclick={(e) => {
+                                    e.preventDefault();
+                                    window.openUrl(about.repository);
+                                }}
+                                class="text-pink hover:underline">项目储存库</a
+                            >
+                        {/if}
+                    </div>
+                {/if}
+                <div class="text-xs text-sub mt-1 leading-relaxed">
+                    {window.BACKEND_URL ? "远端能力：" : "能力："}{capsText}
+                </div>
+                {#if about.copyright}
+                    <div class="text-xs text-sub mt-1">{about.copyright}</div>
+                {/if}
+            </div>
+        {/if}
+    </div>
 </div>

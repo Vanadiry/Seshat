@@ -233,6 +233,9 @@ select {
     }
 }
 @media (prefers-reduced-motion: reduce) {
+    .fade-in {
+        animation: none;
+    }
     #load-bar {
         transition: none !important;
     }
@@ -393,4 +396,17 @@ html.light select:where(.search-type, .custom-select) {
     to {
         transform: rotate(360deg);
     }
+}
+
+@keyframes imgFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.fade-in {
+    animation: imgFadeIn 0.35s ease;
 }
