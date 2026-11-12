@@ -1397,8 +1397,19 @@ function _makeToast(
     bodyBg,
     autoCloseSec,
     replace,
-    closable
+    closable,
+    merge
 ) {
+    var mergeKey = merge ? titleBg + "\n" + title + "\n" + body : "";
+    if (merge) {
+        for (var i = _toastStack.length - 1; i >= 0; i--) {
+            var existing = _toastStack[i];
+            if (!existing.closed() && existing.key === mergeKey) {
+                existing.bump();
+                return existing;
+            }
+        }
+    }
     if (replace !== false && _currentToast) {
         _currentToast.close();
         _currentToast = null;
@@ -1409,16 +1420,28 @@ function _makeToast(
     el.style.bottom = "16px";
     el.style.opacity = "0";
     el.style.transform = "translateY(8px)";
+    var countHTML = merge
+        ? '<span class="toast-count text-xs font-semibold opacity-80 shrink-0 ml-2" style="display:none"></span>'
+        : "";
+    var closeHTML =
+        closable !== false
+            ? '<span class="cursor-pointer opacity-60 hover:opacity-100 text-lg leading-none shrink-0 ml-3">✕</span>'
+            : "";
+    var rightHTML =
+        countHTML || closeHTML
+            ? '<span class="flex items-center shrink-0">' +
+              countHTML +
+              closeHTML +
+              "</span>"
+            : "";
     el.innerHTML =
         '<div class="' +
         titleBg +
         ' text-white font-semibold px-4 py-2 rounded-t-lg flex items-center justify-between text-[14px]">' +
-        '<span class="truncate">' +
+        '<span class="truncate min-w-0 flex-1">' +
         title +
         "</span>" +
-        (closable !== false
-            ? '<span class="cursor-pointer opacity-60 hover:opacity-100 text-lg leading-none shrink-0 ml-3">✕</span>'
-            : "") +
+        rightHTML +
         "</div>" +
         (body
             ? '<div class="' +
@@ -1467,8 +1490,33 @@ function _makeToast(
         }, 50);
         timer = setTimeout(close, autoCloseSec * 1000 + 100);
     }
+    var count = 1;
+    var countEl = merge ? el.querySelector(".toast-count") : null;
+    function bump() {
+        count++;
+        if (countEl) {
+            countEl.textContent = "×" + count;
+            countEl.style.display = "";
+        }
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            el.animate(
+                [
+                    { transform: "translateX(0)" },
+                    { transform: "translateX(-4px)" },
+                    { transform: "translateX(4px)" },
+                    { transform: "translateX(-3px)" },
+                    { transform: "translateX(3px)" },
+                    { transform: "translateX(0)" }
+                ],
+                { duration: 350, easing: "ease" }
+            );
+        }
+        _repositionToasts();
+    }
     var toast = {
         el: el,
+        key: mergeKey,
+        bump: bump,
         update: function (newTitle, newBody, newTitleBg, newBodyBg) {
             if (closed) return;
             if (newTitleBg)
@@ -1509,7 +1557,16 @@ function _makeToast(
 }
 
 function showError(msg) {
-    _makeToast("错误", msg, "bg-toast-error", "bg-toast-error-bg", 0, false);
+    _makeToast(
+        "错误",
+        msg,
+        "bg-toast-error",
+        "bg-toast-error-bg",
+        0,
+        false,
+        true,
+        true
+    );
 }
 
 function showWarn(msg) {
@@ -1519,7 +1576,9 @@ function showWarn(msg) {
         "bg-toast-warning",
         "bg-toast-warning-bg",
         8,
-        false
+        false,
+        true,
+        true
     );
 }
 
