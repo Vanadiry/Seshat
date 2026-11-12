@@ -112,6 +112,9 @@ data/index/*.json
 `POST /v0/bundle/export` 把一组本地条目的一跳数据导出为 tar，不联网拉取。  
 manifest 只记录包内的实体和图片，不记录来源；缺失数据在导出响应的 `missing` 中返回。
 
+`POST /v0/bundle/import` 接收 raw tar，上限 1 GiB。导入期间注册 task，其他任务返回 409。  
+只允许 `manifest.json`、`api/` 和 `images/` 下的白名单路径，拒绝链接、路径穿越、重复条目和超限文件。
+
 ## 跨源
 
 CORS 按监听地址决定，不回显固定自身地址。
