@@ -1,7 +1,7 @@
 {
     "scripts": {
         "build:clean": "node scripts/clean-dist.js",
-        "build:svelte": "vite build --mode subject && vite build --mode character && vite build --mode person && vite build --mode tag && vite build --mode characters && vite build --mode persons && vite build --mode tags && vite build --mode home && vite build --mode rating",
+        "build:svelte": "vite build --mode subject && vite build --mode character && vite build --mode person && vite build --mode tag && vite build --mode characters && vite build --mode persons && vite build --mode tags && vite build --mode home && vite build --mode rating && vite build --mode stats",
         "build:css": "pnpm tailwindcss -i assets/tailwind-input.css -o ../web-dist/assets/style.css --minify --cwd web",
         "build:js": "pnpm terser web/assets/app.js -o web-dist/assets/app.min.js -c -m && pnpm terser web/assets/theme.js -o web-dist/assets/theme.min.js -c -m",
         "build:html": "node scripts/minify-html.js",

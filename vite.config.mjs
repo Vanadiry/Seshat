@@ -11,7 +11,8 @@ const ENTRIES = {
     persons: "web/src/persons/main.js",
     tags: "web/src/tags/main.js",
     home: "web/src/home/main.js",
-    rating: "web/src/rating/main.js"
+    rating: "web/src/rating/main.js",
+    stats: "web/src/stats/main.js"
 };
 
 export default defineConfig(({ mode }) => {
