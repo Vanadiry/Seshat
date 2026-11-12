@@ -8,9 +8,17 @@ export default defineConfig({
         outDir: "web/assets",
         emptyOutDir: false,
         lib: {
-            entry: resolve("web_raw/src/subject/main.js"),
+            entry: {
+                subject: resolve("web_raw/src/subject/main.js"),
+                character: resolve("web_raw/src/character/main.js")
+            },
             formats: ["es"],
-            fileName: () => "subject.js"
+            fileName: (format, entryName) => `${entryName}.js`
+        },
+        rollupOptions: {
+            output: {
+                chunkFileNames: "shared.js"
+            }
         }
     }
 });
