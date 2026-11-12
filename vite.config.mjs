@@ -22,7 +22,7 @@ export default defineConfig({
     plugins: [svelte()],
     build: {
         outDir: "web-dist/assets",
-        emptyOutDir: true,
+        emptyOutDir: false,
         lib: {
             entry: Object.fromEntries(
                 Object.entries(ENTRIES).map(function ([name, path]) {

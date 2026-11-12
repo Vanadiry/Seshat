@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
 	stdlog "log"
 	"net"
 	"net/http"
@@ -61,7 +62,12 @@ func runSeshat() (*http.Server, string) {
 		events.Bus.Warn(w)
 	}
 
-	router := server.New(cfg, webFS)
+	frontendFS := fs.FS(webFS)
+	if os.Getenv("SESHAT_DEV") == "1" {
+		// 开发模式从 web-dist 读取前端，避免每次修改都重新编译 Go
+		frontendFS = os.DirFS(".")
+	}
+	router := server.New(cfg, frontendFS)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.BindAddr, cfg.Server.Port)
 	ln, err := net.Listen("tcp", addr)
