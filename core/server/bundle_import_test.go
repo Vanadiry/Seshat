@@ -65,6 +65,9 @@ func TestBundleImportRoundTrip(t *testing.T) {
 	t.Setenv("SESHAT_HOME", homeB)
 	cfgB := &config.Config{}
 	ddB := cfgB.DataDir()
+	if err := store.Put(ddB, store.Key("subjects", 51, "info.json"), []byte(`{"id":51,"name":"old"}`)); err != nil {
+		t.Fatal(err)
+	}
 
 	f, err := os.Open(tarPath)
 	if err != nil {
@@ -108,6 +111,13 @@ func TestBundleImportRoundTrip(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(ddB, "images", "subjects_large", "1", "51.jpg")); err != nil {
 		t.Fatalf("导入后缺少图片: %v", err)
+	}
+	info, err := store.Get(ddB, store.Key("subjects", 51, "info.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(info, []byte("old")) {
+		t.Fatalf("导入没有覆盖已有文件: %s", info)
 	}
 	if _, err := os.Stat(filepath.Join(ddB, "manifest.json")); !os.IsNotExist(err) {
 		t.Fatal("manifest.json 不应写入数据目录")
@@ -187,5 +197,21 @@ func TestExtractBundleTarRejectsUnsafeEntries(t *testing.T) {
 				t.Fatal("应当拒绝不安全的数据包")
 			}
 		})
+	}
+}
+
+func TestExtractBundleTarRejectsOversizedFile(t *testing.T) {
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	h := &tar.Header{Name: "api/subjects/1/51/info.json", Mode: 0o644, Size: bundleImportMax + 1}
+	if err := tw.WriteHeader(h); err != nil {
+		t.Fatal(err)
+	}
+	tarPath := filepath.Join(t.TempDir(), "large.tar")
+	if err := os.WriteFile(tarPath, buf.Bytes(), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := extractBundleTar(tarPath, t.TempDir()); err == nil || !strings.Contains(err.Error(), "文件过大") {
+		t.Fatalf("超限文件应被拒绝: %v", err)
 	}
 }
