@@ -6,7 +6,10 @@ const ENTRIES = {
     subject: "web/src/subject/main.js",
     character: "web/src/character/main.js",
     person: "web/src/person/main.js",
-    tag: "web/src/tag/main.js"
+    tag: "web/src/tag/main.js",
+    characters: "web/src/characters/main.js",
+    persons: "web/src/persons/main.js",
+    tags: "web/src/tags/main.js"
 };
 
 export default defineConfig(({ mode }) => {
