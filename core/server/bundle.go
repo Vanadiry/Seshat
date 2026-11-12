@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/vanadiry/seshat/core/config"
@@ -18,6 +19,9 @@ import (
 )
 
 const bundleFormat = "seshat-bundle"
+
+// bundleMu 串行化数据包导出和导入
+var bundleMu sync.Mutex
 
 type bundleExportRequest struct {
 	Source      string   `json:"source"`
@@ -81,6 +85,11 @@ func handleBundleExport(cfg *config.Config) http.HandlerFunc {
 			writeError(w, r, http.StatusConflict, "已有任务正在运行，请等待完成")
 			return
 		}
+		if !bundleMu.TryLock() {
+			writeError(w, r, http.StatusConflict, "数据包操作正在进行")
+			return
+		}
+		defer bundleMu.Unlock()
 		var req bundleExportRequest
 		limitBody(w, r)
 		if !decodeJSON(w, r, &req) {

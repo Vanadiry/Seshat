@@ -646,6 +646,34 @@ paths:
           $ref: "#/components/responses/Conflict"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /api/v0/bundle/import: # 导入数据包
+    post:
+      tags: [数据包]
+      summary: 导入数据包
+      description: |
+        上传 tar 数据包，覆盖同名文件并重建索引，上限 1 GiB。
+        导入期间占用 task，其他任务返回 409。
+      requestBody:
+        required: true
+        content:
+          application/x-tar:
+            schema: { type: string, format: binary }
+      responses:
+        "200":
+          description: 上传完成，后台导入
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: importing }
+                  task_id: { type: string, example: "ae8687f0" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
   # 拉取
   /api/v0/fetch: # 统一拉取
     post:

@@ -186,6 +186,7 @@ func buildRouter(cfg *config.Config, embedFS fs.FS) *router {
 		r.feature("upstream", "POST /api/v0/upstream/search", handleUpstreamSearch(cfg, bg))
 	}
 	r.feature("bundle", "POST /api/v0/bundle/export", handleBundleExport(cfg))
+	r.feature("bundle", "POST /api/v0/bundle/import", handleBundleImport(cfg))
 	r.core("POST /api/v0/search/characters", handleSearchCharacters(dd))
 	r.core("POST /api/v0/search/persons", handleSearchPersons(dd))
 	r.feature("tags", "POST /api/v0/search/tags", handleSearchTags(dd))
