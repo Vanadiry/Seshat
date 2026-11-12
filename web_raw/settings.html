@@ -13,7 +13,7 @@
     <body class="text-text font-[system-ui] min-h-screen">
         <div id="topbar"></div>
         <main class="max-w-[1200px] mx-auto p-6">
-            <div class="flex gap-8">
+            <div class="flex flex-col min-[720px]:flex-row gap-8">
                 <div class="flex-1 min-w-0">
                     <div id="settings-form">
                         <div class="text-center py-20 text-sub">
@@ -21,8 +21,12 @@
                         </div>
                     </div>
                 </div>
-                <div class="hidden lg:block w-px bg-bord-light shrink-0"></div>
-                <div class="flex-1 min-w-0 hidden lg:block">
+                <div
+                    class="hidden min-[720px]:block w-px bg-bord-light shrink-0"
+                ></div>
+                <div
+                    class="flex-1 min-w-0 border-t border-bord-light pt-8 min-[720px]:border-0 min-[720px]:pt-0"
+                >
                     <div id="settings-sidebar" class="sticky top-6"></div>
                 </div>
             </div>
