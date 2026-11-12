@@ -1391,7 +1391,7 @@
                 if (body.description) {
                     lines.push("描述：" + body.description);
                 }
-                lines.push("只导出本地已有数据，缺失内容会记录在导出响应中。");
+                lines.push("只导出本地已有数据。");
                 lines.push("确定导出？");
                 confirmAction(lines.join("\n"), function () {
                     doBundleExport(body);
@@ -1427,9 +1427,6 @@
                                 "，图片 " +
                                 d.counts.images
                         );
-                    }
-                    if (d.missing && d.missing.length) {
-                        lines.push("缺失 " + d.missing.length + " 项");
                     }
                     lines.push("路径：" + d.path);
                     status.textContent = lines.join("\n");
