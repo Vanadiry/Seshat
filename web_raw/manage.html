@@ -125,7 +125,7 @@
                                 <div class="flex items-stretch gap-2">
                                     <input
                                         id="fetch-names"
-                                        placeholder="也可以填写 Tracker id，逗号分隔"
+                                        placeholder="也可以填写 Tracker ID，逗号分隔"
                                         class="h-10 flex-1 px-3 py-2 rounded-lg border border-bord bg-input text-sm"
                                     />
                                     <button
@@ -359,7 +359,7 @@
                             />
                             <input
                                 id="bundle-export-trackers"
-                                placeholder="Tracker id，逗号分隔"
+                                placeholder="Tracker ID，逗号分隔"
                                 style="display: none"
                                 class="h-10 w-full px-3 py-2 rounded-lg border border-bord bg-input text-sm"
                             />
@@ -845,7 +845,7 @@
                     document.getElementById("fetch-names").value
                 );
                 if (!names.length) {
-                    showError("请填写 Tracker id");
+                    showError("请填写 Tracker ID");
                     return;
                 }
                 for (var i = 0; i < names.length; i++) {
@@ -1377,7 +1377,7 @@
                         document.getElementById("bundle-export-trackers").value
                     );
                     if (!body.trackers.length) {
-                        showError("请填写 Tracker id");
+                        showError("请填写 Tracker ID");
                         return;
                     }
                     for (var i = 0; i < body.trackers.length; i++) {

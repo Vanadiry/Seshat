@@ -1035,7 +1035,7 @@ paths:
                   type: string
                   example: "kyoani"
                   pattern: "^[A-Za-z0-9_-]+$"
-                  description: Tracker id，只允许大小写字母、数字、连字符和下划线，省略时使用 name。
+                  description: Tracker ID，只允许大小写字母、数字、连字符和下划线，省略时使用 name。
                 name:
                   type: string
                   example: "京都动画"
