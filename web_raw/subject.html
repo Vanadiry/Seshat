@@ -84,6 +84,7 @@
         </div>
 
         <script src="assets/app.min.js"></script>
+        <script type="module" src="assets/subject.js"></script>
         <script>
             var SID = new URLSearchParams(location.search).get("id");
             var tab =
@@ -281,7 +282,9 @@
                     myColl && myColl.rate > 0 ? Number(myColl.rate) : 0;
                 var myType = myColl ? COLL_TYPES[myColl.type] || "" : "";
                 var epsRaw = await api("/v0/episodes?subject_id=" + SID);
-                var charsRaw = await api("/v0/subjects/" + SID + "/characters");
+                var charsRaw = await api(
+                    "/v0/subjects/" + SID + "/characters"
+                );
                 var relsRaw = await api("/v0/subjects/" + SID + "/subjects");
                 var eloData = await apiFor("elo", "/v0/elo/ranking");
                 var eps = Array.isArray(epsRaw)
@@ -312,7 +315,6 @@
                 charCount = chars.length;
                 updateTabCount("ep", epCount);
                 updateTabCount("chars", charCount);
-                // 异步加载人物数量
                 api("/v0/subjects/" + SID + "/persons").then(function (pRaw) {
                     var p = Array.isArray(pRaw)
                         ? pRaw
@@ -322,451 +324,28 @@
                     persCount = p.length;
                     updateTabCount("persons", persCount);
                 });
-
                 var mainChars = chars
                     .filter(function (c) {
                         return c.relation === "主角" || c.relation === "配角";
                     })
                     .slice(0, 12);
-
-                // 剧集网格，按 sort 排序，类型分隔符内联
-                var epGrid = "";
-                var allEps = eps.slice().sort(function (a, b) {
-                    var ta = a.type || 0,
-                        tb = b.type || 0;
-                    if (ta !== tb) return ta - tb;
-                    return (a.sort || 0) - (b.sort || 0);
-                });
-                if (allEps.length) {
-                    var epCls = {
-                        0: "bg-surface-alt text-sub",
-                        1: "bg-tier-gold-bg text-tier-gold",
-                        2: "bg-tier-blue-bg text-tier-blue",
-                        3: "bg-tier-purple-bg text-tier-purple",
-                        4: "bg-tier-green-bg text-tier-green",
-                        5: "bg-pink-bg text-pink",
-                        6: "bg-surface-alt text-sub"
-                    };
-                    var sepCls = {
-                        1: "text-tier-gold",
-                        2: "text-tier-blue",
-                        3: "text-tier-purple",
-                        4: "text-tier-green",
-                        5: "text-pink",
-                        6: "text-sub"
-                    };
-                    var lastType = -1;
-                    epGrid += '<div class="flex flex-wrap gap-1.5">';
-                    for (var i = 0; i < allEps.length; i++) {
-                        var e = allEps[i];
-                        var t = e.type || 0;
-                        if (t !== lastType && t !== 0) {
-                            // 类型标记单元，竖线和文字
-                            var sepGap = "gap-1",
-                                sepText = "text-[9px]";
-                            if (t >= 1 && t <= 3) {
-                                sepGap = "gap-1.5";
-                                sepText = "text-[14px]";
-                            } else if (t === 4 || t === 6) {
-                                sepGap = "gap-1";
-                                sepText = "text-[12px]";
-                            } else if (t === 5) {
-                                sepGap = "gap-0.5";
-                                sepText = "text-[10px]";
-                            }
-                            epGrid +=
-                                '<span class="w-8 h-8 flex items-center pl-0 font-semibold cursor-default ' +
-                                sepGap +
-                                " " +
-                                sepText +
-                                " " +
-                                (sepCls[t] || "text-sub") +
-                                '"><span class="border-l border-current h-7"></span>' +
-                                MSG.epTypes[t] +
-                                "</span>";
+                document.getElementById("view").innerHTML =
+                    '<div id="subject-overview"></div>';
+                window.dispatchEvent(
+                    new CustomEvent("seshat:subject-overview", {
+                        detail: {
+                            subject: s,
+                            infoItems: infoItems,
+                            myRate: myRate,
+                            myType: myType,
+                            hasColl: !!myColl,
+                            eloInfo: eloInfo,
+                            eps: eps,
+                            mainChars: mainChars,
+                            rels: rels
                         }
-                        lastType = t;
-                        var epNum = String(Math.floor(e.sort || e.ep || 0));
-                        var num = epNum.padStart(2, "0");
-                        var cls = epCls[t];
-                        var epName = primaryName(
-                            escapeHtml(e.name),
-                            escapeHtml(e.name_cn)
-                        );
-                        var epSub = subName(
-                            escapeHtml(e.name),
-                            escapeHtml(e.name_cn)
-                        );
-                        epGrid +=
-                            '<div class="relative ep-cell">' +
-                            '<span tabindex="0" role="button" class="ep-num w-8 h-8 flex items-center justify-center rounded text-xs font-semibold cursor-pointer ' +
-                            cls +
-                            '">' +
-                            num +
-                            "</span>" +
-                            '<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 ep-tip z-50" style="display:none">' +
-                            '<div class="select-text bg-surface-raised border border-bord-strong rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-lg relative">' +
-                            '<div class="text-sub">第 ' +
-                            epNum +
-                            " 话 · " +
-                            (MSG.epTypes[t] || "") +
-                            "</div>" +
-                            '<div class="text-sm font-semibold mt-1">' +
-                            epName +
-                            "</div>" +
-                            (epSub
-                                ? '<div class="text-sub mt-0.5">' +
-                                  epSub +
-                                  "</div>"
-                                : "") +
-                            (e.airdate
-                                ? '<div class="text-sub mt-1">首播: ' +
-                                  e.airdate +
-                                  "</div>"
-                                : "") +
-                            (e.duration
-                                ? '<div class="text-sub">时长: ' +
-                                  e.duration +
-                                  "</div>"
-                                : "") +
-                            "</div></div></div>";
-                    }
-                    epGrid += "</div>";
-                }
-
-                // 标签
-                var tagsHtml = "";
-                if (s.tags && s.tags.length) {
-                    var shown = s.tags.slice(0, 20);
-                    tagsHtml = '<div class="flex flex-wrap gap-x-2 gap-y-1">';
-                    for (var i = 0; i < shown.length; i++) {
-                        tagsHtml +=
-                            '<a href="/tag?tag=' +
-                            encodeURIComponent(shown[i].name) +
-                            '" class="no-underline bg-surface-alt rounded-full px-2.5 py-0.5 text-[14px] text-sub border border-transparent hover:border-pink hover:bg-elo-bg transition-all">' +
-                            shown[i].name +
-                            '<small class="text-xs text-sub ml-1">' +
-                            shown[i].count +
-                            "</small></a>";
-                    }
-                    tagsHtml += "</div>";
-                }
-
-                // 评分直方图，竖条和悬浮提示
-                var histHtml = "";
-                var cnt = s.rating && s.rating.count;
-                if (cnt) {
-                    var totalVotes = 0;
-                    for (var k in cnt) {
-                        totalVotes += cnt[k];
-                    }
-                    var max = 1;
-                    for (var k2 in cnt) {
-                        if (cnt[k2] > max) max = cnt[k2];
-                    }
-                    histHtml =
-                        '<div class="flex items-end gap-px mt-2" style="height:80px">';
-                    for (var i = 10; i >= 1; i--) {
-                        var v = cnt[String(i)] || 0;
-                        var h = v > 0 ? Math.max((v / max) * 100, 4) : 0;
-                        var pct =
-                            totalVotes > 0
-                                ? ((v / totalVotes) * 100).toFixed(1)
-                                : "0.0";
-                        histHtml +=
-                            '<div class="flex-1 flex flex-col items-center justify-end group relative" style="height:100%">' +
-                            '<span data-score="' +
-                            i +
-                            '" class="block w-full rounded-t-sm transition-colors ' +
-                            (myRate === i
-                                ? "bg-pink"
-                                : "bg-pink/40 group-hover:bg-pink/70") +
-                            '" style="height:' +
-                            h +
-                            '%"></span>' +
-                            '<div class="absolute bottom-full mb-1 hidden group-hover:block z-50">' +
-                            '<div class="bg-surface-raised border border-bord-strong rounded-lg px-2 py-1 text-xs whitespace-nowrap shadow-lg">' +
-                            i +
-                            "分 · " +
-                            pct +
-                            "% · " +
-                            v +
-                            " 人</div></div>" +
-                            "</div>";
-                    }
-                    histHtml += "</div>";
-                    histHtml += '<div class="flex gap-px mt-0.5">';
-                    for (var j = 10; j >= 1; j--) {
-                        histHtml +=
-                            '<span class="flex-1 text-center text-[10px] text-sub">' +
-                            j +
-                            "</span>";
-                    }
-                    histHtml += "</div>";
-                    // 标准差
-                    var mean = (s.rating && s.rating.score) || 0;
-                    var sumSq = 0;
-                    for (var k3 = 1; k3 <= 10; k3++) {
-                        var c = cnt[String(k3)] || 0;
-                        sumSq += c * (k3 - mean) * (k3 - mean);
-                    }
-                    var stddev =
-                        totalVotes > 0
-                            ? Math.sqrt(sumSq / totalVotes).toFixed(4)
-                            : "-";
-                    histHtml +=
-                        '<div class="text-xs text-sub text-center mt-2">标准差: ' +
-                        stddev +
-                        "</div>";
-                }
-
-                // 信息栏条目
-                var infoHtml = "";
-                for (var i = 0; i < infoItems.length; i++) {
-                    infoHtml +=
-                        '<div class="select-text py-1 border-b border-bord-light text-[14px]' +
-                        (infoItems[i][2] ? " ml-4" : "") +
-                        '"><span class="text-sub">' +
-                        (infoItems[i][0] ? infoItems[i][0] + ": " : "") +
-                        "</span><span>" +
-                        infoItems[i][1] +
-                        "</span></div>";
-                }
-
-                // 评分面板
-                var scoreHtml =
-                    s.rating && s.rating.score
-                        ? s.rating.score.toFixed(1)
-                        : "-";
-                var totalHtml = s.rating && s.rating.total ? s.rating.total : 0;
-                var rankHtml =
-                    s.rating && s.rating.rank ? "#" + s.rating.rank : "-";
-
-                // ── 整体布局：左右两栏 ──
-                var html =
-                    '<div class="fade-in flex flex-col md:flex-row gap-6">';
-
-                // ── 左栏：海报 + infobox ──
-                html += '<div class="w-full md:w-[260px] shrink-0">';
-                html +=
-                    '<img alt="" src="' +
-                    img("subject", SID, "large") +
-                    '" ' +
-                    imgOnError("subject", SID, "large") +
-                    ' class="w-full rounded-xl cursor-pointer" tabindex="0" role="button" aria-label="查看大图" onkeydown="clickKeyNav(event)" onclick="showLightbox(this.src)">';
-                if (infoHtml)
-                    html +=
-                        '<div class="mt-3 flex flex-col gap-0.5">' +
-                        infoHtml +
-                        "</div>";
-                html += "</div>";
-
-                // ── 右栏 ──
-                html += '<div class="flex-1 min-w-0 flex flex-col gap-5">';
-
-                // ── 右上栏：左（剧集 + 简介 + 标签）| 右（评分）──
-                html += '<div class="flex flex-col md:flex-row gap-5">';
-                html += '<div class="flex-1 min-w-0">';
-                if (epGrid)
-                    html +=
-                        '<div class="mb-4">' +
-                        sectionTitle("剧集", {
-                            outer: "mb-2",
-                            extra:
-                                (isRemote("/v0/episodes?subject_id=" + SID)
-                                    ? globeIcon("w-4 h-4")
-                                    : "") +
-                                '<span class="text-xs text-sub">(' +
-                                eps.length +
-                                ")</span>"
-                        }) +
-                        epGrid +
-                        "</div>";
-                html += sectionTitle("简介", { outer: "mb-2" });
-                html +=
-                    '<p class="select-text text-[14px] leading-relaxed text-sub mb-4">' +
-                    formatSummary(escapeHtml(s.summary) || "暂无简介") +
-                    "</p>";
-                if (tagsHtml)
-                    html +=
-                        '<div class="mb-2">' +
-                        sectionTitle("标签", { outer: "mb-2" }) +
-                        tagsHtml +
-                        "</div>";
-                html += "</div>";
-                // ── 右上右栏：评分面板 ──
-                html +=
-                    '<div class="w-full md:w-[230px] shrink-0 self-start bg-surface-alt border border-bord rounded-xl">';
-                // 内容
-                html += '<div class="px-4 pt-3 pb-2">';
-                if (eloInfo && eloInfo.rating) {
-                    html +=
-                        '<div class="text-xs text-sub text-center">ELO 评分</div>';
-                    html +=
-                        '<div class="flex items-baseline justify-center"><span class="text-3xl font-bold">' +
-                        (eloInfo.rating || 0).toFixed(1) +
-                        '</span><span class="text-xs text-sub ml-1">' +
-                        (eloInfo.rank_pct || 0).toFixed(1) +
-                        "%</span></div>";
-                    html +=
-                        '<div class="border-t border-bord mt-2 mb-2"></div>';
-                }
-                if (myColl && (myRate > 0 || myType)) {
-                    html +=
-                        '<div class="flex items-center justify-center gap-2">' +
-                        '<span class="text-xs text-sub">我的状态</span>' +
-                        (myType
-                            ? '<span class="text-xs text-sub">' +
-                              myType +
-                              "</span>"
-                            : "") +
-                        "</div>";
-                    html +=
-                        '<div class="flex items-baseline justify-center gap-2 mt-1"><span class="text-3xl font-bold">' +
-                        (myRate > 0 ? myRate : "-") +
-                        '</span><span class="text-xs text-sub">/ 10</span></div>';
-                    html +=
-                        '<div class="border-t border-bord mt-2 mb-2"></div>';
-                }
-                html +=
-                    '<div class="text-xs text-sub text-center">番组计划评分</div>';
-                html +=
-                    '<div class="flex items-baseline justify-center"><span class="text-3xl font-bold">' +
-                    scoreHtml +
-                    '</span><span class="text-xs text-sub ml-1">/ 10</span></div>';
-                html +=
-                    '<div class="text-xs text-sub text-center mt-1">' +
-                    totalHtml +
-                    " 人评分 · 排名 " +
-                    rankHtml +
-                    "</div>";
-                if (histHtml) html += "<div>" + histHtml + "</div>";
-                html += "</div>";
-                html += "</div>";
-                html += "</div>";
-
-                // ── 右下栏：主要角色 + 关联条目 ──
-                if (mainChars.length) {
-                    html +=
-                        "<div>" +
-                        sectionTitle("主要角色", {
-                            extra:
-                                (isRemote("/v0/subjects/" + SID + "/characters")
-                                    ? globeIcon("w-4 h-4")
-                                    : "") +
-                                '<a href="javascript:switchTab(\'chars\')" class="text-pink text-xs ml-auto no-underline">更多角色 &raquo;</a>'
-                        });
-                    html +=
-                        '<div class="flex gap-3 overflow-x-auto pb-2 thin-scroll" style="padding-top:4px">';
-                    for (var i = 0; i < mainChars.length; i++) {
-                        var c = mainChars[i];
-                        var actorName =
-                            c.actors && c.actors.length ? c.actors[0].name : "";
-                        html +=
-                            '<div tabindex="0" role="link" data-href="/character?id=' +
-                            c.id +
-                            '" onkeydown="cardKeyNav(event)" onclick="location.href=\'/character?id=' +
-                            c.id +
-                            '\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">' +
-                            // 图片和浮动徽章
-                            '<div class="relative rounded-lg overflow-hidden bg-surface" style="aspect-ratio:1/1.414">' +
-                            '<img alt="" src="' +
-                            img("character", c.id, "small") +
-                            '" ' +
-                            imgOnError("character", c.id, "small") +
-                            ' class="w-full h-full object-cover object-top">' +
-                            '<span class="absolute top-1 right-1 bg-black/60 text-white px-1.5 py-0.5 rounded text-[10px] font-semibold">' +
-                            c.relation +
-                            "</span>" +
-                            "</div>" +
-                            // 名称和声优
-                            '<div class="mt-1.5 px-0.5">' +
-                            '<div class="text-[13px] font-semibold truncate">' +
-                            primaryName(escapeHtml(c.name), "") +
-                            "</div>" +
-                            (actorName
-                                ? '<div class="text-[11px] text-sub truncate">CV: ' +
-                                  actorName +
-                                  "</div>"
-                                : "") +
-                            "</div></div>";
-                    }
-                    html += "</div></div>";
-                }
-
-                if (rels.length) {
-                    // 按关联类型排序：前传、续、番外、书、游戏、其他，同类型聚在一起
-                    function relPriority(r) {
-                        if (!r) return 99;
-                        if (r.indexOf("前传") !== -1) return 0;
-                        if (r.indexOf("续") !== -1) return 1;
-                        if (r.indexOf("番外") !== -1) return 2;
-                        if (r.indexOf("书") !== -1) return 3;
-                        if (r.indexOf("游戏") !== -1) return 4;
-                        return 99;
-                    }
-                    rels.sort(function (a, b) {
-                        var pa = relPriority(a.relation),
-                            pb = relPriority(b.relation);
-                        if (pa !== pb) return pa - pb;
-                        var ra = a.relation || "",
-                            rb = b.relation || "";
-                        if (ra < rb) return -1;
-                        if (ra > rb) return 1;
-                        return 0;
-                    });
-                    html +=
-                        "<div>" +
-                        sectionTitle("关联条目", {
-                            extra: isRemote("/v0/subjects/" + SID + "/subjects")
-                                ? globeIcon("w-4 h-4")
-                                : ""
-                        }) +
-                        '<div class="flex items-start gap-3 overflow-x-auto pb-2 thin-scroll" style="padding-top:4px">';
-                    var relLastRel = "";
-                    for (var i = 0; i < rels.length; i++) {
-                        var r = rels[i];
-                        var rel = r.relation || "";
-                        if (relLastRel !== "" && rel !== relLastRel) {
-                            html +=
-                                '<div class="border-l border-bord self-stretch shrink-0 -mx-1"></div>';
-                        }
-                        relLastRel = rel;
-                        html +=
-                            '<div tabindex="0" role="link" data-href="/subject?id=' +
-                            r.id +
-                            '" onkeydown="cardKeyNav(event)" onclick="location.href=\'/subject?id=' +
-                            r.id +
-                            '\'" class="shrink-0 w-[96px] cursor-pointer group rounded-lg hover:-translate-y-1 transition-transform">' +
-                            // 图片和浮动徽章
-                            '<div class="relative rounded-lg overflow-hidden bg-surface aspect-square">' +
-                            '<img alt="" src="' +
-                            img("subject", r.id, "small") +
-                            '" ' +
-                            imgOnError("subject", r.id, "small") +
-                            ' class="w-full h-full object-cover">' +
-                            (r.relation
-                                ? '<span class="absolute top-1 right-1 bg-black/60 text-white px-1.5 py-0.5 rounded text-[10px] font-semibold">' +
-                                  r.relation +
-                                  "</span>"
-                                : "") +
-                            "</div>" +
-                            // 标题
-                            '<div class="mt-1.5 px-0.5">' +
-                            '<div class="text-[13px] font-semibold line-clamp-3">' +
-                            (escapeHtml(r.name_cn) ||
-                                escapeHtml(r.name) ||
-                                "#" + r.id) +
-                            "</div>" +
-                            "</div></div>";
-                    }
-                    html += "</div></div>";
-                }
-
-                html += "</div></div>";
-
-                document.getElementById("view").innerHTML = html;
-                initEpTooltips();
+                    })
+                );
             }
 
             var _epPinned = null;
