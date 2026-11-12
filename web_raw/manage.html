@@ -351,6 +351,20 @@
                                 指定 Tracker
                             </label>
                         </div>
+                        <div
+                            id="bundle-export-tracker-picker"
+                            style="display: none"
+                            class="mb-2"
+                        >
+                            <div
+                                id="bundle-export-tracker-status"
+                                class="text-xs text-sub mb-1"
+                            ></div>
+                            <div
+                                id="bundle-export-tracker-items"
+                                class="thin-scroll flex flex-col gap-1.5 max-h-60 overflow-y-auto pr-1"
+                            ></div>
+                        </div>
                         <div class="flex flex-col gap-2 mb-2">
                             <input
                                 id="bundle-export-ids"
@@ -359,7 +373,7 @@
                             />
                             <input
                                 id="bundle-export-trackers"
-                                placeholder="Tracker ID，逗号分隔"
+                                placeholder="也可以填写 Tracker ID，逗号分隔"
                                 style="display: none"
                                 class="h-10 w-full px-3 py-2 rounded-lg border border-bord bg-input text-sm"
                             />
@@ -546,6 +560,7 @@
             var _trackers = [];
             var _trackerIndex = {};
             var _selectedTrackerIDs = {};
+            var _bundleSelectedTrackerIDs = {};
             var _trackersLoaded = false;
             var _trackerLoading = false;
 
@@ -553,8 +568,9 @@
                 return t.name || t.id;
             }
 
-            function setTrackerStatus(text, retry) {
-                var el = document.getElementById("fetch-tracker-status");
+            function setStatusElement(id, text, retry) {
+                var el = document.getElementById(id);
+                if (!el) return;
                 el.textContent = text;
                 if (!retry) return;
                 var btn = document.createElement("button");
@@ -566,6 +582,14 @@
                     loadTrackerList(true);
                 };
                 el.appendChild(btn);
+            }
+
+            function setTrackerStatus(text, retry) {
+                setStatusElement("fetch-tracker-status", text, retry);
+            }
+
+            function setBundleTrackerStatus(text, retry) {
+                setStatusElement("bundle-export-tracker-status", text, retry);
             }
 
             function updateTrackerSelectionStatus() {
@@ -592,13 +616,40 @@
                 );
             }
 
-            function renderTrackerList() {
-                var box = document.getElementById("fetch-tracker-items");
+            function updateBundleTrackerSelectionStatus() {
+                if (!_trackers.length) {
+                    setBundleTrackerStatus(
+                        "暂无 Tracker，可以直接填写 Tracker ID",
+                        false
+                    );
+                    return;
+                }
+                var available = _trackers.some(function (t) {
+                    return t.count > 0;
+                });
+                if (!available) {
+                    setBundleTrackerStatus(
+                        "暂无可用 Tracker，可以直接填写 Tracker ID",
+                        false
+                    );
+                    return;
+                }
+                setBundleTrackerStatus(
+                    "已选择 " +
+                        Object.keys(_bundleSelectedTrackerIDs).length +
+                        " 个",
+                    false
+                );
+            }
+
+            function renderTrackerRows(boxId, selected, onChange) {
+                var box = document.getElementById(boxId);
+                if (!box) return;
                 box.textContent = "";
-                for (var id in _selectedTrackerIDs) {
-                    var selected = _trackerIndex[id];
-                    if (!selected || selected.count <= 0) {
-                        delete _selectedTrackerIDs[id];
+                for (var id in selected) {
+                    var item = _trackerIndex[id];
+                    if (!item || item.count <= 0) {
+                        delete selected[id];
                     }
                 }
                 var list = _trackers.slice().sort(function (a, b) {
@@ -621,15 +672,15 @@
                         cb.type = "checkbox";
                         cb.className = "w-4 h-4 accent-pink shrink-0";
                         cb.value = t.id;
-                        cb.checked = !!_selectedTrackerIDs[t.id];
+                        cb.checked = !!selected[t.id];
                         cb.disabled = !enabled;
                         cb.addEventListener("change", function () {
                             if (cb.checked) {
-                                _selectedTrackerIDs[t.id] = true;
+                                selected[t.id] = true;
                             } else {
-                                delete _selectedTrackerIDs[t.id];
+                                delete selected[t.id];
                             }
-                            updateTrackerSelectionStatus();
+                            if (onChange) onChange();
                         });
                         label.appendChild(cb);
 
@@ -666,7 +717,20 @@
                         box.appendChild(label);
                     })(list[i]);
                 }
-                updateTrackerSelectionStatus();
+                if (onChange) onChange();
+            }
+
+            function renderTrackerList() {
+                renderTrackerRows(
+                    "fetch-tracker-items",
+                    _selectedTrackerIDs,
+                    updateTrackerSelectionStatus
+                );
+                renderTrackerRows(
+                    "bundle-export-tracker-items",
+                    _bundleSelectedTrackerIDs,
+                    updateBundleTrackerSelectionStatus
+                );
             }
 
             async function loadTrackerList(force) {
@@ -674,11 +738,13 @@
                 if (_trackersLoaded && !force) return;
                 _trackerLoading = true;
                 setTrackerStatus("加载中...", false);
+                setBundleTrackerStatus("加载中...", false);
                 try {
                     var res = await fetch(API + "/v0/tracker");
                     var d = await readJSON(res);
                     if (!res.ok || !d) {
                         setTrackerStatus("Tracker 列表加载失败", true);
+                        setBundleTrackerStatus("Tracker 列表加载失败", true);
                         return;
                     }
                     _trackers = Array.isArray(d.data) ? d.data : [];
@@ -690,6 +756,7 @@
                     renderTrackerList();
                 } catch (e) {
                     setTrackerStatus("Tracker 列表加载失败", true);
+                    setBundleTrackerStatus("Tracker 列表加载失败", true);
                 } finally {
                     _trackerLoading = false;
                 }
@@ -1350,6 +1417,10 @@
                 document.getElementById(
                     "bundle-export-trackers"
                 ).style.display = source === "trackers" ? "" : "none";
+                document.getElementById(
+                    "bundle-export-tracker-picker"
+                ).style.display = source === "trackers" ? "" : "none";
+                if (source === "trackers") loadTrackerList(false);
             }
 
             function requestBundleExport() {
@@ -1373,15 +1444,33 @@
                     }
                     lines.push("ID：" + body.ids.join("、"));
                 } else {
-                    body.trackers = splitList(
+                    var trackers = [];
+                    var seenTrackers = {};
+                    var selectedTrackers = Object.keys(
+                        _bundleSelectedTrackerIDs
+                    );
+                    for (var i = 0; i < selectedTrackers.length; i++) {
+                        if (!seenTrackers[selectedTrackers[i]]) {
+                            seenTrackers[selectedTrackers[i]] = true;
+                            trackers.push(selectedTrackers[i]);
+                        }
+                    }
+                    var manualTrackers = splitList(
                         document.getElementById("bundle-export-trackers").value
                     );
+                    for (var j = 0; j < manualTrackers.length; j++) {
+                        if (!seenTrackers[manualTrackers[j]]) {
+                            seenTrackers[manualTrackers[j]] = true;
+                            trackers.push(manualTrackers[j]);
+                        }
+                    }
+                    body.trackers = trackers;
                     if (!body.trackers.length) {
-                        showError("请填写 Tracker ID");
+                        showError("请选择或填写 Tracker ID");
                         return;
                     }
-                    for (var i = 0; i < body.trackers.length; i++) {
-                        if (!/^[a-zA-Z0-9_-]+$/.test(body.trackers[i])) {
+                    for (var k = 0; k < body.trackers.length; k++) {
+                        if (!/^[a-zA-Z0-9_-]+$/.test(body.trackers[k])) {
                             showError(MSG.errInvalidTrackerName);
                             return;
                         }
