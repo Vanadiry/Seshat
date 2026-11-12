@@ -244,6 +244,8 @@
                     );
                 }
                 var kind = TYPE_IMAGES[type];
+                var primary = primaryName(it.name, it.name_cn);
+                var sub = subName(it.name, it.name_cn);
                 return (
                     '<a href="' +
                     TYPE_LINKS[type] +
@@ -257,11 +259,11 @@
                     '<div class="flex-1 min-w-0">' +
                     '<div class="flex items-baseline gap-2 min-w-0">' +
                     '<span class="text-sm font-semibold truncate">' +
-                    highlightText(it.name, _searchKeyword) +
+                    highlightText(primary, _searchKeyword) +
                     "</span>" +
-                    (escapeHtml(it.name_cn)
+                    (sub
                         ? '<span class="text-xs text-sub truncate max-w-[45%]">' +
-                          highlightText(it.name_cn, _searchKeyword) +
+                          highlightText(sub, _searchKeyword) +
                           "</span>"
                         : "") +
                     "</div>" +
