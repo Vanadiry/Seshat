@@ -159,6 +159,11 @@ html.light {
 .sticky-below-topbar {
     top: calc(var(--topbar-h) + var(--sticky-gap));
 }
+#topbar:empty {
+    min-height: var(--topbar-h);
+    background: var(--c-surface-raised);
+    border-bottom: 1px solid var(--c-bord);
+}
 .sticky-below-detail-header {
     top: calc(var(--detail-header-h) + var(--sticky-gap));
 }

@@ -1248,7 +1248,7 @@ function extractCN(d) {
     document.body.appendChild(bar);
 })();
 
-document.addEventListener("DOMContentLoaded", () => {
+(function () {
     const tb = document.getElementById("topbar");
     if (!tb) return;
 
@@ -1334,7 +1334,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 全局事件总线（SSE）
     initEventBus();
-});
+})();
 
 // Cmd+R / Ctrl+R 刷新页面
 document.addEventListener("keydown", function (e) {
