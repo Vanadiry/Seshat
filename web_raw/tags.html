@@ -43,7 +43,7 @@
                 for (var i = showing; i < end; i++) {
                     html += renderItem(allItems[i]);
                 }
-                el.innerHTML += html;
+                el.insertAdjacentHTML("beforeend", html);
                 showing = end;
                 updatePager();
             }

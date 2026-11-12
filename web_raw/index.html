@@ -92,7 +92,7 @@
                 for (var i = showing; i < end; i++) {
                     html += renderItem(allItems[i]);
                 }
-                grid.innerHTML += html;
+                grid.insertAdjacentHTML("beforeend", html);
                 showing = end;
                 updatePager();
             }
