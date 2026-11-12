@@ -1169,7 +1169,8 @@ document.addEventListener("DOMContentLoaded", () => {
     <style>
       @keyframes rainbow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
       @keyframes imgFadeIn { from{opacity:0} to{opacity:1} }
-      img, .grid > *, #results > div, #view > div, #appearances-section > div, #chars-section > div, #subjects-section > div, #stats-list > div, #history-area > div { animation: imgFadeIn .35s ease }
+      .fade-in { animation: imgFadeIn .35s ease }
+      @media (prefers-reduced-motion: reduce) { .fade-in { animation: none } }
     </style>`;
 
     capabilitiesReady().then(function () {
