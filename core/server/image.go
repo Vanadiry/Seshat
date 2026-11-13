@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -387,124 +385,4 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress, concurrency int) 
 
 		saveJSON(store.IndexFile(dd, d.kind+"s_image.json"), imgMap)
 	}
-}
-
-// RebuildImageIndex 扫描 images/ 目录重建图片索引
-func RebuildImageIndex(dd string) {
-	imgBase := filepath.Join(dd, "images")
-	kinds := []string{"subject", "character", "person"}
-	for _, kind := range kinds {
-		m := map[int]store.ImageEntry{}
-		for _, size := range []string{"large", "grid", "small"} {
-			dir := filepath.Join(imgBase, kind+"s_"+size)
-			digits, err := os.ReadDir(dir)
-			if err != nil {
-				continue
-			}
-			for _, d := range digits {
-				if !d.IsDir() {
-					continue
-				}
-				files, _ := os.ReadDir(filepath.Join(dir, d.Name()))
-				for _, f := range files {
-					name := f.Name()
-					if ext := filepath.Ext(name); ext != ".jpg" {
-						continue
-					}
-					id, err := strconv.Atoi(strings.TrimSuffix(name, ".jpg"))
-					if err != nil {
-						continue
-					}
-					entry := m[id]
-					relPath := fmt.Sprintf("%ss_%s/%s/%s", kind, size, d.Name(), name)
-					switch size {
-					case "large":
-						entry.Large = relPath
-					case "grid":
-						entry.Grid = relPath
-					case "small":
-						entry.Small = relPath
-					}
-					m[id] = entry
-				}
-			}
-		}
-		saveJSON(store.IndexFile(dd, kind+"s_image.json"), m)
-		log.Info("image index rebuilt", "kind", kind+"s", "count", len(m))
-	}
-}
-
-// 辅助函数
-
-func loadImageIndex(dd, name string) map[int]store.ImageEntry {
-	m, err := loadCachedIndex[map[int]store.ImageEntry](store.IndexFile(dd, name))
-	if err != nil || m == nil {
-		return map[int]store.ImageEntry{}
-	}
-	return m
-}
-
-func entryPath(entry store.ImageEntry, size string) string {
-	switch size {
-	case "large":
-		return entry.Large
-	case "grid":
-		return entry.Grid
-	case "small":
-		return entry.Small
-	default:
-		return ""
-	}
-}
-
-// imageSizeOrder 返回请求尺寸的尝试顺序，优先临近的更高档位
-func imageSizeOrder(requested string) []string {
-	switch requested {
-	case "large":
-		return []string{"large", "small", "grid"}
-	case "small":
-		return []string{"small", "large", "grid"}
-	case "grid":
-		return []string{"grid", "small", "large"}
-	case "medium", "common":
-		return []string{"large", "small", "grid"}
-	default:
-		return []string{"grid", "small", "large"}
-	}
-}
-
-// pickImageSize 返回实际可用的尺寸，没有可用图片时返回空字符串
-func pickImageSize(entry store.ImageEntry, requested string) string {
-	for _, size := range imageSizeOrder(requested) {
-		if entryPath(entry, size) != "" {
-			return size
-		}
-	}
-	return ""
-}
-
-func serveImage(w http.ResponseWriter, r *http.Request, dd, kind, size string) {
-	if size == "" {
-		size = "grid"
-	}
-	idStr := r.PathValue("id")
-	id, _ := strconv.Atoi(idStr)
-	images := loadImageIndex(dd, kind+"s_image.json")
-	entry, ok := images[id]
-	if ok {
-		for _, candidate := range imageSizeOrder(size) {
-			path := entryPath(entry, candidate)
-			if path == "" {
-				continue
-			}
-			fullPath := filepath.Join(dd, "images", path)
-			if _, err := os.Stat(fullPath); err == nil {
-				w.Header().Set("Cache-Control", "no-store")
-				http.ServeFile(w, r, fullPath)
-				return
-			}
-		}
-	}
-	// 404 触发前端 onerror 回退
-	writeNotFound(w, r, "图片不存在")
 }
