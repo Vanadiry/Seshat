@@ -270,12 +270,11 @@
     <div class="fade-in">
         <div
             id="stats-dash"
-            class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 text-xs text-sub"
+            class="grid grid-cols-1 min-[500px]:grid-cols-2 min-[700px]:grid-cols-4 gap-3 mb-6 text-xs text-sub"
         >
             {#each cards as c}
                 <div
-                    class="bg-surface border border-bord-light rounded-xl p-3 flex items-center"
-                    style="max-width:260px;max-height:100px"
+                    class="w-full min-w-0 bg-surface border border-bord-light rounded-xl p-3 flex items-center"
                 >
                     <div class="min-w-0 flex-1">
                         <div class="text-sub truncate">{c.label}</div>
