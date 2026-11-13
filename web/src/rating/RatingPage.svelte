@@ -9,6 +9,7 @@
     let loading = $state(true);
     let message = $state("");
     let blocked = $state(false);
+    let narrow = $state(window.innerWidth < 800);
 
     let history = $state([]);
     let historyLoading = $state(true);
@@ -136,6 +137,18 @@
     }
 
     onMount(function () {
+        var mq = window.matchMedia("(max-width: 799px)");
+        var update = function () {
+            narrow = mq.matches;
+        };
+        update();
+        mq.addEventListener("change", update);
+        return function () {
+            mq.removeEventListener("change", update);
+        };
+    });
+
+    onMount(function () {
         (async function () {
             if (!(await window.requireFeature("elo"))) {
                 blocked = true;
@@ -224,13 +237,15 @@
                     {@const loser = pkState !== "idle" && pkState !== side}
                     <div
                         id={"pk-" + side}
-                        class="flex-1 min-w-0 bg-surface border border-bord-mid rounded-xl p-3 md:p-6 flex flex-col items-center justify-center cursor-pointer relative h-[298px]"
-                        class:shrunk={loser}
-                        style="flex: {winner
-                            ? '1.2'
-                            : loser
-                              ? '0 0 200px'
-                              : '1'}"
+                        class="flex-1 min-w-0 bg-surface border border-bord-mid rounded-xl p-3 md:p-6 flex flex-col items-center justify-center cursor-pointer relative h-[298px] {narrow &&
+                        winner
+                            ? 'ring-2 ring-pink'
+                            : ''} {narrow && loser ? 'opacity-60' : ''}"
+                        class:shrunk={!narrow && loser}
+                        style={narrow
+                            ? ""
+                            : "flex: " +
+                              (winner ? "1.2" : loser ? "0 0 200px" : "1")}
                         tabindex="0"
                         role="button"
                         aria-label={"选择" +
@@ -286,7 +301,9 @@
                             class:show={winner}
                         >
                             <span class="text-pink font-semibold text-sm"
-                                >再次点击以确认该条目胜出</span
+                                >{narrow
+                                    ? "再次点击确认"
+                                    : "再次点击以确认该条目胜出"}</span
                             >
                         </div>
                         <div class="cancel-hint">点击此处取消</div>
