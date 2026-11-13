@@ -69,6 +69,9 @@ function showLightbox(src) {
         if (lightboxClosed) return;
         lightboxClosed = true;
         document.removeEventListener("keydown", handleLightboxKey);
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+        window.removeEventListener("pointercancel", onPointerUp);
         overlay.style.background = "rgba(0,0,0,0)";
         img.style.opacity = "0";
         img.style.transform = "scale(.95)";
@@ -88,13 +91,32 @@ function showLightbox(src) {
         );
     }
     document.addEventListener("keydown", handleLightboxKey);
-    // 缩放和拖拽
+    // 缩放和拖拽：滚轮、双指捏合、单指平移、双击缩放
     var scale = 1,
         tx = 0,
-        ty = 0,
-        dragging = false,
-        dx = 0,
-        dy = 0;
+        ty = 0;
+    var pointers = new Map();
+    var pinchStartDist = 0,
+        pinchStartScale = 1,
+        pinchStartTx = 0,
+        pinchStartTy = 0,
+        pinchStartMx = 0,
+        pinchStartMy = 0,
+        pinchStartCx = 0,
+        pinchStartCy = 0;
+    var dragStartX = 0,
+        dragStartY = 0,
+        dragStartTx = 0,
+        dragStartTy = 0,
+        dragging = false;
+    var downX = 0,
+        downY = 0,
+        moved = false,
+        lastTapTime = 0;
+
+    overlay.style.touchAction = "none";
+    img.draggable = false;
+
     function apply() {
         img.style.transform =
             "translate3d(" +
@@ -105,46 +127,170 @@ function showLightbox(src) {
             scale +
             ")";
     }
+
+    function imageCenter() {
+        var r = wrap.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    }
+
+    // 放大后限制平移范围，图片小于视口时保持居中
+    function clampPan() {
+        var r = wrap.getBoundingClientRect();
+        var maxX = Math.max(0, (r.width * scale - window.innerWidth) / 2);
+        var maxY = Math.max(0, (r.height * scale - window.innerHeight) / 2);
+        tx = Math.max(-maxX, Math.min(maxX, tx));
+        ty = Math.max(-maxY, Math.min(maxY, ty));
+    }
+
+    // 以屏幕坐标点为中心缩放
+    function setScale(next, px, py) {
+        next = Math.min(5, Math.max(1, next));
+        if (next === scale) return;
+        var c = imageCenter();
+        var k = next / scale;
+        tx = px - c.x - (px - c.x - tx) * k;
+        ty = py - c.y - (py - c.y - ty) * k;
+        scale = next;
+        if (scale <= 1) {
+            tx = 0;
+            ty = 0;
+        }
+        clampPan();
+        img.style.cursor = scale > 1 ? "grab" : "";
+        apply();
+    }
+
+    function distance(a, b) {
+        return Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    }
+
+    function midpoint(a, b) {
+        return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    }
+
+    function onPointerDown(e) {
+        if (bar.contains(e.target)) return;
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pointers.size === 1) {
+            downX = e.clientX;
+            downY = e.clientY;
+            moved = false;
+            dragging = scale > 1;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            dragStartTx = tx;
+            dragStartTy = ty;
+        } else if (pointers.size === 2) {
+            dragging = false;
+            var pts = Array.from(pointers.values());
+            var c = imageCenter();
+            pinchStartDist = distance(pts[0], pts[1]);
+            pinchStartScale = scale;
+            pinchStartTx = tx;
+            pinchStartTy = ty;
+            var m = midpoint(pts[0], pts[1]);
+            pinchStartMx = m.x;
+            pinchStartMy = m.y;
+            pinchStartCx = c.x;
+            pinchStartCy = c.y;
+        }
+        try {
+            overlay.setPointerCapture(e.pointerId);
+        } catch (_) {}
+    }
+
+    function onPointerMove(e) {
+        if (!pointers.has(e.pointerId)) return;
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (
+            Math.abs(e.clientX - downX) > 8 ||
+            Math.abs(e.clientY - downY) > 8
+        ) {
+            moved = true;
+        }
+        if (pointers.size >= 2) {
+            var pts = Array.from(pointers.values());
+            var next = Math.min(
+                5,
+                Math.max(
+                    1,
+                    pinchStartScale *
+                        (distance(pts[0], pts[1]) / pinchStartDist)
+                )
+            );
+            var k = next / pinchStartScale;
+            var m = midpoint(pts[0], pts[1]);
+            tx =
+                m.x -
+                pinchStartCx -
+                (pinchStartMx - pinchStartCx - pinchStartTx) * k;
+            ty =
+                m.y -
+                pinchStartCy -
+                (pinchStartMy - pinchStartCy - pinchStartTy) * k;
+            scale = next;
+            if (scale <= 1) {
+                tx = 0;
+                ty = 0;
+            }
+            clampPan();
+            img.style.cursor = scale > 1 ? "grab" : "";
+            apply();
+            return;
+        }
+        if (dragging && scale > 1) {
+            tx = dragStartTx + (e.clientX - dragStartX);
+            ty = dragStartTy + (e.clientY - dragStartY);
+            clampPan();
+            apply();
+        }
+    }
+
+    function onPointerUp(e) {
+        if (!pointers.has(e.pointerId)) return;
+        pointers.delete(e.pointerId);
+        if (pointers.size === 1) {
+            var p = Array.from(pointers.values())[0];
+            dragging = scale > 1;
+            dragStartX = p.x;
+            dragStartY = p.y;
+            dragStartTx = tx;
+            dragStartTy = ty;
+            return;
+        }
+        if (pointers.size === 0) {
+            dragging = false;
+            if (!moved && e.pointerType !== "mouse") {
+                var now = Date.now();
+                if (now - lastTapTime < 300) {
+                    setScale(scale > 1 ? 1 : 2.5, e.clientX, e.clientY);
+                    lastTapTime = 0;
+                    return;
+                }
+                lastTapTime = now;
+            }
+            img.style.cursor = scale > 1 ? "grab" : "";
+        }
+    }
+
+    overlay.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+
     overlay.addEventListener(
         "wheel",
         function (ew) {
             ew.preventDefault();
-            scale = Math.min(5, Math.max(0.5, scale * (1 - ew.deltaY * 0.005)));
-            if (scale <= 1) {
-                tx = 0;
-                ty = 0;
-                img.style.cursor = "";
-            } else {
-                img.style.cursor = "grab";
-            }
-            apply();
+            setScale(scale * (1 - ew.deltaY * 0.005), ew.clientX, ew.clientY);
         },
         { passive: false }
     );
-    img.addEventListener("mousedown", function (e) {
-        if (scale <= 1) return;
-        e.preventDefault();
-        dragging = true;
-        dx = e.clientX - tx;
-        dy = e.clientY - ty;
-        img.style.cursor = "grabbing";
-    });
-    window.addEventListener("mousemove", function (e) {
-        if (!dragging) return;
-        tx = e.clientX - dx;
-        ty = e.clientY - dy;
-        apply();
-    });
-    window.addEventListener("mouseup", function () {
-        dragging = false;
-        img.style.cursor = scale > 1 ? "grab" : "";
-    });
+
+    // 鼠标双击复位
     overlay.addEventListener("dblclick", function () {
-        scale = 1;
-        tx = 0;
-        ty = 0;
-        img.style.cursor = "";
-        apply();
+        setScale(1, window.innerWidth / 2, window.innerHeight / 2);
     });
 }
 
