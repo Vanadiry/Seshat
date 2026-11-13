@@ -164,6 +164,34 @@ html.light {
     background: var(--c-surface-raised);
     border-bottom: 1px solid var(--c-bord);
 }
+
+/* 窄屏下拉菜单出现和收起 */
+#nav-menu.nav-menu-open {
+    animation: navMenuIn 0.16s ease-out;
+}
+#nav-menu.nav-menu-closing {
+    animation: navMenuOut 0.12s ease-in forwards;
+}
+@keyframes navMenuIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+@keyframes navMenuOut {
+    from {
+        opacity: 1;
+        transform: none;
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+}
 .sticky-below-detail-header {
     top: calc(var(--detail-header-h) + var(--sticky-gap));
 }
@@ -239,6 +267,10 @@ select {
 }
 @media (prefers-reduced-motion: reduce) {
     .fade-in {
+        animation: none;
+    }
+    #nav-menu.nav-menu-open,
+    #nav-menu.nav-menu-closing {
         animation: none;
     }
     #load-bar {

@@ -100,21 +100,38 @@
     var menuBtn = document.getElementById("nav-menu-btn");
     var menu = document.getElementById("nav-menu");
     var menuChevron = document.getElementById("nav-menu-chevron");
+    var menuOpen = false;
+    var menuTimer = 0;
     function setMenuOpen(open) {
         if (!menu || !menuBtn) return;
-        menu.classList.toggle("hidden", !open);
+        menuOpen = open;
+        clearTimeout(menuTimer);
         menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
         if (menuChevron) {
             menuChevron.style.transform = open ? "rotate(180deg)" : "";
         }
+        if (open) {
+            menu.classList.remove("hidden", "nav-menu-closing");
+            // 重启动画，连续开关也能重新播放
+            void menu.offsetWidth;
+            menu.classList.add("nav-menu-open");
+            return;
+        }
+        if (menu.classList.contains("hidden")) return;
+        menu.classList.remove("nav-menu-open");
+        menu.classList.add("nav-menu-closing");
+        menuTimer = setTimeout(function () {
+            menu.classList.add("hidden");
+            menu.classList.remove("nav-menu-closing");
+        }, 120);
     }
     if (menuBtn && menu) {
         menuBtn.addEventListener("click", function (e) {
             e.stopPropagation();
-            setMenuOpen(menu.classList.contains("hidden"));
+            setMenuOpen(!menuOpen);
         });
         document.addEventListener("click", function (e) {
-            if (menu.classList.contains("hidden")) return;
+            if (!menuOpen) return;
             if (tb.contains(e.target)) return;
             setMenuOpen(false);
         });
