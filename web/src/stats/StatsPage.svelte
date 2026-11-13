@@ -20,6 +20,21 @@
     let orphanNames = $state({});
     let sortKey = $state("elo");
     let sortDir = $state("desc");
+    let narrow = $state(window.innerWidth < 800);
+    let listEl = $state(null);
+
+    const METRIC_KEYS = ["elo", "my", "score"];
+
+    // 窄屏把当前排序列移到名称后面，保证标题和排序列同屏
+    let colOrder = $derived.by(() => {
+        if (!narrow) return { elo: 0, my: 0, score: 0, id: 0 };
+        var rest = METRIC_KEYS.filter((k) => k !== sortKey);
+        var out = { id: 4 };
+        out[sortKey] = 1;
+        out[rest[0]] = 2;
+        out[rest[1]] = 3;
+        return out;
+    });
     let loading = $state(true);
     let error = $state("");
     let blocked = $state(false);
@@ -145,6 +160,7 @@
             sortKey = key;
             sortDir = "desc";
         }
+        if (narrow && listEl) listEl.scrollLeft = 0;
     }
 
     function setOrphanName(id, value) {
@@ -218,6 +234,18 @@
     }
 
     onMount(function () {
+        var mq = window.matchMedia("(max-width: 799px)");
+        var update = function () {
+            narrow = mq.matches;
+        };
+        update();
+        mq.addEventListener("change", update);
+        return function () {
+            mq.removeEventListener("change", update);
+        };
+    });
+
+    onMount(function () {
         (async function () {
             if (!(await window.requireFeature("stats"))) {
                 blocked = true;
@@ -230,12 +258,13 @@
     });
 </script>
 
-{#snippet sortHeader(label, key, cls, short)}
+{#snippet sortHeader(label, key, cls, short, order)}
     <div
         class="{cls} text-center cursor-pointer select-none hover:text-text {sortKey ===
         key
             ? 'text-pink font-semibold'
             : ''}"
+        style="order:{order}"
         data-sort-key={key}
         title="点击排序"
         role="button"
@@ -248,14 +277,17 @@
         }}
         onclick={() => sortBy(key)}
     >
-        <span class="md:hidden">{short || label}</span><span class="hidden md:inline"
-            >{label}</span
+        <span class="md:hidden">{short || label}</span><span
+            class="hidden md:inline">{label}</span
         >{sortKey === key ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
     </div>
 {/snippet}
 
-{#snippet eloCell(rating, pct, cls)}
-    <span class="{cls} {COL_ELO} flex justify-center gap-1 font-mono">
+{#snippet eloCell(rating, pct, cls, order)}
+    <span
+        class="{cls} {COL_ELO} flex justify-center gap-1 font-mono"
+        style="order:{order}"
+    >
         {#if rating && pct}
             <span class="flex-1 text-right font-mono">{rating}</span><span
                 class="text-sub flex-1 text-right font-mono">{pct}</span
@@ -293,7 +325,11 @@
             {/each}
         </div>
 
-        <div id="stats-list" class="thin-scroll overflow-x-auto">
+        <div
+            id="stats-list"
+            class="thin-scroll overflow-x-auto"
+            bind:this={listEl}
+        >
             {#if loading}
                 <div class="text-center py-20 text-sub">
                     <span class="spin"></span>加载中…
@@ -306,10 +342,33 @@
                 >
                     <div class="w-10 shrink-0"></div>
                     <div class="flex-1 min-w-0">动画</div>
-                    {@render sortHeader("ELO 评分", "elo", COL_ELO, "ELO")}
-                    {@render sortHeader("我的评分", "my", COL_MY, "我的")}
-                    {@render sortHeader("番组计划评分", "score", COL_BGM, "番组计划")}
-                    <div class="{COL_ID} text-center">ID</div>
+                    {@render sortHeader(
+                        "ELO 评分",
+                        "elo",
+                        COL_ELO,
+                        "ELO",
+                        colOrder.elo
+                    )}
+                    {@render sortHeader(
+                        "我的评分",
+                        "my",
+                        COL_MY,
+                        "我的",
+                        colOrder.my
+                    )}
+                    {@render sortHeader(
+                        "番组计划评分",
+                        "score",
+                        COL_BGM,
+                        "番组计划",
+                        colOrder.score
+                    )}
+                    <div
+                        class="{COL_ID} text-center"
+                        style="order:{colOrder.id}"
+                    >
+                        ID
+                    </div>
                 </div>
                 {#if !sorted.length}
                     <div class="text-center py-10 text-sub">暂无数据</div>
@@ -387,19 +446,27 @@
                                     {/if}
                                 </div>
                             </div>
-                            {@render eloCell(ratingVal, pctVal, eloCls)}
-                            <span class="{myCls} {COL_MY} text-center font-mono"
+                            {@render eloCell(
+                                ratingVal,
+                                pctVal,
+                                eloCls,
+                                colOrder.elo
+                            )}
+                            <span
+                                class="{myCls} {COL_MY} text-center font-mono"
+                                style="order:{colOrder.my}"
                                 >{myRates[it.id] || "-"}</span
                             >
                             <span
                                 class="{bkgCls} {COL_BGM} text-center font-mono"
+                                style="order:{colOrder.score}"
                                 >{entry && entry.score != null
                                     ? entry.score.toFixed(1)
                                     : "-"}</span
                             >
                             <span
                                 class="text-xs text-sub {COL_ID} text-center font-mono"
-                                >#{it.id}</span
+                                style="order:{colOrder.id}">#{it.id}</span
                             >
                         </div>
                     {:else}
@@ -439,17 +506,25 @@
                                     {/if}
                                 </div>
                             </div>
-                            {@render eloCell(ratingVal, pctVal, eloCls)}
-                            <span class="{myCls} {COL_MY} text-center font-mono"
+                            {@render eloCell(
+                                ratingVal,
+                                pctVal,
+                                eloCls,
+                                colOrder.elo
+                            )}
+                            <span
+                                class="{myCls} {COL_MY} text-center font-mono"
+                                style="order:{colOrder.my}"
                                 >{myRates[it.id] || "-"}</span
                             >
                             <span
                                 class="{bkgCls} {COL_BGM} text-center font-mono"
+                                style="order:{colOrder.score}"
                                 >{it.score ? it.score.toFixed(1) : "-"}</span
                             >
                             <span
                                 class="text-xs text-sub {COL_ID} text-center font-mono"
-                                >#{it.id}</span
+                                style="order:{colOrder.id}">#{it.id}</span
                             >
                         </a>
                     {/if}
