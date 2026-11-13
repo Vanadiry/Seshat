@@ -18,8 +18,8 @@
     }
 
     // 提示框宽度受限，并水平夹在视口内，避免窄屏左右超出
-    function place(index) {
-        var el = cells[index];
+    function place(index, target) {
+        var el = target || cells[index];
         if (!el) return;
         var r = el.getBoundingClientRect();
         var vw = document.documentElement.clientWidth;
@@ -141,7 +141,10 @@
                 <div
                     class="relative ep-cell"
                     bind:this={cells[index]}
-                    onmouseenter={() => (hovered = index)}
+                    onmouseenter={(e) => {
+                        place(index, e.currentTarget);
+                        hovered = index;
+                    }}
                     onmouseleave={() => {
                         if (hovered === index) hovered = null;
                     }}
@@ -155,25 +158,25 @@
                             : ''}"
                         onclick={(e) => {
                             e.stopPropagation();
+                            place(index);
                             toggle(index);
                         }}
                         onkeydown={(e) => {
                             if (e.key === "Enter" || e.key === " ") {
                                 e.preventDefault();
+                                place(index);
                                 toggle(index);
                             }
                         }}>{row.num}</span
                     >
                     <div
-                        class="absolute bottom-full mb-1.5 ep-tip z-50"
-                        aria-hidden={!isOpen(index)}
-                        style="left:{tipX}px;width:{tipW}px;opacity:{isOpen(
+                        class="absolute bottom-full mb-1.5 ep-tip z-50 {isOpen(
                             index
                         )
-                            ? 1
-                            : 0};pointer-events:{isOpen(index)
-                            ? 'auto'
-                            : 'none'}"
+                            ? ''
+                            : 'hidden'}"
+                        aria-hidden={!isOpen(index)}
+                        style="left:{tipX}px;width:{tipW}px"
                     >
                         <div
                             class="select-text bg-surface-raised border border-bord-strong rounded-lg px-3 py-2 text-xs shadow-lg relative"
