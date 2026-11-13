@@ -165,6 +165,49 @@ html.light {
     border-bottom: 1px solid var(--c-bord);
 }
 
+/* 上游 ID 添加后的闪烁反馈 */
+@keyframes upstreamFlash {
+    0% {
+        background-color: transparent;
+        border-color: var(--c-bord);
+    }
+    25% {
+        background-color: var(--c-pink-bg);
+        border-color: var(--c-pink);
+    }
+    100% {
+        background-color: transparent;
+        border-color: var(--c-bord);
+    }
+}
+.upstream-flash {
+    animation: upstreamFlash 0.8s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+    .upstream-flash {
+        animation: none;
+        border-color: var(--c-pink);
+    }
+}
+
+@keyframes upstreamStatusFlash {
+    0% {
+        color: var(--c-pink);
+    }
+    100% {
+        color: var(--c-sub);
+    }
+}
+.upstream-status-flash {
+    animation: upstreamStatusFlash 0.8s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+    .upstream-status-flash {
+        animation: none;
+        color: var(--c-pink);
+    }
+}
+
 /* 窄屏下拉菜单出现和收起 */
 #nav-menu.nav-menu-open {
     animation: navMenuIn 0.16s ease-out;

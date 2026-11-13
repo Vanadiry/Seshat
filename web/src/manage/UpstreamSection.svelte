@@ -10,6 +10,10 @@
     let loading = $state(false);
     let status = $state("");
     let inputEl = $state(null);
+    let flashId = $state(null);
+    let flashTimer = 0;
+    let statusFlash = $state(false);
+    let statusTimer = 0;
 
     async function search(append) {
         if (loading) return;
@@ -57,6 +61,28 @@
         }
     }
 
+    function flash(id) {
+        flashId = null;
+        clearTimeout(flashTimer);
+        requestAnimationFrame(function () {
+            flashId = id;
+            flashTimer = setTimeout(function () {
+                flashId = null;
+            }, 800);
+        });
+    }
+
+    function flashStatus() {
+        statusFlash = false;
+        clearTimeout(statusTimer);
+        requestAnimationFrame(function () {
+            statusFlash = true;
+            statusTimer = setTimeout(function () {
+                statusFlash = false;
+            }, 800);
+        });
+    }
+
     function addID(id) {
         const ids = splitIDs(get(fetchIds));
         const existed = ids.indexOf(id) !== -1;
@@ -64,8 +90,10 @@
         fetchIds.set(ids.join(", "));
         fetchSource.set("ids");
         status = existed
-            ? "#" + id + " 已在指定 ID 中"
-            : "已添加 #" + id + " 到指定 ID";
+            ? "#" + id + " 已在拉取列表中"
+            : "已添加 #" + id + " 到拉取列表";
+        flash(id);
+        flashStatus();
     }
 
     function year(date) {
@@ -80,7 +108,7 @@
             <h2 class="font-bold text-sm">上游 ID 搜索</h2>
         </div>
         <p class="text-xs text-sub mb-3">
-            从 Bangumi 搜索动画，把 ID 添加到“指定 ID”。
+            从 Bangumi 搜索动画，把 ID 添加到拉取列表。
         </p>
         <div class="flex gap-2 mb-2">
             <input
@@ -103,7 +131,13 @@
                 搜索
             </button>
         </div>
-        <div class="text-xs text-sub">{status}</div>
+        <div
+            class="text-xs text-sub {statusFlash
+                ? 'upstream-status-flash'
+                : ''}"
+        >
+            {status}
+        </div>
         <div
             class="thin-scroll flex flex-col gap-1.5 mt-2 max-h-80 overflow-y-auto pr-1"
         >
@@ -117,7 +151,10 @@
                     .concat(item.platform ? [item.platform] : [])
                     .join(" · ")}
                 <div
-                    class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-bord"
+                    class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-bord {flashId ===
+                    item.id
+                        ? 'upstream-flash'
+                        : ''}"
                 >
                     <div class="flex-1 min-w-0">
                         <div class="flex items-baseline gap-1.5 min-w-0">
@@ -142,8 +179,8 @@
                         type="button"
                         onclick={() => addID(item.id)}
                         class="h-8 w-8 shrink-0 rounded-lg border border-bord bg-transparent text-sub text-lg leading-none cursor-pointer hover:bg-active hover:text-text flex items-center justify-center"
-                        title="添加到指定 ID"
-                        aria-label="添加到指定 ID"
+                        title="添加到拉取列表"
+                        aria-label="添加到拉取列表"
                     >
                         +
                     </button>
