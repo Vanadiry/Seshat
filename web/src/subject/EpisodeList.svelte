@@ -42,30 +42,31 @@
 </script>
 
 {#snippet card(e)}
-    <div class="border-t border-bord-light py-3">
-        <div class="flex items-baseline gap-2">
-            <span class="text-pink text-sm font-bold w-8 shrink-0"
-                >{epLabel(e)}</span
-            >
-            <span class="font-semibold text-[14px]"
-                >{window.primaryName(e.name || "", e.name_cn || "")}</span
-            >
+    <div class="border-t border-bord-light py-3 flex gap-2">
+        <span class="text-pink text-sm font-bold w-8 shrink-0"
+            >{epLabel(e)}</span
+        >
+        <div class="flex-1 min-w-0">
+            <div class="font-semibold text-[14px]">
+                {window.primaryName(e.name || "", e.name_cn || "")}
+            </div>
             {#if window.subName(e.name || "", e.name_cn || "")}
-                <span class="text-xs text-sub"
-                    >{window.subName(e.name || "", e.name_cn || "")}</span
-                >
+                <div class="text-xs text-sub">
+                    {window.subName(e.name || "", e.name_cn || "")}
+                </div>
+            {/if}
+            <div class="text-xs text-sub mt-1">
+                {e.airdate ? "首播: " + e.airdate : ""}{e.airdate &&
+                e.duration
+                    ? " ｜ "
+                    : ""}{e.duration ? "时长: " + e.duration : ""}
+            </div>
+            {#if e.desc}
+                <div class="text-[13px] text-sub mt-1 leading-relaxed">
+                    {@html epDesc(e)}
+                </div>
             {/if}
         </div>
-        <div class="text-xs text-sub mt-1 ml-10">
-            {e.airdate ? "首播: " + e.airdate : ""}{e.airdate && e.duration
-                ? " ｜ "
-                : ""}{e.duration ? "时长: " + e.duration : ""}
-        </div>
-        {#if e.desc}
-            <div class="text-[13px] text-sub mt-1 ml-10 leading-relaxed">
-                {@html epDesc(e)}
-            </div>
-        {/if}
     </div>
 {/snippet}
 
@@ -79,7 +80,7 @@
                     本篇 ({main.length})
                 </div>
                 {#each epPairs(main) as pair}
-                    <div class="flex gap-4">
+                    <div class="flex flex-col md:flex-row md:gap-4">
                         <div class="flex-1 min-w-0">
                             {@render card(pair[0])}
                         </div>
@@ -97,7 +98,7 @@
                     SP / 其他 ({sp.length})
                 </div>
                 {#each epPairs(sp) as pair}
-                    <div class="flex gap-4">
+                    <div class="flex flex-col md:flex-row md:gap-4">
                         <div class="flex-1 min-w-0">
                             {@render card(pair[0])}
                         </div>
