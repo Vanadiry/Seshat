@@ -156,7 +156,10 @@
     {@const nameCN = entry && entry.name_cn ? entry.name_cn : ""}
     <a
         href={"/subject?id=" + id}
-        class="flex w-full shrink-0 items-center gap-3 overflow-hidden py-1.5 px-3 no-underline transition-colors hover:bg-active md:w-auto md:flex-1 md:basis-1/2 md:max-w-[50%] md:px-2"
+        class="flex w-full shrink-0 items-center gap-3 overflow-hidden py-1.5 px-3 no-underline transition-colors hover:bg-active md:w-auto md:flex-1 md:basis-1/2 md:max-w-[50%] md:px-2 {label ===
+        '负'
+            ? 'opacity-75 md:opacity-100'
+            : ''}"
     >
         <span
             class="w-6 shrink-0 text-center text-xs font-semibold text-sub md:hidden"
