@@ -4,6 +4,10 @@
     let pinned = $state(null);
     let hovered = $state(null);
 
+    let cells = [];
+    let tipX = $state(0);
+    let tipW = $state(260);
+
     function isOpen(index) {
         return pinned === index || (pinned === null && hovered === index);
     }
@@ -12,6 +16,37 @@
         pinned = pinned === index ? null : index;
         hovered = null;
     }
+
+    // 提示框宽度受限，并水平夹在视口内，避免窄屏左右超出
+    function place(index) {
+        var el = cells[index];
+        if (!el) return;
+        var r = el.getBoundingClientRect();
+        var vw = document.documentElement.clientWidth;
+        var w = Math.min(260, vw - 32);
+        var left = r.left + r.width / 2 - w / 2;
+        left = Math.max(16, Math.min(left, vw - w - 16));
+        tipW = w;
+        tipX = left - r.left;
+    }
+
+    let active = $derived(pinned !== null ? pinned : hovered);
+
+    $effect(() => {
+        if (active === null) return;
+        place(active);
+    });
+
+    $effect(() => {
+        if (active === null) return;
+        var onResize = function () {
+            place(active);
+        };
+        window.addEventListener("resize", onResize);
+        return function () {
+            window.removeEventListener("resize", onResize);
+        };
+    });
 
     const epCls = {
         0: "bg-surface-alt text-sub",
@@ -105,6 +140,7 @@
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
                     class="relative ep-cell"
+                    bind:this={cells[index]}
                     onmouseenter={() => (hovered = index)}
                     onmouseleave={() => {
                         if (hovered === index) hovered = null;
@@ -129,16 +165,18 @@
                         }}>{row.num}</span
                     >
                     <div
-                        class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 ep-tip z-50"
+                        class="absolute bottom-full mb-1.5 ep-tip z-50"
                         aria-hidden={!isOpen(index)}
-                        style="opacity:{isOpen(index)
+                        style="left:{tipX}px;width:{tipW}px;opacity:{isOpen(
+                            index
+                        )
                             ? 1
                             : 0};pointer-events:{isOpen(index)
                             ? 'auto'
                             : 'none'}"
                     >
                         <div
-                            class="select-text bg-surface-raised border border-bord-strong rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-lg relative"
+                            class="select-text bg-surface-raised border border-bord-strong rounded-lg px-3 py-2 text-xs shadow-lg relative"
                         >
                             <div class="text-sub">
                                 第 {row.epNum} 话 · {row.typeLabel}
