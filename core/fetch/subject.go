@@ -34,6 +34,10 @@ type subjectID struct {
 
 // fetchAll 拉取单条目的信息、角色、人物、剧集、关联条目和图片
 func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p Progress, concurrency int, overwrite bool) bool {
+	return fetchAllWithDedup(sid, bg, dd, imgDir, p, concurrency, overwrite, newFetchDedup())
+}
+
+func fetchAllWithDedup(sid int, bg *bangumi.Client, dd, imgDir string, p Progress, concurrency int, overwrite bool, dedup *fetchDedup) bool {
 	if taskCanceled(p) {
 		return false
 	}
@@ -68,12 +72,12 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p Progress, concur
 			fn()
 		}()
 	}
-	run(func() { fetchCharacterInfos(charIDs, dd, bg, p, overwrite, concurrency, &writeFailed) })
-	run(func() { fetchPersonInfos(personIDs, dd, bg, p, overwrite, concurrency, &writeFailed) })
-	run(func() { fetchCharacterSubjects(charIDs, dd, bg, p, overwrite, concurrency, &writeFailed) })
-	run(func() { fetchCharacterPersons(charIDs, dd, bg, p, overwrite, concurrency, &writeFailed) })
-	run(func() { fetchPersonSubjects(personIDs, dd, bg, p, overwrite, concurrency, &writeFailed) })
-	run(func() { fetchPersonCharacters(personIDs, dd, bg, p, overwrite, concurrency, &writeFailed) })
+	run(func() { fetchCharacterInfos(charIDs, dd, bg, p, overwrite, concurrency, dedup, &writeFailed) })
+	run(func() { fetchPersonInfos(personIDs, dd, bg, p, overwrite, concurrency, dedup, &writeFailed) })
+	run(func() { fetchCharacterSubjects(charIDs, dd, bg, p, overwrite, concurrency, dedup, &writeFailed) })
+	run(func() { fetchCharacterPersons(charIDs, dd, bg, p, overwrite, concurrency, dedup, &writeFailed) })
+	run(func() { fetchPersonSubjects(personIDs, dd, bg, p, overwrite, concurrency, dedup, &writeFailed) })
+	run(func() { fetchPersonCharacters(personIDs, dd, bg, p, overwrite, concurrency, dedup, &writeFailed) })
 	run(func() {
 		episodeCount = fetchSubjectEpisodes(sid, dd, bg, p, overwrite, &writeFailed, &requiredFailed)
 	})
@@ -213,10 +217,13 @@ func collectPersonIDs(chars []subjectChar, persons []subjectPerson) []subjectID 
 	return ids
 }
 
-func fetchCharacterInfos(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
+func fetchCharacterInfos(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, dedup *fetchDedup, writeFailed *atomic.Bool) {
 	fetchConcurrent(ids, func(c subjectID) {
 		key := store.Key("characters", c.ID, "info.json")
 		if !overwrite && store.Has(dd, key) {
+			return
+		}
+		if !dedup.claim("char-info", c.ID) {
 			return
 		}
 		data, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID))
@@ -231,10 +238,13 @@ func fetchCharacterInfos(ids []subjectID, dd string, bg *bangumi.Client, p Progr
 	}, nil, concurrency)
 }
 
-func fetchPersonInfos(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
+func fetchPersonInfos(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, dedup *fetchDedup, writeFailed *atomic.Bool) {
 	fetchConcurrent(ids, func(pp subjectID) {
 		key := store.Key("persons", pp.ID, "info.json")
 		if !overwrite && store.Has(dd, key) {
+			return
+		}
+		if !dedup.claim("person-info", pp.ID) {
 			return
 		}
 		data, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID))
@@ -249,10 +259,13 @@ func fetchPersonInfos(ids []subjectID, dd string, bg *bangumi.Client, p Progress
 	}, nil, concurrency)
 }
 
-func fetchCharacterSubjects(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
+func fetchCharacterSubjects(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, dedup *fetchDedup, writeFailed *atomic.Bool) {
 	fetchConcurrent(ids, func(c subjectID) {
 		key := store.Key("characters", c.ID, "subjects.json")
 		if !overwrite && store.Has(dd, key) {
+			return
+		}
+		if !dedup.claim("char-subjects", c.ID) {
 			return
 		}
 		data, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d/subjects", c.ID))
@@ -265,10 +278,13 @@ func fetchCharacterSubjects(ids []subjectID, dd string, bg *bangumi.Client, p Pr
 	}, nil, concurrency)
 }
 
-func fetchCharacterPersons(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
+func fetchCharacterPersons(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, dedup *fetchDedup, writeFailed *atomic.Bool) {
 	fetchConcurrent(ids, func(c subjectID) {
 		key := store.Key("characters", c.ID, "persons.json")
 		if !overwrite && store.Has(dd, key) {
+			return
+		}
+		if !dedup.claim("char-persons", c.ID) {
 			return
 		}
 		data, err := bg.GetRaw(fmt.Sprintf("v0/characters/%d/persons", c.ID))
@@ -281,10 +297,13 @@ func fetchCharacterPersons(ids []subjectID, dd string, bg *bangumi.Client, p Pro
 	}, nil, concurrency)
 }
 
-func fetchPersonSubjects(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
+func fetchPersonSubjects(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, dedup *fetchDedup, writeFailed *atomic.Bool) {
 	fetchConcurrent(ids, func(pp subjectID) {
 		key := store.Key("persons", pp.ID, "subjects.json")
 		if !overwrite && store.Has(dd, key) {
+			return
+		}
+		if !dedup.claim("person-subjects", pp.ID) {
 			return
 		}
 		data, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d/subjects", pp.ID))
@@ -297,10 +316,13 @@ func fetchPersonSubjects(ids []subjectID, dd string, bg *bangumi.Client, p Progr
 	}, nil, concurrency)
 }
 
-func fetchPersonCharacters(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
+func fetchPersonCharacters(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, dedup *fetchDedup, writeFailed *atomic.Bool) {
 	fetchConcurrent(ids, func(pp subjectID) {
 		key := store.Key("persons", pp.ID, "characters.json")
 		if !overwrite && store.Has(dd, key) {
+			return
+		}
+		if !dedup.claim("person-characters", pp.ID) {
 			return
 		}
 		data, err := bg.GetRaw(fmt.Sprintf("v0/persons/%d/characters", pp.ID))

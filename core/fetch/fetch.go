@@ -32,6 +32,7 @@ func SubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p Progress, c
 	var done int
 	var mu sync.Mutex
 	success := map[int]bool{}
+	dedup := newFetchDedup()
 	ctx := context.Background()
 	if p != nil {
 		ctx = p.Context()
@@ -57,7 +58,7 @@ func SubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p Progress, c
 			if ctx.Err() != nil {
 				return
 			}
-			if fetchAll(sid, bg, dd, imgDir, p, concurrency, true) {
+			if fetchAllWithDedup(sid, bg, dd, imgDir, p, concurrency, true, dedup) {
 				mu.Lock()
 				success[sid] = true
 				mu.Unlock()

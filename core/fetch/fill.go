@@ -14,12 +14,13 @@ import (
 // SubjectListFill 只重拉不完整条目，并补齐已有条目的角色和人物详情
 func SubjectListFill(ids []int, bg *bangumi.Client, dd, imgDir string, p Progress, concurrency int) []int {
 	success := make([]int, 0, len(ids))
+	dedup := newFetchDedup()
 	for i, sid := range ids {
 		if taskCanceled(p) {
 			break
 		}
 		if SubjectCoreIncomplete(dd, sid) {
-			if fetchAll(sid, bg, dd, imgDir, p, concurrency, false) {
+			if fetchAllWithDedup(sid, bg, dd, imgDir, p, concurrency, false, dedup) {
 				success = append(success, sid)
 			}
 		} else {
@@ -35,12 +36,12 @@ func SubjectListFill(ids []int, bg *bangumi.Client, dd, imgDir string, p Progres
 	if p != nil {
 		p.SendPhaseStatus("补齐关联数据")
 	}
-	fillRelatedGaps(dd, bg, ids, p)
+	fillRelatedGaps(dd, bg, ids, p, dedup)
 	return success
 }
 
 // fillRelatedGaps 补齐现有条目的角色和人物详情
-func fillRelatedGaps(dd string, bg *bangumi.Client, ids []int, p Progress) {
+func fillRelatedGaps(dd string, bg *bangumi.Client, ids []int, p Progress, dedup *fetchDedup) {
 	for _, sid := range ids {
 		if taskCanceled(p) {
 			return
@@ -55,6 +56,9 @@ func fillRelatedGaps(dd string, bg *bangumi.Client, ids []int, p Progress) {
 						return
 					}
 					if store.Has(dd, store.Key("characters", c.ID, "info.json")) {
+						continue
+					}
+					if !dedup.claim("char-info", c.ID) {
 						continue
 					}
 					d, e := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID))
@@ -82,6 +86,9 @@ func fillRelatedGaps(dd string, bg *bangumi.Client, ids []int, p Progress) {
 						return
 					}
 					if store.Has(dd, store.Key("persons", pp.ID, "info.json")) {
+						continue
+					}
+					if !dedup.claim("person-info", pp.ID) {
 						continue
 					}
 					d, e := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID))
