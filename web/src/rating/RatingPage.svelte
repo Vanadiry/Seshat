@@ -261,7 +261,7 @@
                     >
                         <div
                             id={"pk-" + side + "-img"}
-                            class="relative shrink-0 rounded-lg overflow-hidden bg-input w-[75%] max-w-[140px]"
+                            class="relative shrink-0 rounded-lg overflow-hidden bg-input w-[75%] max-w-[140px] md:w-[140px] md:max-w-none"
                             style="aspect-ratio: 1/1.414"
                         >
                             <img
