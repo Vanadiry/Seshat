@@ -29,13 +29,15 @@
 {:else if error}
     <div class="text-center py-20 text-sub">渲染出错: {error}</div>
 {:else if !items.length}
-    <div class="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2">
+    <div
+        class="grid grid-cols-1 min-[450px]:grid-cols-[repeat(auto-fill,minmax(min(220px,calc((100%_-_0.5rem)/2)),1fr))] gap-2"
+    >
         <div class="col-span-full text-center py-20 text-sub">暂无数据</div>
     </div>
 {:else}
     <div
         id="grid"
-        class="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2"
+        class="grid grid-cols-1 min-[450px]:grid-cols-[repeat(auto-fill,minmax(min(220px,calc((100%_-_0.5rem)/2)),1fr))] gap-2"
     >
         {#each visible as c}
             <a
