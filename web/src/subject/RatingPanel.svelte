@@ -47,6 +47,24 @@
         return out;
     });
 
+    // 窄屏没有悬停，点击柱子固定提示
+    let activeBar = $state(null);
+
+    $effect(() => {
+        if (activeBar === null) return;
+        var close = function (e) {
+            var el =
+                e.target instanceof Element
+                    ? e.target.closest("[data-bar]")
+                    : null;
+            if (!el) activeBar = null;
+        };
+        document.addEventListener("click", close);
+        return function () {
+            document.removeEventListener("click", close);
+        };
+    });
+
     let stddev = $derived.by(() => {
         if (!count || totalVotes <= 0) return "-";
         var mean = (rating && rating.score) || 0;
@@ -140,8 +158,26 @@
                     >
                         {#each bars as bar}
                             <div
-                                class="flex-1 flex flex-col items-center justify-end group relative"
+                                class="flex-1 flex flex-col items-center justify-end group relative cursor-pointer"
                                 style="height:100%"
+                                data-bar={bar.score}
+                                role="button"
+                                tabindex="0"
+                                aria-label="{bar.score}分 · {bar.pct}% · {bar.value} 人"
+                                onclick={() =>
+                                    (activeBar =
+                                        activeBar === bar.score
+                                            ? null
+                                            : bar.score)}
+                                onkeydown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                        e.preventDefault();
+                                        activeBar =
+                                            activeBar === bar.score
+                                                ? null
+                                                : bar.score;
+                                    }
+                                }}
                             >
                                 <span
                                     data-score={bar.score}
@@ -151,7 +187,12 @@
                                     style="height:{bar.height}%"
                                 ></span>
                                 <div
-                                    class="absolute bottom-full mb-1 hidden group-hover:block z-50"
+                                    class="absolute bottom-full mb-1 z-50 {bar.score >=
+                                    6
+                                        ? 'left-0'
+                                        : 'right-0'} {activeBar === bar.score
+                                        ? ''
+                                        : 'hidden'} group-hover:block"
                                 >
                                     <div
                                         class="bg-surface-raised border border-bord-strong rounded-lg px-2 py-1 text-xs whitespace-nowrap shadow-lg"
