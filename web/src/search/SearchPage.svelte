@@ -220,33 +220,52 @@
             />
             <div class="flex-1 min-w-0">
                 <div class="flex items-baseline gap-2 min-w-0">
-                    <span class="text-sm font-semibold truncate"
+                    <span class="min-w-0 text-sm font-semibold truncate"
                         >{@html highlightText(
                             snippetAround(primary, currentKeyword, 3, 30),
                             currentKeyword
                         )}</span
                     >
                     {#if sub}
-                        <span class="text-xs text-sub truncate max-w-[45%]"
+                        <span
+                            class="hidden md:inline text-xs text-sub truncate max-w-[45%]"
                             >{@html highlightText(
                                 snippetAround(sub, currentKeyword, 3, 20),
                                 currentKeyword
                             )}</span
                         >
                     {/if}
+                    <span class="md:hidden ml-auto text-xs text-sub shrink-0"
+                        >#{it.id}</span
+                    >
                 </div>
+                {#if sub}
+                    <div class="md:hidden text-xs text-sub truncate mt-0.5">
+                        {@html highlightText(
+                            snippetAround(sub, currentKeyword, 3, 20),
+                            currentKeyword
+                        )}
+                    </div>
+                {/if}
                 {#if it.match && (it.match.field === "infobox" || it.match.field === "summary")}
                     <div class="text-xs text-sub truncate leading-tight mt-0.5">
                         {it.match.field === "summary"
                             ? "简介"
                             : it.match.key || "信息"}：{@html highlightText(
-                            snippetAround(it.match.text || "", currentKeyword, 4, 40),
+                            snippetAround(
+                                it.match.text || "",
+                                currentKeyword,
+                                4,
+                                40
+                            ),
                             currentKeyword
                         )}
                     </div>
                 {/if}
             </div>
-            <div class="text-xs text-sub shrink-0">#{it.id}</div>
+            <div class="hidden md:block text-xs text-sub shrink-0">
+                #{it.id}
+            </div>
         </a>
     {/if}
 {/snippet}
