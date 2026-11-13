@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os/exec"
 	"runtime"
+	"strings"
 )
 
 func OpenBrowser(url string) {
@@ -32,11 +33,26 @@ func handleOpenURL(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusBadRequest, "missing url")
 		return
 	}
-	u, err := url.Parse(body.URL)
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+	u, ok := parseHTTPURL(body.URL)
+	if !ok {
 		writeError(w, r, http.StatusBadRequest, "only http/https URLs are allowed")
 		return
 	}
 	OpenBrowser(u.String())
 	writeJSON(w, map[string]string{"status": "ok"})
+}
+
+// parseHTTPURL 解析并限制为 http/https 地址
+func parseHTTPURL(raw string) (*url.URL, bool) {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return nil, false
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return nil, false
+	}
+	if u.Host == "" {
+		return nil, false
+	}
+	return u, true
 }
