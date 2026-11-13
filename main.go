@@ -40,7 +40,9 @@ func openBrowser(url string) {
 func runSeshat() (*http.Server, string) {
 	cfg, err := config.Load()
 	if err != nil {
-		stdlog.Fatalf("config: %v", err)
+		fmt.Fprintln(os.Stderr, "SESHAT_ERROR=配置有误")
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 	if errs := cfg.Validate(); len(errs) > 0 {
 		// SESHAT_ERROR=<标题> 指定错误页标题，其余行作为正文
@@ -52,8 +54,16 @@ func runSeshat() (*http.Server, string) {
 	}
 
 	dd := cfg.DataDir()
-	os.MkdirAll(dd, 0o755)
-	os.MkdirAll(cfg.TrackerDir(), 0o755)
+	if err := os.MkdirAll(dd, 0o755); err != nil {
+		fmt.Fprintln(os.Stderr, "SESHAT_ERROR=数据目录不可用")
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	if err := os.MkdirAll(cfg.TrackerDir(), 0o755); err != nil {
+		fmt.Fprintln(os.Stderr, "SESHAT_ERROR=Tracker 目录不可用")
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 	log.Init(cfg.Server.LogLevel)
 	log.Info("Starting Seshat...")
 	events.InitBus()
@@ -72,7 +82,9 @@ func runSeshat() (*http.Server, string) {
 	addr := fmt.Sprintf("%s:%d", cfg.Server.BindAddr, cfg.Server.Port)
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		stdlog.Fatalf("listen %s: %v", addr, err)
+		fmt.Fprintln(os.Stderr, "SESHAT_ERROR=无法监听端口")
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("%s: %v", addr, err))
+		os.Exit(1)
 	}
 	actual := ln.Addr().String()
 

@@ -130,12 +130,47 @@ func (c *Config) Validate() []string {
 	if c.Server.ConcurrencyImage < 1 {
 		errs = append(errs, fmt.Sprintf("concurrency_image 必须 >= 1（当前 %d）", c.Server.ConcurrencyImage))
 	}
+	if strings.Contains(c.Server.BindAddr, "://") || strings.Contains(c.Server.BindAddr, "/") {
+		errs = append(errs, "bind_addr 只填写 IP 或主机名，不要带协议和路径")
+	}
+	if _, _, err := net.SplitHostPort(c.Server.BindAddr); err == nil {
+		errs = append(errs, "bind_addr 不要包含端口，端口请写在 port")
+	}
+	if strings.Count(c.Server.BindAddr, ":") > 1 && !strings.HasPrefix(c.Server.BindAddr, "[") {
+		errs = append(errs, "bind_addr 是 IPv6 地址时请使用方括号，例如 [::1]")
+	}
+	if c.Server.DataHome != "" {
+		if st, err := os.Stat(c.Server.DataHome); err == nil && !st.IsDir() {
+			errs = append(errs, "data_home 指向的不是目录")
+		}
+	}
 	if c.Proxy.Host == "" && c.Proxy.Port != 0 {
 		errs = append(errs, "填写了 proxy.port 但缺少 proxy.host")
 	} else if c.Proxy.Host != "" && (c.Proxy.Port < 1 || c.Proxy.Port > 65535) {
 		errs = append(errs, fmt.Sprintf("proxy.port 必须在 1-65535 之间（当前 %d）", c.Proxy.Port))
 	}
+	if c.Upstream.BaseURL != "" && !validHTTPURL(c.Upstream.BaseURL) {
+		errs = append(errs, "upstream.base_url 必须是 http 或 https 地址")
+	}
+	if c.Frontend.BackendURL != "" && !validHTTPURL(c.Frontend.BackendURL) {
+		errs = append(errs, "frontend.backend_url 必须是 http 或 https 地址")
+	}
+	if c.Frontend.FallbackURL != "" && !validHTTPURL(c.Frontend.FallbackURL) {
+		errs = append(errs, "frontend.fallback_url 必须是 http 或 https 地址")
+	}
 	return errs
+}
+
+// validHTTPURL 判断是否为可用的 http/https 地址
+func validHTTPURL(raw string) bool {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return false
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return false
+	}
+	return u.Host != ""
 }
 
 // Warnings 返回不致命、但会影响部分功能的配置问题
@@ -147,7 +182,36 @@ func (c *Config) Warnings() []string {
 	if c.Upstream.UserAgent == "" {
 		w = append(w, "未设置 user_agent，上游可能拒绝请求")
 	}
+	if strings.TrimSpace(c.Server.APIToken) == "" {
+		if isLoopbackBind(c.Server.BindAddr) {
+			w = append(w, "未设置 api_token，POST 请求不会校验来源")
+		} else {
+			w = append(w, "未设置 api_token，局域网内可以调用 POST 修改数据")
+		}
+	}
+	switch strings.ToLower(strings.TrimSpace(c.Server.LogLevel)) {
+	case "", "debug", "info", "warn", "warning", "error":
+	default:
+		w = append(w, fmt.Sprintf("log_level %q 无法识别，将使用 info", c.Server.LogLevel))
+	}
 	return w
+}
+
+// isLoopbackBind 判断监听地址是否只对本机开放
+func isLoopbackBind(addr string) bool {
+	addr = strings.TrimSpace(addr)
+	if host, _, err := net.SplitHostPort(addr); err == nil {
+		addr = host
+	}
+	addr = strings.Trim(addr, "[]")
+	if addr == "" {
+		return false
+	}
+	if strings.EqualFold(addr, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(addr)
+	return ip != nil && ip.IsLoopback()
 }
 
 // BuildConfigKV 返回 config.toml 当前值的纯 KV，token 非空显示 ***
