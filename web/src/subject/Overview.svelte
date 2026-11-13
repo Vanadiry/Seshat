@@ -150,7 +150,7 @@
             <div>
                 <SectionTitle text="主要角色" extra={charExtra} />
                 <div
-                    class="flex gap-3 overflow-x-auto pb-2 thin-scroll"
+                    class="-mx-6 px-6 md:mx-0 md:px-0 flex gap-3 overflow-x-auto pb-2 thin-scroll"
                     style="padding-top:4px"
                 >
                     {#each mainChars as c}
@@ -202,7 +202,7 @@
             <div>
                 <SectionTitle text="关联条目" extra={relExtra} />
                 <div
-                    class="flex items-start gap-3 overflow-x-auto pb-2 thin-scroll"
+                    class="-mx-6 px-6 md:mx-0 md:px-0 flex items-start gap-3 overflow-x-auto pb-2 thin-scroll"
                     style="padding-top:4px"
                 >
                     {#each sortedRels as r, i}
