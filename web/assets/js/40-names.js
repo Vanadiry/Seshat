@@ -142,22 +142,6 @@ function lookupLocalName(name) {
     return null;
 }
 
-// 名称匹配用的正则构建
-var _personRegex = null;
-function buildPersonRegex() {
-    if (_personRegex) return _personRegex;
-    var names = Object.keys(_personMap);
-    if (!names.length) return null;
-    names.sort(function (a, b) {
-        return b.length - a.length;
-    });
-    var escaped = names.map(function (n) {
-        return n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    });
-    _personRegex = new RegExp(escaped.join("|"), "g");
-    return _personRegex;
-}
-
 function buildRegexForMap(map) {
     if (!map) return null;
     var names = Object.keys(map);
