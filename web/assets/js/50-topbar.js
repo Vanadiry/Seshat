@@ -75,16 +75,19 @@
     </div>
     <div id="nav-menu" class="hidden md:hidden absolute top-full left-0 right-0 z-50">
       <div class="max-w-[1200px] mx-auto px-3 pt-1">
-        <div class="bg-surface-raised border border-bord rounded-xl shadow-lg overflow-hidden p-1">
-          <a href="/" class="flex items-center no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/")}">动画</a>
-          <a href="/characters" class="flex items-center no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/characters")}">角色</a>
-          <a href="/persons" class="flex items-center no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/persons")}">人物</a>
-          <a href="/tags" data-feature="tags" class="flex items-center no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/tags")}">标签</a>
-          <a href="/stats" data-feature="stats" class="flex items-center no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/stats")}">统计</a>
-          <a href="/rating" data-feature="elo" class="flex items-center no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/rating")}">评分</a>
-          <a href="/search" class="flex items-center no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/search")}">搜索</a>
-          <a href="/settings" class="flex items-center no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/settings")}">设置</a>
-          <a href="/manage" data-feature-all="fetch,task" class="flex items-center no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/manage")}">管理数据</a>
+        <div class="bg-surface-raised border border-bord rounded-xl shadow-lg p-2 flex flex-col gap-1">
+          <div class="flex flex-wrap gap-1">
+            <a href="/" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/")}">动画</a>
+            <a href="/characters" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/characters")}">角色</a>
+            <a href="/persons" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/persons")}">人物</a>
+            <a href="/tags" data-feature="tags" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/tags")}">标签</a>
+            <a href="/stats" data-feature="stats" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/stats")}">统计</a>
+          </div>
+          <div class="flex flex-wrap gap-1 pt-1 border-t border-bord-light">
+            <a href="/rating" data-feature="elo" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/rating")}">评分</a>
+            <a href="/settings" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/settings")}">设置</a>
+            <a href="/manage" data-feature-all="fetch,task" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/manage")}">管理数据</a>
+          </div>
         </div>
       </div>
     </div>
