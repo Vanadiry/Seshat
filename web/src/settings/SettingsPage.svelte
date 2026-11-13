@@ -236,7 +236,7 @@
 {/snippet}
 
 <div class="fade-in">
-    <div class="flex flex-col min-[720px]:flex-row gap-8">
+    <div class="flex flex-col min-[800px]:flex-row gap-8">
         <div class="flex-1 min-w-0">
             <div id="settings-form">
                 {#if !loaded}
@@ -273,10 +273,10 @@
             </div>
         </div>
 
-        <div class="hidden min-[720px]:block w-px bg-bord-light shrink-0"></div>
+        <div class="hidden min-[800px]:block w-px bg-bord-light shrink-0"></div>
 
         <div
-            class="flex-1 min-w-0 border-t border-bord-light pt-8 min-[720px]:border-0 min-[720px]:pt-0"
+            class="flex-1 min-w-0 border-t border-bord-light pt-8 min-[800px]:border-0 min-[800px]:pt-0"
         >
             <div id="settings-sidebar" class="sticky sticky-below-topbar">
                 <h2 class="text-lg font-bold text-text mb-1">后端设置</h2>
