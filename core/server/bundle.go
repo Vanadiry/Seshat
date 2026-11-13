@@ -2,7 +2,9 @@ package server
 
 import (
 	"archive/tar"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -66,6 +68,7 @@ type bundleFile struct {
 }
 
 type bundleCollector struct {
+	ctx        context.Context
 	dd         string
 	subjects   []int
 	characters []int
@@ -104,8 +107,11 @@ func handleBundleExport(cfg *config.Config) http.HandlerFunc {
 			writeError(w, r, http.StatusBadRequest, "没有可导出的条目")
 			return
 		}
-		result, err := exportBundle(cfg, ids, strings.TrimSpace(req.Description))
+		result, err := exportBundle(r.Context(), cfg, ids, strings.TrimSpace(req.Description))
 		if err != nil {
+			if isCanceled(err) || errors.Is(err, context.Canceled) {
+				return
+			}
 			if err == errNoBundleData {
 				writeError(w, r, http.StatusBadRequest, "没有可导出的本地条目")
 				return
@@ -162,9 +168,10 @@ func bundleRootIDs(cfg *config.Config, req bundleExportRequest) ([]int, error) {
 	return ids, nil
 }
 
-func exportBundle(cfg *config.Config, rootIDs []int, description string) (map[string]any, error) {
+func exportBundle(ctx context.Context, cfg *config.Config, rootIDs []int, description string) (map[string]any, error) {
 	dd := cfg.DataDir()
 	c := &bundleCollector{
+		ctx:        ctx,
 		dd:         dd,
 		seenSub:    map[int]bool{},
 		seenChar:   map[int]bool{},
@@ -175,6 +182,9 @@ func exportBundle(cfg *config.Config, rootIDs []int, description string) (map[st
 	}
 
 	for _, id := range rootIDs {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if c.seenSub[id] {
 			continue
 		}
@@ -252,6 +262,9 @@ func exportBundle(cfg *config.Config, rootIDs []int, description string) (map[st
 		return nil, err
 	}
 	for _, f := range c.files {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if err := writeTarPath(tw, f.tarPath, f.fsPath); err != nil {
 			return nil, err
 		}
@@ -291,6 +304,9 @@ func exportBundle(cfg *config.Config, rootIDs []int, description string) (map[st
 }
 
 func (c *bundleCollector) addEntity(domain string, id int, list *[]int, missing bundleMissing) bool {
+	if c.ctx != nil && c.ctx.Err() != nil {
+		return false
+	}
 	dir := filepath.Join(store.Dir(c.dd), domain, fmt.Sprintf("%d", id%10), fmt.Sprintf("%d", id))
 	entries, err := os.ReadDir(dir)
 	if err != nil || len(entries) == 0 {
@@ -338,6 +354,9 @@ func (c *bundleCollector) addCharacters(sid int) {
 		return
 	}
 	for _, ch := range chars {
+		if c.ctx != nil && c.ctx.Err() != nil {
+			return
+		}
 		if ch.ID <= 0 || c.seenChar[ch.ID] {
 			continue
 		}
@@ -365,11 +384,17 @@ func (c *bundleCollector) addPersons(sid int) {
 		return
 	}
 	for _, p := range persons {
+		if c.ctx != nil && c.ctx.Err() != nil {
+			return
+		}
 		c.addPerson(p.ID)
 	}
 }
 
 func (c *bundleCollector) addPerson(id int) {
+	if c.ctx != nil && c.ctx.Err() != nil {
+		return
+	}
 	if id <= 0 || c.seenPerson[id] {
 		return
 	}
@@ -383,6 +408,9 @@ func (c *bundleCollector) addPerson(id int) {
 func (c *bundleCollector) addImages(kind, entity string, id int) {
 	sizes := []string{}
 	for _, size := range []string{"large", "grid", "small"} {
+		if c.ctx != nil && c.ctx.Err() != nil {
+			return
+		}
 		path := filepath.Join(c.dd, "images", fmt.Sprintf("%ss_%s", kind, size), fmt.Sprintf("%d", id%10), fmt.Sprintf("%d.jpg", id))
 		if _, err := os.Stat(path); err != nil {
 			c.missing = append(c.missing, bundleMissing{Kind: "images", Entity: entity, ID: id, Size: size})

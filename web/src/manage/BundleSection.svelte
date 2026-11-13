@@ -43,13 +43,19 @@
         bundleTrackerIds.set(next);
     }
 
+    let exporting = $state(false);
+    let exportAbort = null;
+
     async function doExport(body) {
         bundleExportStatus.set("导出中...");
+        exporting = true;
+        exportAbort = new AbortController();
         try {
             const res = await fetch(API_BASE + "/v0/bundle/export", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body)
+                body: JSON.stringify(body),
+                signal: exportAbort.signal
             });
             const d = await window.readJSON(res);
             if (!res.ok || !d) {
@@ -73,10 +79,21 @@
             lines.push("路径：" + d.path);
             bundleExportStatus.set(lines.join("\n"));
             window.showSuccess("已导出 " + d.filename);
-        } catch (_) {
+        } catch (e) {
+            if (e && e.name === "AbortError") {
+                bundleExportStatus.set("导出已取消");
+                return;
+            }
             window.showError("导出失败");
             bundleExportStatus.set("导出失败");
+        } finally {
+            exporting = false;
+            exportAbort = null;
         }
+    }
+
+    function cancelExport() {
+        if (exportAbort) exportAbort.abort();
     }
 
     function requestExport() {
@@ -324,13 +341,25 @@
                 placeholder="描述，可选"
                 class="h-10 w-full px-3 py-2 rounded-lg border border-bord bg-input text-sm"
             />
-            <button
-                type="button"
-                onclick={requestExport}
-                class="h-10 w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text"
-            >
-                导出数据包
-            </button>
+            <div class="flex gap-2">
+                <button
+                    type="button"
+                    onclick={requestExport}
+                    disabled={exporting}
+                    class="h-10 flex-1 px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active hover:text-text disabled:opacity-50 disabled:cursor-default"
+                >
+                    导出数据包
+                </button>
+                {#if exporting}
+                    <button
+                        type="button"
+                        onclick={cancelExport}
+                        class="h-10 shrink-0 px-4 py-2 rounded-lg border border-[#dc2626] bg-transparent text-[#dc2626] text-sm cursor-pointer hover:bg-pink-bg"
+                    >
+                        取消
+                    </button>
+                {/if}
+            </div>
             <div class="text-xs text-sub whitespace-pre-line break-all">
                 {$bundleExportStatus}
             </div>
