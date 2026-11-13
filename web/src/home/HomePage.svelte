@@ -169,21 +169,29 @@
 </script>
 
 {#if loading}
-    <div class="grid grid-cols-[repeat(auto-fill,minmax(175px,1fr))] gap-4">
+    <div
+        class="grid grid-cols-1 min-[300px]:grid-cols-2 min-[400px]:grid-cols-3 min-[550px]:grid-cols-[repeat(auto-fill,minmax(min(175px,calc((100%_-_2rem)/3)),1fr))] gap-4"
+    >
         <div class="col-span-full text-center py-20 text-sub">
             <span class="spin"></span>{searchMode ? "搜索中…" : "加载中…"}
         </div>
     </div>
 {:else if error}
-    <div class="grid grid-cols-[repeat(auto-fill,minmax(175px,1fr))] gap-4">
+    <div
+        class="grid grid-cols-1 min-[300px]:grid-cols-2 min-[400px]:grid-cols-3 min-[550px]:grid-cols-[repeat(auto-fill,minmax(min(175px,calc((100%_-_2rem)/3)),1fr))] gap-4"
+    >
         <div class="col-span-full text-center py-20 text-sub">{error}</div>
     </div>
 {:else if searchEmpty}
-    <div class="grid grid-cols-[repeat(auto-fill,minmax(175px,1fr))] gap-4">
+    <div
+        class="grid grid-cols-1 min-[300px]:grid-cols-2 min-[400px]:grid-cols-3 min-[550px]:grid-cols-[repeat(auto-fill,minmax(min(175px,calc((100%_-_2rem)/3)),1fr))] gap-4"
+    >
         <div class="col-span-full text-center py-20 text-sub">未找到结果</div>
     </div>
 {:else if !items.length}
-    <div class="grid grid-cols-[repeat(auto-fill,minmax(175px,1fr))] gap-4">
+    <div
+        class="grid grid-cols-1 min-[300px]:grid-cols-2 min-[400px]:grid-cols-3 min-[550px]:grid-cols-[repeat(auto-fill,minmax(min(175px,calc((100%_-_2rem)/3)),1fr))] gap-4"
+    >
         <div class="col-span-full text-center py-20 text-sub">
             暂无数据。点击「管理数据」添加。<br /><br />首次使用请阅读<a
                 href="https://github.com/Vanadiry/Seshat/blob/main/docs/guide.md"
@@ -200,7 +208,7 @@
 {:else}
     <div
         id="grid"
-        class="grid grid-cols-[repeat(auto-fill,minmax(175px,1fr))] gap-4"
+        class="grid grid-cols-1 min-[300px]:grid-cols-2 min-[400px]:grid-cols-3 min-[550px]:grid-cols-[repeat(auto-fill,minmax(min(175px,calc((100%_-_2rem)/3)),1fr))] gap-4"
     >
         {#each visible as s}
             <a
