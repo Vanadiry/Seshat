@@ -224,9 +224,9 @@
                     {@const loser = pkState !== "idle" && pkState !== side}
                     <div
                         id={"pk-" + side}
-                        class="flex-1 bg-surface border border-bord-mid rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer relative"
+                        class="flex-1 min-w-0 bg-surface border border-bord-mid rounded-xl p-3 md:p-6 flex flex-col items-center justify-center cursor-pointer relative h-[298px]"
                         class:shrunk={loser}
-                        style="height: 298px; flex: {winner
+                        style="flex: {winner
                             ? '1.2'
                             : loser
                               ? '0 0 200px'
@@ -246,8 +246,8 @@
                     >
                         <div
                             id={"pk-" + side + "-img"}
-                            class="relative shrink-0 rounded-lg overflow-hidden bg-input"
-                            style="width: 140px; aspect-ratio: 1/1.414"
+                            class="relative shrink-0 rounded-lg overflow-hidden bg-input w-[75%] max-w-[140px]"
+                            style="aspect-ratio: 1/1.414"
                         >
                             <img
                                 alt=""
