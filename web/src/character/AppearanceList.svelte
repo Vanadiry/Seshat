@@ -116,7 +116,12 @@
     </div>
 {/snippet}
 
-{#if items.length}
+{#if !items.length}
+    <div>
+        <SectionTitle text="出演" extra={remoteExtra} />
+        <div class="text-center py-6 text-sub">暂无出演记录</div>
+    </div>
+{:else}
     <div>
         <SectionTitle text="出演" extra={remoteExtra} />
         {#each pairs(visible) as pair}

@@ -70,35 +70,43 @@
 {/snippet}
 
 <div class="select-text fade-in">
-    {#if main.length}
-        <div class="mb-6">
-            <div class="text-sm text-sub font-semibold mb-3">
-                本篇 ({main.length})
-            </div>
-            {#each epPairs(main) as pair}
-                <div class="flex gap-4">
-                    <div class="flex-1 min-w-0">{@render card(pair[0])}</div>
-                    <div class="flex-1 min-w-0">
-                        {#if pair[1]}{@render card(pair[1])}{/if}
-                    </div>
+    {#if !eps.length}
+        <div class="text-center py-10 text-sub">暂无剧集</div>
+    {:else}
+        {#if main.length}
+            <div class="mb-6">
+                <div class="text-sm text-sub font-semibold mb-3">
+                    本篇 ({main.length})
                 </div>
-            {/each}
-        </div>
-    {/if}
+                {#each epPairs(main) as pair}
+                    <div class="flex gap-4">
+                        <div class="flex-1 min-w-0">
+                            {@render card(pair[0])}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            {#if pair[1]}{@render card(pair[1])}{/if}
+                        </div>
+                    </div>
+                {/each}
+            </div>
+        {/if}
 
-    {#if sp.length}
-        <div class="mb-6">
-            <div class="text-sm text-sub font-semibold mb-3">
-                SP / 其他 ({sp.length})
-            </div>
-            {#each epPairs(sp) as pair}
-                <div class="flex gap-4">
-                    <div class="flex-1 min-w-0">{@render card(pair[0])}</div>
-                    <div class="flex-1 min-w-0">
-                        {#if pair[1]}{@render card(pair[1])}{/if}
-                    </div>
+        {#if sp.length}
+            <div class="mb-6">
+                <div class="text-sm text-sub font-semibold mb-3">
+                    SP / 其他 ({sp.length})
                 </div>
-            {/each}
-        </div>
+                {#each epPairs(sp) as pair}
+                    <div class="flex gap-4">
+                        <div class="flex-1 min-w-0">
+                            {@render card(pair[0])}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            {#if pair[1]}{@render card(pair[1])}{/if}
+                        </div>
+                    </div>
+                {/each}
+            </div>
+        {/if}
     {/if}
 </div>

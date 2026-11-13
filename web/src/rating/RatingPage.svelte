@@ -350,7 +350,9 @@
                 {/if}
             </div>
         {:else}
-            <div id="history-area"></div>
+            <div id="history-area">
+                <div class="text-center py-6 text-sub">暂无评分记录</div>
+            </div>
             <div id="history-pager"></div>
         {/if}
     </div>

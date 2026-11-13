@@ -310,6 +310,9 @@
                     {@render sortHeader("番组计划评分", "score", COL_BGM)}
                     <div class="{COL_ID} text-center">ID</div>
                 </div>
+                {#if !sorted.length}
+                    <div class="text-center py-10 text-sub">暂无数据</div>
+                {/if}
                 {#each sorted as it, i (it.id + (it._orphan ? "-o" : ""))}
                     {@const bg =
                         i % 2 === 0 ? "bg-surface" : "bg-surface-raised"}

@@ -131,40 +131,47 @@
 {/snippet}
 
 <div class="select-text fade-in">
-    <div class="flex flex-wrap gap-1.5 mb-3">
-        <span
-            tabindex="0"
-            role="button"
-            onkeydown={(e) => window.clickKeyNav(e)}
-            onclick={() => selectFilter("all")}
-            class="px-3 py-1 rounded-full text-xs cursor-pointer {filter ===
-            'all'
-                ? 'bg-pink-solid text-white'
-                : 'bg-surface-alt text-sub hover:text-text'}"
-            >全部 ({chars.length})</span
-        >
-        {#each relKeys as rel}
+    {#if !chars.length}
+        <div class="text-center py-10 text-sub">暂无角色</div>
+    {:else}
+        <div class="flex flex-wrap gap-1.5 mb-3">
             <span
                 tabindex="0"
                 role="button"
                 onkeydown={(e) => window.clickKeyNav(e)}
-                onclick={() => selectFilter(rel)}
+                onclick={() => selectFilter("all")}
                 class="px-3 py-1 rounded-full text-xs cursor-pointer {filter ===
-                rel
+                'all'
                     ? 'bg-pink-solid text-white'
                     : 'bg-surface-alt text-sub hover:text-text'}"
-                >{rel} ({relCounts[rel]})</span
+                >全部 ({chars.length})</span
             >
-        {/each}
-    </div>
-    <div id="char-list">
-        {#each pairs(visible) as pair}
-            <div class="flex gap-4">
-                <div class="flex-1 min-w-0">{@render card(pair[0])}</div>
-                <div class="flex-1 min-w-0">
-                    {#if pair[1]}{@render card(pair[1])}{/if}
+            {#each relKeys as rel}
+                <span
+                    tabindex="0"
+                    role="button"
+                    onkeydown={(e) => window.clickKeyNav(e)}
+                    onclick={() => selectFilter(rel)}
+                    class="px-3 py-1 rounded-full text-xs cursor-pointer {filter ===
+                    rel
+                        ? 'bg-pink-solid text-white'
+                        : 'bg-surface-alt text-sub hover:text-text'}"
+                    >{rel} ({relCounts[rel]})</span
+                >
+            {/each}
+        </div>
+        <div id="char-list">
+            {#if !visible.length}
+                <div class="text-center py-10 text-sub">没有符合条件的角色</div>
+            {/if}
+            {#each pairs(visible) as pair}
+                <div class="flex gap-4">
+                    <div class="flex-1 min-w-0">{@render card(pair[0])}</div>
+                    <div class="flex-1 min-w-0">
+                        {#if pair[1]}{@render card(pair[1])}{/if}
+                    </div>
                 </div>
-            </div>
-        {/each}
-    </div>
+            {/each}
+        </div>
+    {/if}
 </div>

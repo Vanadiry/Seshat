@@ -153,7 +153,12 @@
     </div>
 {/snippet}
 
-{#if sorted.length}
+{#if !sorted.length}
+    <div>
+        <SectionTitle text={title} extra={remoteExtra} />
+        <div class="text-center py-6 text-sub">暂无{title}</div>
+    </div>
+{:else}
     <div>
         <SectionTitle text={title} extra={remoteExtra} />
         {#each pairs(visible) as pair}
