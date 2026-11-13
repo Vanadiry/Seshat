@@ -355,10 +355,13 @@ func (p *Progress) Snapshot() string {
 	}
 	if p.usePercent {
 		payload["percent"] = p.Percent
-	}
-	if p.hasStep {
-		payload["done"] = p.stepDone
-		payload["total"] = p.stepTotal
+		if p.hasStep {
+			payload["done"] = p.stepDone
+			payload["total"] = p.stepTotal
+		} else {
+			delete(payload, "done")
+			delete(payload, "total")
+		}
 	}
 	p.mu.Unlock()
 	data, err := json.Marshal(payload)
@@ -383,19 +386,28 @@ func activeTasks() []map[string]any {
 			continue
 		}
 		p.mu.Lock()
-		done, total := p.Done, p.Total
-		phase, phases, phaseName := p.Phase, p.Phases, p.PhaseName
-		p.mu.Unlock()
-		tasks = append(tasks, map[string]any{
+		task := map[string]any{
 			"id":         p.ID,
 			"task":       p.Task,
 			"label":      p.Label,
-			"done":       done,
-			"total":      total,
-			"phase":      phase,
-			"phases":     phases,
-			"phase_name": phaseName,
-		})
+			"done":       p.Done,
+			"total":      p.Total,
+			"phase":      p.Phase,
+			"phases":     p.Phases,
+			"phase_name": p.PhaseName,
+		}
+		if p.usePercent {
+			task["percent"] = p.Percent
+			if p.hasStep {
+				task["done"] = p.stepDone
+				task["total"] = p.stepTotal
+			} else {
+				delete(task, "done")
+				delete(task, "total")
+			}
+		}
+		p.mu.Unlock()
+		tasks = append(tasks, task)
 	}
 	return tasks
 }

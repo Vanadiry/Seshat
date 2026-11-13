@@ -87,6 +87,7 @@
             return;
         }
         if (d.step === "start") return;
+        if (d.step === "subject") return;
 
         let phaseText = d.phase_name || "";
         if (d.phase && d.phases) {
@@ -168,6 +169,7 @@
                 data: {
                     step: "snapshot",
                     label: task.label,
+                    percent: task.percent,
                     done: task.done,
                     total: task.total,
                     phase: task.phase,

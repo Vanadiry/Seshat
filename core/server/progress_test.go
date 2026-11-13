@@ -144,3 +144,32 @@ func TestProgressSnapshot(t *testing.T) {
 	delete(progressMap, p.ID)
 	progressMu.Unlock()
 }
+
+func TestProgressSnapshotStepCounts(t *testing.T) {
+	p := newProgress(100, "fetch", "拉取数据")
+	defer func() {
+		p.Close()
+		progressMu.Lock()
+		delete(progressMap, p.ID)
+		progressMu.Unlock()
+	}()
+	p.SetPlan([]phaseSpec{{Name: "拉取条目", Start: 0, End: 24}})
+	p.BeginPhase(1)
+	p.SendPhaseProgress(4, 652, "")
+
+	var snap map[string]any
+	if err := json.Unmarshal([]byte(p.Snapshot()), &snap); err != nil {
+		t.Fatal(err)
+	}
+	if snap["percent"] != float64(0) || snap["done"] != float64(4) || snap["total"] != float64(652) {
+		t.Fatalf("快照应带整体百分比和阶段计数，实际为 %v", snap)
+	}
+
+	tasks := activeTasks()
+	if len(tasks) != 1 {
+		t.Fatalf("任务数应为 1，实际为 %d", len(tasks))
+	}
+	if tasks[0]["percent"] != 0 || tasks[0]["done"] != 4 || tasks[0]["total"] != 652 {
+		t.Fatalf("任务列表应带整体百分比和阶段计数，实际为 %v", tasks[0])
+	}
+}
