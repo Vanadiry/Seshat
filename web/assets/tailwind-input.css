@@ -262,6 +262,15 @@ select {
     user-select: text;
 }
 
+/* iOS 上输入框字号小于 16px 时，聚焦会自动放大页面 */
+@media (max-width: 799px) {
+    input,
+    select,
+    textarea {
+        font-size: 16px;
+    }
+}
+
 /* 加载条 */
 #load-bar {
     position: fixed;
