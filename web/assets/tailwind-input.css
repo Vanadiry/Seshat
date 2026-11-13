@@ -101,7 +101,7 @@ html.light {
 }
 
 @theme {
-    /* 桌面应用最小宽度 900，布局在 800 以上按桌面处理 */
+    /* 布局在 800 以上按桌面处理 */
     --breakpoint-md: 800px;
     --color-bg: var(--c-bg);
     --color-surface: var(--c-surface);
