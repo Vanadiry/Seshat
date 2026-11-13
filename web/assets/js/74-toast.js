@@ -46,10 +46,11 @@ function _makeToast(
     var reduceMotion = prefersReducedMotion();
     var el = document.createElement("div");
     el.className =
-        "fixed right-4 z-[300] rounded-lg shadow-2xl max-w-[60vw] min-w-[280px]" +
+        "fixed right-4 z-[300] rounded-lg shadow-2xl min-w-[240px]" +
         (reduceMotion ? "" : " transition-all duration-300");
     el.style.bottom = "16px";
     el.style.right = "calc(16px + var(--safe-right))";
+    el.style.maxWidth = "calc(100vw - 32px - var(--safe-right))";
     el.style.opacity = "0";
     el.style.transform = "translateY(8px)";
     var countHTML = merge
