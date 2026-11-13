@@ -2,9 +2,9 @@
     import { onMount } from "svelte";
     import { imgFallback } from "../lib/img.js";
 
-    const COL_ELO = "w-[120px] shrink-0";
-    const COL_MY = "w-[90px] shrink-0";
-    const COL_BGM = "w-[100px] shrink-0";
+    const COL_ELO = "w-[108px] shrink-0";
+    const COL_MY = "w-[72px] shrink-0";
+    const COL_BGM = "w-[92px] shrink-0";
     const COL_ID = "w-[60px] shrink-0";
 
     const collator = new Intl.Collator("zh-Hans", {
@@ -300,7 +300,7 @@
                 <div class="text-center py-20 text-sub">{error}</div>
             {:else}
                 <div
-                    class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-bord-light min-w-[700px]"
+                    class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-bord-light min-w-[620px]"
                 >
                     <div class="w-10 shrink-0"></div>
                     <div class="flex-1 min-w-0">动画</div>
@@ -338,7 +338,7 @@
                                 : ""}
                         <div
                             id={"orphan-" + it.id}
-                            class="flex items-center gap-4 px-3 py-1.5 border border-transparent {bg} min-w-[700px]"
+                            class="flex items-center gap-4 px-3 py-1.5 border border-transparent {bg} min-w-[620px]"
                         >
                             <img
                                 alt=""
@@ -412,7 +412,7 @@
                                 : ""}
                         <a
                             href={"/subject?id=" + it.id}
-                            class="flex items-center gap-4 px-3 py-1.5 cursor-pointer hover:border-pink border border-transparent no-underline {bg} min-w-[700px]"
+                            class="flex items-center gap-4 px-3 py-1.5 cursor-pointer hover:border-pink border border-transparent no-underline {bg} min-w-[620px]"
                         >
                             <img
                                 alt=""
