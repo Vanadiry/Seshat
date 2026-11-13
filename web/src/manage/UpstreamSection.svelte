@@ -178,7 +178,7 @@
                     <button
                         type="button"
                         onclick={() => addID(item.id)}
-                        class="h-8 w-8 shrink-0 rounded-lg border border-bord bg-transparent text-sub text-lg leading-none cursor-pointer hover:bg-active hover:text-text flex items-center justify-center"
+                        class="h-9 w-9 md:h-8 md:w-8 shrink-0 rounded-lg border border-bord bg-transparent text-sub text-lg leading-none cursor-pointer hover:bg-active hover:text-text flex items-center justify-center"
                         title="添加到拉取列表"
                         aria-label="添加到拉取列表"
                     >

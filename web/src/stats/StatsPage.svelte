@@ -260,7 +260,7 @@
 
 {#snippet sortHeader(label, key, cls, short, order)}
     <div
-        class="{cls} text-center cursor-pointer select-none hover:text-text {sortKey ===
+        class="{cls} py-1.5 md:py-0 text-center cursor-pointer select-none hover:text-text {sortKey ===
         key
             ? 'text-pink font-semibold'
             : ''}"

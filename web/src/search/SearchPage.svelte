@@ -300,7 +300,7 @@
     >
         {#each [["subjects", "条目"], ["characters", "角色"], ["persons", "人物"], ["tags", "标签"]] as [key, label]}
             <label
-                class="flex items-center gap-1.5 cursor-pointer select-none {key ===
+                class="flex items-center gap-1.5 py-1.5 cursor-pointer select-none {key ===
                     'tags' && !tagsVisible
                     ? 'hidden'
                     : ''}"

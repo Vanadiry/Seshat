@@ -36,7 +36,7 @@ function showLightbox(src) {
     var closeBtn = document.createElement("button");
     closeBtn.textContent = "关闭";
     closeBtn.style.cssText =
-        "padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.5);color:rgba(255,255,255,.85);font-size:13px;cursor:pointer";
+        "padding:10px 18px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.5);color:rgba(255,255,255,.85);font-size:14px;cursor:pointer";
     closeBtn.onclick = closeLightbox;
     bar.appendChild(closeBtn);
     overlay.appendChild(bar);

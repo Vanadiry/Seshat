@@ -125,7 +125,7 @@
                                 <a
                                     href={"/tag?tag=" +
                                         encodeURIComponent(tag.name)}
-                                    class="no-underline bg-surface-alt rounded-full px-2.5 py-0.5 text-[14px] text-sub border border-transparent hover:border-pink hover:bg-elo-bg transition-all"
+                                    class="no-underline bg-surface-alt rounded-full px-3 py-1.5 md:px-2.5 md:py-0.5 text-[14px] text-sub border border-transparent hover:border-pink hover:bg-elo-bg transition-all"
                                     >{tag.name}<small
                                         class="text-xs text-sub ml-1"
                                         >{tag.count}</small

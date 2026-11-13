@@ -10,7 +10,7 @@
 
     // tab 和导出按钮共用同一套盒子样式，保证高度一致
     const TAB_CLS =
-        "h-7 px-3 text-sm inline-flex items-center whitespace-nowrap";
+        "h-9 md:h-7 px-3 text-sm inline-flex items-center whitespace-nowrap";
 
     let infoOpen = $state(false);
     let infoMounted = $state(false);
@@ -123,7 +123,7 @@
             <a
                 href="/"
                 onclick={(e) => window.backNav(e)}
-                class="w-7 h-7 rounded-full border border-bord-strong flex items-center justify-center text-sub hover:text-text hover:border-bord-xstrong shrink-0 no-underline text-xs"
+                class="w-9 h-9 md:w-7 md:h-7 rounded-full border border-bord-strong flex items-center justify-center text-sub hover:text-text hover:border-bord-xstrong shrink-0 no-underline text-xs"
                 title="返回">←</a
             >
             {#if window.isRemote("/v0/subjects/" + $subjectState.sid)}
@@ -141,7 +141,7 @@
                 id="detail-name-btn"
                 type="button"
                 onclick={toggleInfo}
-                class="md:hidden flex items-center gap-1 min-w-0 max-w-full px-0 py-0 border-0 bg-transparent text-text cursor-pointer"
+                class="md:hidden flex items-center gap-1 min-w-0 max-w-full px-0 py-1 border-0 bg-transparent text-text cursor-pointer"
                 aria-expanded={infoOpen}
                 aria-controls="detail-info"
             >

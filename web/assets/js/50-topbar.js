@@ -40,7 +40,7 @@
     <div class="bg-surface-raised border-b border-bord">
       <div class="max-w-[1200px] mx-auto px-4 md:px-6 flex items-center gap-2 md:gap-3 h-12 relative overflow-x-auto">
         <h1 class="text-lg font-bold shrink-0"><a href="/" class="no-underline">Seshat</a></h1>
-        <button id="nav-menu-btn" type="button" class="md:hidden flex items-center gap-1 min-w-0 px-2 py-1 rounded-lg border-0 bg-transparent text-text cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-pink" aria-expanded="false" aria-controls="nav-menu" aria-label="打开导航菜单">
+        <button id="nav-menu-btn" type="button" class="md:hidden flex items-center gap-1 min-w-0 px-2 py-2 rounded-lg border-0 bg-transparent text-text cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-pink" aria-expanded="false" aria-controls="nav-menu" aria-label="打开导航菜单">
           <span id="nav-menu-label" class="text-sm truncate">${sectionName(path) || "菜单"}</span>
           <svg id="nav-menu-chevron" viewBox="0 0 24 24" class="w-3.5 h-3.5 shrink-0 transition-transform" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="m6 9 6 6 6-6"></path>
@@ -60,8 +60,8 @@
           <a href="/settings" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/settings")}">设置</a>
           <a id="btn-fetch" href="/manage" data-feature-all="fetch,task" class="no-underline px-3 py-1.5 rounded-lg text-sm ${navStyle("/manage")}">管理数据</a>
         </nav>
-        <a href="/search" class="md:hidden shrink-0 px-2 py-1 rounded-lg text-sm text-text hover:bg-active no-underline" aria-label="搜索" title="搜索">搜索</a>
-        <button type="button" class="relative group w-8 h-8 shrink-0 cursor-pointer rounded-lg border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-pink" aria-label="刷新页面" onclick="location.reload()">
+        <a href="/search" class="md:hidden shrink-0 px-3 py-2 rounded-lg text-sm text-text hover:bg-active no-underline" aria-label="搜索" title="搜索">搜索</a>
+        <button type="button" class="relative group w-9 h-9 md:w-8 md:h-8 shrink-0 flex items-center justify-center cursor-pointer rounded-lg border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-pink" aria-label="刷新页面" onclick="location.reload()">
           <img alt="" id="user-avatar" src="" class="w-8 h-8 rounded-lg object-cover bg-surface shrink-0" style="display:none">
           <div id="user-placeholder" class="w-8 h-8 rounded-lg shrink-0" style="background:linear-gradient(135deg,#ff6b6b,#feca57,#48dbfb,#ff9ff3,#54a0ff);background-size:300% 300%;animation:rainbow 3s ease infinite"></div>
           <span class="pointer-events-none absolute inset-0 rounded-lg bg-black/45 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity flex items-center justify-center">
@@ -71,7 +71,7 @@
             </svg>
           </span>
         </button>
-        <button type="button" id="header-collapse-btn" class="header-collapse-btn w-8 h-8 shrink-0 cursor-pointer rounded-lg border-0 bg-transparent p-0 text-sub hover:text-text hover:bg-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-pink" aria-label="收起顶栏" title="收起顶栏">
+        <button type="button" id="header-collapse-btn" class="header-collapse-btn w-9 h-9 shrink-0 cursor-pointer rounded-lg border-0 bg-transparent p-0 text-sub hover:text-text hover:bg-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-pink" aria-label="收起顶栏" title="收起顶栏">
           <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="m18 15-6-6-6 6"></path>
           </svg>
@@ -82,16 +82,16 @@
       <div class="max-w-[1200px] mx-auto px-3 pt-1">
         <div class="bg-surface-raised border border-bord rounded-xl shadow-lg p-2 flex flex-col gap-1">
           <div class="flex flex-wrap gap-1">
-            <a href="/" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/")}">动画</a>
-            <a href="/characters" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/characters")}">角色</a>
-            <a href="/persons" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/persons")}">人物</a>
-            <a href="/tags" data-feature="tags" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/tags")}">标签</a>
-            <a href="/stats" data-feature="stats" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/stats")}">统计</a>
+            <a href="/" class="no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/")}">动画</a>
+            <a href="/characters" class="no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/characters")}">角色</a>
+            <a href="/persons" class="no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/persons")}">人物</a>
+            <a href="/tags" data-feature="tags" class="no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/tags")}">标签</a>
+            <a href="/stats" data-feature="stats" class="no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/stats")}">统计</a>
           </div>
           <div class="flex flex-wrap gap-1 pt-1 border-t border-bord-light">
-            <a href="/rating" data-feature="elo" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/rating")}">评分</a>
-            <a href="/settings" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/settings")}">设置</a>
-            <a href="/manage" data-feature-all="fetch,task" class="no-underline px-3 py-2 rounded-lg text-sm ${navStyle("/manage")}">管理数据</a>
+            <a href="/rating" data-feature="elo" class="no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/rating")}">评分</a>
+            <a href="/settings" class="no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/settings")}">设置</a>
+            <a href="/manage" data-feature-all="fetch,task" class="no-underline px-3 py-2.5 rounded-lg text-sm ${navStyle("/manage")}">管理数据</a>
           </div>
         </div>
       </div>

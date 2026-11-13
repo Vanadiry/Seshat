@@ -140,7 +140,7 @@
                 role="button"
                 onkeydown={(e) => window.clickKeyNav(e)}
                 onclick={() => selectFilter("all")}
-                class="px-3 py-1 rounded-full text-xs cursor-pointer {filter ===
+                class="px-3 py-2.5 md:py-1 rounded-full text-xs cursor-pointer {filter ===
                 'all'
                     ? 'bg-pink-solid text-white'
                     : 'bg-surface-alt text-sub hover:text-text'}"
@@ -152,7 +152,7 @@
                     role="button"
                     onkeydown={(e) => window.clickKeyNav(e)}
                     onclick={() => selectFilter(rel)}
-                    class="px-3 py-1 rounded-full text-xs cursor-pointer {filter ===
+                    class="px-3 py-2.5 md:py-1 rounded-full text-xs cursor-pointer {filter ===
                     rel
                         ? 'bg-pink-solid text-white'
                         : 'bg-surface-alt text-sub hover:text-text'}"

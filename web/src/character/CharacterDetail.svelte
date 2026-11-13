@@ -95,7 +95,7 @@
                     {#each character.actors as a}
                         <a
                             href={"/person?id=" + a.id}
-                            class="bg-surface border border-bord rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-pink no-underline"
+                            class="bg-surface border border-bord rounded-lg px-3 py-2 md:py-1.5 text-sm cursor-pointer hover:border-pink no-underline"
                             >{a.name}</a
                         >
                     {/each}

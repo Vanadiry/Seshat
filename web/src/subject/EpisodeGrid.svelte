@@ -130,7 +130,7 @@
             {#if row.kind === "sep"}
                 {@const st = sepStyle(row.type)}
                 <span
-                    class="w-8 h-8 flex items-center pl-0 font-semibold cursor-default {st.gap} {st.text} {sepCls[
+                    class="w-9 h-9 md:w-8 md:h-8 flex items-center pl-0 font-semibold cursor-default {st.gap} {st.text} {sepCls[
                         row.type
                     ] || 'text-sub'}"
                     ><span class="border-l border-current h-7"
@@ -152,7 +152,7 @@
                     <span
                         tabindex="0"
                         role="button"
-                        class="ep-num w-8 h-8 flex items-center justify-center rounded text-xs font-semibold cursor-pointer {row.cls} {pinned ===
+                        class="ep-num w-9 h-9 md:w-8 md:h-8 flex items-center justify-center rounded text-xs font-semibold cursor-pointer {row.cls} {pinned ===
                         index
                             ? 'ring-1 ring-pink'
                             : ''}"

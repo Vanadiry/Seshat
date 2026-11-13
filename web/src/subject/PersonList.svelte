@@ -37,7 +37,7 @@
                             {#each list as p}
                                 <a
                                     href={"/person?id=" + p.id}
-                                    class="flex items-center gap-2 py-1 border-b border-bord-light cursor-pointer hover:text-pink text-sm truncate no-underline"
+                                    class="flex items-center gap-2 py-2 md:py-1 border-b border-bord-light cursor-pointer hover:text-pink text-sm truncate no-underline"
                                     >{p.name}{#if p.eps}<span
                                             class="text-xs text-sub ml-1 shrink-0"
                                             >({p.eps})</span

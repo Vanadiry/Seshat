@@ -58,7 +58,7 @@ function _makeToast(
         : "";
     var closeHTML =
         closable !== false
-            ? '<button type="button" data-toast-close aria-label="关闭" class="cursor-pointer opacity-60 hover:opacity-100 text-lg leading-none shrink-0 ml-3 border-0 bg-transparent p-0 text-inherit font-[inherit]">✕</button>'
+            ? '<button type="button" data-toast-close aria-label="关闭" class="cursor-pointer opacity-60 hover:opacity-100 text-lg leading-none shrink-0 ml-2 w-8 h-8 flex items-center justify-center border-0 bg-transparent p-0 text-inherit font-[inherit]">✕</button>'
             : "";
     var rightHTML =
         countHTML || closeHTML

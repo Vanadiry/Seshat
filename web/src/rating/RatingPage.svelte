@@ -210,7 +210,7 @@
             <button
                 type="button"
                 onclick={loadPair}
-                class="ml-2 px-3 py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text"
+                class="ml-2 px-3 py-2.5 md:py-1 rounded-lg text-xs cursor-pointer border border-bord bg-transparent text-sub hover:text-text"
             >
                 刷新
             </button>

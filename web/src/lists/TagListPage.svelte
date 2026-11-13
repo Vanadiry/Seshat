@@ -39,7 +39,7 @@
             {#each visible as t}
                 <a
                     href={"/tag?tag=" + encodeURIComponent(t.name)}
-                    class="no-underline bg-surface border border-bord rounded-lg px-3 py-1.5 text-sm hover:border-pink hover:-translate-y-0.5 transition-all"
+                    class="no-underline bg-surface border border-bord rounded-lg px-3 py-2 md:py-1.5 text-sm hover:border-pink hover:-translate-y-0.5 transition-all"
                     ><span class="text-text">{t.name}</span><small
                         class="text-sub ml-1.5">{t.count}</small
                     ></a
@@ -59,13 +59,13 @@
                     <button
                         type="button"
                         onclick={() => (showing += 200)}
-                        class="md:ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text"
+                        class="md:ml-3 px-3 py-2.5 md:py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text"
                         >展开更多</button
                     >
                     <button
                         type="button"
                         onclick={() => (showing = items.length)}
-                        class="md:ml-2 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text"
+                        class="md:ml-2 px-3 py-2.5 md:py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text"
                         >展开全部</button
                     >
                 {/if}
