@@ -13,16 +13,51 @@
         "h-7 px-3 text-sm inline-flex items-center whitespace-nowrap";
 
     let infoOpen = $state(false);
+    let infoMounted = $state(false);
+    let infoClosing = $state(false);
+    let infoTimer = 0;
+
+    const MENU_ID = "detail-name";
+
+    function setInfoOpen(open) {
+        clearTimeout(infoTimer);
+        if (open) {
+            infoClosing = false;
+            infoMounted = true;
+            infoOpen = true;
+            window.dispatchEvent(
+                new CustomEvent("seshat-menu", { detail: MENU_ID })
+            );
+            return;
+        }
+        if (!infoMounted) return;
+        infoOpen = false;
+        infoClosing = true;
+        infoTimer = setTimeout(function () {
+            infoClosing = false;
+            infoMounted = false;
+        }, 120);
+    }
+
+    $effect(() => {
+        var onOther = function (e) {
+            if (e.detail !== MENU_ID) setInfoOpen(false);
+        };
+        window.addEventListener("seshat-menu", onOther);
+        return function () {
+            window.removeEventListener("seshat-menu", onOther);
+        };
+    });
 
     function goTab(key, e) {
         e.preventDefault();
-        infoOpen = false;
+        setInfoOpen(false);
         switchTab(key);
     }
 
     function toggleInfo(e) {
         e.stopPropagation();
-        infoOpen = !infoOpen;
+        setInfoOpen(!infoOpen);
     }
 
     async function onExport() {
@@ -35,13 +70,13 @@
             var t = e.target;
             if (t instanceof Element && t.closest("#detail-name-btn")) return;
             if (t instanceof Element && t.closest("#detail-info")) return;
-            infoOpen = false;
+            setInfoOpen(false);
         };
         var onResize = function () {
-            if (window.innerWidth >= 800) infoOpen = false;
+            if (window.innerWidth >= 800) setInfoOpen(false);
         };
         var onKey = function (e) {
-            if (e.key === "Escape") infoOpen = false;
+            if (e.key === "Escape") setInfoOpen(false);
         };
         document.addEventListener("click", close);
         window.addEventListener("resize", onResize);
@@ -179,10 +214,12 @@
         </div>
 
         <!-- 名称浮层 -->
-        {#if infoOpen}
+        {#if infoMounted}
             <div
                 id="detail-info"
-                class="md:hidden absolute left-0 right-0 top-full z-50 px-4 pt-1"
+                class="md:hidden absolute left-0 right-0 top-full z-50 px-4 pt-1 {infoClosing
+                    ? 'nav-menu-closing'
+                    : 'nav-menu-open'}"
             >
                 <div
                     class="bg-surface-raised border border-bord rounded-xl shadow-lg px-3 py-2 text-xs"

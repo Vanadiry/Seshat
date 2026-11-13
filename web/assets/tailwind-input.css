@@ -211,10 +211,10 @@ html.light {
 }
 
 /* 窄屏下拉菜单出现和收起 */
-#nav-menu.nav-menu-open {
+.nav-menu-open {
     animation: navMenuIn 0.16s ease-out;
 }
-#nav-menu.nav-menu-closing {
+.nav-menu-closing {
     animation: navMenuOut 0.12s ease-in forwards;
 }
 @keyframes navMenuIn {
@@ -341,8 +341,8 @@ html {
     .fade-in {
         animation: none;
     }
-    #nav-menu.nav-menu-open,
-    #nav-menu.nav-menu-closing {
+    .nav-menu-open,
+    .nav-menu-closing {
         animation: none;
     }
     #load-bar {

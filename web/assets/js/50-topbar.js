@@ -118,6 +118,9 @@
             // 重启动画，连续开关也能重新播放
             void menu.offsetWidth;
             menu.classList.add("nav-menu-open");
+            window.dispatchEvent(
+                new CustomEvent("seshat-menu", { detail: "topbar" })
+            );
             return;
         }
         if (menu.classList.contains("hidden")) return;
@@ -143,6 +146,9 @@
         });
         window.addEventListener("resize", function () {
             if (window.innerWidth >= 800) setMenuOpen(false);
+        });
+        window.addEventListener("seshat-menu", function (e) {
+            if (e.detail !== "topbar") setMenuOpen(false);
         });
     }
 
