@@ -71,6 +71,11 @@
             </svg>
           </span>
         </button>
+        <button type="button" id="header-collapse-btn" class="header-collapse-btn w-8 h-8 shrink-0 cursor-pointer rounded-lg border-0 bg-transparent p-0 text-sub hover:text-text hover:bg-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-pink" aria-label="收起顶栏" title="收起顶栏">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m18 15-6-6-6 6"></path>
+          </svg>
+        </button>
       </div>
     </div>
     <div id="nav-menu" class="hidden md:hidden absolute top-full left-0 right-0 z-50">
@@ -98,6 +103,38 @@
     capabilitiesReady().then(function () {
         applyFeatureVisibility(tb);
     });
+
+    // 高度不足时手动收起整块顶栏
+    var shell = tb.closest(".sticky") || tb.parentElement;
+    var collapseBtn = document.getElementById("header-collapse-btn");
+    if (shell && collapseBtn) {
+        shell.classList.add("header-shell");
+        var restore = document.createElement("button");
+        restore.type = "button";
+        restore.id = "header-restore";
+        restore.setAttribute("aria-label", "展开顶栏");
+        restore.setAttribute("title", "展开顶栏");
+        restore.innerHTML = "<span></span>";
+        shell.insertBefore(restore, shell.firstChild);
+
+        var collapsed = false;
+        function setCollapsed(v) {
+            collapsed = v;
+            document.body.classList.toggle("header-collapsed", v);
+        }
+        collapseBtn.addEventListener("click", function () {
+            setCollapsed(true);
+        });
+        restore.addEventListener("click", function () {
+            setCollapsed(false);
+        });
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape" && collapsed) setCollapsed(false);
+        });
+        window.addEventListener("resize", function () {
+            if (collapsed && window.innerHeight >= 400) setCollapsed(false);
+        });
+    }
 
     // 窄屏导航菜单
     var menuBtn = document.getElementById("nav-menu-btn");
