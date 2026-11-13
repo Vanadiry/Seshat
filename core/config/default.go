@@ -1,6 +1,9 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 var DefaultConfigTOML = fmt.Sprintf(`# Seshat 配置
 # 要修改此处内容，建议先阅读文档
@@ -8,6 +11,7 @@ var DefaultConfigTOML = fmt.Sprintf(`# Seshat 配置
 [server]
 bind_addr = "127.0.0.1"     # 监听地址，设为0.0.0.0将对局域网开放
 port = 12500                # 开放端口
+api_token = ""              # 本地 API 令牌，首次创建时自动生成；留空则不校验 POST
 concurrency_info = 4        # 信息拉取并发
 concurrency_image = 16      # 图片下载并发
 data_home = ""              # 数据目录，留空则使用SESHAT_HOME/data
@@ -34,7 +38,35 @@ fallback_url = ""
 bangumi_access_token = ""
 `, Version)
 
-const TrackerTemplate = `# Tracker: %s
-name = "%s"
-ids = []
-`
+// TrackerFileContent 生成空 Tracker 的 TOML 内容
+func TrackerFileContent(id, name string) string {
+	return fmt.Sprintf("# Tracker: %s\nname = %s\nids = []\n", id, quoteTOMLString(name))
+}
+
+// quoteTOMLString 转义 TOML 基本字符串
+func quoteTOMLString(s string) string {
+	var b strings.Builder
+	b.WriteByte('"')
+	for _, r := range s {
+		switch r {
+		case '\\':
+			b.WriteString(`\\`)
+		case '"':
+			b.WriteString(`\"`)
+		case '\n':
+			b.WriteString(`\n`)
+		case '\r':
+			b.WriteString(`\r`)
+		case '\t':
+			b.WriteString(`\t`)
+		default:
+			if r < 0x20 || r == 0x7f {
+				fmt.Fprintf(&b, `\u%04X`, r)
+			} else {
+				b.WriteRune(r)
+			}
+		}
+	}
+	b.WriteByte('"')
+	return b.String()
+}

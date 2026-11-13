@@ -1,0 +1,566 @@
+@import "tailwindcss";
+
+@source "../src";
+
+/* 深色模式，默认 */
+:root {
+    --c-bg: #1d1d1d;
+    --c-surface: #202028;
+    --c-surface-alt: #252530;
+    --c-surface-raised: #1c1c22;
+    --c-input: #151518;
+    --c-active: #30303b;
+    --c-text: rgba(255, 255, 255, 0.88);
+    --c-sub: rgba(255, 255, 255, 0.52);
+    --c-sub-dim: rgba(255, 255, 255, 0.3);
+    --c-bord: rgba(255, 255, 255, 0.12);
+    --c-bord-light: rgba(255, 255, 255, 0.06);
+    --c-bord-mid: rgba(255, 255, 255, 0.08);
+    --c-bord-strong: rgba(255, 255, 255, 0.15);
+    --c-bord-xstrong: rgba(255, 255, 255, 0.4);
+    --c-pink: #fe8a95;
+    --c-pink-solid: #cf3f56;
+    --c-pink-bg: #403638;
+    --c-pink-glow: rgba(254, 138, 149, 0.42);
+    /* 档位颜色，用于章节类型和评分等级 */
+    --c-tier-gold: #d4a040;
+    --c-tier-gold-bg: #33281a;
+    --c-tier-blue: #5c8eb0;
+    --c-tier-blue-bg: #1a2833;
+    --c-tier-purple: #8c74a8;
+    --c-tier-purple-bg: #241a2e;
+    --c-tier-green: #4c8c68;
+    --c-tier-green-bg: #1a2e24;
+    /* ELO 徽章和标签悬浮 */
+    --c-elo-bg: #2a2a3a;
+    --c-elo-text: #8b9dc3;
+    --c-pk-overlay: rgba(0, 0, 0, 0.85);
+    --c-warn: #ef5350;
+    --c-warn-bg: #3a1a1a;
+    --c-warn-bar-purple: #4c1d95;
+    --c-warn-bar-red: #7f1d1d;
+    --c-warn-bar-amber: #451a03;
+    --c-toast-progress: #5c8eb0;
+    --c-toast-progress-bg: #1a2833;
+    --c-toast-success: #68a868;
+    --c-toast-success-bg: #243624;
+    --c-toast-error: #dc2626;
+    --c-toast-error-bg: #3a1a1a;
+    --c-toast-warning: #e8a040;
+    --c-toast-warning-bg: #451a03;
+    color-scheme: dark;
+}
+
+/* 浅色模式 */
+html.light {
+    --c-bg: #f5f5f5;
+    --c-surface: #ffffff;
+    --c-surface-alt: #f0f0f2;
+    --c-surface-raised: #eaeaee;
+    --c-input: #e5e5ea;
+    --c-active: #e0e0e5;
+    --c-text: rgba(0, 0, 0, 0.85);
+    --c-sub: rgba(0, 0, 0, 0.58);
+    --c-sub-dim: rgba(0, 0, 0, 0.3);
+    --c-bord: rgba(0, 0, 0, 0.1);
+    --c-bord-light: rgba(0, 0, 0, 0.05);
+    --c-bord-mid: rgba(0, 0, 0, 0.07);
+    --c-bord-strong: rgba(0, 0, 0, 0.13);
+    --c-bord-xstrong: rgba(0, 0, 0, 0.25);
+    --c-pink: #a83449;
+    --c-pink-solid: #b83f54;
+    --c-pink-bg: #fce4e8;
+    --c-pink-glow: rgba(168, 52, 73, 0.3);
+    /* 档位颜色，浅色背景和深色文字，保证对比度 */
+    --c-tier-gold: #b8860b;
+    --c-tier-gold-bg: #fef3e0;
+    --c-tier-blue: #3a6d99;
+    --c-tier-blue-bg: #e8f0f8;
+    --c-tier-purple: #6b4d82;
+    --c-tier-purple-bg: #f0e8f5;
+    --c-tier-green: #3a7050;
+    --c-tier-green-bg: #e6f0ea;
+    /* ELO 徽章和标签悬浮 */
+    --c-elo-bg: #e0e3ec;
+    --c-elo-text: #5a6d8a;
+    --c-pk-overlay: rgba(0, 0, 0, 0.5);
+    --c-warn: #c62828;
+    --c-warn-bg: #fce4e4;
+    --c-warn-bar-purple: #c4b5fd;
+    --c-warn-bar-red: #fecaca;
+    --c-warn-bar-amber: #fde68a;
+    --c-toast-progress: #3a6d99;
+    --c-toast-progress-bg: #e8f0f8;
+    --c-toast-success: #4a9a4a;
+    --c-toast-success-bg: #e6f5e6;
+    --c-toast-error: #dc2626;
+    --c-toast-error-bg: #fee2e2;
+    --c-toast-warning: #d88810;
+    --c-toast-warning-bg: #fef3c7;
+    color-scheme: light;
+}
+
+@theme {
+    /* 布局在 800 以上按桌面处理 */
+    --breakpoint-md: 800px;
+    --color-bg: var(--c-bg);
+    --color-surface: var(--c-surface);
+    --color-surface-alt: var(--c-surface-alt);
+    --color-surface-raised: var(--c-surface-raised);
+    --color-input: var(--c-input);
+    --color-active: var(--c-active);
+    --color-text: var(--c-text);
+    --color-sub: var(--c-sub);
+    --color-sub-dim: var(--c-sub-dim);
+    --color-bord: var(--c-bord);
+    --color-bord-light: var(--c-bord-light);
+    --color-bord-mid: var(--c-bord-mid);
+    --color-bord-strong: var(--c-bord-strong);
+    --color-bord-xstrong: var(--c-bord-xstrong);
+    --color-pink: var(--c-pink);
+    --color-pink-solid: var(--c-pink-solid);
+    --color-pink-bg: var(--c-pink-bg);
+    --color-warn: var(--c-warn);
+    --color-warn-bg: var(--c-warn-bg);
+    --color-warn-bar-purple: var(--c-warn-bar-purple);
+    --color-warn-bar-red: var(--c-warn-bar-red);
+    --color-warn-bar-amber: var(--c-warn-bar-amber);
+    --color-tier-gold: var(--c-tier-gold);
+    --color-tier-gold-bg: var(--c-tier-gold-bg);
+    --color-tier-blue: var(--c-tier-blue);
+    --color-tier-blue-bg: var(--c-tier-blue-bg);
+    --color-tier-purple: var(--c-tier-purple);
+    --color-tier-purple-bg: var(--c-tier-purple-bg);
+    --color-tier-green: var(--c-tier-green);
+    --color-tier-green-bg: var(--c-tier-green-bg);
+    --color-elo-bg: var(--c-elo-bg);
+    --color-elo-text: var(--c-elo-text);
+    --color-toast-progress: var(--c-toast-progress);
+    --color-toast-progress-bg: var(--c-toast-progress-bg);
+    --color-toast-success: var(--c-toast-success);
+    --color-toast-success-bg: var(--c-toast-success-bg);
+    --color-toast-error: var(--c-toast-error);
+    --color-toast-error-bg: var(--c-toast-error-bg);
+    --color-toast-warning: var(--c-toast-warning);
+    --color-toast-warning-bg: var(--c-toast-warning-bg);
+}
+
+/* 顶栏导航保持单行，宽度不足时由容器横向滚动 */
+#topbar nav,
+#topbar nav a {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* 吸顶高度，页面内容统一避开顶栏 */
+:root {
+    --topbar-h: 48px;
+    --detail-header-h: calc(var(--topbar-h) * 2);
+    --sticky-gap: 16px;
+}
+.sticky-below-topbar {
+    top: calc(var(--topbar-h) + var(--sticky-gap));
+}
+#topbar:empty {
+    min-height: var(--topbar-h);
+    background: var(--c-surface-raised);
+    border-bottom: 1px solid var(--c-bord);
+}
+
+/* 上游 ID 添加后的闪烁反馈 */
+@keyframes upstreamFlash {
+    0% {
+        background-color: transparent;
+        border-color: var(--c-bord);
+    }
+    25% {
+        background-color: var(--c-pink-bg);
+        border-color: var(--c-pink);
+    }
+    100% {
+        background-color: transparent;
+        border-color: var(--c-bord);
+    }
+}
+.upstream-flash {
+    animation: upstreamFlash 0.8s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+    .upstream-flash {
+        animation: none;
+        border-color: var(--c-pink);
+    }
+}
+
+@keyframes upstreamStatusFlash {
+    0% {
+        color: var(--c-pink);
+    }
+    100% {
+        color: var(--c-sub);
+    }
+}
+.upstream-status-flash {
+    animation: upstreamStatusFlash 0.8s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+    .upstream-status-flash {
+        animation: none;
+        color: var(--c-pink);
+    }
+}
+
+/* 窄屏下拉菜单出现和收起 */
+.nav-menu-open {
+    animation: navMenuIn 0.16s ease-out;
+}
+.nav-menu-closing {
+    animation: navMenuOut 0.12s ease-in forwards;
+}
+@keyframes navMenuIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+@keyframes navMenuOut {
+    from {
+        opacity: 1;
+        transform: none;
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+}
+.sticky-below-detail-header {
+    top: calc(var(--detail-header-h) + var(--sticky-gap));
+}
+
+/* 键盘焦点样式 */
+@layer base {
+    :focus-visible {
+        outline: 2px solid var(--c-pink);
+        outline-offset: 2px;
+    }
+}
+
+/* 全局禁用文本选中，通过 .select-text 开白名单 */
+* {
+    user-select: none;
+}
+.select-text,
+.select-text * {
+    user-select: text;
+}
+/* 表单控件允许选中 */
+input,
+textarea,
+select {
+    user-select: text;
+}
+
+/* 高度不足时收起顶栏 */
+.header-collapse-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+@media (max-height: 599px) {
+    .header-collapse-btn {
+        display: flex;
+    }
+}
+#header-restore {
+    display: none;
+    width: 100%;
+    height: 14px;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid var(--c-bord);
+    background: var(--c-surface-raised);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+#header-restore span {
+    display: block;
+    width: 44px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--c-sub-dim);
+}
+body.header-collapsed #header-restore {
+    display: flex;
+}
+body.header-collapsed .header-shell > :not(#header-restore) {
+    display: none;
+}
+body.header-collapsed {
+    --topbar-h: 0px;
+    --detail-header-h: 0px;
+}
+.header-shell.header-animating {
+    overflow: hidden;
+    transition: height 0.25s ease;
+}
+
+/* 横屏刘海和底部横条的安全区 */
+:root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+}
+body {
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+    padding-bottom: var(--safe-bottom);
+}
+
+/* 全局禁用双击缩放，保留单指滑动和双指缩放 */
+html {
+    touch-action: manipulation;
+}
+
+/* iOS 上输入框字号小于 16px 时，聚焦会自动放大页面 */
+@media (max-width: 799px) {
+    input,
+    select,
+    textarea {
+        font-size: 16px;
+    }
+}
+
+/* 加载条 */
+#load-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    z-index: 9999;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+#load-bar::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--c-pink),
+        var(--c-pink),
+        transparent
+    );
+    transform-origin: left center;
+}
+#load-bar.active {
+    opacity: 1;
+}
+#load-bar.active::before {
+    animation: loadBarShimmer 1.5s ease-in-out infinite;
+}
+@keyframes loadBarShimmer {
+    0% {
+        transform: translateX(-100%) scaleX(0.75);
+    }
+    50% {
+        transform: translateX(125%) scaleX(1);
+    }
+    100% {
+        transform: translateX(250%) scaleX(0.75);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .fade-in {
+        animation: none;
+    }
+    .nav-menu-open,
+    .nav-menu-closing {
+        animation: none;
+    }
+    #load-bar {
+        transition: none !important;
+    }
+    #load-bar.active::before {
+        animation: none;
+        transform: none;
+        width: 100%;
+    }
+    .spin,
+    #user-placeholder {
+        animation: none !important;
+    }
+    .hover\:-translate-y-0\.5:hover,
+    .hover\:-translate-y-1:hover {
+        transform: none;
+    }
+    #pk-left,
+    #pk-right,
+    #pk-left::after,
+    #pk-right::after,
+    .confirm-bar,
+    .cancel-hint {
+        transition: none !important;
+    }
+    #page-scrollbar,
+    #page-scrollbar .thumb {
+        transition: none !important;
+    }
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation: none !important;
+    }
+}
+
+/* 自定义滚动条 */
+.thin-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-sub-dim) transparent;
+}
+.thin-scroll::-webkit-scrollbar {
+    height: 4px !important;
+    width: 4px !important;
+    display: block !important;
+}
+.thin-scroll::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+    background: var(--c-sub-dim) !important;
+    border-radius: 2px !important;
+}
+.thin-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--c-sub) !important;
+}
+
+/* 全局滚动条，与 thin-scroll 保持一致 */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-sub-dim) transparent;
+}
+*::-webkit-scrollbar {
+    height: 4px;
+    width: 4px;
+}
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+    background: var(--c-sub-dim);
+    border-radius: 2px;
+}
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--c-sub);
+}
+*::-webkit-scrollbar-corner {
+    background: transparent;
+}
+*::-webkit-scrollbar-button {
+    display: none;
+}
+
+/* 页面总滚动条，隐藏原生滚动条后自行绘制 */
+@media (pointer: fine) {
+    html {
+        scrollbar-width: none;
+    }
+    html::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+#page-scrollbar {
+    position: fixed;
+    right: 0;
+    width: 12px;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    pointer-events: none;
+}
+#page-scrollbar.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+#page-scrollbar .thumb {
+    position: absolute;
+    right: 4px;
+    width: 4px;
+    min-height: 24px;
+    border-radius: 2px;
+    background: var(--c-sub-dim);
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+#page-scrollbar .thumb:hover {
+    background: var(--c-sub);
+}
+@media print {
+    #page-scrollbar {
+        display: none;
+    }
+}
+
+/* 下拉箭头，深色模式 */
+select:where(.search-type, .custom-select) {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.52)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 28px;
+    appearance: none;
+}
+html.light select:where(.search-type, .custom-select) {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(0,0,0,.5)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* 加载动画 */
+.section-bar {
+    width: 3px;
+    height: 18px;
+    border-radius: 2px;
+    background: var(--c-pink);
+    flex-shrink: 0;
+}
+
+.spin {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    vertical-align: -2px;
+    margin-right: 4px;
+    animation: spin 0.6s linear infinite;
+}
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes imgFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.fade-in {
+    animation: imgFadeIn 0.35s ease;
+}

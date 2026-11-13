@@ -1,6 +1,9 @@
 package bangumi
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,6 +29,7 @@ type Client struct {
 	ua        string
 	baseURL   string
 	tokenFunc func() string // 访问令牌，可能为空
+	ctx       context.Context
 }
 
 func NewClient(ua, baseURL string, tokenFunc func() string, proxy *url.URL) *Client {
@@ -38,10 +42,33 @@ func NewClient(ua, baseURL string, tokenFunc func() string, proxy *url.URL) *Cli
 		ua:        ua,
 		baseURL:   baseURL,
 		tokenFunc: tokenFunc,
+		ctx:       context.Background(),
 	}
 }
 
-// setAuth 添加认证头。
+// WithContext 返回绑定任务上下文的副本，取消时中断在途请求
+func (c *Client) WithContext(ctx context.Context) *Client {
+	cp := *c
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	cp.ctx = ctx
+	return &cp
+}
+
+// sleep 等待重试间隔，取消时提前返回
+func (c *Client) sleep(d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-t.C:
+		return nil
+	case <-c.ctx.Done():
+		return c.ctx.Err()
+	}
+}
+
+// setAuth 添加认证头
 func (c *Client) setAuth(req *http.Request) {
 	if c.tokenFunc != nil {
 		if tok := c.tokenFunc(); tok != "" {
@@ -50,20 +77,28 @@ func (c *Client) setAuth(req *http.Request) {
 	}
 }
 
-// GetImage 下载图片，瞬时错误自动重试 3 次，404 和占位图不重试。
+// GetImage 下载图片，瞬时错误自动重试 3 次，404 和占位图不重试
 func (c *Client) GetImage(urlPath string) ([]byte, error) {
 	url := fmt.Sprintf("%s/%s", c.baseURL, urlPath)
 	var lastErr error
 	for attempt := 0; attempt < 4; attempt++ {
+		if err := c.ctx.Err(); err != nil {
+			return nil, err
+		}
 		if attempt > 0 {
 			log.Debug("retrying image request", "path", urlPath, "attempt", attempt)
-			time.Sleep(time.Duration(attempt) * time.Second)
+			if err := c.sleep(time.Duration(attempt) * time.Second); err != nil {
+				return nil, err
+			}
 		}
 		data, err := c.doGetImage(url)
 		if err == nil {
 			return data, nil
 		}
 		lastErr = err
+		if c.ctx.Err() != nil {
+			return nil, c.ctx.Err()
+		}
 		// 404 和占位图不重试
 		if strings.Contains(err.Error(), "HTTP 404") || strings.Contains(err.Error(), "placeholder") {
 			return nil, err
@@ -83,7 +118,7 @@ func (c *Client) doGetImage(url string) ([]byte, error) {
 			return nil
 		},
 	}
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(c.ctx, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
@@ -105,15 +140,23 @@ func (c *Client) GetRaw(urlPath string) ([]byte, error) {
 	url := fmt.Sprintf("%s/%s", c.baseURL, urlPath)
 	var lastErr error
 	for attempt := 0; attempt < 4; attempt++ {
+		if err := c.ctx.Err(); err != nil {
+			return nil, err
+		}
 		if attempt > 0 {
 			log.Debug("retrying API request", "path", urlPath, "attempt", attempt)
-			time.Sleep(time.Duration(attempt) * time.Second)
+			if err := c.sleep(time.Duration(attempt) * time.Second); err != nil {
+				return nil, err
+			}
 		}
 		data, err := c.doGetRaw(url)
 		if err == nil {
 			return data, nil
 		}
 		lastErr = err
+		if c.ctx.Err() != nil {
+			return nil, c.ctx.Err()
+		}
 		// 4xx 错误不重试
 		if strings.Contains(err.Error(), "HTTP 404") || strings.Contains(err.Error(), "HTTP 400") {
 			return nil, err
@@ -126,12 +169,76 @@ func (c *Client) GetRaw(urlPath string) ([]byte, error) {
 }
 
 func (c *Client) doGetRaw(url string) ([]byte, error) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(c.ctx, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("User-Agent", c.ua)
 	req.Header.Set("Accept", "application/json")
+	c.setAuth(req)
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, readErr := io.ReadAll(io.LimitReader(resp.Body, 512))
+		if readErr != nil {
+			body = []byte(fmt.Sprintf("(read body: %v)", readErr))
+		}
+		err := fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+		if resp.StatusCode == http.StatusUnauthorized && c.tokenFunc != nil && c.tokenFunc() != "" {
+			err = fmt.Errorf("你设置了令牌，但已失效。请终止任务并退出程序，检查令牌后重试。")
+		}
+		return nil, err
+	}
+	return io.ReadAll(resp.Body)
+}
+
+// PostRaw 提交 JSON 请求，瞬时错误自动重试 3 次，404/400 不重试
+func (c *Client) PostRaw(urlPath string, body any) ([]byte, error) {
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+	url := fmt.Sprintf("%s/%s", c.baseURL, urlPath)
+	var lastErr error
+	for attempt := 0; attempt < 4; attempt++ {
+		if err := c.ctx.Err(); err != nil {
+			return nil, err
+		}
+		if attempt > 0 {
+			log.Debug("retrying API request", "path", urlPath, "attempt", attempt)
+			if err := c.sleep(time.Duration(attempt) * time.Second); err != nil {
+				return nil, err
+			}
+		}
+		data, err := c.doPostRaw(url, payload)
+		if err == nil {
+			return data, nil
+		}
+		lastErr = err
+		if c.ctx.Err() != nil {
+			return nil, c.ctx.Err()
+		}
+		if strings.Contains(err.Error(), "HTTP 404") || strings.Contains(err.Error(), "HTTP 400") {
+			return nil, err
+		}
+		if strings.Contains(err.Error(), "令牌") {
+			return nil, err
+		}
+	}
+	return nil, fmt.Errorf("%w (retried 3 times)", lastErr)
+}
+
+func (c *Client) doPostRaw(url string, payload []byte) ([]byte, error) {
+	req, err := http.NewRequestWithContext(c.ctx, "POST", url, bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("User-Agent", c.ua)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
 	c.setAuth(req)
 	resp, err := c.http.Do(req)
 	if err != nil {

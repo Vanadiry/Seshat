@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN" class="bg-bg">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="view-transition" content="same-origin" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+        <title>管理 | Seshat</title>
+
+        <script src="/assets/theme.min.js"></script>
+        <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+        <link rel="stylesheet" href="/assets/style.css" />
+        <style>
+            .radio-pink {
+                appearance: none;
+                -webkit-appearance: none;
+                width: 16px;
+                height: 16px;
+                border: 2px solid var(--c-sub);
+                border-radius: 9999px;
+                background: transparent;
+                cursor: pointer;
+                position: relative;
+                flex: none;
+            }
+            .radio-pink:checked {
+                border-color: var(--c-pink);
+            }
+            .radio-pink:checked::after {
+                content: "";
+                position: absolute;
+                inset: 3px;
+                border-radius: 9999px;
+                background: var(--c-pink);
+            }
+            .radio-pink:focus-visible {
+                outline: 2px solid var(--c-pink);
+                outline-offset: 2px;
+            }
+            .danger-lock {
+                position: relative;
+                overflow: hidden;
+            }
+            .lock-fill {
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                width: 0;
+                background: rgba(220, 38, 38, 0.18);
+                transition: width 0.05s linear;
+                pointer-events: none;
+            }
+            .lock-label {
+                position: relative;
+                transition: color 0.5s ease;
+            }
+        </style>
+    </head>
+    <body class="text-text font-[system-ui] min-h-screen">
+        <div id="topbar"></div>
+        <main id="view" class="relative max-w-[1200px] mx-auto p-6"></main>
+
+        <div
+            id="confirm-overlay"
+            class="fixed inset-0 bg-black/70 flex items-center justify-center z-[400] transition-opacity duration-200"
+            style="display: none; opacity: 0"
+        >
+            <div
+                class="bg-surface-alt border border-bord rounded-lg p-5 w-[340px] max-w-[85vw] max-h-[85vh] max-h-[85dvh] flex flex-col"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="confirm-msg"
+            >
+                <p
+                    id="confirm-msg"
+                    class="text-sm mb-4 leading-relaxed whitespace-pre-line min-h-0 overflow-y-auto thin-scroll"
+                ></p>
+                <button
+                    id="btn-confirm-exec"
+                    class="h-10 w-full px-4 py-2 rounded-lg bg-pink-solid text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90 mb-2"
+                >
+                    执行
+                </button>
+                <button
+                    id="btn-confirm-cancel"
+                    class="h-10 w-full px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm cursor-pointer hover:bg-active"
+                >
+                    取消
+                </button>
+            </div>
+        </div>
+
+        <script src="assets/app.min.js"></script>
+        <script type="module" src="assets/manage.js"></script>
+    </body>
+</html>

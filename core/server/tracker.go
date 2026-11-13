@@ -6,114 +6,269 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/BurntSushi/toml"
+
 	"github.com/vanadiry/seshat/core/bangumi"
-	"github.com/vanadiry/seshat/core/cache"
 	"github.com/vanadiry/seshat/core/config"
 	"github.com/vanadiry/seshat/core/events"
+	"github.com/vanadiry/seshat/core/fetch"
+	"github.com/vanadiry/seshat/core/index"
 	"github.com/vanadiry/seshat/core/log"
+	"github.com/vanadiry/seshat/core/store"
 )
 
 // seshatTrackerMu 串行化 _seshat.json 的读改写，避免并发追加互相覆盖
 var seshatTrackerMu sync.Mutex
 
-func countTrackerTotal(cfg *config.Config) int {
-	files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
-	files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
-	files = append(files, files2...)
-	seen := map[int]bool{}
-	for _, f := range files {
-		for _, sid := range loadTrackerIDs(f) {
-			seen[sid] = true
+const (
+	trackerTypeAuto   = "auto"
+	trackerTypeManual = "manual"
+)
+
+// trackerInfo 为合并同名文件后的 Tracker 视图
+type trackerInfo struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Type  string `json:"type"`
+	Count int    `json:"count"`
+}
+
+// reservedTrackerID 返回 id 是否保留给内部 Tracker
+func reservedTrackerID(id string) bool {
+	return strings.HasPrefix(id, "_")
+}
+
+// trackerFilePaths 返回指定 id 实际存在的 TOML 和 JSON 文件
+func trackerFilePaths(td, id string) []string {
+	if !validTrackerName(id) {
+		return nil
+	}
+	var paths []string
+	for _, ext := range []string{".toml", ".json"} {
+		path := filepath.Join(td, id+ext)
+		if _, err := os.Stat(path); err == nil {
+			paths = append(paths, path)
 		}
 	}
-	return len(seen)
+	return paths
+}
+
+// loadTrackerName 读取 Tracker 文件中的展示名称
+func loadTrackerName(path string) string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	if strings.HasSuffix(path, ".json") {
+		var v struct {
+			Name string `json:"name"`
+		}
+		if json.Unmarshal(data, &v) == nil {
+			return strings.TrimSpace(v.Name)
+		}
+		return ""
+	}
+	var v struct {
+		Name string `toml:"name"`
+	}
+	if _, err := toml.Decode(string(data), &v); err == nil {
+		return strings.TrimSpace(v.Name)
+	}
+	return ""
+}
+
+// allTrackerFiles 返回 Tracker 目录下 id 合法的 TOML 和 JSON 文件
+func allTrackerFiles(td string) []string {
+	files, _ := filepath.Glob(filepath.Join(td, "*.json"))
+	files2, _ := filepath.Glob(filepath.Join(td, "*.toml"))
+	var out []string
+	for _, path := range append(files, files2...) {
+		if validTrackerName(trackerIDFromPath(path)) {
+			out = append(out, path)
+		}
+	}
+	return out
+}
+
+// trackerIDFromPath 返回 Tracker 文件名对应的 id
+func trackerIDFromPath(path string) string {
+	base := filepath.Base(path)
+	return strings.TrimSuffix(strings.TrimSuffix(base, ".json"), ".toml")
+}
+
+// isAutoTrackerFile 返回文件是否由程序写入
+func isAutoTrackerFile(path string) bool {
+	switch filepath.Base(path) {
+	case "_seshat.json", "user.json":
+		return true
+	}
+	return false
+}
+
+// trackerIDsFromPaths 合并多个 Tracker 文件的 ID 并去重
+func trackerIDsFromPaths(paths []string) []int {
+	seen := map[int]bool{}
+	var ids []int
+	for _, path := range paths {
+		for _, sid := range loadTrackerIDs(path) {
+			if sid > 0 && !seen[sid] {
+				seen[sid] = true
+				ids = append(ids, sid)
+			}
+		}
+	}
+	return ids
+}
+
+// trackerIDsByID 返回指定 Tracker id 的全部 ID，同名 TOML 和 JSON 取并集
+func trackerIDsByID(cfg *config.Config, id string) []int {
+	return trackerIDsFromPaths(trackerFilePaths(cfg.TrackerDir(), id))
+}
+
+// missingTrackerNames 返回不存在的 Tracker id
+func missingTrackerNames(cfg *config.Config, names []string) []string {
+	td := cfg.TrackerDir()
+	seen := map[string]bool{}
+	var missing []string
+	for _, name := range names {
+		if seen[name] {
+			continue
+		}
+		seen[name] = true
+		if len(trackerFilePaths(td, name)) == 0 {
+			missing = append(missing, name)
+		}
+	}
+	return missing
+}
+
+// allTrackerIDs 返回全部 Tracker 的 ID 并集
+func allTrackerIDs(cfg *config.Config) []int {
+	return trackerIDsFromPaths(allTrackerFiles(cfg.TrackerDir()))
+}
+
+// loadTrackerInfos 扫描并合并同名 TOML 和 JSON，按 id 排序
+func loadTrackerInfos(cfg *config.Config) []trackerInfo {
+	td := cfg.TrackerDir()
+	byID := map[string]bool{}
+	for _, path := range allTrackerFiles(td) {
+		id := trackerIDFromPath(path)
+		if id == "" || strings.HasPrefix(id, ".") {
+			continue
+		}
+		byID[id] = true
+	}
+
+	infos := make([]trackerInfo, 0, len(byID))
+	for id := range byID {
+		paths := trackerFilePaths(td, id)
+		name := ""
+		typ := trackerTypeAuto
+		for _, path := range paths {
+			if !isAutoTrackerFile(path) {
+				typ = trackerTypeManual
+			}
+			if strings.HasSuffix(path, ".toml") {
+				if n := loadTrackerName(path); n != "" {
+					name = n
+				}
+			}
+		}
+		if name == "" {
+			for _, path := range paths {
+				if strings.HasSuffix(path, ".json") {
+					name = loadTrackerName(path)
+					break
+				}
+			}
+		}
+		if name == "" {
+			name = id
+		}
+		infos = append(infos, trackerInfo{
+			ID:    id,
+			Name:  name,
+			Type:  typ,
+			Count: len(trackerIDsFromPaths(paths)),
+		})
+	}
+	sort.Slice(infos, func(i, j int) bool { return infos[i].ID < infos[j].ID })
+	return infos
+}
+
+func countTrackerTotal(cfg *config.Config) int {
+	return len(allTrackerIDs(cfg))
 }
 
 // countTrackerNames 统计指定 tracker 列表中的条目总数
 func countTrackerNames(cfg *config.Config, names []string) int {
-	td := cfg.TrackerDir()
-	seen := map[int]bool{}
-	for _, name := range names {
-		var path string
-		if _, err := os.Stat(filepath.Join(td, name+".json")); err == nil {
-			path = filepath.Join(td, name+".json")
-		} else if _, err := os.Stat(filepath.Join(td, name+".toml")); err == nil {
-			path = filepath.Join(td, name+".toml")
-		} else {
-			continue
-		}
-		for _, sid := range loadTrackerIDs(path) {
-			seen[sid] = true
-		}
-	}
-	return len(seen)
+	return len(trackerIDsByNames(cfg, names))
 }
 
-// forceRefresh 删除全部缓存后完整重建
+// clearContentData 删除内容数据，保留 data/user
+func clearContentData(dd string) {
+	for _, name := range []string{"api", "images", "index"} {
+		if err := os.RemoveAll(filepath.Join(dd, name)); err != nil {
+			log.Error("clear content data failed", "dir", name, "err", err)
+		}
+	}
+}
+
+// forceRefresh 删除全部内容数据后完整重建
 func forceRefresh(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, p *Progress) {
-	log.Info("force refresh: clearing cache")
-	os.RemoveAll(dd)
-	log.Info("force refresh: cache cleared, starting rebuild")
+	log.Info("force refresh: clearing content data")
+	clearContentData(dd)
+	log.Info("force refresh: content data cleared, starting rebuild")
 	refreshAllTrackers(cfg, bg, dd, imgDir, p)
+}
+
+func trackerPhasePlan() []phaseSpec {
+	specs := splitPhaseRanges(0, 95, "拉取动画数据", "下载条目图像", "下载角色图像", "下载人物图像")
+	return append(specs, phaseSpec{Name: "建立索引", Start: 95, End: 100})
 }
 
 // refreshAllTrackers 刷新全部 tracker 列表
 func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, p *Progress) {
-	files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
-	files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
-	files = append(files, files2...)
-	seen := map[int]bool{}
-	var allIDs []int
-	for _, f := range files {
-		for _, sid := range loadTrackerIDs(f) {
-			if !seen[sid] {
-				seen[sid] = true
-				allIDs = append(allIDs, sid)
-			}
-		}
+	allIDs := allTrackerIDs(cfg)
+	p.SetPlan(trackerPhasePlan())
+	p.BeginPhase(1)
+	fetch.SubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
+	if taskCanceled(p) {
+		return
 	}
-	p.SetPhase(1, 5, "拉取动画数据")
-	fetchSubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
-	log.Info("all trackers refreshed", "subjects", len(seen))
-	downloadImages(dd, bg, p, 2, 5, cfg.Server.ConcurrencyImage)
-	p.SetPhase(5, 5, "建立索引")
+	log.Info("all trackers refreshed", "subjects", len(allIDs))
+	fetch.DownloadImages(dd, bg, p, 2, cfg.Server.ConcurrencyImage)
+	if taskCanceled(p) {
+		return
+	}
+	p.BeginPhase(5)
 	buildIndexes(dd, p)
 }
 
 // refreshTrackers 刷新指定 tracker 列表
 func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, names []string, p *Progress) {
-	td := cfg.TrackerDir()
-	seen := map[int]bool{}
-	var allIDs []int
-	for _, name := range names {
-		var path string
-		if _, err := os.Stat(filepath.Join(td, name+".json")); err == nil {
-			path = filepath.Join(td, name+".json")
-		} else if _, err := os.Stat(filepath.Join(td, name+".toml")); err == nil {
-			path = filepath.Join(td, name+".toml")
-		} else {
-			continue
-		}
-		for _, sid := range loadTrackerIDs(path) {
-			if !seen[sid] {
-				seen[sid] = true
-				allIDs = append(allIDs, sid)
-			}
-		}
-	}
+	allIDs := trackerIDsByNames(cfg, names)
 	if len(allIDs) == 0 {
 		log.Warn("refreshTrackers: no IDs found", "names", names)
 		return
 	}
-	p.SetPhase(1, 5, "拉取动画数据")
-	fetchSubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
-	log.Info("trackers refreshed", "names", names, "subjects", len(seen))
-	downloadImages(dd, bg, p, 2, 5, cfg.Server.ConcurrencyImage)
-	p.SetPhase(5, 5, "建立索引")
+	p.SetPlan(trackerPhasePlan())
+	p.BeginPhase(1)
+	fetch.SubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
+	if taskCanceled(p) {
+		return
+	}
+	log.Info("trackers refreshed", "names", names, "subjects", len(allIDs))
+	fetch.DownloadImages(dd, bg, p, 2, cfg.Server.ConcurrencyImage)
+	if taskCanceled(p) {
+		return
+	}
+	p.BeginPhase(5)
 	buildIndexes(dd, p)
 }
 
@@ -160,7 +315,7 @@ func addToSeshatTracker(sid int) {
 		events.Bus.Error("Tracker 写入失败")
 		return
 	}
-	if err := cache.WriteAtomic(path, result, 0o644); err != nil {
+	if err := store.WriteAtomic(path, result, 0o644); err != nil {
 		log.Error("tracker write", "sid", sid, "err", err)
 		events.Bus.Error("Tracker 写入失败")
 	}
@@ -199,7 +354,7 @@ func loadTrackerIDs(path string) []int {
 	return parseTOMLIDArray(data)
 }
 
-// parseTOMLIDArray 解析 TOML 格式的 ids = [...] 数组，支持多行逗号分隔。
+// parseTOMLIDArray 解析 TOML 格式的 ids = [...] 数组，支持多行逗号分隔
 func parseTOMLIDArray(data []byte) []int {
 	var ids []int
 	inArray := false
@@ -240,21 +395,10 @@ func parseIDList(s string, ids *[]int) {
 
 // diffTrackerIDs 返回 tracker 中有但本地没有的 ID
 func diffTrackerIDs(cfg *config.Config, dd string) []int {
-	seen := map[int]bool{}
-	var allIDs []int
-	files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
-	files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
-	for _, f := range append(files, files2...) {
-		for _, sid := range loadTrackerIDs(f) {
-			if !seen[sid] {
-				seen[sid] = true
-				allIDs = append(allIDs, sid)
-			}
-		}
-	}
+	allIDs := allTrackerIDs(cfg)
 	// 读取已有条目 ID
 	existing := map[int]bool{}
-	if list, err := loadCachedIndex[[]cache.SubjectSummary](cache.IndexFile(dd, "subjects.json")); err == nil {
+	if list, err := index.LoadCached[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json")); err == nil {
 		for _, s := range list {
 			existing[s.ID] = true
 		}
@@ -286,90 +430,97 @@ func validTrackerName(name string) bool {
 func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
+			ID   string `json:"id"`
 			Name string `json:"name"`
 		}
-		if limitBody(w, r); json.NewDecoder(r.Body).Decode(&req) != nil {
-			writeError(w, 400, "invalid request body")
+		limitBody(w, r)
+		if !decodeJSON(w, r, &req) {
 			return
 		}
-		if req.Name == "" || !validTrackerName(req.Name) {
-			writeError(w, 400, "tracker name must be alphanumeric, dash, or underscore")
+		id := strings.TrimSpace(req.ID)
+		name := strings.TrimSpace(req.Name)
+		if id == "" {
+			id = name
+		}
+		if id == "" || !validTrackerName(id) {
+			writeError(w, r, 400, "Tracker id 不合法，仅允许大小写字母、数字、短横线和下划线")
 			return
 		}
-		path := filepath.Join(cfg.TrackerDir(), req.Name+".toml")
-		if _, err := os.Stat(path); err == nil {
-			writeError(w, 409, "tracker already exists")
+		if reservedTrackerID(id) {
+			writeError(w, r, 400, "Tracker id 为保留名称")
 			return
 		}
-		tmpl := fmt.Sprintf(config.TrackerTemplate, req.Name, req.Name)
-		if err := os.MkdirAll(cfg.TrackerDir(), 0o755); err != nil {
-			writeError(w, 500, "无法创建 tracker 目录")
+		td := cfg.TrackerDir()
+		for _, ext := range []string{".toml", ".json"} {
+			if _, err := os.Stat(filepath.Join(td, id+ext)); err == nil {
+				writeError(w, r, 409, "Tracker 已存在")
+				return
+			}
+		}
+		if name == "" {
+			name = id
+		}
+		if err := os.MkdirAll(td, 0o755); err != nil {
+			writeError(w, r, 500, "无法创建 tracker 目录")
 			return
 		}
-		if err := cache.WriteAtomic(path, []byte(tmpl), 0o644); err != nil {
+		tmpl := config.TrackerFileContent(id, name)
+		if err := store.WriteAtomic(filepath.Join(td, id+".toml"), []byte(tmpl), 0o644); err != nil {
 			log.Error("tracker create write", "err", err)
-			writeError(w, 500, "无法写入 tracker 文件")
+			writeError(w, r, 500, "无法写入 tracker 文件")
 			return
 		}
-		writeJSON(w, map[string]string{"status": "created", "name": req.Name})
+		writeJSON(w, map[string]string{"status": "created", "id": id, "name": name})
 	}
 }
 
 func handleTrackerList(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		files, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.json"))
-		files2, _ := filepath.Glob(filepath.Join(cfg.TrackerDir(), "*.toml"))
-		files = append(files, files2...)
-		type tinfo struct {
-			Name  string `json:"name"`
-			Count int    `json:"count"`
-		}
-		var list []tinfo
-		for _, f := range files {
-			name := strings.TrimSuffix(filepath.Base(f), ".json")
-			name = strings.TrimSuffix(name, ".toml")
-			list = append(list, tinfo{Name: name, Count: len(loadTrackerIDs(f))})
-		}
-		writeJSON(w, list)
+		writeList(w, loadTrackerInfos(cfg))
 	}
 }
 
 func handleImportCollections(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		data, err := os.ReadFile(filepath.Join(config.Dir(), "user", "info", "collections.json"))
+		data, err := os.ReadFile(filepath.Join(userDir(dd), "collections.json"))
 		if err != nil {
-			writeError(w, 400, "collections not found")
+			writeError(w, r, 400, "collections not found")
 			return
 		}
 		var coll struct {
-			Subjects map[string]int `json:"subjects"`
+			Data []struct {
+				SubjectID   int `json:"subject_id"`
+				SubjectType int `json:"subject_type"`
+			} `json:"data"`
 		}
 		if json.Unmarshal(data, &coll) != nil {
-			writeError(w, 400, "invalid collections data")
+			writeError(w, r, 400, "invalid collections data")
 			return
 		}
-		var ids []int
-		for sid := range coll.Subjects {
-			id, _ := strconv.Atoi(sid)
-			if id > 0 {
-				ids = append(ids, id)
+		seen := map[int]bool{}
+		ids := make([]int, 0, len(coll.Data))
+		for _, item := range coll.Data {
+			if item.SubjectType != 2 || item.SubjectID <= 0 || seen[item.SubjectID] {
+				continue
 			}
+			seen[item.SubjectID] = true
+			ids = append(ids, item.SubjectID)
 		}
 		td := filepath.Join(config.Dir(), "tracker")
 		if err := os.MkdirAll(td, 0o755); err != nil {
-			writeError(w, 500, "无法创建 tracker 目录")
+			writeError(w, r, 500, "无法创建 tracker 目录")
 			return
 		}
 		trackerData, err := json.Marshal(map[string]any{"name": "user", "subjects": ids})
 		if err != nil {
 			log.Error("import collections marshal", "err", err)
-			events.Bus.Error("收藏列表导入失败")
-			writeError(w, 500, "internal error")
+			events.Bus.Error("收藏列表同步失败")
+			writeError(w, r, 500, "internal error")
 			return
 		}
-		if err := cache.WriteAtomic(filepath.Join(td, "user.json"), trackerData, 0o644); err != nil {
+		if err := store.WriteAtomic(filepath.Join(td, "user.json"), trackerData, 0o644); err != nil {
 			log.Error("import collections write", "err", err)
-			writeError(w, 500, "无法写入 tracker 文件")
+			writeError(w, r, 500, "无法写入 tracker 文件")
 			return
 		}
 		writeJSON(w, map[string]any{"status": "ok", "count": len(ids)})

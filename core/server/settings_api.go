@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -19,8 +18,8 @@ func handleSettingsGet(cfg *config.Config) http.HandlerFunc {
 
 func handleSettingsPost(w http.ResponseWriter, r *http.Request) {
 	var updates map[string]any
-	if limitBody(w, r); json.NewDecoder(r.Body).Decode(&updates) != nil {
-		writeError(w, 400, "invalid JSON")
+	limitBody(w, r)
+	if !decodeJSON(w, r, &updates) {
 		return
 	}
 	okList, failList := config.ApplyOverrides(updates)

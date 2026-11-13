@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN" class="bg-bg">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="view-transition" content="same-origin" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+        <title>评分 | Seshat</title>
+
+        <script src="/assets/theme.min.js"></script>
+        <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+        <link rel="stylesheet" href="/assets/style.css" />
+        <style>
+            #pk-left,
+            #pk-right {
+                transition: flex 0.35s ease;
+                overflow: hidden;
+                position: relative;
+            }
+            #pk-left::after,
+            #pk-right::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                background: var(--c-pk-overlay);
+                z-index: 10;
+                opacity: 0;
+                transition: opacity 0.35s ease;
+                pointer-events: none;
+            }
+            #pk-left.shrunk::after,
+            #pk-right.shrunk::after,
+            #pk-left.pk-loser::after,
+            #pk-right.pk-loser::after {
+                opacity: 1;
+            }
+            #pk-left.shrunk,
+            #pk-right.shrunk {
+                flex: 0 0 200px;
+                cursor: pointer;
+            }
+            .cancel-hint {
+                position: absolute;
+                inset: 0;
+                z-index: 20;
+                display: flex;
+                align-items: flex-start;
+                justify-content: center;
+                padding-top: 12px;
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.85);
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.35s ease;
+            }
+            #pk-left.shrunk .cancel-hint,
+            #pk-right.shrunk .cancel-hint,
+            #pk-left.pk-loser .cancel-hint,
+            #pk-right.pk-loser .cancel-hint {
+                opacity: 1;
+            }
+            @keyframes pkBreathe {
+                0%,
+                100% {
+                    box-shadow:
+                        0 0 0 2px var(--c-pink),
+                        0 0 10px 1px var(--c-pink-glow);
+                }
+                50% {
+                    box-shadow:
+                        0 0 0 2px var(--c-pink),
+                        0 0 26px 8px var(--c-pink-glow);
+                }
+            }
+            #pk-left.pk-glow,
+            #pk-right.pk-glow {
+                z-index: 15;
+                animation: pkBreathe 2.4s ease-in-out infinite;
+            }
+            @media (prefers-reduced-motion: reduce) {
+                #pk-left.pk-glow,
+                #pk-right.pk-glow {
+                    animation: none;
+                    box-shadow: 0 0 0 2px var(--c-pink);
+                }
+            }
+
+            .confirm-bar {
+                border-radius: inherit;
+                background: radial-gradient(
+                    120% 110% at 50% 0%,
+                    var(--c-pink-bg),
+                    transparent 70%
+                );
+                padding-top: 12px;
+                transition: opacity 0.35s ease;
+                opacity: 0;
+            }
+            .confirm-bar.show {
+                opacity: 1;
+            }
+            @media (min-width: 800px) {
+                #pk-area.pk-picked #pk-left-name,
+                #pk-area.pk-picked #pk-right-name,
+                #pk-area.pk-picked #pk-left-sub,
+                #pk-area.pk-picked #pk-right-sub {
+                    text-overflow: clip;
+                }
+            }
+        </style>
+    </head>
+    <body class="text-text font-[system-ui] min-h-screen">
+        <div id="topbar"></div>
+        <main id="view" class="max-w-[900px] mx-auto p-6"></main>
+
+        <script src="assets/app.min.js"></script>
+        <script type="module" src="assets/rating.js"></script>
+    </body>
+</html>

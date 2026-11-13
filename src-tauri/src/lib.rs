@@ -64,6 +64,19 @@ fn split_error(raw: &str) -> (String, String) {
     (title, msg)
 }
 
+/// 把后端监听地址转成 WebView 可访问的 URL。
+/// 绑定 0.0.0.0 或 [::] 时返回的是通配地址，需要换成回环地址。
+fn navigation_url(addr: &str) -> Option<tauri::Url> {
+    let socket: std::net::SocketAddr = addr.trim().parse().ok()?;
+    let ip = if socket.ip().is_unspecified() {
+        std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST)
+    } else {
+        socket.ip()
+    };
+    let target = std::net::SocketAddr::new(ip, socket.port());
+    tauri::Url::parse(&format!("http://{}", target)).ok()
+}
+
 /// 桌面端：先建初始窗口，再拉起 Go sidecar，等它通过 stdout 报告监听地址后导航。
 #[cfg(not(mobile))]
 fn setup_desktop(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
@@ -73,7 +86,7 @@ fn setup_desktop(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let win = WebviewWindowBuilder::new(app, "main", WebviewUrl::External(blank))
         .title("Seshat")
         .inner_size(1200.0, 800.0)
-        .min_inner_size(1000.0, 600.0)
+        .min_inner_size(350.0, 550.0)
         .center()
         .resizable(true)
         .fullscreen(false)
@@ -169,8 +182,7 @@ fn setup_desktop(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                         }
                         if let Some(addr) = line.strip_prefix("SESHAT_ADDR=") {
                             if let Some(w) = h.get_webview_window("main") {
-                                if let Ok(url) = tauri::Url::parse(&format!("http://{}", addr.trim()))
-                                {
+                                if let Some(url) = navigation_url(addr) {
                                     let _ = w.navigate(url);
                                 }
                             }
@@ -236,10 +248,33 @@ fn graceful_exit(handle: tauri::AppHandle) {
     }
     #[cfg(not(mobile))]
     if let Some(child) = SIDECAR.lock().unwrap().take() {
-        let _ = child.lock().unwrap().kill();
-        // Wait in background, then exit
+        #[cfg(unix)]
+        {
+            // 先请求后端优雅退出，任务会被取消
+            let pid = child.lock().unwrap().id().to_string();
+            let _ = Command::new("kill").arg("-TERM").arg(pid).status();
+        }
+        #[cfg(not(unix))]
+        {
+            let _ = child.lock().unwrap().kill();
+        }
+        // 等待退出，超时后强杀
         std::thread::spawn(move || {
-            let _ = child.lock().unwrap().wait();
+            let deadline = Instant::now() + Duration::from_secs(5);
+            loop {
+                {
+                    let mut c = child.lock().unwrap();
+                    if c.try_wait().ok().flatten().is_some() {
+                        break;
+                    }
+                    if Instant::now() >= deadline {
+                        let _ = c.kill();
+                        let _ = c.wait();
+                        break;
+                    }
+                }
+                std::thread::sleep(Duration::from_millis(100));
+            }
             handle.exit(0);
         });
     } else {

@@ -33,7 +33,7 @@ var Bus *EventBus
 // historyLimit 回放给新订阅者的历史事件条数上限
 const historyLimit = 50
 
-// sessionPrefix 每次进程启动唯一，避免重启后 id 与旧客户端已见的重复。
+// sessionPrefix 每次进程启动唯一，避免重启后 id 与旧客户端已见的重复
 var sessionPrefix = strconv.FormatInt(time.Now().UnixNano(), 36)
 
 func InitBus() {
