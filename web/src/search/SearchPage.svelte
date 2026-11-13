@@ -78,6 +78,22 @@
         return out + window.escapeHtml(buf);
     }
 
+    // 截取关键词附近的文本，保证高亮部分能显示出来
+    function snippetAround(text, q, before, after) {
+        var s = String(text == null ? "" : text);
+        var query = String(q || "");
+        if (!query) return s;
+        var idx = s.toLowerCase().indexOf(query.toLowerCase());
+        if (idx < 0) return s;
+        var start = Math.max(0, idx - before);
+        var end = Math.min(s.length, idx + query.length + after);
+        return (
+            (start > 0 ? "…" : "") +
+            s.slice(start, end) +
+            (end < s.length ? "…" : "")
+        );
+    }
+
     function toggleType(type, event) {
         if (!typeChecks[type] && selectedTypes.length <= 1) {
             if (event && event.currentTarget) {
@@ -205,11 +221,17 @@
             <div class="flex-1 min-w-0">
                 <div class="flex items-baseline gap-2 min-w-0">
                     <span class="text-sm font-semibold truncate"
-                        >{@html highlightText(primary, currentKeyword)}</span
+                        >{@html highlightText(
+                            snippetAround(primary, currentKeyword, 3, 30),
+                            currentKeyword
+                        )}</span
                     >
                     {#if sub}
                         <span class="text-xs text-sub truncate max-w-[45%]"
-                            >{@html highlightText(sub, currentKeyword)}</span
+                            >{@html highlightText(
+                                snippetAround(sub, currentKeyword, 3, 20),
+                                currentKeyword
+                            )}</span
                         >
                     {/if}
                 </div>
@@ -218,7 +240,7 @@
                         {it.match.field === "summary"
                             ? "简介"
                             : it.match.key || "信息"}：{@html highlightText(
-                            it.match.text || "",
+                            snippetAround(it.match.text || "", currentKeyword, 4, 40),
                             currentKeyword
                         )}
                     </div>
