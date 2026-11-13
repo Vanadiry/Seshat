@@ -31,7 +31,7 @@ function showLightbox(src) {
     wrap.appendChild(img);
     var bar = document.createElement("div");
     bar.style.cssText =
-        "position:fixed;top:16px;left:16px;z-index:10;opacity:0;" +
+        "position:fixed;top:calc(16px + var(--safe-top));left:calc(16px + var(--safe-left));z-index:10;opacity:0;" +
         (reduceMotion ? "" : "transition:opacity .25s ease");
     var closeBtn = document.createElement("button");
     closeBtn.textContent = "关闭";

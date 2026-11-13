@@ -264,6 +264,19 @@ select {
     user-select: text;
 }
 
+/* 横屏刘海和底部横条的安全区 */
+:root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+}
+body {
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+    padding-bottom: var(--safe-bottom);
+}
+
 /* 全局禁用双击缩放，保留单指滑动和双指缩放 */
 html {
     touch-action: manipulation;

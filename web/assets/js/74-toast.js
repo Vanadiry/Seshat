@@ -1,11 +1,19 @@
 // 通知组件（统一右下角）
 var _toastStack = [];
 var _currentToast = null;
+
+// 读取安全区变量的像素值
+function _safeInset(name) {
+    var v = getComputedStyle(document.documentElement).getPropertyValue(name);
+    var n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
+}
+
 function _repositionToasts() {
     _toastStack = _toastStack.filter(function (t) {
         return !t.closed();
     });
-    var bottom = 16;
+    var bottom = 16 + _safeInset("--safe-bottom");
     for (var i = _toastStack.length - 1; i >= 0; i--) {
         _toastStack[i].el.style.bottom = bottom + "px";
         bottom += _toastStack[i].el.getBoundingClientRect().height + 12;
@@ -41,6 +49,7 @@ function _makeToast(
         "fixed right-4 z-[300] rounded-lg shadow-2xl max-w-[60vw] min-w-[280px]" +
         (reduceMotion ? "" : " transition-all duration-300");
     el.style.bottom = "16px";
+    el.style.right = "calc(16px + var(--safe-right))";
     el.style.opacity = "0";
     el.style.transform = "translateY(8px)";
     var countHTML = merge
