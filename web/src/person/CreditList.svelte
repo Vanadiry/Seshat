@@ -162,7 +162,7 @@
     <div>
         <SectionTitle text={title} extra={remoteExtra} />
         {#each pairs(visible) as pair}
-            <div class="flex gap-4">
+            <div class="flex flex-col">
                 <div class="flex-1 min-w-0">
                     {@render card(pair[0])}
                 </div>
