@@ -132,8 +132,7 @@ func (c *Config) Validate() []string {
 	}
 	if strings.Contains(c.Server.BindAddr, "://") || strings.Contains(c.Server.BindAddr, "/") {
 		errs = append(errs, "bind_addr 只填写 IP 或主机名，不要带协议和路径")
-	}
-	if _, _, err := net.SplitHostPort(c.Server.BindAddr); err == nil {
+	} else if _, _, err := net.SplitHostPort(c.Server.BindAddr); err == nil {
 		errs = append(errs, "bind_addr 不要包含端口，端口请写在 port")
 	}
 	if strings.Count(c.Server.BindAddr, ":") > 1 && !strings.HasPrefix(c.Server.BindAddr, "[") {
