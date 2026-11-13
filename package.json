@@ -3,7 +3,7 @@
         "build:clean": "node scripts/clean-dist.js",
         "build:svelte": "vite build",
         "build:css": "pnpm tailwindcss -i assets/tailwind-input.css -o ../web-dist/assets/style.css --minify --cwd web",
-        "build:js": "pnpm terser web/assets/app.js -o web-dist/assets/app.min.js -c -m && pnpm terser web/assets/theme.js -o web-dist/assets/theme.min.js -c -m",
+        "build:js": "node scripts/concat-js.js && pnpm terser build/app.js -o web-dist/assets/app.min.js -c -m && pnpm terser web/assets/theme.js -o web-dist/assets/theme.min.js -c -m",
         "build:html": "node scripts/minify-html.js",
         "build": "pnpm run build:clean && pnpm run build:svelte && pnpm run build:css && pnpm run build:js && pnpm run build:html"
     },
