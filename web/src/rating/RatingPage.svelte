@@ -237,7 +237,7 @@
                     {@const loser = pkState !== "idle" && pkState !== side}
                     <div
                         id={"pk-" + side}
-                        class="flex-1 min-w-0 bg-surface border border-bord-mid rounded-xl p-3 md:p-6 flex flex-col items-center justify-center cursor-pointer relative h-[298px] {narrow &&
+                        class="flex-1 min-w-0 bg-surface border border-bord-mid rounded-xl p-2 md:p-6 flex flex-col items-center justify-center cursor-pointer relative h-[298px] {narrow &&
                         winner
                             ? 'pk-glow'
                             : ''} {narrow && loser ? 'pk-loser' : ''}"
@@ -261,7 +261,7 @@
                     >
                         <div
                             id={"pk-" + side + "-img"}
-                            class="relative shrink-0 rounded-lg overflow-hidden bg-input w-[75%] max-w-[140px] md:w-[140px] md:max-w-none"
+                            class="relative shrink-0 rounded-lg overflow-hidden bg-input w-[85%] max-w-[160px] md:w-[140px] md:max-w-none"
                             style="aspect-ratio: 1/1.414"
                         >
                             <img
