@@ -154,6 +154,13 @@
             const xhr = new XMLHttpRequest();
             xhr.open("POST", API_BASE + "/v0/bundle/import");
             xhr.setRequestHeader("Content-Type", "application/x-tar");
+            if (
+                window.API_TOKEN &&
+                (API_BASE.indexOf("/api") === 0 ||
+                    API_BASE.indexOf(location.origin + "/api") === 0)
+            ) {
+                xhr.setRequestHeader("X-Seshat-Token", window.API_TOKEN);
+            }
             xhr.upload.onprogress = function (e) {
                 if (!e.lengthComputable || !e.total) return;
                 bundleImportStatus.set(

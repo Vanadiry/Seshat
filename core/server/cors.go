@@ -15,7 +15,12 @@ func withCORS(cfg *config.Config) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get("Origin")
+			inAPI := strings.HasPrefix(r.URL.Path, "/api/")
 			allowed := origin == "" || (validOrigin(origin) && (allowAny || isLoopbackOrigin(origin)))
+			// 页面和静态资源不向其他 Origin 暴露，避免 API 令牌被读走
+			if origin != "" && !inAPI {
+				allowed = sameOriginHost(origin, r.Host)
+			}
 			if origin != "" {
 				w.Header().Add("Vary", "Origin")
 			}
@@ -36,6 +41,15 @@ func withCORS(cfg *config.Config) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// sameOriginHost 判断 Origin 的主机是否与请求主机一致
+func sameOriginHost(origin, host string) bool {
+	u, ok := parseOrigin(origin)
+	if !ok {
+		return false
+	}
+	return strings.EqualFold(u.Host, host)
 }
 
 // bindAllowsAnyOrigin 判断监听地址是否视为对外公开

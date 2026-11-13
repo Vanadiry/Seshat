@@ -2,12 +2,15 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 
@@ -16,6 +19,7 @@ import (
 
 type ServerConfig struct {
 	BindAddr         string `toml:"bind_addr"`
+	APIToken         string `toml:"api_token"`
 	Port             int    `toml:"port"`
 	ConcurrencyInfo  int    `toml:"concurrency_info"`
 	ConcurrencyImage int    `toml:"concurrency_image"`
@@ -78,7 +82,8 @@ func Load() (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			data = []byte(DefaultConfigTOML)
+			// 首次创建时生成一次 API 令牌，之后不再修改配置文件
+			data = []byte(defaultConfigWithToken())
 			if err := os.MkdirAll(Dir(), 0o755); err != nil {
 				fmt.Fprintf(os.Stderr, "创建配置目录失败: %v\n", err)
 			} else if err := store.WriteAtomic(path, data, 0o644); err != nil {
@@ -93,6 +98,21 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("解析配置失败: %w", err)
 	}
 	return &cfg, nil
+}
+
+// defaultConfigWithToken 在默认配置里填入一个随机令牌
+func defaultConfigWithToken() string {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return DefaultConfigTOML
+	}
+	token := hex.EncodeToString(b)
+	return strings.Replace(
+		DefaultConfigTOML,
+		`api_token = ""`,
+		fmt.Sprintf("api_token = %q", token),
+		1,
+	)
 }
 
 // Validate 校验会影响程序正常运行的字段，返回全部错误

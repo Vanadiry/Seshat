@@ -42,7 +42,7 @@ func TestCORSOriginPolicy(t *testing.T) {
 		h := corsFor(c.bind, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			called = true
 		}))
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequest(http.MethodGet, "/api/v0/info", nil)
 		if c.origin != "" {
 			req.Header.Set("Origin", c.origin)
 		}
@@ -105,7 +105,8 @@ func TestCORSPreflight(t *testing.T) {
 		called = true
 	}))
 
-	req := httptest.NewRequest(http.MethodOptions, "/", nil)
+	req := httptest.NewRequest(http.MethodOptions, "/api/v0/info", nil)
+	req.Host = "127.0.0.1:12500"
 	req.Header.Set("Origin", "http://127.0.0.1:12500")
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
@@ -119,7 +120,7 @@ func TestCORSPreflight(t *testing.T) {
 		t.Fatal("预检进入了 handler")
 	}
 
-	req = httptest.NewRequest(http.MethodOptions, "/", nil)
+	req = httptest.NewRequest(http.MethodOptions, "/api/v0/info", nil)
 	req.Header.Set("Origin", "https://example.com")
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
@@ -157,6 +158,32 @@ func TestBindAllowsAnyOrigin(t *testing.T) {
 	for _, c := range cases {
 		if got := bindAllowsAnyOrigin(c.addr); got != c.want {
 			t.Errorf("bindAllowsAnyOrigin(%q) = %v，期望 %v", c.addr, got, c.want)
+		}
+	}
+}
+
+func TestCORSPagesSameOriginOnly(t *testing.T) {
+	h := corsFor("127.0.0.1", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+
+	cases := []struct {
+		origin string
+		want   int
+	}{
+		{"", http.StatusOK},
+		{"http://127.0.0.1:12500", http.StatusOK},
+		{"http://localhost:8000", http.StatusForbidden},
+		{"https://example.com", http.StatusForbidden},
+	}
+	for _, c := range cases {
+		req := httptest.NewRequest(http.MethodGet, "/assets/app.min.js", nil)
+		req.Host = "127.0.0.1:12500"
+		if c.origin != "" {
+			req.Header.Set("Origin", c.origin)
+		}
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, req)
+		if w.Code != c.want {
+			t.Errorf("origin=%q 状态码 = %d，期望 %d", c.origin, w.Code, c.want)
 		}
 	}
 }

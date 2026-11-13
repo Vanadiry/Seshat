@@ -38,6 +38,35 @@ function authOpts() {
     return { headers: { Authorization: "Bearer " + tok } };
 }
 
+// 本地 API 的 POST 请求统一带上令牌
+(function () {
+    if (!window.API_TOKEN || !window.fetch) return;
+    var orig = window.fetch;
+    window.fetch = function (input, init) {
+        var url =
+            typeof input === "string" ? input : (input && input.url) || "";
+        var local =
+            url.indexOf("/api/") === 0 ||
+            url.indexOf(location.origin + "/api/") === 0;
+        if (!local) return orig.call(window, input, init);
+        var opts = init || {};
+        if (String(opts.method || "GET").toUpperCase() !== "POST") {
+            return orig.call(window, input, init);
+        }
+        var headers;
+        if (opts.headers) {
+            headers = new Headers(opts.headers);
+        } else if (typeof Request !== "undefined" && input instanceof Request) {
+            headers = new Headers(input.headers);
+        } else {
+            headers = new Headers();
+        }
+        headers.set("X-Seshat-Token", window.API_TOKEN);
+        opts = Object.assign({}, opts, { headers: headers });
+        return orig.call(window, input, opts);
+    };
+})();
+
 // 加载条
 var _ldCount = 0,
     _ldTimer = null;
