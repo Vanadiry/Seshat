@@ -300,7 +300,7 @@
                 <div class="text-center py-20 text-sub">{error}</div>
             {:else}
                 <div
-                    class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-bord-light"
+                    class="flex items-center gap-4 px-3 py-1.5 text-xs text-sub border-b border-bord-light min-w-[700px]"
                 >
                     <div class="w-10 shrink-0"></div>
                     <div class="flex-1 min-w-0">动画</div>
@@ -338,7 +338,7 @@
                                 : ""}
                         <div
                             id={"orphan-" + it.id}
-                            class="flex items-center gap-4 px-3 py-1.5 border border-transparent {bg}"
+                            class="flex items-center gap-4 px-3 py-1.5 border border-transparent {bg} min-w-[700px]"
                         >
                             <img
                                 alt=""
@@ -367,21 +367,23 @@
                                     {:else}
                                         无标题
                                     {/if}
-                                </div>
-                                {#if entry !== undefined && entry && entry.name}
-                                    {#if window.subName(entry.name, entry.name_cn)}
+                                    {#if entry !== undefined && entry && entry.name}
+                                        {#if window.subName(entry.name, entry.name_cn)}
+                                            <div
+                                                class="text-xs text-sub truncate"
+                                            >
+                                                {window.subName(
+                                                    entry.name,
+                                                    entry.name_cn
+                                                )}
+                                            </div>
+                                        {/if}
+                                    {:else if entry !== undefined}
                                         <div class="text-xs text-sub truncate">
-                                            {window.subName(
-                                                entry.name,
-                                                entry.name_cn
-                                            )}
+                                            未能获取此条目的数据，可能是未储存此条目，或数据端点异常
                                         </div>
                                     {/if}
-                                {:else if entry !== undefined}
-                                    <div class="text-xs text-sub truncate">
-                                        未能获取此条目的数据，可能是未储存此条目，或数据端点异常
-                                    </div>
-                                {/if}
+                                </div>
                             </div>
                             {@render eloCell(ratingVal, pctVal, eloCls)}
                             <span class="{myCls} {COL_MY} text-center font-mono"
@@ -410,7 +412,7 @@
                                 : ""}
                         <a
                             href={"/subject?id=" + it.id}
-                            class="flex items-center gap-4 px-3 py-1.5 cursor-pointer hover:border-pink border border-transparent no-underline {bg}"
+                            class="flex items-center gap-4 px-3 py-1.5 cursor-pointer hover:border-pink border border-transparent no-underline {bg} min-w-[700px]"
                         >
                             <img
                                 alt=""
@@ -425,12 +427,15 @@
                             <div class="flex-1 min-w-0">
                                 <div class="text-sm font-semibold truncate">
                                     {window.primaryName(it.name, it.name_cn)}
+                                    {#if window.subName(it.name, it.name_cn)}
+                                        <div class="text-xs text-sub truncate">
+                                            {window.subName(
+                                                it.name,
+                                                it.name_cn
+                                            )}
+                                        </div>
+                                    {/if}
                                 </div>
-                                {#if window.subName(it.name, it.name_cn)}
-                                    <div class="text-xs text-sub truncate">
-                                        {window.subName(it.name, it.name_cn)}
-                                    </div>
-                                {/if}
                             </div>
                             {@render eloCell(ratingVal, pctVal, eloCls)}
                             <span class="{myCls} {COL_MY} text-center font-mono"
