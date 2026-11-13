@@ -218,7 +218,7 @@
                 id={"f-" + d.key}
                 value={prefs[d.key] !== undefined ? prefs[d.key] : ""}
                 onchange={(e) => setPref(d.key, e.currentTarget.value)}
-                class="custom-select w-[140px] shrink-0 px-3 py-2 rounded-lg border border-bord bg-input text-sm"
+                class="custom-select w-[200px] max-w-[50%] shrink-0 px-3 py-2 rounded-lg border border-bord bg-input text-sm"
             >
                 {#each d.choices as c}
                     <option value={c.k}>{c.l}</option>
@@ -229,7 +229,7 @@
                 id={"f-" + d.key}
                 value={prefs[d.key] !== undefined ? prefs[d.key] : ""}
                 oninput={(e) => setPref(d.key, e.currentTarget.value)}
-                class="w-[200px] shrink-0 px-3 py-2 rounded-lg border border-bord bg-input text-sm"
+                class="w-[200px] max-w-[50%] shrink-0 px-3 py-2 rounded-lg border border-bord bg-input text-sm"
             />
         {/if}
     </div>
