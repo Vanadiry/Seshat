@@ -19,7 +19,7 @@
         <div class="text-center py-10 text-sub">暂无制作人员</div>
     {:else}
         <div class="flex gap-6">
-            <div class="flex-1" style="column-count:2;column-gap:1.5rem">
+            <div class="flex-1 columns-1 md:columns-2 gap-x-6">
                 {#each groups as [key, list], i}
                     <div
                         class="mb-4 bg-surface-alt rounded-lg p-3 scroll-mt-28"
