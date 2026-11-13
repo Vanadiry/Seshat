@@ -29,7 +29,9 @@
                 pointer-events: none;
             }
             #pk-left.shrunk::after,
-            #pk-right.shrunk::after {
+            #pk-right.shrunk::after,
+            #pk-left.pk-loser::after,
+            #pk-right.pk-loser::after {
                 opacity: 1;
             }
             #pk-left.shrunk,
@@ -52,7 +54,9 @@
                 transition: opacity 0.35s ease;
             }
             #pk-left.shrunk .cancel-hint,
-            #pk-right.shrunk .cancel-hint {
+            #pk-right.shrunk .cancel-hint,
+            #pk-left.pk-loser .cancel-hint,
+            #pk-right.pk-loser .cancel-hint {
                 opacity: 1;
             }
             .confirm-bar {
