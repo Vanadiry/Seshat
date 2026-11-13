@@ -230,7 +230,7 @@
     });
 </script>
 
-{#snippet sortHeader(label, key, cls)}
+{#snippet sortHeader(label, key, cls, short)}
     <div
         class="{cls} text-center cursor-pointer select-none hover:text-text {sortKey ===
         key
@@ -248,7 +248,9 @@
         }}
         onclick={() => sortBy(key)}
     >
-        {label}{sortKey === key ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
+        <span class="md:hidden">{short || label}</span><span class="hidden md:inline"
+            >{label}</span
+        >{sortKey === key ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
     </div>
 {/snippet}
 
@@ -304,9 +306,9 @@
                 >
                     <div class="w-10 shrink-0"></div>
                     <div class="flex-1 min-w-0">动画</div>
-                    {@render sortHeader("ELO 评分", "elo", COL_ELO)}
-                    {@render sortHeader("我的评分", "my", COL_MY)}
-                    {@render sortHeader("番组计划评分", "score", COL_BGM)}
+                    {@render sortHeader("ELO 评分", "elo", COL_ELO, "ELO")}
+                    {@render sortHeader("我的评分", "my", COL_MY, "我的")}
+                    {@render sortHeader("番组计划评分", "score", COL_BGM, "番组计划")}
                     <div class="{COL_ID} text-center">ID</div>
                 </div>
                 {#if !sorted.length}
