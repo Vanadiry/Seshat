@@ -1,5 +1,29 @@
 # Changelog
 
+## [v2.0.0-dev.11] - 2026-11-13
+
+### Added
+
+- 本地 POST 请求校验 `X-Seshat-Token`，首次生成配置时自动写入 `api_token`
+- 启动时校验 bind_addr、端口、并发、代理、URL、data_home 和 log_level
+- 任务支持按 ID 中止，并立即中断在途请求
+- 数据包导出支持取消
+- 补充测试
+
+### Changed
+
+- 拆分 core/index 和 core/fetch，日志模块不再依赖配置
+- 拆分 fetch、elo、image 模块
+- 抽取页面渲染和 app.min.js 注入逻辑
+- 抽取 URL 解析辅助函数
+- 清理前端死代码
+
+### Fixed
+
+- 构建版 macOS 启动白屏
+- toast 标题高度不一致，任务中止时重复提示
+- bind_addr 校验重复报错
+
 ## [v2.0.0-dev.10] - 2026-11-13
 
 ### Added
