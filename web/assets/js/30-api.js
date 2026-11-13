@@ -116,7 +116,7 @@ function errText(d, status) {
     if (d && d.description) return d.description;
     if (d && d.title) return d.title;
     if (d && d.error) return d.error;
-    return "请求失败 (" + status + ")";
+    return "请求失败，状态码 " + status;
 }
 // readJSON 解析响应体，失败时返回 null
 function readJSON(res) {

@@ -51,8 +51,8 @@ func WriteAtomic(path string, data []byte, perm os.FileMode) error {
 	return os.Rename(tmp, path)
 }
 
-// WriteAtomicFast 与 WriteAtomic 相同，但跳过 fsync。
-// 用于批量导入这类可重试、更看重速度的场景。
+// WriteAtomicFast 与 WriteAtomic 相同，但跳过 fsync
+// 用于批量导入这类可重试、更看重速度的场景
 func WriteAtomicFast(path string, data []byte, perm os.FileMode) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -125,7 +125,7 @@ func ListIDs(dataDir, domain string) ([]int, error) {
 
 // StripImages 递归删除 JSON 中的 images 字段
 func StripImages(data []byte) []byte {
-	// 先按对象解析
+	// 按对象解析
 	var obj map[string]any
 	if json.Unmarshal(data, &obj) == nil {
 		stripImagesRecursive(obj)
@@ -135,7 +135,7 @@ func StripImages(data []byte) []byte {
 		}
 		return r
 	}
-	// 再按数组解析
+	// 对象解析失败后按数组解析
 	var arr []any
 	if json.Unmarshal(data, &arr) == nil {
 		for _, item := range arr {
@@ -166,7 +166,7 @@ func stripImagesRecursive(v map[string]any) {
 	}
 }
 
-// SubjectSummary 是列表文件使用的轻量条目
+// SubjectSummary 为列表文件使用的轻量条目
 type SubjectSummary struct {
 	ID       int     `json:"id"`
 	Name     string  `json:"name"`
@@ -176,7 +176,7 @@ type SubjectSummary struct {
 	Date     string  `json:"date"`
 }
 
-// NameEntry 是角色和人物列表使用的名称与 ID
+// NameEntry 为角色和人物列表使用的名称与 ID
 type NameEntry struct {
 	ID     int    `json:"id"`
 	Name   string `json:"name"`

@@ -32,7 +32,7 @@
 
     function charInfo(c) {
         var out = [];
-        if (c.gender) out.push("性别:" + c.gender);
+        if (c.gender) out.push("性别：" + c.gender);
         if (c.infobox) {
             try {
                 var info = JSON.parse(c.infobox);
@@ -144,7 +144,7 @@
                 'all'
                     ? 'bg-pink-solid text-white'
                     : 'bg-surface-alt text-sub hover:text-text'}"
-                >全部 ({chars.length})</span
+                >全部 {chars.length}</span
             >
             {#each relKeys as rel}
                 <span
@@ -162,7 +162,7 @@
         </div>
         <div id="char-list">
             {#if !visible.length}
-                <div class="text-center py-10 text-sub">没有符合条件的角色</div>
+                <div class="text-center py-10 text-sub">未找到符合条件的角色</div>
             {/if}
             {#each pairs(visible) as pair}
                 <div class="flex flex-col md:flex-row md:gap-4">

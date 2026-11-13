@@ -10,9 +10,9 @@
 {:else if state.missing}
     <p class="text-sub text-center py-20">缺少角色 ID</p>
 {:else if state.notFound}
-    <p class="text-sub text-center py-10">未找到该角色（ID: {state.id}）</p>
+    <p class="text-sub text-center py-10">未找到该角色，ID 为 {state.id}</p>
 {:else if state.error}
-    <p class="text-sub text-center py-20">渲染出错: {state.error}</p>
+    <p class="text-sub text-center py-20">渲染出错：{state.error}</p>
 {:else if state.character}
     <CharacterDetail
         character={state.character}

@@ -42,7 +42,7 @@ func handleFetchDeep(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 			return
 		}
 		if taskLocked() {
-			writeError(w, r, 409, "已有任务正在运行，请等待完成")
+			writeError(w, r, 409, "已有任务正在运行")
 			return
 		}
 		p := newProgress(100, "rebuild_all", "重建全部")
@@ -94,7 +94,7 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 			return
 		}
 		if taskLocked() {
-			writeError(w, r, 409, "已有任务正在运行，请等待完成")
+			writeError(w, r, 409, "已有任务正在运行")
 			return
 		}
 		p := newProgress(100, "fetch_user", "拉取用户数据")
@@ -115,7 +115,7 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 					return
 				}
 				log.Warn("user info fetch failed", "user", uname, "err", err)
-				p.SetError("用户信息拉取失败")
+				p.SetError("拉取用户信息失败")
 				p.SendPhaseStep(1, 1, "失败")
 			} else {
 				p.SendPhaseStep(1, 1, "")
@@ -131,7 +131,7 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 					return
 				}
 				log.Warn("user avatar fetch failed", "user", uname, "err", err)
-				p.SetError("用户头像拉取失败")
+				p.SetError("拉取用户头像失败")
 				p.SendPhaseStep(1, 1, "失败")
 			} else {
 				p.SendPhaseStep(1, 1, "")
@@ -147,7 +147,7 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 					return
 				}
 				log.Warn("user collections fetch failed", "user", uname, "err", err)
-				p.SetError("收藏列表拉取失败")
+				p.SetError("拉取收藏列表失败")
 				p.SendPhaseStep(1, 1, "失败")
 			} else {
 				p.SendPhaseStep(1, 1, "")
@@ -193,7 +193,7 @@ func handleFetchUpdate(cfg *config.Config, bg *bangumi.Client, dd, imgDir string
 func handleFetchIndex(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if taskLocked() {
-			writeError(w, r, 409, "已有任务正在运行，请等待完成")
+			writeError(w, r, 409, "已有任务正在运行")
 			return
 		}
 		p := newProgress(100, "rebuild_index", "重建索引")

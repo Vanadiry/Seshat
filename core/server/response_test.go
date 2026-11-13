@@ -91,7 +91,7 @@ func TestDecodeJSONInvalid(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("{"))
 	var v map[string]any
 	if decodeJSON(w, r, &v) {
-		t.Fatal("非法 JSON 应当返回 false")
+		t.Fatal("不合法 JSON 应当返回 false")
 	}
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("状态码 = %d", w.Code)

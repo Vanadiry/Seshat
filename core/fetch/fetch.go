@@ -16,7 +16,7 @@ func putData(dd, key string, data []byte, p Progress) bool {
 	if err := store.Put(dd, key, data); err != nil {
 		log.Error("data write failed", "key", key, "err", err)
 		if p != nil {
-			p.SetError(fmt.Sprintf("数据写入失败 %s: %v", key, err))
+			p.SetError(fmt.Sprintf("数据写入失败 %s：%v", key, err))
 		}
 		return false
 	}

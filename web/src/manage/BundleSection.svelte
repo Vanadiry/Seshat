@@ -26,7 +26,7 @@
     let showTrackerPicker = $derived($bundleSource === "trackers");
 
     async function ensureTrackers() {
-        trackerStatus = "加载中...";
+        trackerStatus = "加载中…";
         await loadTrackers(false);
         trackerStatus = "";
     }
@@ -47,7 +47,7 @@
     let exportAbort = null;
 
     async function doExport(body) {
-        bundleExportStatus.set("导出中...");
+        bundleExportStatus.set("导出中…");
         exporting = true;
         exportAbort = new AbortController();
         try {
@@ -81,7 +81,7 @@
             window.showSuccess("已导出 " + d.filename);
         } catch (e) {
             if (e && e.name === "AbortError") {
-                bundleExportStatus.set("导出已取消");
+                bundleExportStatus.set("导出已中止");
                 return;
             }
             window.showError("导出失败");
@@ -108,7 +108,7 @@
         if (source === "ids") {
             body.ids = splitIDs($bundleIds);
             if (!body.ids.length) {
-                window.showError("请填写动画 ID");
+                window.showError("动画 ID 为空");
                 return;
             }
             lines.push("ID：" + body.ids.join("、"));
@@ -131,7 +131,7 @@
             }
             body.trackers = trackers;
             if (!trackers.length) {
-                window.showError("请选择或填写 Tracker ID");
+                window.showError("未选择 Tracker");
                 return;
             }
             for (let i = 0; i < trackers.length; i++) {
@@ -222,7 +222,7 @@
         const file = input.files && input.files[0];
         if (!file) return;
         if (!/\.tar$/i.test(file.name)) {
-            window.showError("请选择 .tar 文件");
+            window.showError("未选择 .tar 文件");
             input.value = "";
             return;
         }
@@ -232,10 +232,10 @@
             return;
         }
         bundleImportStatus.set(
-            file.name + " · " + Math.round(file.size / 1024) + " KB"
+            file.name + "，" + Math.round(file.size / 1024) + " KB"
         );
         window.confirmAction(
-            "将导入 " + file.name + "，覆盖同名文件并重建索引。",
+            "会导入 " + file.name + "，覆盖同名文件并重建索引。",
             function () {
                 startImport(file);
             }
@@ -257,7 +257,7 @@
                     d.step === "error"
                         ? "导入失败"
                         : d.step === "cancelled"
-                          ? "导入已终止"
+                          ? "导入已中止"
                           : "导入完成"
                 );
                 bundleTaskId.set("");

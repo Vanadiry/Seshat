@@ -46,7 +46,7 @@ func (r *fetchRequest) validate() error {
 		}
 		for _, name := range r.Names {
 			if !validTrackerName(name) {
-				return fmt.Errorf("Tracker 名称不合法: %s", name)
+				return fmt.Errorf("Tracker 名称不合法：%s", name)
 			}
 		}
 	case fetchSourceIDs:
@@ -167,7 +167,7 @@ func dispatchFetch(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, re
 		return nil, http.StatusBadRequest, err
 	}
 	if taskLocked() {
-		return nil, http.StatusConflict, fmt.Errorf("已有任务正在运行，请等待完成")
+		return nil, http.StatusConflict, fmt.Errorf("已有任务正在运行")
 	}
 	if len(ids) == 0 {
 		return map[string]any{"status": "done", "count": 0}, http.StatusOK, nil
@@ -223,5 +223,3 @@ func dispatchFetch(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, re
 	}()
 	return map[string]any{"status": "fetching", "count": len(ids), "task_id": p.ID}, http.StatusOK, nil
 }
-
-// 旧的按 ID 拉取仍保留独立入口

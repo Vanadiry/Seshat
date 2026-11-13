@@ -143,7 +143,7 @@ func fetchSubjectLists(dd string, sid int, bg *bangumi.Client, p Progress, overw
 			log.Warn("subject characters fetch failed", "subject", sid, "err", err)
 			requiredFailed.Store(true)
 			if p != nil {
-				p.SetError(fmt.Sprintf("角色列表拉取失败 #%d: %v", sid, err))
+				p.SetError(fmt.Sprintf("拉取角色列表失败 #%d：%v", sid, err))
 			}
 			return
 		}
@@ -151,7 +151,7 @@ func fetchSubjectLists(dd string, sid int, bg *bangumi.Client, p Progress, overw
 			log.Warn("unmarshal chars failed", "subject", sid, "err", err)
 			requiredFailed.Store(true)
 			if p != nil {
-				p.SetError(fmt.Sprintf("角色列表解析失败 #%d: %v", sid, err))
+				p.SetError(fmt.Sprintf("解析角色列表失败 #%d：%v", sid, err))
 			}
 		}
 	}()
@@ -178,7 +178,7 @@ func fetchSubjectLists(dd string, sid int, bg *bangumi.Client, p Progress, overw
 			log.Warn("subject persons fetch failed", "subject", sid, "err", err)
 			requiredFailed.Store(true)
 			if p != nil {
-				p.SetError(fmt.Sprintf("人物列表拉取失败 #%d: %v", sid, err))
+				p.SetError(fmt.Sprintf("拉取人物列表失败 #%d：%v", sid, err))
 			}
 			return
 		}
@@ -186,7 +186,7 @@ func fetchSubjectLists(dd string, sid int, bg *bangumi.Client, p Progress, overw
 			log.Warn("unmarshal persons failed", "subject", sid, "err", err)
 			requiredFailed.Store(true)
 			if p != nil {
-				p.SetError(fmt.Sprintf("人物列表解析失败 #%d: %v", sid, err))
+				p.SetError(fmt.Sprintf("解析人物列表失败 #%d：%v", sid, err))
 			}
 		}
 	}()

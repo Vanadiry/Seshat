@@ -64,7 +64,7 @@ func fillRelatedGaps(dd string, bg *bangumi.Client, ids []int, p Progress) {
 						}
 						log.Warn("gap character fetch failed", "id", c.ID, "err", e)
 						if p != nil {
-							p.SetError(fmt.Sprintf("Character #%d: %v", c.ID, e))
+							p.SetError(fmt.Sprintf("角色 #%d：%v", c.ID, e))
 						}
 						continue
 					}
@@ -91,7 +91,7 @@ func fillRelatedGaps(dd string, bg *bangumi.Client, ids []int, p Progress) {
 						}
 						log.Warn("gap person fetch failed", "id", pp.ID, "err", e)
 						if p != nil {
-							p.SetError(fmt.Sprintf("Person #%d: %v", pp.ID, e))
+							p.SetError(fmt.Sprintf("人物 #%d：%v", pp.ID, e))
 						}
 						continue
 					}

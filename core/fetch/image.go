@@ -244,7 +244,7 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 				if !strings.Contains(err.Error(), "placeholder") && !strings.Contains(err.Error(), "HTTP 404") {
 					log.Warn("image download failed", "kind", kind, "id", id, "size", size, "err", err)
 					if p != nil {
-						p.SetError(fmt.Sprintf("Image %s #%d %s: %v", kind, id, size, err))
+						p.SetError(fmt.Sprintf("图片 %s #%d %s：%v", kind, id, size, err))
 					}
 				}
 				return
@@ -281,5 +281,3 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 	imgMap[id] = entry
 	mu.Unlock()
 }
-
-// fillImageGaps 补充缺失的图片尺寸及索引中不存在的图片

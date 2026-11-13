@@ -27,7 +27,7 @@
 {#if loading}
     <div class="text-center py-20 text-sub"><span class="spin"></span></div>
 {:else if error}
-    <div class="text-center py-20 text-sub">渲染出错: {error}</div>
+    <div class="text-center py-20 text-sub">渲染出错：{error}</div>
 {:else if !items.length}
     <div
         class="grid grid-cols-1 min-[450px]:grid-cols-[repeat(auto-fill,minmax(min(220px,calc((100%_-_0.5rem)/2)),1fr))] gap-2"

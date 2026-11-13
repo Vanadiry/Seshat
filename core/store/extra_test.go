@@ -62,6 +62,6 @@ func TestStripImages(t *testing.T) {
 
 	invalid := []byte("not json")
 	if !bytes.Equal(StripImages(invalid), invalid) {
-		t.Fatal("非法 JSON 应原样返回")
+		t.Fatal("不合法 JSON 应原样返回")
 	}
 }

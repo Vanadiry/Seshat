@@ -48,40 +48,40 @@
                 stats.data_entries.characters +
                 stats.data_entries.persons;
             out.push({
-                label: "条目（共" + total + "项）",
+                label: "条目，共 " + total + " 项",
                 value:
                     stats.data_entries.subjects +
                     " / " +
                     stats.data_entries.characters +
                     " / " +
                     stats.data_entries.persons,
-                sub: "动画 / 角色 / 人物"
+                sub: "动画、角色、人物"
             });
         }
         if (stats.images) {
             out.push({
-                label: "图片（共" + (stats.images.total || 0) + "项）",
+                label: "图片，共 " + (stats.images.total || 0) + " 项",
                 value:
                     stats.images.unique_subjects +
                     " / " +
                     stats.images.unique_characters +
                     " / " +
                     stats.images.unique_persons,
-                sub: "动画 / 角色 / 人物"
+                sub: "动画、角色、人物"
             });
         }
         if (stats.elo_scores != null) {
             out.push({
                 label: "ELO 评分",
                 value: stats.elo_scores + " / " + stats.elo_comparisons,
-                sub: "有评分条目 / 评分次数"
+                sub: "有评分条目、评分次数"
             });
         }
         if (stats.trackers) {
             out.push({
                 label: "Tracker",
                 value: stats.trackers.length + " / " + stats.tracker_total,
-                sub: "Tracker / 条目总数"
+                sub: "Tracker、条目总数"
             });
         }
         return out;
@@ -266,7 +266,7 @@
             : ''}"
         style="order:{order}"
         data-sort-key={key}
-        title="点击排序"
+        title="按此列排序"
         role="button"
         tabindex="0"
         onkeydown={(e) => {
@@ -441,7 +441,7 @@
                                         {/if}
                                     {:else if entry !== undefined}
                                         <div class="text-xs text-sub truncate">
-                                            未能获取此条目的数据，可能是未储存此条目，或数据端点异常
+                                            未能读取此条目的数据
                                         </div>
                                     {/if}
                                 </div>

@@ -30,7 +30,7 @@
 {:else if blocked}
     <div></div>
 {:else if error}
-    <div class="text-center py-20 text-sub">渲染出错: {error}</div>
+    <div class="text-center py-20 text-sub">渲染出错：{error}</div>
 {:else if !items.length}
     <span class="text-sub text-sm">暂无标签</span>
 {:else}

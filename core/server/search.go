@@ -127,7 +127,7 @@ func looksLikeURL(s string) bool {
 		strings.HasPrefix(lower, "https://")
 }
 
-// entryNameCN 取顶层中文名，缺失时读信息栏的简体中文名
+// entryNameCN 提取顶层中文名，缺失时读信息栏的简体中文名
 func entryNameCN(entry searchEntry) string {
 	if entry.NameCN != "" {
 		return entry.NameCN

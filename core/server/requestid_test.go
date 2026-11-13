@@ -57,7 +57,7 @@ func TestWithRequestIDRejectsInvalid(t *testing.T) {
 		h.ServeHTTP(w, r)
 		got := w.Header().Get("X-Request-ID")
 		if got == invalid || !validRequestID(got) {
-			t.Fatalf("非法输入 %q 没有被替换，得到 %q", invalid, got)
+			t.Fatalf("不合法输入 %q 没有被替换，得到 %q", invalid, got)
 		}
 	}
 }

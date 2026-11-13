@@ -181,7 +181,7 @@ export async function exportBundle() {
     if (!id) return;
     window.confirmAction("导出 #" + id + " 的本地数据包？", async function () {
         patch({ exporting: true });
-        window.showInfo("正在导出数据包...");
+        window.showInfo("正在导出数据包");
         try {
             const res = await fetch(API_BASE + "/v0/bundle/export", {
                 method: "POST",

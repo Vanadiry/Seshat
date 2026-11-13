@@ -14,7 +14,7 @@
 {:else if state.error}
     <div class="grid grid-cols-[repeat(auto-fill,minmax(175px,1fr))] gap-4">
         <div class="col-span-full text-center py-20 text-sub">
-            渲染出错: {state.error}
+            渲染出错：{state.error}
         </div>
     </div>
 {:else if state.tag}

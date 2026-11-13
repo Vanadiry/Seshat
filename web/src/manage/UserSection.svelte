@@ -11,7 +11,7 @@
 
     function importCollections() {
         window.confirmAction(
-            "将用当前收藏列表重建 user.json。\nuser.toml 不受影响。\n已取消收藏的条目会从 user.json 移除。",
+            "会用当前收藏列表重建 user.json。\nuser.toml 不受影响。\n已取消收藏的条目会从 user.json 移除。",
             window.doImportCollections
         );
     }

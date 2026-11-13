@@ -85,7 +85,7 @@ type bundleCollector struct {
 func handleBundleExport(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if taskLocked() {
-			writeError(w, r, http.StatusConflict, "已有任务正在运行，请等待完成")
+			writeError(w, r, http.StatusConflict, "已有任务正在运行")
 			return
 		}
 		if !bundleMu.TryLock() {
@@ -149,7 +149,7 @@ func bundleRootIDs(cfg *config.Config, req bundleExportRequest) ([]int, error) {
 		}
 		for _, name := range req.Trackers {
 			if !validTrackerName(name) {
-				return nil, fmt.Errorf("Tracker 名称不合法: %s", name)
+				return nil, fmt.Errorf("Tracker 名称不合法：%s", name)
 			}
 		}
 		if missing := missingTrackerNames(cfg, req.Trackers); len(missing) > 0 {

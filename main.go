@@ -36,8 +36,7 @@ func openBrowser(url string) {
 	exec.Command(cmd, args...).Start()
 }
 
-// runSeshat initializes the server and starts listening.
-// Returns the http.Server for graceful shutdown.
+// runSeshat 初始化配置并启动服务，返回用于优雅关闭的 http.Server
 func runSeshat() (*http.Server, string) {
 	cfg, err := config.Load()
 	if err != nil {
@@ -89,7 +88,7 @@ func runSeshat() (*http.Server, string) {
 	}
 	actual := ln.Addr().String()
 
-	// 向Tauri报告实际监听地址
+	// 向 Tauri 报告实际监听地址
 	fmt.Fprintf(os.Stdout, "SESHAT_ADDR=%s\n", actual)
 
 	srv := &http.Server{Addr: actual, Handler: router}

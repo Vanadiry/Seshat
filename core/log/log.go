@@ -1,5 +1,5 @@
 // Package log 提供基于 slog 的结构化分级日志系统
-// 日志同时输出到 stdout 和文件，文件超过 10MB 自动轮转，最多保留 10 个
+// 日志同时输出到 stdout 和文件，文件超过 10 MB 自动轮转，最多保留 10 个
 package log
 
 import (

@@ -1,4 +1,4 @@
-// 拉取弹窗：输入行 + 操作按钮 + 危险区 + 二次确认
+// 拉取弹窗：输入行、操作按钮、危险区和二次确认
 var confirmCb = null;
 
 function showLightbox(src) {

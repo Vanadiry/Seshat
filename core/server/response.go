@@ -10,7 +10,7 @@ import (
 
 const maxBodySize = 1 << 20
 
-// errorBody 是对外错误响应，error 为过渡字段，前端切换后删除
+// errorBody 为对外错误响应，error 为过渡字段
 type errorBody struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`

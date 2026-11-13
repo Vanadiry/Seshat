@@ -75,7 +75,7 @@
         }
         if (d.step === "cancelled") {
             setState({
-                phase: "任务已终止",
+                phase: "任务已中止",
                 detail: "",
                 percent: 100,
                 color: "var(--c-toast-warning)"
@@ -144,7 +144,7 @@
             if (!activeId || e.detail.id !== activeId) return;
             setState({
                 phase: "进度连接中断",
-                detail: "请刷新页面重试"
+                detail: "进度连接已关闭"
             });
         }
         function onTrackers() {

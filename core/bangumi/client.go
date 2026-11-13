@@ -188,7 +188,7 @@ func (c *Client) doGetRaw(url string) ([]byte, error) {
 		}
 		err := fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 		if resp.StatusCode == http.StatusUnauthorized && c.tokenFunc != nil && c.tokenFunc() != "" {
-			err = fmt.Errorf("你设置了令牌，但已失效。请终止任务并退出程序，检查令牌后重试。")
+			err = fmt.Errorf("令牌已失效，任务无法继续")
 		}
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func (c *Client) doPostRaw(url string, payload []byte) ([]byte, error) {
 		}
 		err := fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 		if resp.StatusCode == http.StatusUnauthorized && c.tokenFunc != nil && c.tokenFunc() != "" {
-			err = fmt.Errorf("你设置了令牌，但已失效。请终止任务并退出程序，检查令牌后重试。")
+			err = fmt.Errorf("令牌已失效，任务无法继续")
 		}
 		return nil, err
 	}

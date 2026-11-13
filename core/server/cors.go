@@ -35,7 +35,7 @@ func withCORS(cfg *config.Config) func(http.Handler) http.Handler {
 				return
 			}
 			if !allowed {
-				writeError(w, r, http.StatusForbidden, "来源不被允许")
+				writeError(w, r, http.StatusForbidden, "来源不合法")
 				return
 			}
 			next.ServeHTTP(w, r)

@@ -176,7 +176,7 @@ func TestBundleImportProgress(t *testing.T) {
 	}
 	p := getProgress(resp.TaskID)
 	if p == nil {
-		t.Fatal("找不到导入任务")
+		t.Fatal("未找到导入任务")
 	}
 
 	var percents []int

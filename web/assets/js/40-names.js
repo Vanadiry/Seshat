@@ -1,4 +1,4 @@
-// Infobox key blacklist：这些字段只做 URL/BBCode，不做名字匹配
+// 信息栏键黑名单：这些字段只做 URL 和 BBCode，不做名字匹配
 var INFOBOX_NO_MATCH_KEYS = [
     "放送开始",
     "播放开始",
@@ -29,7 +29,7 @@ function loadPersonMap() {
     });
 }
 
-// 反转 name map：{id: [names]} → {name: id}，后者覆盖
+// 反转名称映射：{id: [names]} 到 {name: id}，后者覆盖
 function invertNameMap(raw) {
     var m = {};
     if (!raw) return m;
@@ -43,7 +43,7 @@ function invertNameMap(raw) {
     return m;
 }
 
-// Merged char + person map（person 优先）
+// 角色与人物合并后的 map，人物优先
 var _charPersonMerged = null;
 function getCharPersonMergedMap() {
     if (_charPersonMerged) return _charPersonMerged;
@@ -63,7 +63,7 @@ function getCharPersonMergedMap() {
     return _charPersonMerged;
 }
 
-// Subject 自由匹配（最长优先，不限制边界）
+// 条目自由匹配，最长优先，不限制边界
 function linkifySubjectFree(text) {
     return linkifyByMap(text, _subjectMap, "/subject?id=");
 }
@@ -79,7 +79,7 @@ function matchSegmentCore(seg, merged) {
     );
 }
 
-// Char+Person 自由匹配（仅 ≥3 字，最长优先）
+// 角色与人物自由匹配，仅 ≥3 字，最长优先
 function linkifyCharPersonFree3Plus(text) {
     if (!text) return text;
     var merged = getCharPersonMergedMap();
@@ -94,7 +94,7 @@ function linkifyCharPersonFree3Plus(text) {
 // 分隔符集合
 var _SEPARATOR_RE = /([、,，\/\(\)（）\[\]])/;
 
-// Char+Person 分段匹配：按分隔符拆段，每段整体匹配
+// 角色与人物分段匹配：按分隔符拆段，每段整体匹配
 function linkifyCharPersonSegments(text) {
     if (!text) return text;
     var merged = getCharPersonMergedMap();
@@ -115,12 +115,12 @@ function linkifyCharPersonSegments(text) {
     return parts.join("");
 }
 
-// Infobox value 处理：BBCode → URL → 黑名单判定 → 保护集数 → 1a subject 自由匹配 → 1b ≥3 字自由匹配 → 2 分段匹配 → 还原集数
+// 信息栏值处理：BBCode、URL、黑名单判定、保护集数、1a 条目自由匹配、1b ≥3 字自由匹配、2 分段匹配、还原集数
 function processInfoboxValue(v, key) {
     var t = linkifyBBCode(v);
     t = linkifyURL(t);
     if (INFOBOX_NO_MATCH_KEYS.indexOf(key) >= 0) return t;
-    // 保护集数括号（纯数字+逗号+连字符），避免内部数字被匹配
+    // 保护集数括号，纯数字、逗号、连字符，避免内部数字被匹配
     var epsBlocks = [];
     t = t.replace(/\([\d\-,]+\)/g, function (m) {
         epsBlocks.push(m);
@@ -176,7 +176,7 @@ function linkifyByMap(text, map, hrefPrefix) {
     return parts.join("");
 }
 
-// 保留 linkifyPerson 兼容旧代码，信息栏仍在用
+// linkifyPerson 供信息栏继续使用
 function linkifyPerson(text) {
     return linkifyByMap(text, _personMap, "/person?id=");
 }
@@ -210,7 +210,7 @@ function linkifyURL(text) {
     return parts.join("");
 }
 
-// linkifyBBCode：转换 [url=...]...[/url]，优先匹配本地 name
+// linkifyBBCode：转换 [url=...]...[/url]，优先匹配本地名称
 function linkifyBBCode(text) {
     if (!text) return text;
     return text.replace(
@@ -236,7 +236,7 @@ function linkifyBBCode(text) {
     );
 }
 
-// formatSummary：BBCode → name 匹配 → 换行
+// formatSummary：依次做 BBCode、名称匹配、换行
 function formatSummary(text) {
     if (!text) return text;
     return linkifyAllNames(linkifyBBCode(text)).replace(
@@ -245,7 +245,7 @@ function formatSummary(text) {
     );
 }
 
-// infoboxData：提取侧栏信息（infobox + 顶层字段）
+// infoboxData：提取侧栏信息，包含信息栏和顶层字段
 function infoboxData(d) {
     var items = [];
     // 顶层字段
@@ -280,7 +280,7 @@ function infoboxData(d) {
             } else if (Array.isArray(v)) {
                 if (v.length > 0 && typeof v[0] === "object") {
                     if (v[0].k) {
-                        // Key-value pairs: [{k: "纯假名", v: "..."}]
+                        // 键值对：[{k: "纯假名", v: "值"}]
                         items.push([ib[i].key, "", 0]);
                         for (var j = 0; j < v.length; j++) {
                             if (v[j].k)

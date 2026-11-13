@@ -124,7 +124,7 @@ func TestFetchUnifiedValidatesBeforeTask(t *testing.T) {
 	w := httptest.NewRecorder()
 	h(w, httptest.NewRequest(http.MethodPost, "/api/v0/fetch", strings.NewReader(`{"source":"nope","json":"fill","images":"fill"}`)))
 	if w.Code != http.StatusBadRequest {
-		t.Fatalf("非法 source 状态码 = %d", w.Code)
+		t.Fatalf("不合法 source 状态码 = %d", w.Code)
 	}
 
 	w = httptest.NewRecorder()

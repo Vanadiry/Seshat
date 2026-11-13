@@ -8,8 +8,8 @@ import (
 	"github.com/vanadiry/seshat/core/config"
 )
 
-// withAPIToken 校验本地 API 的 POST 请求令牌。
-// 只保护写入类请求；GET 和页面资源不校验。
+// withAPIToken 校验本地 API 的 POST 请求令牌
+// 只保护写入类请求；GET 和页面资源不校验
 func withAPIToken(cfg *config.Config) func(http.Handler) http.Handler {
 	token := cfg.Server.APIToken
 	return func(next http.Handler) http.Handler {
@@ -20,7 +20,7 @@ func withAPIToken(cfg *config.Config) func(http.Handler) http.Handler {
 			}
 			got := r.Header.Get("X-Seshat-Token")
 			if subtle.ConstantTimeCompare([]byte(got), []byte(token)) != 1 {
-				writeError(w, r, http.StatusForbidden, "缺少或错误的 API 令牌")
+				writeError(w, r, http.StatusForbidden, "缺少 API 令牌或令牌不合法")
 				return
 			}
 			next.ServeHTTP(w, r)

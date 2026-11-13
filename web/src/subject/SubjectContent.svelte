@@ -24,7 +24,7 @@
     </div>
 {:else if state.error}
     <div class="select-text fade-in">
-        <p class="text-sub text-center py-20">渲染出错: {state.error}</p>
+        <p class="text-sub text-center py-20">渲染出错：{state.error}</p>
     </div>
 {:else if state.subject && state.tab === "overview"}
     <Overview

@@ -27,7 +27,7 @@ const (
 func handleBundleImport(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if taskLocked() {
-			writeError(w, r, http.StatusConflict, "已有任务正在运行，请等待完成")
+			writeError(w, r, http.StatusConflict, "已有任务正在运行")
 			return
 		}
 		if !bundleMu.TryLock() {
@@ -91,7 +91,7 @@ func processBundleImport(cfg *config.Config, tarPath string, p *Progress) {
 	defer os.Remove(tarPath)
 	defer func() {
 		if r := recover(); r != nil {
-			p.Send("error", 0, 0, fmt.Sprintf("导入失败: %v", r))
+			p.Send("error", 0, 0, fmt.Sprintf("导入失败：%v", r))
 		}
 	}()
 
@@ -222,28 +222,28 @@ func extractBundleTar(tarPath, staging string, progress func(read, total int64),
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("读取 tar 失败: %w", err)
+			return fmt.Errorf("读取 tar 失败：%w", err)
 		}
 		name := path.Clean(h.Name)
 		if name == "." || path.IsAbs(name) || strings.HasPrefix(name, "../") ||
 			strings.Contains(h.Name, "\\") || strings.ContainsRune(h.Name, 0) {
-			return fmt.Errorf("数据包路径不合法: %s", h.Name)
+			return fmt.Errorf("数据包路径不合法：%s", h.Name)
 		}
 		if h.Typeflag == tar.TypeDir {
 			continue
 		}
 		if h.Typeflag != tar.TypeReg {
-			return fmt.Errorf("不支持的条目类型: %s", h.Name)
+			return fmt.Errorf("不支持的条目类型：%s", h.Name)
 		}
 		if !safeBundleFile(name) {
-			return fmt.Errorf("不允许的数据文件: %s", name)
+			return fmt.Errorf("不允许的数据文件：%s", name)
 		}
 		if seen[name] {
-			return fmt.Errorf("重复条目: %s", name)
+			return fmt.Errorf("重复条目：%s", name)
 		}
 		seen[name] = true
 		if h.Size < 0 || h.Size > bundleImportMax {
-			return fmt.Errorf("文件过大: %s", name)
+			return fmt.Errorf("文件过大：%s", name)
 		}
 		total += h.Size
 		if total > bundleImportMax {
@@ -264,7 +264,7 @@ func extractBundleTar(tarPath, staging string, progress func(read, total int64),
 
 		target := filepath.Join(staging, filepath.FromSlash(name))
 		if !pathWithin(staging, target) {
-			return fmt.Errorf("数据包路径不合法: %s", name)
+			return fmt.Errorf("数据包路径不合法：%s", name)
 		}
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 			return err
@@ -275,7 +275,7 @@ func extractBundleTar(tarPath, staging string, progress func(read, total int64),
 		}
 		if _, err := io.CopyN(out, tr, h.Size); err != nil {
 			out.Close()
-			return fmt.Errorf("读取文件失败: %s", name)
+			return fmt.Errorf("读取文件失败：%s", name)
 		}
 		if err := out.Close(); err != nil {
 			return err
@@ -413,7 +413,7 @@ func commitBundle(staging, dd string, progress func(done, total int), canceled f
 		case strings.HasPrefix(rel, "images/"):
 			target = filepath.Join(dd, filepath.FromSlash(rel))
 		default:
-			return fmt.Errorf("未知数据文件: %s", rel)
+			return fmt.Errorf("未知数据文件：%s", rel)
 		}
 		data, err := os.ReadFile(path)
 		if err != nil {

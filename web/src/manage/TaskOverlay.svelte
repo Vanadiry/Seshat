@@ -12,7 +12,7 @@
     });
 
     function abortTask() {
-        window.confirmAction("将中止当前任务，已完成的数据保留。", function () {
+        window.confirmAction("会中止当前任务，已完成的数据保留。", function () {
             var id = state.id || "";
             var url =
                 API_BASE +

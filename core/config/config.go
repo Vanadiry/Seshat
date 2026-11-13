@@ -55,7 +55,7 @@ type Config struct {
 	Access   AccessConfig   `toml:"access"`
 }
 
-// ProxyURL 返回配置的代理地址；未配置或非法则返回 nil
+// ProxyURL 返回配置的代理地址，未配置或不合法则返回 nil
 func (c *Config) ProxyURL() *url.URL {
 	if c.Proxy.Host == "" || c.Proxy.Port < 1 || c.Proxy.Port > 65535 {
 		return nil
@@ -85,17 +85,17 @@ func Load() (*Config, error) {
 			// 首次创建时生成一次 API 令牌，之后不再修改配置文件
 			data = []byte(defaultConfigWithToken())
 			if err := os.MkdirAll(Dir(), 0o755); err != nil {
-				fmt.Fprintf(os.Stderr, "创建配置目录失败: %v\n", err)
+				fmt.Fprintf(os.Stderr, "创建配置目录失败：%v\n", err)
 			} else if err := store.WriteAtomic(path, data, 0o644); err != nil {
-				fmt.Fprintf(os.Stderr, "写入默认配置失败: %v\n", err)
+				fmt.Fprintf(os.Stderr, "写入默认配置失败：%v\n", err)
 			}
 		} else {
-			return nil, fmt.Errorf("读取配置失败: %w", err)
+			return nil, fmt.Errorf("读取配置失败：%w", err)
 		}
 	}
 	var cfg Config
 	if err := toml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("解析配置失败: %w", err)
+		return nil, fmt.Errorf("解析配置失败：%w", err)
 	}
 	return &cfg, nil
 }
@@ -119,24 +119,24 @@ func defaultConfigWithToken() string {
 func (c *Config) Validate() []string {
 	var errs []string
 	if c.Server.BindAddr == "" {
-		errs = append(errs, "bind_addr 不能为空")
+		errs = append(errs, "bind_addr 为空")
 	}
 	if c.Server.Port < 1 || c.Server.Port > 65535 {
-		errs = append(errs, fmt.Sprintf("port 必须在 1-65535 之间（当前 %d）", c.Server.Port))
+		errs = append(errs, fmt.Sprintf("port 必须在 1-65535 之间，当前 %d", c.Server.Port))
 	}
 	if c.Server.ConcurrencyInfo < 1 {
-		errs = append(errs, fmt.Sprintf("concurrency_info 必须 >= 1（当前 %d）", c.Server.ConcurrencyInfo))
+		errs = append(errs, fmt.Sprintf("concurrency_info 必须 >= 1，当前 %d", c.Server.ConcurrencyInfo))
 	}
 	if c.Server.ConcurrencyImage < 1 {
-		errs = append(errs, fmt.Sprintf("concurrency_image 必须 >= 1（当前 %d）", c.Server.ConcurrencyImage))
+		errs = append(errs, fmt.Sprintf("concurrency_image 必须 >= 1，当前 %d", c.Server.ConcurrencyImage))
 	}
 	if strings.Contains(c.Server.BindAddr, "://") || strings.Contains(c.Server.BindAddr, "/") {
-		errs = append(errs, "bind_addr 只填写 IP 或主机名，不要带协议和路径")
+		errs = append(errs, "bind_addr 包含协议或路径")
 	} else if _, _, err := net.SplitHostPort(c.Server.BindAddr); err == nil {
-		errs = append(errs, "bind_addr 不要包含端口，端口请写在 port")
+		errs = append(errs, "bind_addr 包含端口")
 	}
 	if strings.Count(c.Server.BindAddr, ":") > 1 && !strings.HasPrefix(c.Server.BindAddr, "[") {
-		errs = append(errs, "bind_addr 是 IPv6 地址时请使用方括号，例如 [::1]")
+		errs = append(errs, "bind_addr 的 IPv6 地址缺少方括号")
 	}
 	if c.Server.DataHome != "" {
 		if st, err := os.Stat(c.Server.DataHome); err == nil && !st.IsDir() {
@@ -146,16 +146,16 @@ func (c *Config) Validate() []string {
 	if c.Proxy.Host == "" && c.Proxy.Port != 0 {
 		errs = append(errs, "填写了 proxy.port 但缺少 proxy.host")
 	} else if c.Proxy.Host != "" && (c.Proxy.Port < 1 || c.Proxy.Port > 65535) {
-		errs = append(errs, fmt.Sprintf("proxy.port 必须在 1-65535 之间（当前 %d）", c.Proxy.Port))
+		errs = append(errs, fmt.Sprintf("proxy.port 必须在 1-65535 之间，当前 %d", c.Proxy.Port))
 	}
 	if c.Upstream.BaseURL != "" && !validHTTPURL(c.Upstream.BaseURL) {
-		errs = append(errs, "upstream.base_url 必须是 http 或 https 地址")
+		errs = append(errs, "upstream.base_url 不合法，应当为 http 或 https 地址")
 	}
 	if c.Frontend.BackendURL != "" && !validHTTPURL(c.Frontend.BackendURL) {
-		errs = append(errs, "frontend.backend_url 必须是 http 或 https 地址")
+		errs = append(errs, "frontend.backend_url 不合法，应当为 http 或 https 地址")
 	}
 	if c.Frontend.FallbackURL != "" && !validHTTPURL(c.Frontend.FallbackURL) {
-		errs = append(errs, "frontend.fallback_url 必须是 http 或 https 地址")
+		errs = append(errs, "frontend.fallback_url 不合法，应当为 http 或 https 地址")
 	}
 	return errs
 }
@@ -191,7 +191,7 @@ func (c *Config) Warnings() []string {
 	switch strings.ToLower(strings.TrimSpace(c.Server.LogLevel)) {
 	case "", "debug", "info", "warn", "warning", "error":
 	default:
-		w = append(w, fmt.Sprintf("log_level %q 无法识别，将使用 info", c.Server.LogLevel))
+		w = append(w, fmt.Sprintf("log_level %q 无法识别，会使用 info", c.Server.LogLevel))
 	}
 	return w
 }
@@ -213,7 +213,7 @@ func isLoopbackBind(addr string) bool {
 	return ip != nil && ip.IsLoopback()
 }
 
-// BuildConfigKV 返回 config.toml 当前值的纯 KV，token 非空显示 ***
+// BuildConfigKV 返回 config.toml 当前值的纯 KV，token 非空显示掩码
 func (c *Config) BuildConfigKV() map[string]any {
 	token := c.Access.Token
 	if len(token) > 6 {

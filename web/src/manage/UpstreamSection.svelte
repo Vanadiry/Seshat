@@ -19,12 +19,12 @@
         if (loading) return;
         const q = keyword.trim();
         if (!q) {
-            window.showError("请输入关键词");
+            window.showError("关键词为空");
             if (inputEl) inputEl.focus();
             return;
         }
         loading = true;
-        status = "搜索中...";
+        status = "搜索中…";
         if (!append) {
             items = [];
             total = 0;
@@ -51,8 +51,8 @@
             if (append && !page.length) total = items.length;
             status =
                 items.length === 0
-                    ? "没有找到结果"
-                    : "已显示 " + items.length + " / " + total + " 条";
+                    ? "未找到结果"
+                    : "已显示 " + items.length + "，共 " + total + " 条";
         } catch (_) {
             window.showError("搜索失败");
             status = "搜索失败";
@@ -149,7 +149,7 @@
                 {@const meta = ["ID " + item.id]
                     .concat(item.date ? [year(item.date)] : [])
                     .concat(item.platform ? [item.platform] : [])
-                    .join(" · ")}
+                    .join("，")}
                 <div
                     class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-bord {flashId ===
                     item.id

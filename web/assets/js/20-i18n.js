@@ -4,7 +4,7 @@ var MSG = {
     configWarnBackendTitle: "自定义后端模式",
     configWarnBackendBody: "数据从自定义后端获取，部分功能按后端能力显示",
     configWarnFallbackTitle: "回退模式",
-    configWarnFallbackBody: "本地缺失的数据将从回退端点获取",
+    configWarnFallbackBody: "本地缺失的数据会从回退端点读取",
     configWarnBothTitle: "自定义后端和回退模式",
     configWarnBothBody: "数据从自定义后端获取，本地缺失时从回退端点获取",
     configWarnFailedTitle: "自定义后端连接失败",
@@ -17,20 +17,20 @@ var MSG = {
 
     // 确认提示
     confirmUserFetch: function () {
-        return "将拉取 " + window.USERNAME + " 的用户数据与收藏列表。";
+        return "会拉取 " + window.USERNAME + " 的用户数据与收藏列表。";
     },
-    confirmRebuildIndex: "将从本地 JSON 中重建所有索引。",
+    confirmRebuildIndex: "会从本地 JSON 重建全部索引。",
     confirmRebuildAll: function () {
         var d = window.SESHAT_HOME || "~/.vSoft/Seshat";
-        return "将删除 " + d + "/data 的全部数据，并完整重建。";
+        return "会删除 " + d + "/data 的全部数据，并完整重建。";
     },
 
     // 校验
     errInvalidTrackerName:
-        "Tracker ID 仅允许大小写字母、数字、短横线和下划线。",
-    errUserFetchFailed: "刷新用户数据失败: ",
+        "Tracker ID 不合法，仅允许大小写字母、数字、短横线和下划线。",
+    errUserFetchFailed: "刷新用户数据失败：",
     errNoUsername:
-        "未在配置中设置用户名（[user] username），无法刷新用户数据。",
+        "未在配置中设置用户名 [user] username，无法刷新用户数据。",
 
     // 进度
     progressConnecting: "连接中",

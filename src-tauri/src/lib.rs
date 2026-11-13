@@ -57,15 +57,15 @@ fn split_error(raw: &str) -> (String, String) {
     let msg = body.join("\n");
     let msg = msg.trim();
     let msg = if msg.is_empty() {
-        "请检查配置或重启应用".to_string()
+        "后端未能启动".to_string()
     } else {
         msg.to_string()
     };
     (title, msg)
 }
 
-/// 把后端监听地址转成 WebView 可访问的 URL。
-/// 绑定 0.0.0.0 或 [::] 时返回的是通配地址，需要换成回环地址。
+/// 把后端监听地址转成 WebView 可访问的 URL
+/// 绑定 0.0.0.0 或 [::] 时返回通配地址，需要换成回环地址
 fn navigation_url(addr: &str) -> Option<tauri::Url> {
     let socket: std::net::SocketAddr = addr.trim().parse().ok()?;
     let ip = if socket.ip().is_unspecified() {
@@ -77,7 +77,7 @@ fn navigation_url(addr: &str) -> Option<tauri::Url> {
     tauri::Url::parse(&format!("http://{}", target)).ok()
 }
 
-/// 桌面端：先建初始窗口，再拉起 Go sidecar，等它通过 stdout 报告监听地址后导航。
+/// 桌面端：建初始窗口后拉起 Go sidecar，等它通过 stdout 报告监听地址再导航
 #[cfg(not(mobile))]
 fn setup_desktop(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     // 初始页用自包含的 data: 空白页
@@ -133,7 +133,7 @@ fn setup_desktop(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let bin = match bin {
         Some(b) => b,
         None => {
-            error_page::show(&win, "找不到后端程序", "Seshat 后端 sidecar 缺失，请重新安装");
+            error_page::show(&win, "未找到后端程序", "Seshat 后端程序缺失");
             return Ok(());
         }
     };
@@ -244,13 +244,13 @@ fn setup_desktop(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 fn graceful_exit(handle: tauri::AppHandle) {
     SHUTTING_DOWN.store(true, Ordering::Relaxed);
     if let Some(w) = handle.get_webview_window("main") {
-        error_page::show(&w, "正在退出", "等待后端进程结束...");
+        error_page::show(&w, "正在退出", "等待后端进程结束");
     }
     #[cfg(not(mobile))]
     if let Some(child) = SIDECAR.lock().unwrap().take() {
         #[cfg(unix)]
         {
-            // 先请求后端优雅退出，任务会被取消
+            // 请求后端优雅退出，任务会被取消
             let pid = child.lock().unwrap().id().to_string();
             let _ = Command::new("kill").arg("-TERM").arg(pid).status();
         }

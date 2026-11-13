@@ -137,7 +137,7 @@
             } catch (_) {}
             finishLoad(subjects);
         } catch (e) {
-            error = "无法连接";
+            error = "连接失败";
             loading = false;
         }
     }
@@ -157,7 +157,7 @@
             items = d.subjects || [];
             searchEmpty = !items.length;
         } catch (_) {
-            error = "无法连接";
+            error = "连接失败";
         }
         loading = false;
     }
@@ -193,7 +193,7 @@
         class="grid grid-cols-1 min-[300px]:grid-cols-2 min-[600px]:grid-cols-[repeat(auto-fill,minmax(min(175px,calc((100%_-_2rem)/3)),1fr))] gap-4"
     >
         <div class="col-span-full text-center py-20 text-sub">
-            暂无数据。点击「管理数据」添加。<br /><br />首次使用请阅读<a
+            暂无数据。点击“管理数据”添加。<br /><br />首次使用请阅读<a
                 href="https://github.com/Vanadiry/Seshat/blob/main/docs/guide.md"
                 onclick={(e) => {
                     e.preventDefault();
@@ -264,7 +264,7 @@
                         {#if s.score}
                             <span
                                 class="bg-pink-solid text-white px-1.5 py-px rounded-md text-[12px] font-bold shrink-0"
-                                >★ {s.score.toFixed(1)}</span
+                                >评分 {s.score.toFixed(1)}</span
                             >
                         {/if}
                         {#if s.platform}
@@ -286,11 +286,11 @@
     <div id="pager" class="mt-6 text-center">
         {#if items.length <= 100}
             <span class="block mb-2 md:inline md:mb-0 text-xs text-sub"
-                >共 {items.length} 个项目</span
+                >共 {items.length} 个条目</span
             >
         {:else}
             <span class="block mb-2 md:inline md:mb-0 text-xs text-sub"
-                >当前展示 {visible.length}，共 {items.length} 个项目</span
+                >当前展示 {visible.length}，共 {items.length} 个条目</span
             >
             {#if visible.length < items.length}
                 <button

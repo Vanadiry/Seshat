@@ -179,8 +179,8 @@
                 return;
             }
             let text = "";
-            if (d.success) text += "✓ " + d.success;
-            if (d.error) text += (text ? "  " : "") + "✗ " + d.error;
+            if (d.success) text += d.success;
+            if (d.error) text += (text ? "；" : "") + d.error;
             saveMsg = text || "保存成功";
             if (updates.theme) {
                 localStorage.setItem("theme", updates.theme);
@@ -246,7 +246,7 @@
                 {:else}
                     <h2 class="text-lg font-bold text-text mb-1">前端设置</h2>
                     <p class="text-xs text-sub mb-4">
-                        修改后刷新页面即可生效，无需重启后端
+                        修改后刷新页面生效
                     </p>
                     {#each sections as [section, defs]}
                         <SectionTitle
@@ -281,7 +281,7 @@
             <div id="settings-sidebar" class="sticky sticky-below-topbar">
                 <h2 class="text-lg font-bold text-text mb-1">后端设置</h2>
                 <p class="text-xs text-sub mb-4">
-                    此处内容需修改 config.toml 并重启应用
+                    此处内容来自 config.toml，修改后需重启应用
                 </p>
                 {#each CONFIG_SECTIONS as sec}
                     <SectionTitle
@@ -333,11 +333,9 @@
                 {#if about.version || about.license || about.repository}
                     <div class="text-xs text-sub mt-1">
                         {#if about.version}版本：{about.version}{/if}
-                        {#if about.version && (about.license || about.repository)}
-                            ｜
-                        {/if}
+                        {#if about.version && (about.license || about.repository)} / {/if}
                         {#if about.license}许可证：{about.license}{/if}
-                        {#if about.license && about.repository}｜{/if}
+                        {#if about.license && about.repository} / {/if}
                         {#if about.repository}
                             <a
                                 href={about.repository}
@@ -345,7 +343,7 @@
                                     e.preventDefault();
                                     window.openUrl(about.repository);
                                 }}
-                                class="text-pink hover:underline">项目储存库</a
+                                class="text-pink hover:underline">项目仓库</a
                             >
                         {/if}
                     </div>

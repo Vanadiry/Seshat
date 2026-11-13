@@ -12,6 +12,6 @@
             class="w-9 h-9 md:w-7 md:h-7 rounded-full border border-bord-strong flex items-center justify-center text-sub hover:text-text hover:border-bord-xstrong shrink-0 no-underline text-xs"
             title="返回">←</a
         >
-        <span class="text-xl font-bold truncate">标签: {state.tag}</span>
+        <span class="text-xl font-bold truncate">标签：{state.tag}</span>
     </div>
 {/if}

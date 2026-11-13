@@ -56,10 +56,10 @@
                 </div>
             {/if}
             <div class="text-xs text-sub mt-1">
-                {e.airdate ? "首播: " + e.airdate : ""}{e.airdate &&
+                {e.airdate ? "首播：" + e.airdate : ""}{e.airdate &&
                 e.duration
-                    ? " ｜ "
-                    : ""}{e.duration ? "时长: " + e.duration : ""}
+                    ? "，"
+                    : ""}{e.duration ? "时长：" + e.duration : ""}
             </div>
             {#if e.desc}
                 <div class="text-[13px] text-sub mt-1 leading-relaxed">
@@ -77,7 +77,7 @@
         {#if main.length}
             <div class="mb-6">
                 <div class="text-sm text-sub font-semibold mb-3">
-                    本篇 ({main.length})
+                    本篇 {main.length}
                 </div>
                 {#each epPairs(main) as pair}
                     <div class="flex flex-col md:flex-row md:gap-4">
@@ -95,7 +95,7 @@
         {#if sp.length}
             <div class="mb-6">
                 <div class="text-sm text-sub font-semibold mb-3">
-                    SP / 其他 ({sp.length})
+                    SP / 其他 {sp.length}
                 </div>
                 {#each epPairs(sp) as pair}
                     <div class="flex flex-col md:flex-row md:gap-4">

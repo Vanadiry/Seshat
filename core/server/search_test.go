@@ -278,6 +278,6 @@ func TestSnippetTruncatesAtRuneBoundary(t *testing.T) {
 		t.Fatalf("片段缺失关键词: %q", match.Text)
 	}
 	if strings.ContainsRune(match.Text, '\uFFFD') {
-		t.Fatalf("片段含非法字符: %q", match.Text)
+		t.Fatalf("片段含不合法字符: %q", match.Text)
 	}
 }

@@ -20,7 +20,7 @@ func main() {
 		openBrowser(fmt.Sprintf("http://%s", addr))
 	}
 
-	// 等待退出信号，先取消任务再关闭服务
+	// 等待退出信号，取消任务后关闭服务
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	<-sig

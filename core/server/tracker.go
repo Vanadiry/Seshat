@@ -125,12 +125,12 @@ func trackerIDsFromPaths(paths []string) []int {
 	return ids
 }
 
-// trackerIDsByID 返回指定 Tracker id 的全部 ID，同名 TOML 和 JSON 取并集
+// trackerIDsByID 返回指定 Tracker ID 的全部 ID，同名 TOML 和 JSON 取并集
 func trackerIDsByID(cfg *config.Config, id string) []int {
 	return trackerIDsFromPaths(trackerFilePaths(cfg.TrackerDir(), id))
 }
 
-// missingTrackerNames 返回不存在的 Tracker id
+// missingTrackerNames 返回不存在的 Tracker ID
 func missingTrackerNames(cfg *config.Config, names []string) []string {
 	td := cfg.TrackerDir()
 	seen := map[string]bool{}
@@ -205,7 +205,7 @@ func countTrackerTotal(cfg *config.Config) int {
 	return len(allTrackerIDs(cfg))
 }
 
-// countTrackerNames 统计指定 tracker 列表中的条目总数
+// countTrackerNames 统计指定 Tracker 列表中的条目总数
 func countTrackerNames(cfg *config.Config, names []string) int {
 	return len(trackerIDsByNames(cfg, names))
 }
@@ -232,7 +232,7 @@ func trackerPhasePlan() []phaseSpec {
 	return append(specs, phaseSpec{Name: "建立索引", Start: 95, End: 100})
 }
 
-// refreshAllTrackers 刷新全部 tracker 列表
+// refreshAllTrackers 刷新全部 Tracker 列表
 func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, p *Progress) {
 	allIDs := allTrackerIDs(cfg)
 	p.SetPlan(trackerPhasePlan())
@@ -250,7 +250,7 @@ func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 	buildIndexes(dd, p)
 }
 
-// refreshTrackers 刷新指定 tracker 列表
+// refreshTrackers 刷新指定 Tracker 列表
 func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, names []string, p *Progress) {
 	allIDs := trackerIDsByNames(cfg, names)
 	if len(allIDs) == 0 {
@@ -321,7 +321,7 @@ func addToSeshatTracker(sid int) {
 	}
 }
 
-// loadTrackerIDs 从 tracker 文件读取条目 ID 列表
+// loadTrackerIDs 从 Tracker 文件读取条目 ID 列表
 func loadTrackerIDs(path string) []int {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -393,7 +393,7 @@ func parseIDList(s string, ids *[]int) {
 	}
 }
 
-// diffTrackerIDs 返回 tracker 中有但本地没有的 ID
+// diffTrackerIDs 返回 Tracker 中有但本地没有的 ID
 func diffTrackerIDs(cfg *config.Config, dd string) []int {
 	allIDs := allTrackerIDs(cfg)
 	// 读取已有条目 ID
@@ -414,7 +414,7 @@ func diffTrackerIDs(cfg *config.Config, dd string) []int {
 
 // fetchConcurrent 并发拉取
 
-// validTrackerName 校验 tracker 名称合法性
+// validTrackerName 校验 Tracker 名称是否合法
 func validTrackerName(name string) bool {
 	if name == "" {
 		return false
@@ -443,11 +443,11 @@ func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 			id = name
 		}
 		if id == "" || !validTrackerName(id) {
-			writeError(w, r, 400, "Tracker id 不合法，仅允许大小写字母、数字、短横线和下划线")
+			writeError(w, r, 400, "Tracker ID 不合法，仅允许大小写字母、数字、短横线和下划线")
 			return
 		}
 		if reservedTrackerID(id) {
-			writeError(w, r, 400, "Tracker id 为保留名称")
+			writeError(w, r, 400, "Tracker ID 为保留名称")
 			return
 		}
 		td := cfg.TrackerDir()
@@ -461,13 +461,13 @@ func handleTrackerCreate(cfg *config.Config) http.HandlerFunc {
 			name = id
 		}
 		if err := os.MkdirAll(td, 0o755); err != nil {
-			writeError(w, r, 500, "无法创建 tracker 目录")
+			writeError(w, r, 500, "无法创建 Tracker 目录")
 			return
 		}
 		tmpl := config.TrackerFileContent(id, name)
 		if err := store.WriteAtomic(filepath.Join(td, id+".toml"), []byte(tmpl), 0o644); err != nil {
 			log.Error("tracker create write", "err", err)
-			writeError(w, r, 500, "无法写入 tracker 文件")
+			writeError(w, r, 500, "无法写入 Tracker 文件")
 			return
 		}
 		writeJSON(w, map[string]string{"status": "created", "id": id, "name": name})
@@ -508,7 +508,7 @@ func handleImportCollections(dd string) http.HandlerFunc {
 		}
 		td := filepath.Join(config.Dir(), "tracker")
 		if err := os.MkdirAll(td, 0o755); err != nil {
-			writeError(w, r, 500, "无法创建 tracker 目录")
+			writeError(w, r, 500, "无法创建 Tracker 目录")
 			return
 		}
 		trackerData, err := json.Marshal(map[string]any{"name": "user", "subjects": ids})
@@ -520,7 +520,7 @@ func handleImportCollections(dd string) http.HandlerFunc {
 		}
 		if err := store.WriteAtomic(filepath.Join(td, "user.json"), trackerData, 0o644); err != nil {
 			log.Error("import collections write", "err", err)
-			writeError(w, r, 500, "无法写入 tracker 文件")
+			writeError(w, r, 500, "无法写入 Tracker 文件")
 			return
 		}
 		writeJSON(w, map[string]any{"status": "ok", "count": len(ids)})

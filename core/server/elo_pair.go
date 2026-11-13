@@ -10,9 +10,9 @@ import (
 )
 
 // getELOPair 混合策略返回两个评比条目
-// Phase 1（有人 <10 场）：40% 低频加权，30% 相近分数，30% 随机
-// Phase 2（全员 ≥10 场）：10% 低频加权，60% 相近分数，20% 保持覆盖，10% 随机
-// Staleness 劫持：staleness > 2N 强制配对
+// 阶段 1（有条目 <10 场）：40% 低频加权，30% 相近分数，30% 随机
+// 阶段 2（全员 ≥10 场）：10% 低频加权，60% 相近分数，20% 保持覆盖，10% 随机
+// Staleness 强制配对：staleness > 2N
 func getELOPair(dd string) []eloPairEntry {
 	keys, err := store.List(dd, "subjects")
 	if err != nil || len(keys) < 2 {
@@ -53,7 +53,7 @@ func getELOPair(dd string) []eloPairEntry {
 		}
 	}
 
-	// Phase: 全部条目 ≥10 场
+	// 全部条目 ≥10 场进入阶段 2
 	allSeen := true
 	for _, id := range eligible {
 		if data.Subjects[id].Count < 10 {

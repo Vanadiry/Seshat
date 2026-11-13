@@ -182,7 +182,7 @@
                             class="select-text bg-surface-raised border border-bord-strong rounded-lg px-3 py-2 text-xs shadow-lg relative"
                         >
                             <div class="text-sub">
-                                第 {row.epNum} 话 · {row.typeLabel}
+                                第 {row.epNum} 话，{row.typeLabel}
                             </div>
                             <div class="text-sm font-semibold mt-1">
                                 {row.name}
@@ -192,11 +192,11 @@
                             {/if}
                             {#if row.airdate}
                                 <div class="text-sub mt-1">
-                                    首播: {row.airdate}
+                                    首播：{row.airdate}
                                 </div>
                             {/if}
                             {#if row.duration}
-                                <div class="text-sub">时长: {row.duration}</div>
+                                <div class="text-sub">时长：{row.duration}</div>
                             {/if}
                             {#if pinned === index}
                                 <button

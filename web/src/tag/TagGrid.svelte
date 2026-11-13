@@ -41,7 +41,7 @@
                         {#if s.rating && s.rating.score}
                             <span
                                 class="bg-pink-solid text-white px-1.5 py-px rounded-md text-[12px] font-bold"
-                                >★ {s.rating.score.toFixed(1)}</span
+                                >评分 {s.rating.score.toFixed(1)}</span
                             >
                         {/if}
                         {#if s.platform}

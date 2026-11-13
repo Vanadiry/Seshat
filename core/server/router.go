@@ -41,7 +41,7 @@ func (r *router) core(pattern string, h http.HandlerFunc) {
 
 func (r *router) feature(name, pattern string, h http.HandlerFunc) {
 	if name == "" {
-		panic("feature 名不能为空")
+		panic("feature 名称为空")
 	}
 	r.register(kindFeature, name, pattern, h)
 }
@@ -52,7 +52,7 @@ func (r *router) local(pattern string, h http.HandlerFunc) {
 
 func (r *router) register(kind routeKind, feature, pattern string, h http.HandlerFunc) {
 	if _, exists := r.routes[pattern]; exists {
-		panic("路由重复注册: " + pattern)
+		panic("路由重复注册：" + pattern)
 	}
 	r.mux.HandleFunc(pattern, h)
 	r.routes[pattern] = routeInfo{kind: kind, feature: feature}

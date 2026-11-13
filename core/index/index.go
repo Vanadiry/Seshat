@@ -71,8 +71,8 @@ func ScanAPIDir(dd, domain string, fn func(path string)) {
 	}
 }
 
-// Build 扫描已保存的 API JSON，重建列表、标签和名称索引。
-// report 用于上报阶段进度，canceled 返回 true 时提前结束。
+// Build 扫描已保存的 API JSON，重建列表、标签和名称索引
+// report 用于上报阶段进度，canceled 返回 true 时提前结束
 func Build(dd string, report func(step, total int, name string), canceled func() bool) {
 	reportStep := func(step, total int, name string) {
 		if report != nil {

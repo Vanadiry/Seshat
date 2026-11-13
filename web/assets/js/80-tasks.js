@@ -1,4 +1,4 @@
-// 数据类任务完成后的默认行为：刷新当前页面。
+// 数据类任务完成后的默认行为：刷新当前页面
 function onFetchDone() {
     location.reload();
 }
@@ -43,7 +43,7 @@ function startProgress(taskId, label) {
         fill.style.transition = "none";
         fill.style.width = "100%";
         fill.style.background = "var(--c-toast-warning)";
-        if (detail) detail.textContent = "任务已终止";
+        if (detail) detail.textContent = "任务已中止";
         t.update(taskLabel, null, "bg-toast-warning", "bg-toast-warning-bg");
         t.addClose();
         cancelBtn.remove();
@@ -80,7 +80,7 @@ function startProgress(taskId, label) {
             fill.style.transition = "none";
             fill.style.width = "100%";
             fill.style.background = "var(--c-toast-warning)";
-            if (detail) detail.textContent = "任务已终止";
+            if (detail) detail.textContent = "任务已中止";
             t.update(
                 taskLabel,
                 null,

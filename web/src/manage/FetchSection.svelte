@@ -27,7 +27,7 @@
     let showIds = $derived($fetchSource === "ids");
 
     async function ensureTrackers() {
-        trackerStatus = "加载中...";
+        trackerStatus = "加载中…";
         await loadTrackers(false);
         trackerStatus = "";
     }
@@ -69,7 +69,7 @@
                 }
             }
             if (!names.length) {
-                window.showError("请选择或填写 Tracker");
+                window.showError("未选择 Tracker");
                 return null;
             }
             for (let i = 0; i < names.length; i++) {
@@ -99,7 +99,7 @@
         if (source === "ids") {
             body.ids = splitIDs($fetchIds);
             if (!body.ids.length) {
-                window.showError("请填写动画 ID");
+                window.showError("动画 ID 为空");
                 return null;
             }
         }
@@ -125,7 +125,7 @@
         }
         lines.push(
             "详情数据：" +
-                (body.json === "fill" ? "补充缺失" : "全量下载并覆盖")
+                (body.json === "fill" ? "补充缺失" : "全量拉取并覆盖")
         );
         lines.push(
             "图片：" +
@@ -166,7 +166,7 @@
     async function addTrackers() {
         const names = splitList(manualTrackers);
         if (!names.length) {
-            window.showError("请填写 Tracker ID");
+            window.showError("Tracker ID 为空");
             return;
         }
         for (let i = 0; i < names.length; i++) {
@@ -176,7 +176,7 @@
             }
         }
         window.confirmAction(
-            "将创建以下 Tracker：\n" + names.join("、") + "\n已存在的会跳过",
+            "会创建以下 Tracker：\n" + names.join("、") + "\n已存在的会跳过。",
             async function () {
                 let created = 0,
                     existed = 0,
@@ -267,7 +267,7 @@
                     <TrackerPicker
                         selected={$fetchTrackerIds}
                         onchange={onTracker}
-                        emptyHint="可以直接填写 id 或用加号创建"
+                        emptyHint="可以直接填写 Tracker ID 或用加号创建"
                         status={trackerStatus}
                     />
                     <div class="flex items-stretch gap-2">
@@ -346,7 +346,7 @@
                     onchange={() => fetchJson.set("overwrite")}
                     class="radio-pink"
                 />
-                全量下载并覆盖
+                全量拉取并覆盖
             </label>
         </div>
 

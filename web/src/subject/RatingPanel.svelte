@@ -140,13 +140,13 @@
                     <span class="text-xs text-sub ml-1">/ 10</span>
                 </div>
                 <div class="text-xs text-sub text-center mt-1">
-                    {total} 人评分 · 排名 {rank}
+                    {total} 人评分，排名 {rank}
                 </div>
                 {#if count}
                     <div
                         class="hidden min-[450px]:block md:hidden text-xs text-sub text-center mt-1"
                     >
-                        标准差: {stddev}
+                        标准差：{stddev}
                     </div>
                 {/if}
             </div>
@@ -163,7 +163,7 @@
                                 data-bar={bar.score}
                                 role="button"
                                 tabindex="0"
-                                aria-label="{bar.score}分 · {bar.pct}% · {bar.value} 人"
+                                aria-label="{bar.score} 分，{bar.pct}%，{bar.value} 人"
                                 onclick={() =>
                                     (activeBar =
                                         activeBar === bar.score
@@ -197,7 +197,7 @@
                                     <div
                                         class="bg-surface-raised border border-bord-strong rounded-lg px-2 py-1 text-xs whitespace-nowrap shadow-lg"
                                     >
-                                        {bar.score}分 · {bar.pct}% · {bar.value}
+                                        {bar.score} 分，{bar.pct}%，{bar.value}
                                         人
                                     </div>
                                 </div>
@@ -215,7 +215,7 @@
                     <div
                         class="text-xs text-sub text-center mt-2 min-[450px]:hidden md:block"
                     >
-                        标准差: {stddev}
+                        标准差：{stddev}
                     </div>
                 </div>
             {/if}

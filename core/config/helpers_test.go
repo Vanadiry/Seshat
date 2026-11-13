@@ -18,7 +18,7 @@ func TestProxyURL(t *testing.T) {
 	}
 	cfg.Proxy.Port = 0
 	if cfg.ProxyURL() != nil {
-		t.Fatal("端口非法时应返回 nil")
+		t.Fatal("端口不合法时应返回 nil")
 	}
 }
 
