@@ -70,7 +70,7 @@ function _makeToast(
     el.innerHTML =
         '<div class="' +
         titleBg +
-        ' text-white font-semibold px-4 py-2 rounded-t-lg flex items-center justify-between text-[14px]">' +
+        ' text-white font-semibold px-4 h-10 rounded-t-lg flex items-center justify-between text-[14px]">' +
         '<span class="truncate min-w-0 flex-1">' +
         title +
         "</span>" +

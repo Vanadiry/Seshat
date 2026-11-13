@@ -18,9 +18,13 @@
                 API_BASE +
                 "/v0/task/cancel" +
                 (id ? "/" + encodeURIComponent(id) : "");
-            fetch(url, { method: "POST" }).then(function () {
-                window.showInfo("已发送中止请求");
-            });
+            fetch(url, { method: "POST" })
+                .then(function (res) {
+                    if (!res.ok) window.showError("中止请求失败");
+                })
+                .catch(function () {
+                    window.showError("中止请求失败");
+                });
         });
     }
 </script>
