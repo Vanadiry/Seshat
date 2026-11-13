@@ -302,7 +302,7 @@
                         >
                             <span class="text-pink font-semibold text-sm"
                                 >{narrow
-                                    ? "再次点击确认"
+                                    ? "再次点击以确认"
                                     : "再次点击以确认该条目胜出"}</span
                             >
                         </div>
