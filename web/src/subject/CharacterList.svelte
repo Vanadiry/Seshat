@@ -165,7 +165,7 @@
                 <div class="text-center py-10 text-sub">没有符合条件的角色</div>
             {/if}
             {#each pairs(visible) as pair}
-                <div class="flex gap-4">
+                <div class="flex flex-col md:flex-row md:gap-4">
                     <div class="flex-1 min-w-0">{@render card(pair[0])}</div>
                     <div class="flex-1 min-w-0">
                         {#if pair[1]}{@render card(pair[1])}{/if}
