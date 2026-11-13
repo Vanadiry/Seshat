@@ -221,7 +221,7 @@
 </script>
 
 {#if visible}
-    <section class="mb-8 sm:mb-0">
+    <section class="mb-8 md:mb-0">
         <div class="flex items-center gap-2 mb-3">
             <span class="section-bar"></span>
             <h2 class="font-bold text-sm">拉取</h2>

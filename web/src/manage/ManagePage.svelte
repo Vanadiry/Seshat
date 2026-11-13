@@ -188,11 +188,11 @@
 </script>
 
 {#if capsReady}
-    <div id="manage-content" class="fade-in flex flex-col sm:flex-row gap-8">
+    <div id="manage-content" class="fade-in flex flex-col md:flex-row gap-8">
         <div class="flex-1 min-w-0">
             <FetchSection />
         </div>
-        <div class="hidden sm:block w-px bg-bord-light shrink-0"></div>
+        <div class="hidden md:block w-px bg-bord-light shrink-0"></div>
         <div class="flex-1 min-w-0">
             <UpstreamSection />
             <UserSection />

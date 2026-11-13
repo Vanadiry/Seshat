@@ -43,7 +43,7 @@
             >{window.primaryName(subject.name, subject.name_cn)}</span
         >
         {#if sub}
-            <span class="select-text text-sm text-sub truncate hidden sm:inline"
+            <span class="select-text text-sm text-sub truncate hidden md:inline"
                 >{sub}</span
             >
         {/if}

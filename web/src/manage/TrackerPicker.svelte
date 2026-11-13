@@ -32,7 +32,7 @@
 <div class="thin-scroll flex flex-col gap-1.5 max-h-60 overflow-y-auto pr-1">
     {#each sorted as t}
         <label
-            class="h-10 w-full flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm min-w-0 {t.count >
+            class="h-10 w-full flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 rounded-lg border border-bord bg-transparent text-sub text-sm min-w-0 {t.count >
             0
                 ? 'cursor-pointer hover:bg-active hover:text-text focus-within:bg-active focus-within:text-text'
                 : 'opacity-50'}"
@@ -56,7 +56,7 @@
             <span class="ml-auto text-xs text-right shrink-0"
                 >{t.count > 0 ? t.count + " 条" : "空"}</span
             >
-            <span class="w-7 sm:w-8 text-right text-xs shrink-0"
+            <span class="w-7 md:w-8 text-right text-xs shrink-0"
                 >{t.type === "auto" ? "自动" : "手动"}</span
             >
         </label>
