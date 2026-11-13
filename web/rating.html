@@ -22,6 +22,7 @@
                 content: "";
                 position: absolute;
                 inset: 0;
+                border-radius: inherit;
                 background: var(--c-pk-overlay);
                 z-index: 10;
                 opacity: 0;
@@ -59,7 +60,34 @@
             #pk-right.pk-loser .cancel-hint {
                 opacity: 1;
             }
+            @keyframes pkBreathe {
+                0%,
+                100% {
+                    box-shadow:
+                        0 0 0 2px var(--c-pink),
+                        0 0 10px 1px var(--c-pink-glow);
+                }
+                50% {
+                    box-shadow:
+                        0 0 0 2px var(--c-pink),
+                        0 0 26px 8px var(--c-pink-glow);
+                }
+            }
+            #pk-left.pk-glow,
+            #pk-right.pk-glow {
+                z-index: 15;
+                animation: pkBreathe 2.4s ease-in-out infinite;
+            }
+            @media (prefers-reduced-motion: reduce) {
+                #pk-left.pk-glow,
+                #pk-right.pk-glow {
+                    animation: none;
+                    box-shadow: 0 0 0 2px var(--c-pink);
+                }
+            }
+
             .confirm-bar {
+                border-radius: inherit;
                 background: radial-gradient(
                     120% 110% at 50% 0%,
                     var(--c-pink-bg),
@@ -72,11 +100,13 @@
             .confirm-bar.show {
                 opacity: 1;
             }
-            #pk-area.pk-picked #pk-left-name,
-            #pk-area.pk-picked #pk-right-name,
-            #pk-area.pk-picked #pk-left-sub,
-            #pk-area.pk-picked #pk-right-sub {
-                text-overflow: clip;
+            @media (min-width: 800px) {
+                #pk-area.pk-picked #pk-left-name,
+                #pk-area.pk-picked #pk-right-name,
+                #pk-area.pk-picked #pk-left-sub,
+                #pk-area.pk-picked #pk-right-sub {
+                    text-overflow: clip;
+                }
             }
         </style>
     </head>

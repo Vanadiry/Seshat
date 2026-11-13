@@ -21,6 +21,7 @@
     --c-pink: #fe8a95;
     --c-pink-solid: #cf3f56;
     --c-pink-bg: #403638;
+    --c-pink-glow: rgba(254, 138, 149, 0.42);
     /* 档位颜色，用于章节类型和评分等级 */
     --c-tier-gold: #d4a040;
     --c-tier-gold-bg: #33281a;
@@ -69,6 +70,7 @@ html.light {
     --c-pink: #a83449;
     --c-pink-solid: #b83f54;
     --c-pink-bg: #fce4e8;
+    --c-pink-glow: rgba(168, 52, 73, 0.3);
     /* 档位颜色，浅色背景和深色文字，保证对比度 */
     --c-tier-gold: #b8860b;
     --c-tier-gold-bg: #fef3e0;

@@ -239,7 +239,7 @@
                         id={"pk-" + side}
                         class="flex-1 min-w-0 bg-surface border border-bord-mid rounded-xl p-3 md:p-6 flex flex-col items-center justify-center cursor-pointer relative h-[298px] {narrow &&
                         winner
-                            ? 'ring-2 ring-pink'
+                            ? 'pk-glow'
                             : ''} {narrow && loser ? 'pk-loser' : ''}"
                         class:shrunk={!narrow && loser}
                         style={narrow
