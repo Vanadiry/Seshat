@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 	"unicode"
+
+	"github.com/vanadiry/seshat/core/index"
 )
 
 const searchLimit = 500
@@ -197,7 +199,7 @@ func searchAllJSON(dd, domain, q string) ([]map[string]any, int) {
 	}
 	qLower := strings.ToLower(q)
 
-	scanAPIDir(dd, domain, func(path string) {
+	index.ScanAPIDir(dd, domain, func(path string) {
 		if !strings.HasSuffix(path, "info.json") {
 			return
 		}
@@ -302,7 +304,7 @@ func handleSearchTags(dd string) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		tags := loadTags(dd)
+		tags := index.LoadTags(dd)
 		results := []map[string]any{}
 		ql := strings.ToLower(keyword)
 		total := 0

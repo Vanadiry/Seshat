@@ -1,4 +1,4 @@
-package server
+package fetch
 
 import (
 	"encoding/json"
@@ -73,7 +73,7 @@ func TestFetchUserCollectionsWritesAllPages(t *testing.T) {
 	defer srv.Close()
 
 	c := bangumi.NewClient("test", srv.URL, nil, nil)
-	if err := fetchUserCollections("tester", c, filepath.Join(home, "data")); err != nil {
+	if err := UserCollections("tester", c, filepath.Join(home, "data")); err != nil {
 		t.Fatalf("拉取失败: %v", err)
 	}
 	if got := len(readCollections(t, home)); got != 120 {
@@ -113,7 +113,7 @@ func TestFetchUserCollectionsKeepsOldFileOnFailure(t *testing.T) {
 	}
 
 	c := bangumi.NewClient("test", srv.URL, nil, nil)
-	if err := fetchUserCollections("tester", c, filepath.Join(home, "data")); err == nil {
+	if err := UserCollections("tester", c, filepath.Join(home, "data")); err == nil {
 		t.Fatal("第二页失败时应返回错误")
 	}
 	data, err := os.ReadFile(path)
@@ -135,7 +135,7 @@ func TestFetchUserInfoWritesOnSuccess(t *testing.T) {
 	defer srv.Close()
 
 	c := bangumi.NewClient("test", srv.URL, nil, nil)
-	if err := fetchUserInfo("tester", c, filepath.Join(home, "data")); err != nil {
+	if err := UserInfo("tester", c, filepath.Join(home, "data")); err != nil {
 		t.Fatalf("拉取失败: %v", err)
 	}
 	data, err := os.ReadFile(filepath.Join(home, "data", "user", "info.json"))
@@ -166,7 +166,7 @@ func TestFetchUserInfoKeepsOldFileOnFailure(t *testing.T) {
 	}
 
 	c := bangumi.NewClient("test", srv.URL, nil, nil)
-	if err := fetchUserInfo("tester", c, filepath.Join(home, "data")); err == nil {
+	if err := UserInfo("tester", c, filepath.Join(home, "data")); err == nil {
 		t.Fatal("上游失败时应返回错误")
 	}
 	data, err := os.ReadFile(path)

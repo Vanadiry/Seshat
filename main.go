@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 
 	"github.com/vanadiry/seshat/core/config"
@@ -64,7 +65,7 @@ func runSeshat() (*http.Server, string) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	log.Init(cfg.Server.LogLevel)
+	log.Init(filepath.Join(config.Dir(), "logs"), cfg.Server.LogLevel)
 	log.Info("Starting Seshat...")
 	events.InitBus()
 	server.EnsureExcludeFile()

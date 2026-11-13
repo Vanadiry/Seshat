@@ -8,6 +8,8 @@ import (
 	"github.com/vanadiry/seshat/core/bangumi"
 	"github.com/vanadiry/seshat/core/config"
 	"github.com/vanadiry/seshat/core/events"
+	"github.com/vanadiry/seshat/core/fetch"
+	"github.com/vanadiry/seshat/core/index"
 	"github.com/vanadiry/seshat/core/log"
 	"github.com/vanadiry/seshat/core/store"
 )
@@ -108,7 +110,7 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 			taskBg := bg.WithContext(p.Context())
 			p.BeginPhase(1)
 			p.SendPhaseStep(0, 1, "")
-			if err := fetchUserInfo(uname, taskBg, dd); err != nil {
+			if err := fetch.UserInfo(uname, taskBg, dd); err != nil {
 				if isCanceled(err) {
 					return
 				}
@@ -124,7 +126,7 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 
 			p.BeginPhase(2)
 			p.SendPhaseStep(0, 1, "")
-			if err := fetchUserAvatar(uname, taskBg, dd); err != nil {
+			if err := fetch.UserAvatar(uname, taskBg, dd); err != nil {
 				if isCanceled(err) {
 					return
 				}
@@ -140,7 +142,7 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 
 			p.BeginPhase(3)
 			p.SendPhaseStep(0, 1, "")
-			if err := fetchUserCollections(uname, taskBg, dd); err != nil {
+			if err := fetch.UserCollections(uname, taskBg, dd); err != nil {
 				if isCanceled(err) {
 					return
 				}
@@ -237,7 +239,7 @@ func handleFetchMeta(cfg *config.Config, bg *bangumi.Client, dd string) http.Han
 }
 
 func collectAllSubjectIDs(dd string) []int {
-	list, _ := loadCachedIndex[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json"))
+	list, _ := index.LoadCached[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json"))
 	ids := make([]int, len(list))
 	for i, e := range list {
 		ids[i] = e.ID

@@ -1,4 +1,4 @@
-package server
+package index
 
 import (
 	"fmt"
@@ -51,22 +51,22 @@ func RebuildImageIndex(dd string) {
 				}
 			}
 		}
-		saveJSON(store.IndexFile(dd, kind+"s_image.json"), m)
+		SaveJSON(store.IndexFile(dd, kind+"s_image.json"), m)
 		log.Info("image index rebuilt", "kind", kind+"s", "count", len(m))
 	}
 }
 
-// 辅助函数
-
-func loadImageIndex(dd, name string) map[int]store.ImageEntry {
-	m, err := loadCachedIndex[map[int]store.ImageEntry](store.IndexFile(dd, name))
+// LoadImageIndex 读取图片索引，缺失时返回空映射
+func LoadImageIndex(dd, name string) map[int]store.ImageEntry {
+	m, err := LoadCached[map[int]store.ImageEntry](store.IndexFile(dd, name))
 	if err != nil || m == nil {
 		return map[int]store.ImageEntry{}
 	}
 	return m
 }
 
-func entryPath(entry store.ImageEntry, size string) string {
+// EntryPath 返回指定尺寸的图片相对路径
+func EntryPath(entry store.ImageEntry, size string) string {
 	switch size {
 	case "large":
 		return entry.Large

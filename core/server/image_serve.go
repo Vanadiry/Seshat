@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/vanadiry/seshat/core/index"
 	"github.com/vanadiry/seshat/core/store"
 )
 
@@ -28,7 +29,7 @@ func imageSizeOrder(requested string) []string {
 // pickImageSize 返回实际可用的尺寸，没有可用图片时返回空字符串
 func pickImageSize(entry store.ImageEntry, requested string) string {
 	for _, size := range imageSizeOrder(requested) {
-		if entryPath(entry, size) != "" {
+		if index.EntryPath(entry, size) != "" {
 			return size
 		}
 	}
@@ -41,11 +42,11 @@ func serveImage(w http.ResponseWriter, r *http.Request, dd, kind, size string) {
 	}
 	idStr := r.PathValue("id")
 	id, _ := strconv.Atoi(idStr)
-	images := loadImageIndex(dd, kind+"s_image.json")
+	images := index.LoadImageIndex(dd, kind+"s_image.json")
 	entry, ok := images[id]
 	if ok {
 		for _, candidate := range imageSizeOrder(size) {
-			path := entryPath(entry, candidate)
+			path := index.EntryPath(entry, candidate)
 			if path == "" {
 				continue
 			}

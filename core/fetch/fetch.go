@@ -1,4 +1,4 @@
-package server
+package fetch
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 )
 
 // putData 写入数据并在失败时上报，返回是否成功
-func putData(dd, key string, data []byte, p *Progress) bool {
+func putData(dd, key string, data []byte, p Progress) bool {
 	if err := store.Put(dd, key, data); err != nil {
 		log.Error("data write failed", "key", key, "err", err)
 		if p != nil {
@@ -23,7 +23,7 @@ func putData(dd, key string, data []byte, p *Progress) bool {
 	return true
 }
 
-func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int) []int {
+func SubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p Progress, concurrency int) []int {
 	if len(ids) == 0 {
 		return nil
 	}
@@ -97,7 +97,7 @@ func loadOrFetchData(dd, key, path string, bg *bangumi.Client, overwrite bool) (
 }
 
 // subjectCoreIncomplete 检查条目的核心文件是否缺失
-func subjectCoreIncomplete(dd string, sid int) bool {
+func SubjectCoreIncomplete(dd string, sid int) bool {
 	for _, file := range []string{"info.json", "characters.json", "persons.json", "subjects.json"} {
 		if !store.Has(dd, store.Key("subjects", sid, file)) {
 			return true

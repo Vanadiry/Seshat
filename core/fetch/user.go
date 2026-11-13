@@ -1,4 +1,4 @@
-package server
+package fetch
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 )
 
 // 拉取用户收藏，失败时不做写入
-func fetchUserCollections(username string, bg *bangumi.Client, dd string) error {
+func UserCollections(username string, bg *bangumi.Client, dd string) error {
 	log.Info("fetching collections", "user", username)
 
 	var items []json.RawMessage
@@ -86,7 +86,7 @@ func fetchUserCollections(username string, bg *bangumi.Client, dd string) error 
 	return nil
 }
 
-func fetchUserInfo(username string, bg *bangumi.Client, dd string) error {
+func UserInfo(username string, bg *bangumi.Client, dd string) error {
 	log.Info("fetching user info", "user", username)
 	userDir := filepath.Join(dd, "user")
 	if err := os.MkdirAll(userDir, 0o755); err != nil {
@@ -111,7 +111,7 @@ func fetchUserInfo(username string, bg *bangumi.Client, dd string) error {
 	return nil
 }
 
-func fetchUserAvatar(username string, bg *bangumi.Client, dd string) error {
+func UserAvatar(username string, bg *bangumi.Client, dd string) error {
 	log.Info("fetching user avatar", "user", username)
 	userDir := filepath.Join(dd, "user")
 	if err := os.MkdirAll(userDir, 0o755); err != nil {
@@ -133,7 +133,7 @@ func fetchUserAvatar(username string, bg *bangumi.Client, dd string) error {
 }
 
 // countTrackerTotal 统计全部 tracker 中的条目总数
-func fetchConcurrent[T any](items []T, fn func(T), p *Progress, concurrency int) {
+func fetchConcurrent[T any](items []T, fn func(T), p Progress, concurrency int) {
 	if len(items) == 0 {
 		return
 	}

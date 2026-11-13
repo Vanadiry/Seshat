@@ -11,8 +11,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/vanadiry/seshat/core/config"
 )
 
 var logger *slog.Logger
@@ -71,9 +69,8 @@ func (w *rotatingWriter) openFirst() error {
 	return nil
 }
 
-// Init 初始化日志系统。level 为 "debug" / "info" / "warn" / "error"
-func Init(level string) {
-	logDir := filepath.Join(config.Dir(), "logs")
+// Init 初始化日志系统。logDir 为日志目录，level 为 "debug" / "info" / "warn" / "error"
+func Init(logDir, level string) {
 	os.MkdirAll(logDir, 0o755)
 
 	rw := &rotatingWriter{dir: logDir}

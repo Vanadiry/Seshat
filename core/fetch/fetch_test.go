@@ -1,4 +1,4 @@
-package server
+package fetch
 
 import (
 	"net/http"
@@ -49,7 +49,7 @@ func writeSubjectCore(t *testing.T, dd string, sid int, info string) {
 }
 
 func TestSubjectCoreIncompleteMissingInfo(t *testing.T) {
-	if !subjectCoreIncomplete(t.TempDir(), 51) {
+	if !SubjectCoreIncomplete(t.TempDir(), 51) {
 		t.Fatal("缺少文件时应当返回不完整")
 	}
 }
@@ -57,7 +57,7 @@ func TestSubjectCoreIncompleteMissingInfo(t *testing.T) {
 func TestSubjectCoreIncompleteNoEpisodes(t *testing.T) {
 	dd := t.TempDir()
 	writeSubjectCore(t, dd, 51, `{"id":51,"total_episodes":0,"eps":0}`)
-	if subjectCoreIncomplete(dd, 51) {
+	if SubjectCoreIncomplete(dd, 51) {
 		t.Fatal("没有剧集的条目应当视为完整")
 	}
 }
@@ -65,7 +65,7 @@ func TestSubjectCoreIncompleteNoEpisodes(t *testing.T) {
 func TestSubjectCoreIncompleteMissingEpisodes(t *testing.T) {
 	dd := t.TempDir()
 	writeSubjectCore(t, dd, 51, `{"id":51,"total_episodes":12,"eps":12}`)
-	if !subjectCoreIncomplete(dd, 51) {
+	if !SubjectCoreIncomplete(dd, 51) {
 		t.Fatal("缺失剧集时应当返回不完整")
 	}
 }
@@ -73,7 +73,7 @@ func TestSubjectCoreIncompleteMissingEpisodes(t *testing.T) {
 func TestSubjectCoreIncompleteEpsFallback(t *testing.T) {
 	dd := t.TempDir()
 	writeSubjectCore(t, dd, 51, `{"id":51,"total_episodes":0,"eps":12}`)
-	if !subjectCoreIncomplete(dd, 51) {
+	if !SubjectCoreIncomplete(dd, 51) {
 		t.Fatal("total_episodes 为 0 时应按 eps 判断")
 	}
 }
@@ -84,7 +84,7 @@ func TestSubjectCoreIncompleteWithEpisodes(t *testing.T) {
 	if err := store.Put(dd, store.Key("subjects", 51, "episodes.json"), []byte("[]")); err != nil {
 		t.Fatal(err)
 	}
-	if subjectCoreIncomplete(dd, 51) {
+	if SubjectCoreIncomplete(dd, 51) {
 		t.Fatal("剧集文件存在时应当视为完整")
 	}
 }
@@ -126,7 +126,7 @@ func TestFetchAllSucceedsWithCoreFiles(t *testing.T) {
 	if !fetchAll(51, c, dd, filepath.Join(dd, "images"), nil, 1, true) {
 		t.Fatal("核心文件齐全时应返回 true")
 	}
-	if subjectCoreIncomplete(dd, 51) {
+	if SubjectCoreIncomplete(dd, 51) {
 		t.Fatal("成功后核心文件应当齐全")
 	}
 }
@@ -151,7 +151,7 @@ func TestFetchAllSucceedsWithoutEpisodes(t *testing.T) {
 	if !fetchAll(51, c, dd, filepath.Join(dd, "images"), nil, 1, true) {
 		t.Fatal("没有剧集的条目应当返回 true")
 	}
-	if subjectCoreIncomplete(dd, 51) {
+	if SubjectCoreIncomplete(dd, 51) {
 		t.Fatal("没有剧集的条目不应缺少核心文件")
 	}
 }

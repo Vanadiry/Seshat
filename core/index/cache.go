@@ -1,4 +1,4 @@
-package server
+package index
 
 import (
 	"encoding/json"
@@ -10,11 +10,11 @@ import (
 )
 
 var (
-	indexCache   = map[string]indexCacheEntry{}
-	indexCacheMu sync.RWMutex
+	cache   = map[string]cacheEntry{}
+	cacheMu sync.RWMutex
 )
 
-type indexCacheEntry struct {
+type cacheEntry struct {
 	modTime time.Time
 	data    any
 }
@@ -24,8 +24,8 @@ func cacheKey[T any](path string) string {
 	return fmt.Sprintf("%s:%T", path, *new(T))
 }
 
-// loadCachedIndex 读取并缓存索引 JSON 文件，mtime 未变则返回缓存
-func loadCachedIndex[T any](path string) (T, error) {
+// LoadCached 读取并缓存索引 JSON 文件，mtime 未变则返回缓存
+func LoadCached[T any](path string) (T, error) {
 	var zero T
 
 	stat, err := os.Stat(path)
@@ -34,9 +34,9 @@ func loadCachedIndex[T any](path string) (T, error) {
 	}
 
 	key := cacheKey[T](path)
-	indexCacheMu.RLock()
-	entry, ok := indexCache[key]
-	indexCacheMu.RUnlock()
+	cacheMu.RLock()
+	entry, ok := cache[key]
+	cacheMu.RUnlock()
 	if ok && entry.modTime.Equal(stat.ModTime()) {
 		return entry.data.(T), nil
 	}
@@ -50,21 +50,21 @@ func loadCachedIndex[T any](path string) (T, error) {
 		return zero, err
 	}
 
-	indexCacheMu.Lock()
-	indexCache[key] = indexCacheEntry{modTime: stat.ModTime(), data: result}
-	indexCacheMu.Unlock()
+	cacheMu.Lock()
+	cache[key] = cacheEntry{modTime: stat.ModTime(), data: result}
+	cacheMu.Unlock()
 
 	return result, nil
 }
 
-// clearIndexCache 清除指定文件路径的全部类型缓存
-func clearIndexCache(path string) {
+// ClearCache 清除指定文件路径的全部类型缓存
+func ClearCache(path string) {
 	prefix := path + ":"
-	indexCacheMu.Lock()
-	for k := range indexCache {
+	cacheMu.Lock()
+	for k := range cache {
 		if strings.HasPrefix(k, prefix) {
-			delete(indexCache, k)
+			delete(cache, k)
 		}
 	}
-	indexCacheMu.Unlock()
+	cacheMu.Unlock()
 }

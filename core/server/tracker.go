@@ -16,6 +16,8 @@ import (
 	"github.com/vanadiry/seshat/core/bangumi"
 	"github.com/vanadiry/seshat/core/config"
 	"github.com/vanadiry/seshat/core/events"
+	"github.com/vanadiry/seshat/core/fetch"
+	"github.com/vanadiry/seshat/core/index"
 	"github.com/vanadiry/seshat/core/log"
 	"github.com/vanadiry/seshat/core/store"
 )
@@ -235,12 +237,12 @@ func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 	allIDs := allTrackerIDs(cfg)
 	p.SetPlan(trackerPhasePlan())
 	p.BeginPhase(1)
-	fetchSubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
+	fetch.SubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
 	if taskCanceled(p) {
 		return
 	}
 	log.Info("all trackers refreshed", "subjects", len(allIDs))
-	downloadImages(dd, bg, p, 2, cfg.Server.ConcurrencyImage)
+	fetch.DownloadImages(dd, bg, p, 2, cfg.Server.ConcurrencyImage)
 	if taskCanceled(p) {
 		return
 	}
@@ -257,12 +259,12 @@ func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, 
 	}
 	p.SetPlan(trackerPhasePlan())
 	p.BeginPhase(1)
-	fetchSubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
+	fetch.SubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
 	if taskCanceled(p) {
 		return
 	}
 	log.Info("trackers refreshed", "names", names, "subjects", len(allIDs))
-	downloadImages(dd, bg, p, 2, cfg.Server.ConcurrencyImage)
+	fetch.DownloadImages(dd, bg, p, 2, cfg.Server.ConcurrencyImage)
 	if taskCanceled(p) {
 		return
 	}
@@ -396,7 +398,7 @@ func diffTrackerIDs(cfg *config.Config, dd string) []int {
 	allIDs := allTrackerIDs(cfg)
 	// 读取已有条目 ID
 	existing := map[int]bool{}
-	if list, err := loadCachedIndex[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json")); err == nil {
+	if list, err := index.LoadCached[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json")); err == nil {
 		for _, s := range list {
 			existing[s.ID] = true
 		}

@@ -12,6 +12,7 @@ import (
 	"github.com/vanadiry/seshat/core/bangumi"
 	"github.com/vanadiry/seshat/core/config"
 	"github.com/vanadiry/seshat/core/events"
+	"github.com/vanadiry/seshat/core/index"
 	"github.com/vanadiry/seshat/core/log"
 	"github.com/vanadiry/seshat/core/store"
 )
@@ -80,7 +81,7 @@ func buildRouter(cfg *config.Config, embedFS fs.FS) *router {
 				w.WriteHeader(http.StatusNotModified)
 				return
 			}
-			m, _ := loadCachedIndex[map[int][]string](path)
+			m, _ := index.LoadCached[map[int][]string](path)
 			writeJSON(w, m)
 		}
 	}

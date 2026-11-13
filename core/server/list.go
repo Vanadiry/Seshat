@@ -1,60 +1,36 @@
 package server
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/vanadiry/seshat/core/events"
-	"github.com/vanadiry/seshat/core/log"
+	"github.com/vanadiry/seshat/core/index"
 	"github.com/vanadiry/seshat/core/store"
 )
 
-func saveJSON(path string, v any) {
-	data, err := json.Marshal(v)
-	if err != nil {
-		log.Error("saveJSON marshal", "path", path, "err", err)
-		events.Bus.Error("索引文件保存失败")
-		return
-	}
-	if err := store.WriteAtomic(path, data, 0o644); err != nil {
-		log.Error("saveJSON write", "path", path, "err", err)
-		events.Bus.Error("索引文件保存失败")
-		return
-	}
-	clearIndexCache(path)
-}
-
-// 标签索引
-
-type tagInfo struct {
-	Count    int   `json:"count"`
-	Subjects []int `json:"subjects"`
-}
-
 func loadNameList(path string) []store.NameEntry {
-	list, _ := loadCachedIndex[[]store.NameEntry](path)
+	list, _ := index.LoadCached[[]store.NameEntry](path)
 	return list
 }
 
 func handleListSubjects(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		list, _ := loadCachedIndex[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json"))
+		list, _ := index.LoadCached[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json"))
 		writeList(w, list)
 	}
 }
 
 func handleListCharacters(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		list, _ := loadCachedIndex[[]store.NameEntry](store.IndexFile(dd, "characters.json"))
+		list, _ := index.LoadCached[[]store.NameEntry](store.IndexFile(dd, "characters.json"))
 		writeList(w, list)
 	}
 }
 
 func handleListPersons(dd string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		list, _ := loadCachedIndex[[]store.NameEntry](store.IndexFile(dd, "persons.json"))
+		list, _ := index.LoadCached[[]store.NameEntry](store.IndexFile(dd, "persons.json"))
 		writeList(w, list)
 	}
 }

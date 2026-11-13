@@ -1,4 +1,4 @@
-package server
+package index
 
 import (
 	"encoding/json"
@@ -69,7 +69,7 @@ func TestBuildIndexesScansData(t *testing.T) {
 		},
 	})
 
-	buildIndexes(dd, nil)
+	Build(dd, nil, nil)
 
 	subjects := readTestIndex[[]store.SubjectSummary](t, dd, "subjects.json")
 	if len(subjects) != 2 {
@@ -82,7 +82,7 @@ func TestBuildIndexesScansData(t *testing.T) {
 		t.Fatalf("条目字段 = %+v", subjects[0])
 	}
 
-	tags := readTestIndex[map[string]tagInfo](t, dd, "tags.json")
+	tags := readTestIndex[map[string]TagInfo](t, dd, "tags.json")
 	if tags["科幻"].Count != 2 || len(tags["科幻"].Subjects) != 2 {
 		t.Fatalf("标签统计 = %+v", tags["科幻"])
 	}

@@ -1,4 +1,4 @@
-package server
+package fetch
 
 import (
 	"encoding/json"
@@ -33,7 +33,7 @@ type subjectID struct {
 }
 
 // fetchAll 拉取单条目的信息、角色、人物、剧集、关联条目和图片
-func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int, overwrite bool) bool {
+func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p Progress, concurrency int, overwrite bool) bool {
 	if taskCanceled(p) {
 		return false
 	}
@@ -88,7 +88,7 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 	return true
 }
 
-func fetchSubjectInfo(dd string, sid int, bg *bangumi.Client, p *Progress, overwrite bool) bool {
+func fetchSubjectInfo(dd string, sid int, bg *bangumi.Client, p Progress, overwrite bool) bool {
 	if p != nil {
 		p.Send("subject", 0, 1, "fetching")
 	}
@@ -116,7 +116,7 @@ func fetchSubjectInfo(dd string, sid int, bg *bangumi.Client, p *Progress, overw
 	return true
 }
 
-func fetchSubjectLists(dd string, sid int, bg *bangumi.Client, p *Progress, overwrite bool, requiredFailed *atomic.Bool) ([]subjectChar, []subjectPerson) {
+func fetchSubjectLists(dd string, sid int, bg *bangumi.Client, p Progress, overwrite bool, requiredFailed *atomic.Bool) ([]subjectChar, []subjectPerson) {
 	var chars []subjectChar
 	var persons []subjectPerson
 	var wg sync.WaitGroup
@@ -213,7 +213,7 @@ func collectPersonIDs(chars []subjectChar, persons []subjectPerson) []subjectID 
 	return ids
 }
 
-func fetchCharacterInfos(ids []subjectID, dd string, bg *bangumi.Client, p *Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
+func fetchCharacterInfos(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
 	fetchConcurrent(ids, func(c subjectID) {
 		key := store.Key("characters", c.ID, "info.json")
 		if !overwrite && store.Has(dd, key) {
@@ -231,7 +231,7 @@ func fetchCharacterInfos(ids []subjectID, dd string, bg *bangumi.Client, p *Prog
 	}, nil, concurrency)
 }
 
-func fetchPersonInfos(ids []subjectID, dd string, bg *bangumi.Client, p *Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
+func fetchPersonInfos(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
 	fetchConcurrent(ids, func(pp subjectID) {
 		key := store.Key("persons", pp.ID, "info.json")
 		if !overwrite && store.Has(dd, key) {
@@ -249,7 +249,7 @@ func fetchPersonInfos(ids []subjectID, dd string, bg *bangumi.Client, p *Progres
 	}, nil, concurrency)
 }
 
-func fetchCharacterSubjects(ids []subjectID, dd string, bg *bangumi.Client, p *Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
+func fetchCharacterSubjects(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
 	fetchConcurrent(ids, func(c subjectID) {
 		key := store.Key("characters", c.ID, "subjects.json")
 		if !overwrite && store.Has(dd, key) {
@@ -265,7 +265,7 @@ func fetchCharacterSubjects(ids []subjectID, dd string, bg *bangumi.Client, p *P
 	}, nil, concurrency)
 }
 
-func fetchCharacterPersons(ids []subjectID, dd string, bg *bangumi.Client, p *Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
+func fetchCharacterPersons(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
 	fetchConcurrent(ids, func(c subjectID) {
 		key := store.Key("characters", c.ID, "persons.json")
 		if !overwrite && store.Has(dd, key) {
@@ -281,7 +281,7 @@ func fetchCharacterPersons(ids []subjectID, dd string, bg *bangumi.Client, p *Pr
 	}, nil, concurrency)
 }
 
-func fetchPersonSubjects(ids []subjectID, dd string, bg *bangumi.Client, p *Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
+func fetchPersonSubjects(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
 	fetchConcurrent(ids, func(pp subjectID) {
 		key := store.Key("persons", pp.ID, "subjects.json")
 		if !overwrite && store.Has(dd, key) {
@@ -297,7 +297,7 @@ func fetchPersonSubjects(ids []subjectID, dd string, bg *bangumi.Client, p *Prog
 	}, nil, concurrency)
 }
 
-func fetchPersonCharacters(ids []subjectID, dd string, bg *bangumi.Client, p *Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
+func fetchPersonCharacters(ids []subjectID, dd string, bg *bangumi.Client, p Progress, overwrite bool, concurrency int, writeFailed *atomic.Bool) {
 	fetchConcurrent(ids, func(pp subjectID) {
 		key := store.Key("persons", pp.ID, "characters.json")
 		if !overwrite && store.Has(dd, key) {
@@ -313,7 +313,7 @@ func fetchPersonCharacters(ids []subjectID, dd string, bg *bangumi.Client, p *Pr
 	}, nil, concurrency)
 }
 
-func fetchSubjectEpisodes(sid int, dd string, bg *bangumi.Client, p *Progress, overwrite bool, writeFailed, requiredFailed *atomic.Bool) int {
+func fetchSubjectEpisodes(sid int, dd string, bg *bangumi.Client, p Progress, overwrite bool, writeFailed, requiredFailed *atomic.Bool) int {
 	epKey := store.Key("subjects", sid, "episodes.json")
 	if !overwrite && store.Has(dd, epKey) {
 		return 0
@@ -372,7 +372,7 @@ func fetchSubjectEpisodes(sid int, dd string, bg *bangumi.Client, p *Progress, o
 	return len(allEps)
 }
 
-func fetchSubjectRelations(sid int, dd string, bg *bangumi.Client, p *Progress, overwrite bool, writeFailed, requiredFailed *atomic.Bool) {
+func fetchSubjectRelations(sid int, dd string, bg *bangumi.Client, p Progress, overwrite bool, writeFailed, requiredFailed *atomic.Bool) {
 	relKey := store.Key("subjects", sid, "subjects.json")
 	if !overwrite && store.Has(dd, relKey) {
 		return

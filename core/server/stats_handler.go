@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/vanadiry/seshat/core/config"
+	"github.com/vanadiry/seshat/core/index"
 	"github.com/vanadiry/seshat/core/store"
 )
 
@@ -36,7 +37,7 @@ func handleStats(dd string) http.HandlerFunc {
 		// 图片统计
 		var img imageStats
 		for _, kind := range []string{"subject", "character", "person"} {
-			m := loadImageIndex(dd, kind+"s_image.json")
+			m := index.LoadImageIndex(dd, kind+"s_image.json")
 			var domainTotal, uniqueCount int
 			for _, e := range m {
 				if e.Large != "" {

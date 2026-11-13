@@ -1,4 +1,4 @@
-package server
+package fetch
 
 import (
 	"context"
@@ -15,21 +15,21 @@ import (
 	"github.com/vanadiry/seshat/core/store"
 )
 
-func downloadImages(dd string, bg *bangumi.Client, p *Progress, phaseBase, concurrency int) {
+func DownloadImages(dd string, bg *bangumi.Client, p Progress, phaseBase, concurrency int) {
 	downloadImagesWithPhase(dd, bg, p, phaseBase, nil, concurrency, false)
 }
 
 // downloadImagesScoped 仅下载指定条目及其关联角色/人物的图像
-func downloadImagesScoped(dd string, bg *bangumi.Client, p *Progress, phaseBase int, subjectIDs []int, concurrency int) {
+func DownloadImagesScoped(dd string, bg *bangumi.Client, p Progress, phaseBase int, subjectIDs []int, concurrency int) {
 	downloadImagesWithPhase(dd, bg, p, phaseBase, subjectIDs, concurrency, false)
 }
 
 // downloadImagesScopedForce 覆盖指定条目及其关联角色/人物的全部图像
-func downloadImagesScopedForce(dd string, bg *bangumi.Client, p *Progress, phaseBase int, subjectIDs []int, concurrency int) {
+func DownloadImagesScopedForce(dd string, bg *bangumi.Client, p Progress, phaseBase int, subjectIDs []int, concurrency int) {
 	downloadImagesWithPhase(dd, bg, p, phaseBase, subjectIDs, concurrency, true)
 }
 
-func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBase int, subjectFilter []int, concurrency int, force bool) {
+func downloadImagesWithPhase(dd string, bg *bangumi.Client, p Progress, phaseBase int, subjectFilter []int, concurrency int, force bool) {
 	log.Info("downloading images")
 	if err := os.MkdirAll(store.IndexDir(dd), 0o755); err != nil {
 		log.Error("index dir mkdir failed", "err", err)
@@ -129,7 +129,7 @@ func missingImageSizes(imgBase, kind string, id int) []string {
 	return missing
 }
 
-func dlImageList(ids []int, kind string, imgMap map[int]store.ImageEntry, imgBase string, bg *bangumi.Client, p *Progress, stage string, concurrency int, force bool) {
+func dlImageList(ids []int, kind string, imgMap map[int]store.ImageEntry, imgBase string, bg *bangumi.Client, p Progress, stage string, concurrency int, force bool) {
 	if len(ids) == 0 {
 		return
 	}
@@ -178,7 +178,7 @@ func dlImageList(ids []int, kind string, imgMap map[int]store.ImageEntry, imgBas
 	wg.Wait()
 }
 
-func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]store.ImageEntry, imgBase string, mu *sync.Mutex, p *Progress, force bool) {
+func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]store.ImageEntry, imgBase string, mu *sync.Mutex, p Progress, force bool) {
 	// 默认只补缺失的尺寸，force 时整组重下
 	var missing []string
 	if force {
@@ -213,7 +213,7 @@ func dlImage(bg *bangumi.Client, kind string, id int, imgMap map[int]store.Image
 }
 
 // dlMissingSizes 仅下载指定条目缺失的图片尺寸
-func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, imgMap map[int]store.ImageEntry, imgBase string, mu *sync.Mutex, p *Progress) {
+func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, imgMap map[int]store.ImageEntry, imgBase string, mu *sync.Mutex, p Progress) {
 	mu.Lock()
 	entry := imgMap[id]
 	mu.Unlock()
@@ -283,106 +283,3 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 }
 
 // fillImageGaps 补充缺失的图片尺寸及索引中不存在的图片
-func fillImageGaps(dd string, bg *bangumi.Client, p *Progress, concurrency int) {
-	imgBase := filepath.Join(dd, "images")
-	domains := []struct {
-		kind       string
-		labelSizes string
-		labelMiss  string
-	}{
-		{"subject", "检查遗漏的subject图像规格", "检查缺失的subject图像"},
-		{"character", "检查遗漏的character图像规格", "检查缺失的character图像"},
-		{"person", "检查遗漏的person图像规格", "检查缺失的person图像"},
-	}
-
-	phaseNum := 1
-	for _, d := range domains {
-		if taskCanceled(p) {
-			return
-		}
-		imgMap := loadImageIndex(dd, d.kind+"s_image.json")
-		nameList := loadNameList(store.IndexFile(dd, d.kind+"s.json"))
-
-		// 阶段一：补充已有条目缺失的图片尺寸
-		type partial struct {
-			id    int
-			sizes []string
-		}
-		var partials []partial
-		for id, entry := range imgMap {
-			var missing []string
-			if entry.Large == "" {
-				missing = append(missing, "large")
-			}
-			if entry.Grid == "" {
-				missing = append(missing, "grid")
-			}
-			if entry.Small == "" {
-				missing = append(missing, "small")
-			}
-			if len(missing) > 0 {
-				partials = append(partials, partial{id: id, sizes: missing})
-			}
-		}
-		if p != nil {
-			p.SetPhase(phaseNum, 11, d.labelSizes)
-		}
-		if len(partials) > 0 {
-			if p != nil {
-				p.Send("fill_"+d.kind+"_sizes", 0, len(partials), "")
-			}
-			var wg sync.WaitGroup
-			sem := make(chan struct{}, concurrency)
-			var done int
-			var mu sync.Mutex
-			for _, pt := range partials {
-				if taskCanceled(p) {
-					break
-				}
-				wg.Add(1)
-				go func(id int, sizes []string) {
-					defer func() {
-						if r := recover(); r != nil {
-							log.Error("goroutine panic", "panic", r)
-						}
-					}()
-					defer wg.Done()
-					sem <- struct{}{}
-					defer func() { <-sem }()
-					dlMissingSizes(bg, d.kind, id, sizes, imgMap, imgBase, &mu, p)
-					if p != nil {
-						mu.Lock()
-						done++
-						p.Send("fill_"+d.kind+"_sizes", done, len(partials), "")
-						mu.Unlock()
-					}
-				}(pt.id, pt.sizes)
-			}
-			wg.Wait()
-		}
-		phaseNum++
-
-		// 阶段二：下载图片索引中完全缺失的条目
-		var missingIDs []int
-		for _, e := range nameList {
-			if taskCanceled(p) {
-				return
-			}
-			if _, ok := imgMap[e.ID]; !ok {
-				missingIDs = append(missingIDs, e.ID)
-			}
-		}
-		if p != nil {
-			p.SetPhase(phaseNum, 11, d.labelMiss)
-		}
-		if len(missingIDs) > 0 {
-			if p != nil {
-				p.Send("fill_"+d.kind+"_miss", 0, len(missingIDs), "")
-			}
-			dlImageList(missingIDs, d.kind, imgMap, imgBase, bg, p, "fill_"+d.kind+"_miss", concurrency, false)
-		}
-		phaseNum++
-
-		saveJSON(store.IndexFile(dd, d.kind+"s_image.json"), imgMap)
-	}
-}

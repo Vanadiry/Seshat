@@ -10,6 +10,7 @@ import (
 
 	"github.com/vanadiry/seshat/core/config"
 	"github.com/vanadiry/seshat/core/events"
+	"github.com/vanadiry/seshat/core/index"
 	"github.com/vanadiry/seshat/core/log"
 )
 
@@ -105,7 +106,7 @@ func queryInt(r *http.Request, name string, def, min, max int) (int, bool) {
 
 func injectCollectionImages(items []map[string]any, r *http.Request, dd string) {
 	base := requestBaseURL(r)
-	index := loadImageIndex(dd, "subjects_image.json")
+	index := index.LoadImageIndex(dd, "subjects_image.json")
 	for _, item := range items {
 		subject, ok := item["subject"].(map[string]any)
 		if !ok {

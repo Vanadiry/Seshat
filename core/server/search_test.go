@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vanadiry/seshat/core/index"
 	"github.com/vanadiry/seshat/core/store"
 )
 
@@ -75,10 +76,10 @@ func TestSearchSubjectsResponse(t *testing.T) {
 
 func TestSearchTagsCapsAndCounts(t *testing.T) {
 	dd := t.TempDir()
-	tags := map[string]tagInfo{}
+	tags := map[string]index.TagInfo{}
 	const matches = searchLimit + 3
 	for i := 0; i < matches; i++ {
-		tags[fmt.Sprintf("标签%03d", i)] = tagInfo{Count: i + 1}
+		tags[fmt.Sprintf("标签%03d", i)] = index.TagInfo{Count: i + 1}
 	}
 	data, err := json.Marshal(tags)
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/vanadiry/seshat/core/config"
+	"github.com/vanadiry/seshat/core/index"
 	"github.com/vanadiry/seshat/core/store"
 )
 
@@ -53,7 +54,7 @@ func TestListSubjectsShape(t *testing.T) {
 
 func TestTagsShape(t *testing.T) {
 	dd := t.TempDir()
-	writeIndexJSON(t, dd, "tags.json", map[string]tagInfo{
+	writeIndexJSON(t, dd, "tags.json", map[string]index.TagInfo{
 		"喜剧": {Count: 2, Subjects: []int{1, 2}},
 	})
 	w := httptest.NewRecorder()
@@ -70,7 +71,7 @@ func TestTagsShape(t *testing.T) {
 
 func TestTagSubjectsShape(t *testing.T) {
 	dd := t.TempDir()
-	writeIndexJSON(t, dd, "tags.json", map[string]tagInfo{
+	writeIndexJSON(t, dd, "tags.json", map[string]index.TagInfo{
 		"喜剧": {Count: 1, Subjects: []int{1}},
 	})
 	putJSON(t, dd, store.Key("subjects", 1, "info.json"), map[string]any{"id": 1, "name": "a"})

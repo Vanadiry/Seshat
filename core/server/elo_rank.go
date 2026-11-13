@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/vanadiry/seshat/core/index"
 	"github.com/vanadiry/seshat/core/store"
 )
 
@@ -43,7 +44,7 @@ func updateELO(dd string, winnerID, loserID int) {
 
 // loadSubjectIndex 读取条目索引
 func loadSubjectIndex(dd string) []eloEntry {
-	list, _ := loadCachedIndex[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json"))
+	list, _ := index.LoadCached[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json"))
 	var result []eloEntry
 	for _, s := range list {
 		result = append(result, eloEntry{ID: s.ID, Name: s.Name, NameCN: s.NameCN, Score: s.Score})

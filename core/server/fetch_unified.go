@@ -1,16 +1,15 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/vanadiry/seshat/core/bangumi"
 	"github.com/vanadiry/seshat/core/config"
 	"github.com/vanadiry/seshat/core/events"
+	"github.com/vanadiry/seshat/core/fetch"
+	"github.com/vanadiry/seshat/core/index"
 	"github.com/vanadiry/seshat/core/log"
 	"github.com/vanadiry/seshat/core/store"
 )
@@ -94,14 +93,14 @@ func resolveFetchIDs(cfg *config.Config, dd string, req fetchRequest) ([]int, er
 	case fetchSourceTrackerNew:
 		all := allTrackerIDs(cfg)
 		existing := map[int]bool{}
-		if list, err := loadCachedIndex[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json")); err == nil {
+		if list, err := index.LoadCached[[]store.SubjectSummary](store.IndexFile(dd, "subjects.json")); err == nil {
 			for _, s := range list {
 				existing[s.ID] = true
 			}
 		}
 		ids := make([]int, 0, len(all))
 		for _, sid := range all {
-			if !existing[sid] || subjectCoreIncomplete(dd, sid) {
+			if !existing[sid] || fetch.SubjectCoreIncomplete(dd, sid) {
 				ids = append(ids, sid)
 			}
 		}
@@ -123,97 +122,6 @@ func resolveFetchIDs(cfg *config.Config, dd string, req fetchRequest) ([]int, er
 		return collectAllSubjectIDs(dd), nil
 	default:
 		return nil, fmt.Errorf("source 不合法")
-	}
-}
-
-// fetchSubjectListFill 只重拉不完整条目，并补齐已有条目的角色和人物详情
-func fetchSubjectListFill(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int) []int {
-	success := make([]int, 0, len(ids))
-	for i, sid := range ids {
-		if taskCanceled(p) {
-			break
-		}
-		if subjectCoreIncomplete(dd, sid) {
-			if fetchAll(sid, bg, dd, imgDir, p, concurrency, false) {
-				success = append(success, sid)
-			}
-		} else {
-			success = append(success, sid)
-		}
-		if p != nil {
-			p.SendPhaseProgress(i+1, len(ids), "")
-		}
-	}
-	if taskCanceled(p) {
-		return success
-	}
-	if p != nil {
-		p.SendPhaseStatus("补齐关联数据")
-	}
-	fillRelatedGaps(dd, bg, ids, p)
-	return success
-}
-
-// fillRelatedGaps 补齐现有条目的角色和人物详情
-func fillRelatedGaps(dd string, bg *bangumi.Client, ids []int, p *Progress) {
-	for _, sid := range ids {
-		if taskCanceled(p) {
-			return
-		}
-		if data, err := os.ReadFile(filepath.Join(store.Dir(dd), store.Key("subjects", sid, "characters.json"))); err == nil {
-			var chars []struct {
-				ID int `json:"id"`
-			}
-			if json.Unmarshal(data, &chars) == nil {
-				for _, c := range chars {
-					if taskCanceled(p) {
-						return
-					}
-					if store.Has(dd, store.Key("characters", c.ID, "info.json")) {
-						continue
-					}
-					d, e := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID))
-					if e != nil {
-						if isCanceled(e) {
-							return
-						}
-						log.Warn("gap character fetch failed", "id", c.ID, "err", e)
-						if p != nil {
-							p.SetError(fmt.Sprintf("Character #%d: %v", c.ID, e))
-						}
-						continue
-					}
-					putData(dd, store.Key("characters", c.ID, "info.json"), store.StripImages(d), p)
-				}
-			}
-		}
-		if data, err := os.ReadFile(filepath.Join(store.Dir(dd), store.Key("subjects", sid, "persons.json"))); err == nil {
-			var persons []struct {
-				ID int `json:"id"`
-			}
-			if json.Unmarshal(data, &persons) == nil {
-				for _, pp := range persons {
-					if taskCanceled(p) {
-						return
-					}
-					if store.Has(dd, store.Key("persons", pp.ID, "info.json")) {
-						continue
-					}
-					d, e := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID))
-					if e != nil {
-						if isCanceled(e) {
-							return
-						}
-						log.Warn("gap person fetch failed", "id", pp.ID, "err", e)
-						if p != nil {
-							p.SetError(fmt.Sprintf("Person #%d: %v", pp.ID, e))
-						}
-						continue
-					}
-					putData(dd, store.Key("persons", pp.ID, "info.json"), store.StripImages(d), p)
-				}
-			}
-		}
 	}
 }
 
@@ -283,9 +191,9 @@ func dispatchFetch(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, re
 		}
 		var success []int
 		if req.JSON == fetchJSONOverwrite {
-			success = fetchSubjectList(ids, taskBg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
+			success = fetch.SubjectList(ids, taskBg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
 		} else {
-			success = fetchSubjectListFill(ids, taskBg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
+			success = fetch.SubjectListFill(ids, taskBg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
 		}
 
 		if taskCanceled(p) {
@@ -293,9 +201,9 @@ func dispatchFetch(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, re
 		}
 		if req.Images != fetchImagesNone {
 			if req.Images == fetchImagesOverwrite {
-				downloadImagesScopedForce(dd, taskBg, p, 2, ids, cfg.Server.ConcurrencyImage)
+				fetch.DownloadImagesScopedForce(dd, taskBg, p, 2, ids, cfg.Server.ConcurrencyImage)
 			} else {
-				downloadImagesScoped(dd, taskBg, p, 2, ids, cfg.Server.ConcurrencyImage)
+				fetch.DownloadImagesScoped(dd, taskBg, p, 2, ids, cfg.Server.ConcurrencyImage)
 			}
 		}
 

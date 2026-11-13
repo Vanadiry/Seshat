@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/vanadiry/seshat/core/index"
 	"github.com/vanadiry/seshat/core/store"
 )
 
@@ -96,7 +97,7 @@ func injectImages(data []byte, domain, file string, id int, r *http.Request, dd 
 	if json.Unmarshal(data, &root) != nil {
 		return data
 	}
-	index := loadImageIndex(dd, kind+"s_image.json")
+	index := index.LoadImageIndex(dd, kind+"s_image.json")
 	base := requestBaseURL(r)
 	switch v := root.(type) {
 	case map[string]any:
