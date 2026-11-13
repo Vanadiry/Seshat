@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -39,6 +40,9 @@ type Progress struct {
 	stepTotal    int
 	hasStep      bool
 	plan         []phaseSpec
+	ctx          context.Context
+	cancel       context.CancelFunc
+	cancelled    bool
 	mu           sync.Mutex
 }
 
@@ -61,6 +65,7 @@ func taskLocked() bool {
 func newProgress(total int, task, label string) *Progress {
 	b := make([]byte, 4)
 	rand.Read(b)
+	ctx, cancel := context.WithCancel(context.Background())
 	p := &Progress{
 		ID:      hex.EncodeToString(b),
 		Channel: make(chan string, 64),
@@ -68,6 +73,8 @@ func newProgress(total int, task, label string) *Progress {
 		Task:    task,
 		Label:   label,
 		started: time.Now(),
+		ctx:     ctx,
+		cancel:  cancel,
 	}
 	progressMu.Lock()
 	progressMap[p.ID] = p
@@ -80,6 +87,40 @@ func newProgress(total int, task, label string) *Progress {
 	return p
 }
 
+// Context 返回任务上下文，供请求和循环响应取消
+func (p *Progress) Context() context.Context {
+	return p.ctx
+}
+
+// Cancel 取消任务，幂等
+func (p *Progress) Cancel() {
+	p.mu.Lock()
+	if p.cancelled {
+		p.mu.Unlock()
+		return
+	}
+	p.cancelled = true
+	p.mu.Unlock()
+	p.cancel()
+}
+
+// Cancelled 返回任务是否已被取消
+func (p *Progress) Cancelled() bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.cancelled
+}
+
+// Finish 发送结束事件并关闭任务
+func (p *Progress) Finish() {
+	if p.Cancelled() {
+		p.Send("cancelled", p.Done, p.Total, "")
+	} else {
+		p.Send("complete", 100, 100, "")
+	}
+	p.Close()
+}
+
 func (p *Progress) Close() {
 	p.mu.Lock()
 	if p.closed {
@@ -88,6 +129,7 @@ func (p *Progress) Close() {
 	}
 	p.closed = true
 	p.mu.Unlock()
+	p.cancel()
 	select {
 	case p.Channel <- `{"step":"done","status":"closed"}`:
 	default:

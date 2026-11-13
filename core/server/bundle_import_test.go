@@ -277,7 +277,7 @@ func TestExtractBundleTarRejectsUnsafeEntries(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			tarPath := filepath.Join(t.TempDir(), "bundle.tar")
 			writeTestTar(t, tarPath, c.entries)
-			if err := extractBundleTar(tarPath, t.TempDir(), nil); err == nil {
+			if err := extractBundleTar(tarPath, t.TempDir(), nil, nil); err == nil {
 				t.Fatal("应当拒绝不安全的数据包")
 			}
 		})
@@ -295,7 +295,7 @@ func TestExtractBundleTarRejectsOversizedFile(t *testing.T) {
 	if err := os.WriteFile(tarPath, buf.Bytes(), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := extractBundleTar(tarPath, t.TempDir(), nil); err == nil || !strings.Contains(err.Error(), "文件过大") {
+	if err := extractBundleTar(tarPath, t.TempDir(), nil, nil); err == nil || !strings.Contains(err.Error(), "文件过大") {
 		t.Fatalf("超限文件应被拒绝: %v", err)
 	}
 }

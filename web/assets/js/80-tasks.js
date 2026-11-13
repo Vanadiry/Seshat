@@ -33,7 +33,9 @@ function startProgress(taskId, label) {
     cancelBtn.textContent = "终止";
     cancelBtn.onclick = function (e) {
         e.stopPropagation();
-        fetch(API + "/v0/task/cancel", { method: "POST" });
+        fetch(API + "/v0/task/cancel/" + encodeURIComponent(taskId), {
+            method: "POST"
+        });
         _dispatchTaskEvent("seshat:task-progress", {
             id: taskId,
             data: { step: "cancelled" }
@@ -41,14 +43,14 @@ function startProgress(taskId, label) {
         fill.style.transition = "none";
         fill.style.width = "100%";
         fill.style.background = "var(--c-toast-warning)";
-        if (detail) detail.textContent = "任务已终止，后端进程已退出";
+        if (detail) detail.textContent = "任务已终止";
         t.update(taskLabel, null, "bg-toast-warning", "bg-toast-warning-bg");
         t.addClose();
         cancelBtn.remove();
         evt.close();
     };
-    // 远端模式不显示终止，避免杀掉对端进程
-    if (!window.BACKEND_URL) titleBar.appendChild(cancelBtn);
+    // 本地和远端后端都允许中止任务
+    titleBar.appendChild(cancelBtn);
 
     var fill = t.el.querySelector("#pb-fill");
     var detail = t.el.querySelector("#pb-detail");

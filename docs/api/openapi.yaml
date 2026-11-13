@@ -974,6 +974,7 @@ paths:
                 example: |
                   data: {"step":"start","done":0,"total":326,"task":"fetch_all","label":"刷新全部"}
                   data: {"step":"subjects","done":15,"total":326,"speed":"3.2/s","phase":1,"phases":5,"phase_name":"拉取条目","status":""}
+                  data: {"step":"cancelled","done":15,"total":326}
                   data: {"step":"complete","done":326,"total":326}
         "409":
           $ref: "#/components/responses/Conflict"
@@ -989,20 +990,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Paged_ActiveTask"
-  /api/v0/task/cancel: # 终止任务
+  /api/v0/task/cancel/{task_id}: # 中止任务
     post:
       tags: [拉取]
-      summary: 终止任务
-      description: 终止所有正在运行的任务并退出后端进程。Tauri 桌面端会自动重启后端，Server 模式下需手动重启。
+      summary: 中止任务
+      description: 取消指定任务，立即中断在途请求并停止发起新请求。后端进程不退出，已完成的数据保留。任务不存在或已结束时返回 404。
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema: { type: string }
+          example: "ae8687f0"
       responses:
         "200":
-          description: 已发送终止信号
+          description: 已取消
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   status: { type: string, example: "cancelled" }
+        "404":
+          description: 任务不存在或已结束
   # Tracker
   /api/v0/tracker: # 所有Tracker
     get:

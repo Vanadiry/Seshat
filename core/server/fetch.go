@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -38,7 +39,14 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 	var done int
 	var mu sync.Mutex
 	success := map[int]bool{}
+	ctx := context.Background()
+	if p != nil {
+		ctx = p.Context()
+	}
 	for _, sid := range ids {
+		if ctx.Err() != nil {
+			break
+		}
 		wg.Add(1)
 		go func(sid int) {
 			defer func() {
@@ -47,8 +55,15 @@ func fetchSubjectList(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progr
 				}
 			}()
 			defer wg.Done()
-			sem <- struct{}{}
+			select {
+			case sem <- struct{}{}:
+			case <-ctx.Done():
+				return
+			}
 			defer func() { <-sem }()
+			if ctx.Err() != nil {
+				return
+			}
 			if fetchAll(sid, bg, dd, imgDir, p, concurrency, true) {
 				mu.Lock()
 				success[sid] = true
@@ -90,6 +105,9 @@ func loadOrFetchData(dd, key, path string, bg *bangumi.Client, overwrite bool) (
 
 // fetchAll 拉取条目全部数据及关联角色/人物/图片
 func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int, overwrite bool) bool {
+	if taskCanceled(p) {
+		return false
+	}
 	log.Info("fetching subject", "id", sid)
 	var writeFailed atomic.Bool
 	var requiredFailed atomic.Bool
@@ -106,6 +124,9 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 		overwrite,
 	)
 	if err != nil {
+		if isCanceled(err) {
+			return false
+		}
 		log.Warn("subject fetch failed", "id", sid, "err", err)
 		if p != nil {
 			p.SetError(err.Error())
@@ -152,6 +173,9 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			overwrite,
 		)
 		if err != nil {
+			if isCanceled(err) {
+				return
+			}
 			log.Warn("subject characters fetch failed", "subject", sid, "err", err)
 			requiredFailed.Store(true)
 			if p != nil {
@@ -184,6 +208,9 @@ func fetchAll(sid int, bg *bangumi.Client, dd, imgDir string, p *Progress, concu
 			overwrite,
 		)
 		if err != nil {
+			if isCanceled(err) {
+				return
+			}
 			log.Warn("subject persons fetch failed", "subject", sid, "err", err)
 			requiredFailed.Store(true)
 			if p != nil {
@@ -635,7 +662,14 @@ func fetchConcurrent[T any](items []T, fn func(T), p *Progress, concurrency int)
 	var wg sync.WaitGroup
 	var done int
 	var mu sync.Mutex
+	ctx := context.Background()
+	if p != nil {
+		ctx = p.Context()
+	}
 	for _, item := range items {
+		if ctx.Err() != nil {
+			break
+		}
 		wg.Add(1)
 		go func(item T) {
 			defer func() {
@@ -644,8 +678,15 @@ func fetchConcurrent[T any](items []T, fn func(T), p *Progress, concurrency int)
 				}
 			}()
 			defer wg.Done()
-			sem <- struct{}{}
+			select {
+			case sem <- struct{}{}:
+			case <-ctx.Done():
+				return
+			}
 			defer func() { <-sem }()
+			if ctx.Err() != nil {
+				return
+			}
 			fn(item)
 			if p != nil {
 				mu.Lock()
@@ -693,15 +734,14 @@ func handleFetchDeep(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 		}
 		p := newProgress(100, "rebuild_all", "重建全部")
 		go func() {
+			defer p.Finish()
 			defer func() {
 				if r := recover(); r != nil {
 					log.Error("goroutine panic", "panic", r)
 					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
 				}
 			}()
-			forceRefresh(cfg, bg, dd, imgDir, p)
-			p.Send("complete", 100, 100, "")
-			p.Close()
+			forceRefresh(cfg, bg.WithContext(p.Context()), dd, imgDir, p)
 		}()
 		writeJSON(w, map[string]any{"status": "deep refresh", "task_id": p.ID})
 	}
@@ -747,44 +787,58 @@ func handleFetchUser(cfg *config.Config, bg *bangumi.Client, dd, imgDir string) 
 		p := newProgress(100, "fetch_user", "拉取用户数据")
 		p.SetPlan(splitPhaseRanges(0, 100, "拉取用户信息", "拉取用户头像", "拉取用户收藏"))
 		go func() {
+			defer p.Finish()
 			defer func() {
 				if r := recover(); r != nil {
 					log.Error("goroutine panic", "panic", r)
 					events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
 				}
 			}()
+			taskBg := bg.WithContext(p.Context())
 			p.BeginPhase(1)
 			p.SendPhaseStep(0, 1, "")
-			if err := fetchUserInfo(uname, bg, dd); err != nil {
+			if err := fetchUserInfo(uname, taskBg, dd); err != nil {
+				if isCanceled(err) {
+					return
+				}
 				log.Warn("user info fetch failed", "user", uname, "err", err)
 				p.SetError("用户信息拉取失败")
 				p.SendPhaseStep(1, 1, "失败")
 			} else {
 				p.SendPhaseStep(1, 1, "")
 			}
+			if taskCanceled(p) {
+				return
+			}
 
 			p.BeginPhase(2)
 			p.SendPhaseStep(0, 1, "")
-			if err := fetchUserAvatar(uname, bg, dd); err != nil {
+			if err := fetchUserAvatar(uname, taskBg, dd); err != nil {
+				if isCanceled(err) {
+					return
+				}
 				log.Warn("user avatar fetch failed", "user", uname, "err", err)
 				p.SetError("用户头像拉取失败")
 				p.SendPhaseStep(1, 1, "失败")
 			} else {
 				p.SendPhaseStep(1, 1, "")
 			}
+			if taskCanceled(p) {
+				return
+			}
 
 			p.BeginPhase(3)
 			p.SendPhaseStep(0, 1, "")
-			if err := fetchUserCollections(uname, bg, dd); err != nil {
+			if err := fetchUserCollections(uname, taskBg, dd); err != nil {
+				if isCanceled(err) {
+					return
+				}
 				log.Warn("user collections fetch failed", "user", uname, "err", err)
 				p.SetError("收藏列表拉取失败")
 				p.SendPhaseStep(1, 1, "失败")
 			} else {
 				p.SendPhaseStep(1, 1, "")
 			}
-
-			p.Send("complete", 100, 100, "")
-			p.Close()
 		}()
 		writeJSON(w, map[string]any{"status": "fetching", "username": uname, "task_id": p.ID})
 	}
@@ -838,6 +892,7 @@ func handleFetchIndex(dd string) http.HandlerFunc {
 			{Name: "重建图片索引", Start: 80, End: 100},
 		})
 		go func() {
+			defer p.Finish()
 			defer func() {
 				if r := recover(); r != nil {
 					log.Error("goroutine panic", "panic", r)
@@ -845,8 +900,6 @@ func handleFetchIndex(dd string) http.HandlerFunc {
 				}
 			}()
 			buildIndexesPhased(dd, p)
-			p.Send("complete", 100, 100, "")
-			p.Close()
 		}()
 		writeJSON(w, map[string]any{"status": "rebuilding", "task_id": p.ID})
 	}

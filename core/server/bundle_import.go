@@ -117,8 +117,16 @@ func processBundleImport(cfg *config.Config, tarPath string, p *Progress) {
 		}
 		extractLast = percent
 		p.SendPercent(percent, "")
-	}); err != nil {
+	}, func() bool { return taskCanceled(p) }); err != nil {
+		if errors.Is(err, errTaskCanceled) {
+			p.Send("cancelled", p.Done, p.Total, "")
+			return
+		}
 		p.Send("error", 0, 0, err.Error())
+		return
+	}
+	if taskCanceled(p) {
+		p.Send("cancelled", p.Done, p.Total, "")
 		return
 	}
 
@@ -134,14 +142,26 @@ func processBundleImport(cfg *config.Config, tarPath string, p *Progress) {
 		}
 		commitLast = percent
 		p.SendPercent(percent, "")
-	}); err != nil {
+	}, func() bool { return taskCanceled(p) }); err != nil {
+		if errors.Is(err, errTaskCanceled) {
+			p.Send("cancelled", p.Done, p.Total, "")
+			return
+		}
 		buildIndexes(cfg.DataDir(), nil)
 		p.Send("error", 0, 0, err.Error())
+		return
+	}
+	if taskCanceled(p) {
+		p.Send("cancelled", p.Done, p.Total, "")
 		return
 	}
 
 	p.BeginPhase(3)
 	buildIndexes(cfg.DataDir(), p)
+	if taskCanceled(p) {
+		p.Send("cancelled", p.Done, p.Total, "")
+		return
+	}
 	p.Send("complete", 100, 100, "")
 }
 
@@ -161,7 +181,7 @@ func (c *countingReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func extractBundleTar(tarPath, staging string, progress func(read, total int64)) error {
+func extractBundleTar(tarPath, staging string, progress func(read, total int64), canceled func() bool) error {
 	f, err := os.Open(tarPath)
 	if err != nil {
 		return err
@@ -194,6 +214,9 @@ func extractBundleTar(tarPath, staging string, progress func(read, total int64))
 	hasManifest := false
 	hasData := false
 	for {
+		if canceled != nil && canceled() {
+			return errTaskCanceled
+		}
 		h, err := tr.Next()
 		if err == io.EOF {
 			break
@@ -349,7 +372,7 @@ func pathWithin(root, target string) bool {
 	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
-func commitBundle(staging, dd string, progress func(done, total int)) (int, error) {
+func commitBundle(staging, dd string, progress func(done, total int), canceled func() bool) (int, error) {
 	total := 0
 	_ = filepath.WalkDir(staging, func(path string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
@@ -367,6 +390,9 @@ func commitBundle(staging, dd string, progress func(done, total int)) (int, erro
 
 	count := 0
 	err := filepath.WalkDir(staging, func(path string, d os.DirEntry, err error) error {
+		if canceled != nil && canceled() {
+			return errTaskCanceled
+		}
 		if err != nil {
 			return err
 		}

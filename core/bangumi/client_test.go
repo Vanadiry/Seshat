@@ -1,11 +1,14 @@
 package bangumi
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestPostRaw(t *testing.T) {
@@ -65,5 +68,53 @@ func TestPostRawStopsOnBadRequest(t *testing.T) {
 	}
 	if got := atomic.LoadInt32(&calls); got != 1 {
 		t.Fatalf("400 不应重试，实际请求 %d 次", got)
+	}
+}
+
+func TestCancelAbortsRequest(t *testing.T) {
+	started := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(started)
+		<-r.Context().Done()
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	c := NewClient("test", srv.URL, nil, nil).WithContext(ctx)
+	done := make(chan error, 1)
+	go func() {
+		_, err := c.GetRaw("v0/slow")
+		done <- err
+	}()
+
+	<-started
+	cancel()
+
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("取消后应返回 context.Canceled，实际为 %v", err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("取消后请求没有及时返回")
+	}
+}
+
+func TestCancelStopsRetry(t *testing.T) {
+	var calls int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&calls, 1)
+		http.Error(w, "server error", http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	c := NewClient("test", srv.URL, nil, nil).WithContext(ctx)
+	cancel()
+	if _, err := c.GetRaw("v0/fail"); !errors.Is(err, context.Canceled) {
+		t.Fatalf("已取消的上下文应立即返回 context.Canceled，实际为 %v", err)
+	}
+	if got := atomic.LoadInt32(&calls); got != 0 {
+		t.Fatalf("取消后不应发起请求，实际 %d 次", got)
 	}
 }

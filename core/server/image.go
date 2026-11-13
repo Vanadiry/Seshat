@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -94,6 +95,9 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 		p.SendPhaseProgress(0, len(subjIDs), "")
 	}
 	dlImageList(subjIDs, "subject", nil, imgBase, bg, p, "images_subjects", concurrency, force)
+	if taskCanceled(p) {
+		return
+	}
 
 	// 角色
 	if p != nil {
@@ -101,6 +105,9 @@ func downloadImagesWithPhase(dd string, bg *bangumi.Client, p *Progress, phaseBa
 		p.SendPhaseProgress(0, len(charIDs), "")
 	}
 	dlImageList(charIDs, "character", nil, imgBase, bg, p, "images_characters", concurrency, force)
+	if taskCanceled(p) {
+		return
+	}
 
 	// 人物
 	if p != nil {
@@ -132,7 +139,14 @@ func dlImageList(ids []int, kind string, imgMap map[int]store.ImageEntry, imgBas
 	sem := make(chan struct{}, concurrency)
 	var done int
 	var mu sync.Mutex
+	ctx := context.Background()
+	if p != nil {
+		ctx = p.Context()
+	}
 	for _, id := range ids {
+		if ctx.Err() != nil {
+			break
+		}
 		wg.Add(1)
 		go func(id int) {
 			defer func() {
@@ -141,8 +155,15 @@ func dlImageList(ids []int, kind string, imgMap map[int]store.ImageEntry, imgBas
 				}
 			}()
 			defer wg.Done()
-			sem <- struct{}{}
+			select {
+			case sem <- struct{}{}:
+			case <-ctx.Done():
+				return
+			}
 			defer func() { <-sem }()
+			if ctx.Err() != nil {
+				return
+			}
 			dlImage(bg, kind, id, imgMap, imgBase, &mu, p, force)
 			if p != nil {
 				mu.Lock()
@@ -206,6 +227,9 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 	results := make(chan result, len(sizes))
 
 	for _, size := range sizes {
+		if taskCanceled(p) {
+			break
+		}
 		wg.Add(1)
 		go func(size string) {
 			defer func() {
@@ -216,6 +240,9 @@ func dlMissingSizes(bg *bangumi.Client, kind string, id int, sizes []string, img
 			defer wg.Done()
 			data, err := bg.GetImage(fmt.Sprintf("v0/%ss/%d/image?type=%s", kind, id, size))
 			if err != nil {
+				if isCanceled(err) {
+					return
+				}
 				if !strings.Contains(err.Error(), "placeholder") && !strings.Contains(err.Error(), "HTTP 404") {
 					log.Warn("image download failed", "kind", kind, "id", id, "size", size, "err", err)
 					if p != nil {
@@ -272,6 +299,9 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress, concurrency int) 
 
 	phaseNum := 1
 	for _, d := range domains {
+		if taskCanceled(p) {
+			return
+		}
 		imgMap := loadImageIndex(dd, d.kind+"s_image.json")
 		nameList := loadNameList(store.IndexFile(dd, d.kind+"s.json"))
 
@@ -308,6 +338,9 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress, concurrency int) 
 			var done int
 			var mu sync.Mutex
 			for _, pt := range partials {
+				if taskCanceled(p) {
+					break
+				}
 				wg.Add(1)
 				go func(id int, sizes []string) {
 					defer func() {
@@ -334,6 +367,9 @@ func fillImageGaps(dd string, bg *bangumi.Client, p *Progress, concurrency int) 
 		// 阶段二：下载图片索引中完全缺失的条目
 		var missingIDs []int
 		for _, e := range nameList {
+			if taskCanceled(p) {
+				return
+			}
 			if _, ok := imgMap[e.ID]; !ok {
 				missingIDs = append(missingIDs, e.ID)
 			}

@@ -130,6 +130,9 @@ func resolveFetchIDs(cfg *config.Config, dd string, req fetchRequest) ([]int, er
 func fetchSubjectListFill(ids []int, bg *bangumi.Client, dd, imgDir string, p *Progress, concurrency int) []int {
 	success := make([]int, 0, len(ids))
 	for i, sid := range ids {
+		if taskCanceled(p) {
+			break
+		}
 		if subjectCoreIncomplete(dd, sid) {
 			if fetchAll(sid, bg, dd, imgDir, p, concurrency, false) {
 				success = append(success, sid)
@@ -141,6 +144,9 @@ func fetchSubjectListFill(ids []int, bg *bangumi.Client, dd, imgDir string, p *P
 			p.SendPhaseProgress(i+1, len(ids), "")
 		}
 	}
+	if taskCanceled(p) {
+		return success
+	}
 	if p != nil {
 		p.SendPhaseStatus("补齐关联数据")
 	}
@@ -151,17 +157,26 @@ func fetchSubjectListFill(ids []int, bg *bangumi.Client, dd, imgDir string, p *P
 // fillRelatedGaps 补齐现有条目的角色和人物详情
 func fillRelatedGaps(dd string, bg *bangumi.Client, ids []int, p *Progress) {
 	for _, sid := range ids {
+		if taskCanceled(p) {
+			return
+		}
 		if data, err := os.ReadFile(filepath.Join(store.Dir(dd), store.Key("subjects", sid, "characters.json"))); err == nil {
 			var chars []struct {
 				ID int `json:"id"`
 			}
 			if json.Unmarshal(data, &chars) == nil {
 				for _, c := range chars {
+					if taskCanceled(p) {
+						return
+					}
 					if store.Has(dd, store.Key("characters", c.ID, "info.json")) {
 						continue
 					}
 					d, e := bg.GetRaw(fmt.Sprintf("v0/characters/%d", c.ID))
 					if e != nil {
+						if isCanceled(e) {
+							return
+						}
 						log.Warn("gap character fetch failed", "id", c.ID, "err", e)
 						if p != nil {
 							p.SetError(fmt.Sprintf("Character #%d: %v", c.ID, e))
@@ -178,11 +193,17 @@ func fillRelatedGaps(dd string, bg *bangumi.Client, ids []int, p *Progress) {
 			}
 			if json.Unmarshal(data, &persons) == nil {
 				for _, pp := range persons {
+					if taskCanceled(p) {
+						return
+					}
 					if store.Has(dd, store.Key("persons", pp.ID, "info.json")) {
 						continue
 					}
 					d, e := bg.GetRaw(fmt.Sprintf("v0/persons/%d", pp.ID))
 					if e != nil {
+						if isCanceled(e) {
+							return
+						}
 						log.Warn("gap person fetch failed", "id", pp.ID, "err", e)
 						if p != nil {
 							p.SetError(fmt.Sprintf("Person #%d: %v", pp.ID, e))
@@ -248,37 +269,49 @@ func dispatchFetch(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, re
 	p.SetPlan(fetchPhasePlan(req.Images != fetchImagesNone))
 	log.Info("unified fetch", "source", req.Source, "count", len(ids), "json", req.JSON, "images", req.Images)
 	go func() {
+		defer p.Finish()
 		defer func() {
 			if r := recover(); r != nil {
 				log.Error("goroutine panic", "panic", r)
 				events.Bus.Error(fmt.Sprintf("任务发生意外错误：%v", r))
 			}
 		}()
+		taskBg := bg.WithContext(p.Context())
 		p.BeginPhase(1)
+		if taskCanceled(p) {
+			return
+		}
 		var success []int
 		if req.JSON == fetchJSONOverwrite {
-			success = fetchSubjectList(ids, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
+			success = fetchSubjectList(ids, taskBg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
 		} else {
-			success = fetchSubjectListFill(ids, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
+			success = fetchSubjectListFill(ids, taskBg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
 		}
 
+		if taskCanceled(p) {
+			return
+		}
 		if req.Images != fetchImagesNone {
 			if req.Images == fetchImagesOverwrite {
-				downloadImagesScopedForce(dd, bg, p, 2, ids, cfg.Server.ConcurrencyImage)
+				downloadImagesScopedForce(dd, taskBg, p, 2, ids, cfg.Server.ConcurrencyImage)
 			} else {
-				downloadImagesScoped(dd, bg, p, 2, ids, cfg.Server.ConcurrencyImage)
+				downloadImagesScoped(dd, taskBg, p, 2, ids, cfg.Server.ConcurrencyImage)
 			}
 		}
 
+		if taskCanceled(p) {
+			return
+		}
 		p.BeginPhase(p.Phases)
 		buildIndexes(dd, p)
+		if taskCanceled(p) {
+			return
+		}
 		if req.Source == fetchSourceIDs {
 			for _, sid := range success {
 				addToSeshatTracker(sid)
 			}
 		}
-		p.Send("complete", 100, 100, "")
-		p.Close()
 	}()
 	return map[string]any{"status": "fetching", "count": len(ids), "task_id": p.ID}, http.StatusOK, nil
 }

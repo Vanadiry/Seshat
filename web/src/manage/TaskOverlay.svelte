@@ -12,16 +12,16 @@
     });
 
     function abortTask() {
-        window.confirmAction(
-            "将终止 Seshat 后端进程，当前任务会中断，已完成的数据保留。",
-            function () {
-                fetch(API_BASE + "/v0/task/cancel", {
-                    method: "POST"
-                }).then(function () {
-                    window.showInfo("已发送中止请求");
-                });
-            }
-        );
+        window.confirmAction("将中止当前任务，已完成的数据保留。", function () {
+            var id = state.id || "";
+            var url =
+                API_BASE +
+                "/v0/task/cancel" +
+                (id ? "/" + encodeURIComponent(id) : "");
+            fetch(url, { method: "POST" }).then(function () {
+                window.showInfo("已发送中止请求");
+            });
+        });
     }
 </script>
 

@@ -236,8 +236,14 @@ func refreshAllTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir strin
 	p.SetPlan(trackerPhasePlan())
 	p.BeginPhase(1)
 	fetchSubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
+	if taskCanceled(p) {
+		return
+	}
 	log.Info("all trackers refreshed", "subjects", len(allIDs))
 	downloadImages(dd, bg, p, 2, cfg.Server.ConcurrencyImage)
+	if taskCanceled(p) {
+		return
+	}
 	p.BeginPhase(5)
 	buildIndexes(dd, p)
 }
@@ -252,8 +258,14 @@ func refreshTrackers(cfg *config.Config, bg *bangumi.Client, dd, imgDir string, 
 	p.SetPlan(trackerPhasePlan())
 	p.BeginPhase(1)
 	fetchSubjectList(allIDs, bg, dd, imgDir, p, cfg.Server.ConcurrencyInfo)
+	if taskCanceled(p) {
+		return
+	}
 	log.Info("trackers refreshed", "names", names, "subjects", len(allIDs))
 	downloadImages(dd, bg, p, 2, cfg.Server.ConcurrencyImage)
+	if taskCanceled(p) {
+		return
+	}
 	p.BeginPhase(5)
 	buildIndexes(dd, p)
 }

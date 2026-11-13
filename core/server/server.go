@@ -99,14 +99,14 @@ func buildRouter(cfg *config.Config, embedFS fs.FS) *router {
 	r.feature("events", "GET /api/v0/events", events.HandleSSE)
 	r.local("POST /api/v0/open-url", handleOpenURL)
 	r.feature("task", "GET /api/v0/task/{id}", handleProgress)
-	r.feature("task", "POST /api/v0/task/cancel", func(w http.ResponseWriter, r *http.Request) {
+	r.feature("task", "POST /api/v0/task/cancel/{task_id}", func(w http.ResponseWriter, r *http.Request) {
+		p := getProgress(r.PathValue("task_id"))
+		if p == nil || p.Closed() {
+			writeError(w, r, http.StatusNotFound, "task not found")
+			return
+		}
+		p.Cancel()
 		writeJSON(w, map[string]string{"status": "cancelled"})
-		go func() { time.Sleep(100 * time.Millisecond); os.Exit(0) }()
-		defer func() {
-			if r := recover(); r != nil {
-				log.Error("goroutine panic", "panic", r)
-			}
-		}()
 	})
 	r.feature("task", "GET /api/v0/tasks", handleActiveTasks)
 	r.core("GET /api/v0/info", handleInfo(r.features))

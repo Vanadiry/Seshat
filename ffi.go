@@ -9,6 +9,8 @@ import "C"
 import (
 	"net/http"
 	"sync"
+
+	"github.com/vanadiry/seshat/core/server"
 )
 
 var ffiServer *http.Server
@@ -31,6 +33,7 @@ func StopSeshat() {
 	ffiMu.Lock()
 	defer ffiMu.Unlock()
 	if ffiServer != nil {
+		server.CancelAllTasks()
 		ffiServer.Close()
 		ffiServer = nil
 	}

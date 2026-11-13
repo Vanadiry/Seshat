@@ -162,7 +162,7 @@ func buildIndexes(dd string, p *Progress) {
 		if p != nil {
 			p.SendPhaseStep(step, total, name)
 		}
-	})
+	}, func() bool { return taskCanceled(p) })
 }
 
 // buildIndexesPhased 把索引重建的每个步骤作为独立阶段上报
@@ -171,15 +171,18 @@ func buildIndexesPhased(dd string, p *Progress) {
 		if p != nil {
 			p.BeginPhase(step + 1)
 		}
-	})
+	}, func() bool { return taskCanceled(p) })
 }
 
 // buildIndexesWithSteps 与 buildIndexes 相同，但通过 report 上报阶段进度
-func buildIndexesWithSteps(dd string, report func(step, total int, name string)) {
+func buildIndexesWithSteps(dd string, report func(step, total int, name string), canceled func() bool) {
 	reportStep := func(step, total int, name string) {
 		if report != nil {
 			report(step, total, name)
 		}
+	}
+	stopped := func() bool {
+		return canceled != nil && canceled()
 	}
 	log.Info("rebuilding indexes from scan")
 	if err := os.MkdirAll(store.IndexDir(dd), 0o755); err != nil {
@@ -194,6 +197,9 @@ func buildIndexesWithSteps(dd string, report func(step, total int, name string))
 	// 扫描条目
 	reportStep(0, 5, "扫描条目")
 	scanAPIDir(dd, "subjects", func(path string) {
+		if stopped() {
+			return
+		}
 		if !strings.HasSuffix(path, "info.json") {
 			return
 		}
@@ -224,9 +230,15 @@ func buildIndexesWithSteps(dd string, report func(step, total int, name string))
 	})
 	saveJSON(store.IndexFile(dd, "subjects.json"), subjects)
 
+	if stopped() {
+		return
+	}
 	// 扫描角色
 	reportStep(1, 5, "扫描角色")
 	scanAPIDir(dd, "characters", func(path string) {
+		if stopped() {
+			return
+		}
 		if !strings.HasSuffix(path, "info.json") {
 			return
 		}
@@ -255,9 +267,15 @@ func buildIndexesWithSteps(dd string, report func(step, total int, name string))
 	})
 	saveJSON(store.IndexFile(dd, "characters.json"), chars)
 
+	if stopped() {
+		return
+	}
 	// 扫描人物
 	reportStep(2, 5, "扫描人物")
 	scanAPIDir(dd, "persons", func(path string) {
+		if stopped() {
+			return
+		}
 		if !strings.HasSuffix(path, "info.json") {
 			return
 		}
@@ -286,6 +304,9 @@ func buildIndexesWithSteps(dd string, report func(step, total int, name string))
 	})
 	saveJSON(store.IndexFile(dd, "persons.json"), persons)
 
+	if stopped() {
+		return
+	}
 	// 保存标签
 	reportStep(3, 5, "保存标签")
 	saveJSON(store.IndexFile(dd, "tags.json"), tags)
@@ -293,6 +314,9 @@ func buildIndexesWithSteps(dd string, report func(step, total int, name string))
 	buildNameIndex(dd, "characters")
 	buildPersonNames(dd)
 
+	if stopped() {
+		return
+	}
 	// 从磁盘重建图片索引
 	reportStep(4, 5, "重建图片索引")
 	RebuildImageIndex(dd)
