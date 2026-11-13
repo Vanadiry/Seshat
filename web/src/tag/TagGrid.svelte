@@ -59,22 +59,24 @@
 
 <div id="pager" class="mt-6 text-center">
     {#if items.length <= 100}
-        <span class="text-xs text-sub">共 {items.length} 个动画</span>
+        <span class="block mb-2 md:inline md:mb-0 text-xs text-sub"
+            >共 {items.length} 个动画</span
+        >
     {:else}
-        <span class="text-xs text-sub"
+        <span class="block mb-2 md:inline md:mb-0 text-xs text-sub"
             >当前展示 {visible.length}，共 {items.length} 个动画</span
         >
         {#if visible.length < items.length}
             <button
                 type="button"
                 onclick={() => (showing += 100)}
-                class="ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text"
+                class="md:ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text"
                 >展开更多</button
             >
             <button
                 type="button"
                 onclick={() => (showing = items.length)}
-                class="ml-2 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text"
+                class="md:ml-2 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text"
                 >展开全部</button
             >
         {/if}

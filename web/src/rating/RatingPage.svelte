@@ -331,7 +331,7 @@
             </div>
             <div id="history-pager" class="mt-3 text-center">
                 {#if history.length > 10}
-                    <span class="text-xs text-sub"
+                    <span class="block mb-2 md:inline md:mb-0 text-xs text-sub"
                         >当前展示 {Math.min(histShowing, history.length)}，共 {history.length}
                         条记录</span
                     >
@@ -339,12 +339,12 @@
                         <button
                             type="button"
                             onclick={showMoreHistory}
-                            class="ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text"
+                            class="md:ml-3 px-3 py-1 rounded-lg border border-bord bg-transparent text-sub text-xs cursor-pointer hover:bg-active hover:text-text"
                             >展开更多 10 条</button
                         >
                     {/if}
                 {:else}
-                    <span class="text-xs text-sub"
+                    <span class="block mb-2 md:inline md:mb-0 text-xs text-sub"
                         >共 {history.length} 条记录</span
                     >
                 {/if}
