@@ -9,7 +9,7 @@
 
 <div
     id="grid"
-    class="grid grid-cols-[repeat(auto-fill,minmax(175px,1fr))] gap-4"
+    class="grid grid-cols-1 min-[300px]:grid-cols-2 min-[400px]:grid-cols-3 min-[550px]:grid-cols-[repeat(auto-fill,minmax(min(175px,calc((100%_-_2rem)/3)),1fr))] gap-4"
 >
     {#if !items.length}
         <div class="col-span-full text-center py-20 text-sub">暂无数据</div>
