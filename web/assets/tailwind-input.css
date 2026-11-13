@@ -270,7 +270,7 @@ select {
     align-items: center;
     justify-content: center;
 }
-@media (max-height: 399px) {
+@media (max-height: 599px) {
     .header-collapse-btn {
         display: flex;
     }

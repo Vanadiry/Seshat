@@ -167,7 +167,7 @@
             if (e.key === "Escape" && collapsed) setCollapsed(false);
         });
         window.addEventListener("resize", function () {
-            if (collapsed && window.innerHeight >= 400) setCollapsed(false);
+            if (collapsed && window.innerHeight >= 600) setCollapsed(false);
         });
     }
 
