@@ -264,6 +264,11 @@ select {
     user-select: text;
 }
 
+/* 全局禁用双击缩放，保留单指滑动和双指缩放 */
+html {
+    touch-action: manipulation;
+}
+
 /* iOS 上输入框字号小于 16px 时，聚焦会自动放大页面 */
 @media (max-width: 799px) {
     input,
