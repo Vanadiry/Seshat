@@ -7,29 +7,28 @@ settings:
 importers:
 
   .:
-    dependencies:
+    devDependencies:
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^7.3.1
+        version: 7.3.1(svelte@5.57.3)(vite@8.3.8(jiti@2.7.0)(terser@5.51.2))
       '@tailwindcss/cli':
         specifier: ^4.3.5
         version: 4.3.5
+      '@tauri-apps/cli':
+        specifier: ^2.12.4
+        version: 2.12.4
       html-minifier-terser:
         specifier: ^7.2.0
         version: 7.2.0
+      svelte:
+        specifier: ^5.57.3
+        version: 5.57.3
       tailwindcss:
         specifier: ^4.3.5
         version: 4.3.5
       terser:
         specifier: ^5.51.2
         version: 5.51.2
-    devDependencies:
-      '@sveltejs/vite-plugin-svelte':
-        specifier: ^7.3.1
-        version: 7.3.1(svelte@5.57.3)(vite@8.3.8(jiti@2.7.0)(terser@5.51.2))
-      '@tauri-apps/cli':
-        specifier: ^2.12.4
-        version: 2.12.4
-      svelte:
-        specifier: ^5.57.3
-        version: 5.57.3
       vite:
         specifier: ^8.3.8
         version: 8.3.8(jiti@2.7.0)(terser@5.51.2)
