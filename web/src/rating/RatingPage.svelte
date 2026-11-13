@@ -156,7 +156,7 @@
     {@const nameCN = entry && entry.name_cn ? entry.name_cn : ""}
     <a
         href={"/subject?id=" + id}
-        class="flex w-full shrink-0 items-center gap-3 overflow-hidden py-1.5 pl-2 pr-2 no-underline transition-colors hover:bg-active md:w-auto md:flex-1 md:basis-1/2 md:max-w-[50%]"
+        class="flex w-full shrink-0 items-center gap-3 overflow-hidden py-1.5 px-3 no-underline transition-colors hover:bg-active md:w-auto md:flex-1 md:basis-1/2 md:max-w-[50%] md:px-2"
     >
         <span
             class="w-6 shrink-0 text-center text-xs font-semibold text-sub md:hidden"
@@ -301,7 +301,7 @@
                 <span class="spin"></span>加载中…
             </div>
         {:else if history.length}
-            <div id="history-area">
+            <div id="history-area" class="-mx-6 md:mx-0">
                 <div
                     class="hidden md:flex gap-7 text-xs text-sub font-semibold mb-1 border-b border-bord-light pb-1"
                 >
@@ -319,7 +319,7 @@
                     >
                         {#if row.time}
                             <div
-                                class="px-2 pt-2 pb-1 text-xs text-sub md:hidden"
+                                class="px-3 pt-2 pb-1 text-xs text-sub md:hidden"
                             >
                                 {dateText(row.time)}
                                 {timeText(row.time)}
