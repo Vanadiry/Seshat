@@ -149,16 +149,19 @@
     });
 </script>
 
-{#snippet sideCard(id)}
+{#snippet sideCard(id, label)}
     {@const entry = names[id]}
     {@const name =
         entry === undefined ? "" : entry && entry.name ? entry.name : ""}
     {@const nameCN = entry && entry.name_cn ? entry.name_cn : ""}
     <a
         href={"/subject?id=" + id}
-        style="flex:1 1 50%;max-width:50%;overflow:hidden"
-        class="flex items-center gap-3 py-1.5 pl-2 pr-2 no-underline hover:bg-active transition-colors"
+        class="flex w-full shrink-0 items-center gap-3 overflow-hidden py-1.5 pl-2 pr-2 no-underline transition-colors hover:bg-active md:w-auto md:flex-1 md:basis-1/2 md:max-w-[50%]"
     >
+        <span
+            class="w-6 shrink-0 text-center text-xs font-semibold text-sub md:hidden"
+            >{label}</span
+        >
         <img
             alt=""
             src={window.img("subject", id, "grid")}
@@ -300,7 +303,7 @@
         {:else if history.length}
             <div id="history-area">
                 <div
-                    class="flex gap-7 text-xs text-sub font-semibold mb-1 border-b border-bord-light pb-1"
+                    class="hidden md:flex gap-7 text-xs text-sub font-semibold mb-1 border-b border-bord-light pb-1"
                 >
                     <div class="flex-1 text-center">胜</div>
                     <div class="flex-1 text-center">负</div>
@@ -308,15 +311,25 @@
                 </div>
                 {#each history.slice(0, histShowing) as row, i}
                     <div
-                        class="flex gap-7 border border-transparent {i % 2 === 0
+                        class="flex flex-col border-b border-bord-light md:flex-row md:gap-7 md:border-0 {i %
+                            2 ===
+                        0
                             ? 'bg-surface'
                             : 'bg-surface-raised'}"
                     >
-                        {@render sideCard(row.winner)}
-                        {@render sideCard(row.loser)}
                         {#if row.time}
                             <div
-                                class="w-[100px] shrink-0 flex flex-col items-center justify-center py-1.5"
+                                class="px-2 pt-2 pb-1 text-xs text-sub md:hidden"
+                            >
+                                {dateText(row.time)}
+                                {timeText(row.time)}
+                            </div>
+                        {/if}
+                        {@render sideCard(row.winner, "胜")}
+                        {@render sideCard(row.loser, "负")}
+                        {#if row.time}
+                            <div
+                                class="hidden md:flex w-[100px] shrink-0 flex-col items-center justify-center py-1.5"
                             >
                                 <div class="text-sm text-sub">
                                     {dateText(row.time)}
