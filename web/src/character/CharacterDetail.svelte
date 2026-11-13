@@ -30,7 +30,7 @@
                 id: character.id,
                 size: "large"
             }}
-            class="w-full rounded-xl cursor-pointer"
+            class="mx-auto w-auto max-w-[220px] max-h-[45vh] rounded-xl cursor-pointer object-contain md:mx-0 md:w-full md:max-w-none md:max-h-none"
             tabindex="0"
             role="button"
             aria-label="查看大图"
