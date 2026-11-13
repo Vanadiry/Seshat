@@ -19,12 +19,12 @@ function showLightbox(src) {
     };
     var wrap = document.createElement("div");
     wrap.style.cssText =
-        "position:relative;display:inline-block;max-width:90vw;max-height:90vh";
+        "position:relative;display:inline-block;max-width:90vw;max-height:90vh;max-height:min(90vh,90dvh)";
     var img = document.createElement("img");
     img.alt = "";
     img.src = src;
     img.style.cssText =
-        "max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;opacity:0;transform:scale(.95);" +
+        "max-width:90vw;max-height:90vh;max-height:min(90vh,90dvh);object-fit:contain;border-radius:8px;opacity:0;transform:scale(.95);" +
         (reduceMotion
             ? ""
             : "transition:opacity .25s ease,transform .25s ease");
