@@ -118,11 +118,46 @@
         shell.insertBefore(restore, shell.firstChild);
 
         var collapsed = false;
-        function setCollapsed(v) {
-            collapsed = v;
-            document.body.classList.toggle("header-collapsed", v);
+        var animating = false;
+        var animTimer = 0;
+
+        function finishAnim() {
+            animating = false;
+            shell.style.height = "";
+            shell.classList.remove("header-animating");
         }
+
+        function setCollapsed(v) {
+            if (collapsed === v || animating) return;
+            collapsed = v;
+            if (prefersReducedMotion()) {
+                document.body.classList.toggle("header-collapsed", v);
+                return;
+            }
+            animating = true;
+            clearTimeout(animTimer);
+            if (v) {
+                var h = shell.offsetHeight;
+                shell.style.height = h + "px";
+                shell.offsetHeight;
+                shell.classList.add("header-animating");
+                shell.style.height = "14px";
+                animTimer = setTimeout(function () {
+                    document.body.classList.add("header-collapsed");
+                    finishAnim();
+                }, 260);
+                return;
+            }
+            document.body.classList.remove("header-collapsed");
+            shell.classList.add("header-animating");
+            shell.style.height = "14px";
+            shell.offsetHeight;
+            shell.style.height = shell.scrollHeight + "px";
+            animTimer = setTimeout(finishAnim, 260);
+        }
+
         collapseBtn.addEventListener("click", function () {
+            setMenuOpen(false);
             setCollapsed(true);
         });
         restore.addEventListener("click", function () {

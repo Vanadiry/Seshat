@@ -304,6 +304,10 @@ body.header-collapsed {
     --topbar-h: 0px;
     --detail-header-h: 0px;
 }
+.header-shell.header-animating {
+    overflow: hidden;
+    transition: height 0.25s ease;
+}
 
 /* 横屏刘海和底部横条的安全区 */
 :root {
