@@ -911,7 +911,7 @@ paths:
     post:
       tags: [拉取]
       summary: 重建索引
-      description: 扫描 api 目录下所有已保存的 JSON，重建三项索引，不包括images索引。
+      description: 扫描 api 目录下所有已保存的 JSON，重建列表、标签、名称和图片索引。
       responses:
         "200":
           description: 后台执行
