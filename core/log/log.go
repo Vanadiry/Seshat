@@ -13,7 +13,10 @@ import (
 	"time"
 )
 
-var logger *slog.Logger
+var (
+	logger        *slog.Logger
+	currentWriter *rotatingWriter
+)
 
 var levelMap = map[string]slog.Level{
 	"debug": slog.LevelDebug,
@@ -71,6 +74,7 @@ func (w *rotatingWriter) openFirst() error {
 
 // Init 初始化日志系统。logDir 为日志目录，level 为 "debug" / "info" / "warn" / "error"
 func Init(logDir, level string) {
+	Close()
 	os.MkdirAll(logDir, 0o755)
 
 	rw := &rotatingWriter{dir: logDir}
@@ -87,9 +91,29 @@ func Init(logDir, level string) {
 
 	handler := slog.NewTextHandler(io.MultiWriter(os.Stdout, rw), &slog.HandlerOptions{Level: lvl})
 	logger = slog.New(handler)
+	currentWriter = rw
 
 	rotateLogs(logDir, 10)
 	logger.Info("Log file: "+rw.file.Name(), "level", lvl.String())
+}
+
+// Close 关闭当前日志文件。
+func Close() {
+	if currentWriter != nil {
+		currentWriter.Close()
+		currentWriter = nil
+	}
+}
+
+func (w *rotatingWriter) Close() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.file == nil {
+		return nil
+	}
+	err := w.file.Close()
+	w.file = nil
+	return err
 }
 
 func rotateLogs(dir string, keep int) {

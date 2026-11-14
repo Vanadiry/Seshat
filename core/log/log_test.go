@@ -26,6 +26,7 @@ func TestToAttrs(t *testing.T) {
 func TestInitAndLog(t *testing.T) {
 	t.Setenv("SESHAT_HOME", t.TempDir())
 	Init(filepath.Join(os.Getenv("SESHAT_HOME"), "logs"), "bogus")
+	t.Cleanup(Close)
 	Debug("debug")
 	Info("info")
 	Warn("warn")

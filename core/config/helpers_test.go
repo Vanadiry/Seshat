@@ -1,6 +1,7 @@
 package config
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -25,14 +26,14 @@ func TestProxyURL(t *testing.T) {
 func TestDataAndTrackerDir(t *testing.T) {
 	t.Setenv("SESHAT_HOME", t.TempDir())
 	cfg := &Config{}
-	if got, want := cfg.DataDir(), Dir()+"/data"; got != want {
+	if got, want := cfg.DataDir(), filepath.Join(Dir(), "data"); got != want {
 		t.Fatalf("DataDir = %q，期望 %q", got, want)
 	}
 	cfg.Server.DataHome = "/tmp/custom-data"
 	if cfg.DataDir() != "/tmp/custom-data" {
 		t.Fatalf("DataHome 未生效: %q", cfg.DataDir())
 	}
-	if cfg.TrackerDir() != Dir()+"/tracker" {
+	if cfg.TrackerDir() != filepath.Join(Dir(), "tracker") {
 		t.Fatalf("TrackerDir = %q", cfg.TrackerDir())
 	}
 }
