@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/BurntSushi/toml"
+	"github.com/pelletier/go-toml/v2"
 )
 
 // TestVersionConsistent 检查各处声明的版本是否与 Version 常量一致
@@ -74,7 +74,11 @@ func readJSONFile(t *testing.T, path string, v any) {
 
 func readTOMLFile(t *testing.T, path string, v any) {
 	t.Helper()
-	if _, err := toml.DecodeFile(path, v); err != nil {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("读取 %s: %v", path, err)
+	}
+	if err := toml.Unmarshal(data, v); err != nil {
 		t.Fatalf("解析 %s: %v", path, err)
 	}
 }

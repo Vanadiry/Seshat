@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/BurntSushi/toml"
+	"github.com/pelletier/go-toml/v2"
 
 	"github.com/vanadiry/seshat/core/bangumi"
 	"github.com/vanadiry/seshat/core/config"
@@ -76,7 +76,7 @@ func loadTrackerName(path string) string {
 	var v struct {
 		Name string `toml:"name"`
 	}
-	if _, err := toml.Decode(string(data), &v); err == nil {
+	if err := toml.Unmarshal(data, &v); err == nil {
 		return strings.TrimSpace(v.Name)
 	}
 	return ""

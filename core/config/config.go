@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/BurntSushi/toml"
+	"github.com/pelletier/go-toml/v2"
 
 	"github.com/vanadiry/seshat/core/store"
 )
