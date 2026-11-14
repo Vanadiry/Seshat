@@ -76,7 +76,7 @@ func loadTrackerName(path string) string {
 	var v struct {
 		Name string `toml:"name"`
 	}
-	if err := toml.Unmarshal(data, &v); err == nil {
+	if err := toml.Unmarshal(store.TrimBOM(data), &v); err == nil {
 		return strings.TrimSpace(v.Name)
 	}
 	return ""
@@ -358,7 +358,7 @@ func loadTrackerIDs(path string) []int {
 func parseTOMLIDArray(data []byte) []int {
 	var ids []int
 	inArray := false
-	for _, line := range strings.Split(string(data), "\n") {
+	for _, line := range strings.Split(string(store.TrimBOM(data)), "\n") {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "ids = [") {
 			inArray = true

@@ -94,7 +94,7 @@ func Load() (*Config, error) {
 		}
 	}
 	var cfg Config
-	if err := toml.Unmarshal(data, &cfg); err != nil {
+	if err := toml.Unmarshal(store.TrimBOM(data), &cfg); err != nil {
 		return nil, fmt.Errorf("解析配置失败：%w", err)
 	}
 	return &cfg, nil

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,6 +11,11 @@ import (
 
 func Dir(dataDir string) string      { return filepath.Join(dataDir, "api") }
 func IndexDir(dataDir string) string { return filepath.Join(dataDir, "index") }
+
+// TrimBOM 去掉 UTF-8 BOM，部分编辑器（如 Windows 记事本）保存时会写入
+func TrimBOM(data []byte) []byte {
+	return bytes.TrimPrefix(data, []byte{0xEF, 0xBB, 0xBF})
+}
 
 // Key 生成数据路径 {subdomain}/{id%10}/{id}/{file}
 // 例如 Key("subjects", 51, "info.json") 得到 "subjects/1/51/info.json"

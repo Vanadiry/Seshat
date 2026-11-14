@@ -319,3 +319,23 @@ func TestImportCollectionsRequiresData(t *testing.T) {
 		t.Fatalf("缺少收藏数据时状态码 = %d", code)
 	}
 }
+
+func TestLoadTrackerNameWithBOM(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "demo.toml")
+	data := append([]byte{0xEF, 0xBB, 0xBF}, []byte("name = \"测试 Tracker\"\nids = []\n")...)
+	if err := os.WriteFile(p, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := loadTrackerName(p); got != "测试 Tracker" {
+		t.Fatalf("带 BOM 的 Tracker 名称 = %q", got)
+	}
+}
+
+func TestParseTOMLIDArrayWithBOM(t *testing.T) {
+	data := append([]byte{0xEF, 0xBB, 0xBF}, []byte("ids = [1, 2,\n  3]\n")...)
+	got := parseTOMLIDArray(data)
+	if len(got) != 3 || got[0] != 1 || got[1] != 2 || got[2] != 3 {
+		t.Fatalf("带 BOM 的 ids = %v", got)
+	}
+}
