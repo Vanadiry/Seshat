@@ -4,7 +4,7 @@ info:
   description: |
     离线优先的 Bangumi 数据管理与浏览工具。
     错误响应统一为 ErrorDetail，包含 title、description、details 和 request_id。
-  version: "2.0.0"
+  version: "2.0.1"
 servers:
   - url: http://127.0.0.1:12500
     description: Seshat 本地后端
@@ -1216,7 +1216,7 @@ paths:
                 type: object
                 properties:
                   name: { type: string, example: "Seshat" }
-                  version: { type: string, example: "2.0.0" }
+                  version: { type: string, example: "2.0.1" }
                   license: { type: string, example: "AGPL-3.0" }
                   repository:
                     {
